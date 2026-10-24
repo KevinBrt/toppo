@@ -1,6 +1,6 @@
 import { schema } from '@toppo/db';
 import { PROPERTIES_MAX, type PropertiesResponse, type PropertyRow } from '@toppo/shared';
-import { asc, count, eq, sql } from 'drizzle-orm';
+import { and, asc, count, eq, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 
@@ -8,7 +8,7 @@ const { issues, properties, propertyOptions } = schema;
 
 /**
  * Every property of the instance, oldest first, with its options in their order and how many
- * issues have each: removing one takes it off them.
+ * issues have each: removing one takes it off them. The projects' own are left to them.
  */
 export const listProperties = defineQuery({
   name: 'property.list',
@@ -38,6 +38,8 @@ export const listProperties = defineQuery({
       })
       .from(properties)
       .innerJoin(propertyOptions, eq(propertyOptions.propertyId, properties.id))
+      // The projects' own properties and options are theirs.
+      .where(and(isNull(properties.projectId), isNull(propertyOptions.projectId)))
       .orderBy(asc(properties.createdAt), asc(properties.id), asc(propertyOptions.position));
     const byId = new Map<string, PropertyRow>();
     for (const { property, option } of rows) {

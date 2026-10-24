@@ -1,11 +1,14 @@
 import {
   ISSUE_SORT_ORDERS,
   type IssueSort,
+  type ProjectFields,
   type ProjectIssuesQuery,
   type SortOrder,
 } from '@toppo/shared';
 import { z } from 'zod';
 import {
+  HIDEABLE_FIELDS,
+  type HideableField,
   ISSUE_LIST_FILTERS,
   type IssueListFilter,
   type IssueListSearch,
@@ -34,6 +37,16 @@ function valuesIn(text: string | undefined, filter: IssueListFilter): string[] |
     .filter((value) => WORDS[filter].includes(value) || idSchema.safeParse(value).success);
   const unique = [...new Set(values)].slice(0, VALUES_MAX);
   return unique.length > 0 ? unique : undefined;
+}
+
+/** The fields a project hides, once its settings are known. */
+export function hiddenFieldsOf(settings: ProjectFields | undefined): HideableField[] {
+  return HIDEABLE_FIELDS.filter((field) => settings?.[field].hidden);
+}
+
+/** Whether a filter, sort or grouping is about none of the fields hidden. */
+export function isShownWith(hidden: readonly HideableField[]): (value: string) => boolean {
+  return (value) => !hidden.some((field) => field === value);
 }
 
 /** What to ask the server for, from what the address keeps: open issues by default. */

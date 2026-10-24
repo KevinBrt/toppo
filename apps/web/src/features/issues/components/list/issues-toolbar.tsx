@@ -1,14 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { ISSUE_GROUPINGS, type ProjectIssuesQuery } from '@toppo/shared';
+import { ISSUE_GROUPINGS, ISSUE_SORTS, type ProjectIssuesQuery } from '@toppo/shared';
 import { Badge, Button, Input } from '@toppo/ui';
 import { LayersIcon, SearchIcon, XIcon } from 'lucide-react';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
-import { ISSUE_LIST_STATES, type IssueListFilter } from '../../models/issue-list.model.ts';
+import {
+  type HideableField,
+  ISSUE_LIST_STATES,
+  type IssueListFilter,
+} from '../../models/issue-list.model.ts';
 import { IssuesQueries } from '../../queries/issues.queries.ts';
 import {
   firstPageOf,
   isNarrowed,
+  isShownWith,
   orderOf,
   sortedAs,
   sortOf,
@@ -27,13 +32,14 @@ const SEARCH_DELAY_MS = 300;
 /**
  * What a project's list shows: a search, then a menu per filter, its state first, and the
  * grouping. Phones also get the sort, which wider screens find in the column headers. Every
- * change starts again from the first page.
+ * change starts again from the first page. A field the project hides is in none of them.
  */
 export function IssuesToolbar({
   projectKey,
   query,
   seesEveryIssue,
   canListPeople,
+  hidden,
   onQueryChange,
 }: {
   projectKey: string;
@@ -42,16 +48,18 @@ export function IssuesToolbar({
   seesEveryIssue: boolean;
   /** Whoever may assign issues gets the people of the project in the people filters. */
   canListPeople: boolean;
+  hidden: readonly HideableField[];
   onQueryChange: (query: ProjectIssuesQuery) => void;
 }) {
   const { t } = useI18n();
   const filters = useFilterOptions(projectKey, canListPeople);
+  const isShown = isShownWith(hidden);
   const change = (next: Partial<ProjectIssuesQuery>) => onQueryChange(firstPageOf(query, next));
   const state = stateOf(query);
   const menus: { filter: IssueListFilter; label: string; shown: boolean }[] = [
     { filter: 'status', label: t('issues.status'), shown: true },
-    { filter: 'priority', label: t('issues.priority'), shown: true },
-    { filter: 'category', label: t('issues.category'), shown: true },
+    { filter: 'priority', label: t('issues.priority'), shown: isShown('priority') },
+    { filter: 'category', label: t('issues.category'), shown: isShown('category') },
     // Once the instance has labels, or while the address still filters by one.
     {
       filter: 'label',
@@ -108,6 +116,7 @@ export function IssuesToolbar({
       <div className="ml-auto flex flex-wrap gap-1">
         <div className="sm:hidden">
           <SortMenu
+            sorts={ISSUE_SORTS.filter(isShown)}
             sort={sortOf(query)}
             order={orderOf(query)}
             onChange={(sort, order) => onQueryChange(sortedAs(query, sort, order))}
@@ -123,7 +132,7 @@ export function IssuesToolbar({
             </Button>
           }
           value={query.group ?? 'none'}
-          options={(['none', ...ISSUE_GROUPINGS] as const).map((group) => ({
+          options={(['none', ...ISSUE_GROUPINGS.filter(isShown)] as const).map((group) => ({
             value: group,
             label: t(`issues.list.groupings.${group}`),
           }))}

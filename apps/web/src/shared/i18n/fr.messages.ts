@@ -358,6 +358,7 @@ export const fr: Messages = {
     general: 'Général',
     access: 'Accès',
     statuses: 'Statuts',
+    properties: 'Propriétés',
   },
   projectSettings: {
     title: 'Général',
@@ -531,6 +532,40 @@ export const fr: Messages = {
       mentioned: '{name} vous a mentionné dans {key}',
       statusChanged: '{name} a passé {key} à « {status} »',
     },
+  },
+  projectProperties: {
+    title: 'Propriétés des tickets',
+    description:
+      'Comment les tickets de ce projet reprennent les champs de l’organisation, et ses propriétés propres.',
+    loading: 'Chargement des propriétés…',
+    instanceSection: 'Champs de l’organisation',
+    instanceHint: 'définis pour toute l’organisation',
+    ownSection: 'Propres à ce projet',
+    ownHint: 'seulement dans ce projet',
+    noOwn: 'Aucune propriété propre pour l’instant.',
+    ownDescription: 'Une liste d’options que seuls les tickets de ce projet prennent.',
+    adaptDescription:
+      'Comment ce projet reprend cette propriété de l’organisation, sans toucher aux autres projets.',
+    hidden: 'Masquée dans ce projet',
+    hiddenHelp: 'Absente des formulaires, de la liste et des tickets ; leurs valeurs restent.',
+    hiddenField: 'Masquée dans ce projet, {name}',
+    requiredField: 'Obligatoire à la création, {name}',
+    required: 'Obligatoire à la création',
+    fieldsHelp:
+      'Masqué, les tickets gardent la valeur par défaut. Obligatoire, rien n’est présélectionné : qui crée un ticket choisit.',
+    ownOptions: 'Options propres',
+    ownOptionsHelp:
+      'La liste de ce projet, partie de celle de l’organisation, modifiée sans toucher aux autres projets.',
+    instanceOptions: 'Les options de l’organisation',
+    backToInstance:
+      'Enregistrer redonne à ce projet les options de l’organisation ; les siennes disparaissent.',
+    hiddenBadge: 'Masquée',
+    ownOptionsBadge: 'Options propres',
+    takenOff: {
+      one: 'Enregistrer retire une option de {count} ticket de ce projet.',
+      other: 'Enregistrer retire une option de {count} tickets de ce projet.',
+    },
+    saved: 'Enregistré.',
   },
   properties: {
     title: 'Propriétés des tickets',

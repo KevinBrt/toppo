@@ -11,6 +11,7 @@ export {
   labels,
   notifications,
   priorities,
+  projectProperties,
   properties,
   propertyOptions,
 } from './issues.ts';

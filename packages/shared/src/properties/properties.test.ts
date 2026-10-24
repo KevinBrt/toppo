@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   createPropertyRequestSchema,
   issuePropertyRequestSchema,
+  projectFieldsSchema,
+  propertyAdaptationRequestSchema,
   updatePropertyRequestSchema,
 } from './properties.ts';
 
@@ -55,5 +57,45 @@ describe('the value given to an issue', () => {
     expect(issuePropertyRequestSchema.safeParse({ optionId: ID }).success).toBe(true);
     expect(issuePropertyRequestSchema.safeParse({ optionId: null }).success).toBe(true);
     expect(issuePropertyRequestSchema.safeParse({ optionId: 'v1' }).success).toBe(false);
+  });
+});
+
+describe('how a project adapts the fields', () => {
+  it('hides a field or requires it, never both', () => {
+    const settings = (category: { hidden: boolean; required: boolean }) => ({
+      category,
+      priority: { hidden: false, required: false },
+    });
+
+    expect(projectFieldsSchema.safeParse(settings({ hidden: true, required: false })).success).toBe(
+      true,
+    );
+    expect(projectFieldsSchema.safeParse(settings({ hidden: false, required: true })).success).toBe(
+      true,
+    );
+    expect(projectFieldsSchema.safeParse(settings({ hidden: true, required: true })).success).toBe(
+      false,
+    );
+  });
+
+  it('gives a property options of its own, never keeping one it removes', () => {
+    const kept = ID;
+    const removed = '01a1569b-9900-7000-8000-000000000002';
+    const adaptation = (removedIds: string[]) => ({
+      hidden: false,
+      options: {
+        options: [
+          { id: kept, name: '1.3', color: 'blue' },
+          { name: '2.0', color: 'green' },
+        ],
+        removed: removedIds,
+      },
+    });
+
+    expect(propertyAdaptationRequestSchema.safeParse(adaptation([removed])).success).toBe(true);
+    expect(propertyAdaptationRequestSchema.safeParse(adaptation([kept])).success).toBe(false);
+    expect(propertyAdaptationRequestSchema.safeParse({ hidden: true, options: null }).success).toBe(
+      true,
+    );
   });
 });

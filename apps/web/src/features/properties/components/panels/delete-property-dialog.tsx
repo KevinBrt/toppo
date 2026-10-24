@@ -4,16 +4,20 @@ import { Alert, Button, Dialog, DialogClose, DialogContent } from '@toppo/ui';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
+import { ProjectProperties } from '../../api/project-properties.api.ts';
 import { Properties } from '../../api/properties.api.ts';
 
 /** Asks before deleting a property, saying how many issues lose a value; reports it once done. */
 export function DeletePropertyDialog({
   property,
+  projectKey,
   open,
   onOpenChange,
   onDeleted,
 }: {
   property: PropertyRow;
+  /** The project it belongs to; none for one of the instance. */
+  projectKey: string | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleted: () => Promise<void>;
@@ -21,7 +25,10 @@ export function DeletePropertyDialog({
   const { t, locale } = useI18n();
   const inUse = property.options.reduce((total, { issueCount }) => total + issueCount, 0);
   const remove = useMutation({
-    mutationFn: () => Properties.remove(property.id),
+    mutationFn: () =>
+      projectKey
+        ? ProjectProperties.remove(projectKey, property.id)
+        : Properties.remove(property.id),
     onSuccess: async () => {
       onOpenChange(false);
       await onDeleted();

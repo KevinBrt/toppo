@@ -20,6 +20,7 @@ import {
   DEFAULT_ROLES,
   DEFAULT_STATUSES,
   DEFAULT_TRANSITIONS,
+  effectiveProperties,
   FILE_HEAD_LENGTH,
   type InstancePermission,
   instancePermissionsOf,
@@ -77,9 +78,13 @@ import {
   PROJECTS_PAGE_SIZE,
   type PriorityLevel,
   type ProjectAccessRow,
+  type ProjectFields,
+  type PropertyOptionRef,
   passwordResetRequestSchema,
   prioritiesRequestSchema,
+  projectFieldsSchema,
   projectIssuesQuerySchema,
+  propertyAdaptationRequestSchema,
   ROLES_MAX,
   type RoleBadge,
   type RoleDetails,
@@ -203,12 +208,26 @@ export interface FakeServerState {
   mailTestRefusal: string | null;
   /** Tokens of the links to choose a new password that still work: each works once. */
   resetTokens: string[];
-  /** The instance's properties, oldest first: none unless a test adds some. */
+  /** The instance's properties then the projects' own, oldest first: none unless added. */
   properties: FakeProperty[];
+  /** How projects adapt the instance's properties: none unless a test adds some. */
+  propertyAdaptations: FakeAdaptation[];
 }
 
 /** A property as the fake server keeps it, with its options in their order. */
-export type FakeProperty = IssuePropertyField & { type: 'list' };
+export type FakeProperty = IssuePropertyField & {
+  type: 'list';
+  /** The project it belongs to; none for one of the instance. */
+  projectKey?: string;
+};
+
+/** How a project adapts a property of the instance: hidden, and its own options or none. */
+export interface FakeAdaptation {
+  projectKey: string;
+  propertyId: string;
+  hidden: boolean;
+  options: PropertyOptionRef[] | null;
+}
 
 /** A list property named `name`, with options named as given, made up ids from `seed`. */
 export function fakeProperty(
@@ -391,6 +410,8 @@ export interface FakeProject {
   archived: boolean;
   keyEditable: boolean;
   members: { userId: string; roleId: string | null }[];
+  /** How it adapts the category and the priority: as they are unless said otherwise. */
+  fieldSettings?: ProjectFields;
 }
 
 export interface InvitationLinkState {
@@ -478,6 +499,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       mailTestRefusal: null,
       resetTokens: [],
       properties: [],
+      propertyAdaptations: [],
       ...initial,
     },
     requests: [],
@@ -1183,7 +1205,7 @@ function createProject(state: FakeServerState, body: Record<string, unknown>): R
 }
 
 const PROJECT_PATH =
-  /^\/api\/v1\/projects\/([^/]+)(?:\/(archive|unarchive|access|members|invitations|candidates|roles|issues|issue-fields|assignees|workflow))?(?:\/([^/]+))?$/;
+  /^\/api\/v1\/projects\/([^/]+)(?:\/(archive|unarchive|access|members|invitations|candidates|roles|issues|issue-fields|assignees|workflow|properties|fields))?(?:\/([^/]+))?(?:\/(adaptation))?$/;
 
 /** `/api/v1/projects/:key` and what hangs off it, with the server's rules. */
 function projectRequest(
@@ -1197,7 +1219,7 @@ function projectRequest(
   if (!match) {
     return undefined;
   }
-  const [, key, part = '', target = ''] = match;
+  const [, key, part = '', target = '', sub = ''] = match;
   const project = state.projects.find((candidate) => candidate.key === key);
   const permissions = project ? projectPermissionsFor(state, project) : null;
   if (!(project && permissions)) {
@@ -1265,6 +1287,14 @@ function projectRequest(
       return listIssues(state, project, permissions, search);
     case 'POST issues':
       return unless('issue.create', () => createIssue(state, project, fields));
+    case 'GET properties':
+    case 'POST properties':
+    case 'PUT properties':
+    case 'DELETE properties':
+    case 'PUT fields':
+      return unless('project.settings.manage', () =>
+        projectPropertyRequest(state, project, method, part, target, sub, body),
+      );
     case 'GET issue-fields':
       return json(issueFields(state, project.key));
     case 'GET workflow':
@@ -1758,7 +1788,10 @@ function issueFields(state: FakeServerState, projectKey: string) {
     categories: state.categories,
     priorities: state.priorities,
     labels: byLabelName(state.labels),
-    properties: state.properties.map(({ type: _type, ...field }) => field),
+    properties: effectiveOf(state, projectKey).map(
+      ({ type: _type, projectKey: _projectKey, ...field }) => field,
+    ),
+    fieldSettings: fieldSettingsOf(state.projects.find(({ key }) => key === projectKey)),
   };
 }
 
@@ -1768,7 +1801,7 @@ function propertyValuesOf(
   issue: FakeIssue,
   { listedOnly }: { listedOnly: boolean },
 ): IssuePropertyValue[] {
-  return state.properties.flatMap((property) => {
+  return effectiveOf(state, issue.projectKey).flatMap((property) => {
     const option = property.options.find(({ id }) => id === issue.properties[property.id]);
     return option && (property.shownInList || !listedOnly)
       ? [{ id: property.id, name: property.name, option }]
@@ -2038,9 +2071,16 @@ function createIssue(
         .filter((issue) => issue.projectKey === project.key)
         .map((issue) => issue.number),
     ) + 1;
+  const settings = fieldSettingsOf(project);
+  if (settings.category.required && !fields['categoryId']) {
+    return apiError(400, 'CATEGORY_REQUIRED');
+  }
+  if (settings.priority.required && !fields['priorityId']) {
+    return apiError(400, 'PRIORITY_REQUIRED');
+  }
   const values = (fields['properties'] ?? {}) as Record<string, string>;
   const problem = creationValuesProblem(
-    state.properties.map(({ id, askedAtCreation, required, options }) => ({
+    effectiveOf(state, project.key).map(({ id, askedAtCreation, required, options }) => ({
       id,
       askedAtCreation,
       required,
@@ -2532,6 +2572,47 @@ function moveIssue(state: FakeServerState, issue: FakeIssue, statusId: string): 
   return NO_CONTENT();
 }
 
+/** The properties a project's issues take, as the server works them out (`effectiveProperties`). */
+function effectiveOf(state: FakeServerState, projectKey: string): FakeProperty[] {
+  const options = state.properties.flatMap((property) =>
+    property.options.map((option) => ({ ...option, propertyId: property.id, projectId: null })),
+  );
+  const own = state.propertyAdaptations.flatMap((adaptation) =>
+    adaptation.projectKey === projectKey && adaptation.options
+      ? adaptation.options.map((option) => ({
+          ...option,
+          propertyId: adaptation.propertyId,
+          projectId: projectKey,
+        }))
+      : [],
+  );
+  return effectiveProperties(
+    projectKey,
+    state.properties.map((property) => ({ ...property, projectId: property.projectKey ?? null })),
+    [...options, ...own],
+    state.propertyAdaptations
+      .filter((adaptation) => adaptation.projectKey === projectKey)
+      .map(({ propertyId, hidden, options: ownOptions }) => ({
+        propertyId,
+        hidden,
+        ownOptions: ownOptions !== null,
+      })),
+  ).map(({ projectId: _, options: shown, ...property }) => ({
+    ...property,
+    options: shown.map(({ id, name, color }) => ({ id, name, color })),
+  }));
+}
+
+/** How a project adapts the category and the priority, all as they are unless said otherwise. */
+function fieldSettingsOf(project: FakeProject | undefined): ProjectFields {
+  return (
+    project?.fieldSettings ?? {
+      category: { hidden: false, required: false },
+      priority: { hidden: false, required: false },
+    }
+  );
+}
+
 /** `PUT /api/v1/issues/:key/properties/:propertyId`: an option of the property, or none. */
 function setProperty(
   state: FakeServerState,
@@ -2539,7 +2620,7 @@ function setProperty(
   propertyId: string,
   fields: Record<string, unknown>,
 ): Response {
-  const property = state.properties.find(({ id }) => id === propertyId);
+  const property = effectiveOf(state, issue.projectKey).find(({ id }) => id === propertyId);
   if (!property) {
     return apiError(404, 'PROPERTY_NOT_FOUND');
   }
@@ -2566,10 +2647,7 @@ function setProperty(
   return NO_CONTENT();
 }
 
-/**
- * `/api/v1/properties[/:id]`: listed with how many issues have each option, created, saved
- * whole and deleted, a removed option leaving its issues.
- */
+/** `/api/v1/properties[/:id]`: the instance's properties, as the settings edit them. */
 function propertyRequest(
   state: FakeServerState,
   method: string,
@@ -2586,9 +2664,140 @@ function propertyRequest(
   }
   const [, propertyId] = match;
   if (propertyId === undefined) {
-    return method === 'POST' ? createFakeProperty(state, body) : listFakeProperties(state);
+    return method === 'POST'
+      ? createFakeProperty(state, body, undefined)
+      : listFakeProperties(state, undefined);
   }
-  const property = state.properties.find(({ id }) => id === propertyId);
+  return changeFakeProperty(state, method, propertyId, body, undefined);
+}
+
+/**
+ * `/api/v1/projects/:key/properties[/:id[/adaptation]]` and `/api/v1/projects/:key/fields`: how a
+ * project adapts the category, the priority and the instance's properties, and its own.
+ */
+function projectPropertyRequest(
+  state: FakeServerState,
+  project: FakeProject,
+  method: string,
+  part: string,
+  propertyId: string,
+  sub: string,
+  body: unknown,
+): Response {
+  if (part === 'fields') {
+    const parsed = projectFieldsSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiError(400, 'VALIDATION_FAILED');
+    }
+    project.fieldSettings = parsed.data;
+    return NO_CONTENT();
+  }
+  if (propertyId === '') {
+    return method === 'POST'
+      ? createFakeProperty(state, body, project.key)
+      : json({
+          fields: fieldSettingsOf(project),
+          instance: listedRows(state, undefined, project.key).map((row) => {
+            const adaptation = state.propertyAdaptations.find(
+              (candidate) =>
+                candidate.projectKey === project.key && candidate.propertyId === row.id,
+            );
+            return {
+              ...row,
+              hidden: adaptation?.hidden ?? false,
+              ownOptions: Boolean(adaptation?.options),
+            };
+          }),
+          own: listedRows(state, project.key, project.key),
+        });
+  }
+  if (sub === 'adaptation') {
+    return adaptFakeProperty(state, project.key, propertyId, body);
+  }
+  return changeFakeProperty(state, method, propertyId, body, project.key);
+}
+
+/** The properties of the instance or of a project, each option counted in `countedIn`'s issues. */
+function listedRows(
+  state: FakeServerState,
+  projectKey: string | undefined,
+  countedIn: string | undefined,
+) {
+  return state.properties
+    .filter((property) => property.projectKey === projectKey)
+    .map(({ projectKey: _, ...property }) => {
+      const adaptation = state.propertyAdaptations.find(
+        (candidate) => candidate.projectKey === countedIn && candidate.propertyId === property.id,
+      );
+      return {
+        ...property,
+        options: (adaptation?.options ?? property.options).map((option) => ({
+          ...option,
+          issueCount: state.issues.filter(
+            (issue) =>
+              (countedIn === undefined || issue.projectKey === countedIn) &&
+              issue.properties[property.id] === option.id,
+          ).length,
+        })),
+      };
+    });
+}
+
+function listFakeProperties(state: FakeServerState, projectKey: string | undefined): Response {
+  return json({ properties: listedRows(state, projectKey, undefined) });
+}
+
+function createFakeProperty(
+  state: FakeServerState,
+  body: unknown,
+  projectKey: string | undefined,
+): Response {
+  const parsed = createPropertyRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  const clash = state.properties.some(
+    (property) =>
+      fold(property.name) === fold(parsed.data.name) &&
+      (projectKey === undefined ||
+        property.projectKey === undefined ||
+        property.projectKey === projectKey),
+  );
+  if (clash) {
+    return apiError(409, 'PROPERTY_NAME_TAKEN');
+  }
+  const property = fakeProperty(
+    state.properties.length + 1,
+    parsed.data.name,
+    parsed.data.options.map(({ name }) => name),
+    {
+      shownInList: parsed.data.shownInList,
+      askedAtCreation: parsed.data.askedAtCreation,
+      required: parsed.data.required,
+      ...(projectKey ? { projectKey } : {}),
+    },
+  );
+  state.properties.push({
+    ...property,
+    options: property.options.map((option, index) => ({
+      ...option,
+      color: parsed.data.options[index]?.color ?? option.color,
+    })),
+  });
+  return json({ id: property.id }, 201);
+}
+
+/** Saves or deletes a property of the instance (`projectKey` undefined) or of a project. */
+function changeFakeProperty(
+  state: FakeServerState,
+  method: string,
+  propertyId: string,
+  body: unknown,
+  projectKey: string | undefined,
+): Response {
+  const property = state.properties.find(
+    ({ id, projectKey: owner }) => id === propertyId && owner === projectKey,
+  );
   if (!property) {
     return apiError(404, 'PROPERTY_NOT_FOUND');
   }
@@ -2607,78 +2816,84 @@ function propertyRequest(
   }
   const { options, removed, ...fields } = parsed.data;
   takeFakeOptionsOff(state, property.id, removed);
-  const saved: FakeProperty = {
-    ...property,
-    ...fields,
-    options: options.map(({ id, name, color }, index) => ({
-      id: id ?? `01a1569b-9900-7000-8000-0000000005${String(index).padStart(2, '0')}`,
-      name,
-      color,
-    })),
-  };
+  const saved: FakeProperty = { ...property, ...fields, options: optionsFrom(options) };
   state.properties = state.properties.map((candidate) =>
     candidate === property ? saved : candidate,
   );
   return NO_CONTENT();
 }
 
-function listFakeProperties(state: FakeServerState): Response {
-  return json({
-    properties: state.properties.map((property) => ({
-      ...property,
-      options: property.options.map((option) => ({
-        ...option,
-        issueCount: state.issues.filter((issue) => issue.properties[property.id] === option.id)
-          .length,
-      })),
-    })),
-  });
-}
-
-function createFakeProperty(state: FakeServerState, body: unknown): Response {
-  const parsed = createPropertyRequestSchema.safeParse(body);
+/** `PUT …/properties/:id/adaptation`: hidden in the project, and its own options or none. */
+function adaptFakeProperty(
+  state: FakeServerState,
+  projectKey: string,
+  propertyId: string,
+  body: unknown,
+): Response {
+  const parsed = propertyAdaptationRequestSchema.safeParse(body);
+  const property = state.properties.find(
+    ({ id, projectKey: owner }) => id === propertyId && owner === undefined,
+  );
+  if (!property) {
+    return apiError(404, 'PROPERTY_NOT_FOUND');
+  }
   if (!parsed.success) {
     return apiError(400, 'VALIDATION_FAILED');
   }
-  if (state.properties.some(({ name }) => fold(name) === fold(parsed.data.name))) {
-    return apiError(409, 'PROPERTY_NAME_TAKEN');
-  }
-  const property = fakeProperty(
-    state.properties.length + 1,
-    parsed.data.name,
-    parsed.data.options.map(({ name }) => name),
-    {
-      shownInList: parsed.data.shownInList,
-      askedAtCreation: parsed.data.askedAtCreation,
-      required: parsed.data.required,
-    },
+  const current = state.propertyAdaptations.find(
+    (adaptation) => adaptation.projectKey === projectKey && adaptation.propertyId === propertyId,
   );
-  state.properties.push({
-    ...property,
-    options: property.options.map((option, index) => ({
-      ...option,
-      color: parsed.data.options[index]?.color ?? option.color,
-    })),
-  });
-  return json({ id: property.id }, 201);
+  const removed =
+    parsed.data.options === null
+      ? (current?.options ?? []).map(({ id }) => id)
+      : parsed.data.options.removed;
+  takeFakeOptionsOff(state, propertyId, removed, projectKey);
+  const adaptation: FakeAdaptation = {
+    projectKey,
+    propertyId,
+    hidden: parsed.data.hidden,
+    options: parsed.data.options === null ? null : optionsFrom(parsed.data.options.options),
+  };
+  state.propertyAdaptations = [
+    ...state.propertyAdaptations.filter((candidate) => candidate !== current),
+    adaptation,
+  ];
+  return NO_CONTENT();
 }
 
-/** Takes options off the issues having them, each told in its history. */
+/** Saved options, a new one given a made-up id. */
+function optionsFrom(
+  options: readonly { id?: string | undefined; name: string; color: PaletteColor }[],
+): PropertyOptionRef[] {
+  return options.map(({ id, name, color }, index) => ({
+    id: id ?? `01a1569b-9900-7000-8000-0000000013${String(index).padStart(2, '0')}`,
+    name,
+    color,
+  }));
+}
+
+/** Takes options off the issues having them, of one project or every one, each told in its history. */
 function takeFakeOptionsOff(
   state: FakeServerState,
   propertyId: string,
   optionIds: readonly string[],
+  projectKey?: string,
 ): void {
   const property = state.properties.find(({ id }) => id === propertyId);
   for (const issue of state.issues) {
-    const option = property?.options.find(({ id }) => id === issue.properties[propertyId]);
-    if (property && option && optionIds.includes(option.id)) {
+    const optionId = issue.properties[propertyId];
+    const name = [
+      ...(property?.options ?? []),
+      ...state.propertyAdaptations.flatMap(({ options }) => options ?? []),
+    ].find(({ id }) => id === optionId)?.name;
+    const inScope = projectKey === undefined || issue.projectKey === projectKey;
+    if (property && optionId && name && inScope && optionIds.includes(optionId)) {
       issue.properties = withPropertyValue(issue.properties, propertyId, null);
       record(state, keyOf(issue), {
         type: 'issue.propertyChanged',
         payload: {
           property: { id: property.id, name: property.name },
-          from: { id: option.id, name: option.name },
+          from: { id: optionId, name },
           to: null,
         },
       });

@@ -17,7 +17,7 @@ import { recordActivity } from '../../../platform/activities/record-activity.ts'
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
-import { lockedPropertyRules } from '../utils/issue-properties.util.ts';
+import { fieldSettingsOf, lockedPropertyRules } from '../utils/issue-properties.util.ts';
 import { assertAssignable } from './assign-issue.command.ts';
 
 const { issueCategories, issues, priorities, projects, workflowStatuses, workflows } = schema;
@@ -33,8 +33,9 @@ const PROPERTY_REFUSALS: Readonly<
 
 /**
  * Creates an issue in a project: numbered by the project's counter, in its workflow's initial
- * status, with the default category and priority unless others are given, and the values of the
- * properties given, those required included (`creationValuesProblem`). Assigning it at once
+ * status, with the default category and priority unless others are given (the project may ask
+ * for them), and the values of its properties given, those required included
+ * (`creationValuesProblem`). Assigning it at once
  * needs `issue.assign`.
  */
 export const createIssue = defineCommand({
@@ -48,7 +49,17 @@ export const createIssue = defineCommand({
     if (input.assigneeId) {
       await assertAssignable(tx, project.id, input.assigneeId);
     }
-    const problem = creationValuesProblem(await lockedPropertyRules(tx), input.properties);
+    const settings = await fieldSettingsOf(tx, project.id);
+    if (settings.category.required && input.categoryId === undefined) {
+      throw new HttpError(400, 'CATEGORY_REQUIRED', 'This project asks for a category');
+    }
+    if (settings.priority.required && input.priorityId === undefined) {
+      throw new HttpError(400, 'PRIORITY_REQUIRED', 'This project asks for a priority');
+    }
+    const problem = creationValuesProblem(
+      await lockedPropertyRules(tx, project.id),
+      input.properties,
+    );
     if (problem) {
       const [code, message] = PROPERTY_REFUSALS[problem.problem];
       throw new HttpError(400, code, message);

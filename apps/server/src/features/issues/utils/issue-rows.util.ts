@@ -9,7 +9,7 @@ import {
 } from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 
-const { issueLabels, issues, labels, properties, propertyOptions } = schema;
+const { issueLabels, issues, labels, projectProperties, properties, propertyOptions } = schema;
 
 /**
  * The labels of the issue a row is about, by name, as a column of the query itself: read from
@@ -26,8 +26,9 @@ export const labelsOfIssue = sql<LabelRef[]>`coalesce((
 
 /**
  * The values of the properties of the issue a row is about, oldest property first, as a column
- * of the query itself: those shown in the list, or all of them. Values are compared as text, so
- * that one naming no option (none should) is left out rather than failing the query.
+ * of the query itself: those shown in the list, or all of them, of the properties its project
+ * takes (not one it hides). Values are compared as text, so that one naming no option (none
+ * should) is left out rather than failing the query.
  */
 export function propertyValuesOfIssue({ listedOnly }: { listedOnly: boolean }) {
   return sql<IssuePropertyValue[]>`coalesce((
@@ -47,7 +48,15 @@ export function propertyValuesOfIssue({ listedOnly }: { listedOnly: boolean }) {
     join ${propertyOptions} on ${propertyOptions.id}::text = chosen.option_id
       and ${propertyOptions.propertyId}::text = chosen.property_id
     join ${properties} on ${properties.id} = ${propertyOptions.propertyId}
-    ${listedOnly ? sql`where ${properties.shownInList}` : sql``}
+    where (${properties.projectId} = ${issues.projectId} or (
+      ${properties.projectId} is null and not exists (
+        select 1 from ${projectProperties}
+        where ${projectProperties.projectId} = ${issues.projectId}
+          and ${projectProperties.propertyId} = ${properties.id}
+          and ${projectProperties.hidden}
+      )
+    ))
+    ${listedOnly ? sql`and ${properties.shownInList}` : sql``}
   ), '[]'::json)`;
 }
 

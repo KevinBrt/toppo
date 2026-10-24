@@ -11,6 +11,12 @@ Each step ends with a working demo, green CI and updated docs. Anything touching
 - [ ] Leave the release-please pull request open until 0.1 is ready: merging it publishes the version and the `latest` image.
 - [x] Answer the [open questions](#open-questions) needed by step 2: categories, priorities and labels are instance-wide lists.
 
+## Next up
+
+1. Step 4, last delivery of properties: multi-select, text, number, date, user and checkbox types, then filtering the issue list by property. It changes the schema: propose the plan first.
+2. Close step 4: tick it here and in [ARCHITECTURE.md](ARCHITECTURE.md#roadmap-to-01).
+3. Answer the [open question](#open-questions) on lost passwords without email, then step 5, the 0.1 release.
+
 ## Step 1: roles, permissions and users
 
 _Done when no route answers without a verified permission._
@@ -109,24 +115,16 @@ _Done when an issue is found in under 3 seconds._
 - [x] Comments in plain text, shown as written with their line breaks; edit and delete one's own; moderation permission.
 - [x] Attachments on an issue's request and on comments (migration 0027): images, PDF, text, CSV, Office and OpenDocument files, the type an extension names confirmed by the content; 20 MB each by default (`TOPPO_ATTACHMENT_MAX_SIZE_MB`), 20 per request or comment, uploads stopped below 1 GB free; stored under `/data/uploads` with random keys, swept once no row names them; downloads authorized and served as attachments, images and PDFs also inline. In the app (after the mockups): a drop zone in the new issue form, the request's files under its words, files in the comment box and with each comment, each removed after asking; images and text shown in a viewer, PDFs opened in the browser's viewer in a new tab, other files downloaded.
 - [x] Labels (migration 0028): one list for the instance, edited in the settings beside Priority and Category; no project labels; at most 100. Several per issue, given with `issue.update` in a menu that saves once closed; shown in the lists, which filter by them; a label deleted leaves its issues, told in their history.
-- [ ] Properties (Version, Team…), replacing custom fields: defined for the instance; a project adds its own, hides one or replaces its options; each shown in the issue list or not, asked at creation or not, then required or not. List type first, then multi-select, text, number, date, user, checkbox; visibility to requesters. Priority and Category join the same page as global properties: a project may hide them or require them at creation, their options staying one list for the instance (after the mockups).
+- [ ] Properties (Version, Team…), replacing custom fields: defined for the instance; a project adds its own, hides one or replaces its options; each shown in the issue list or not, asked at creation or not, then required or not. List type first, then multi-select, text, number, date, user, checkbox. Priority and Category join the same page as global properties: a project may hide them or require them at creation, their options staying one list for the instance (after the mockups).
   - [x] Lists of options defined for the instance (migration 0036): created, edited and deleted in Settings › Issue properties; shown in the lists as a chip beside the subject, asked at creation, required; changed beside the issue, told in its history.
-  - [ ] Project adaptation: hide one, replace its options, add a project's own; Priority and Category hidden or required per project.
+  - [x] Project adaptation (migration 0037): in the project's settings, Priority and Category hidden or required at creation; each of the instance's properties hidden or given options of its own; properties of the project's own.
   - [ ] Multi-select, text, number, date, user and checkbox properties; filtering the list by property.
-  - [ ] Visibility to requesters (with step 5).
 - [x] Background job queue in PostgreSQL (migration 0029, `FOR UPDATE SKIP LOCKED`): a worker in every server process, jobs queued through a command's transaction, retried with backoff, kept as failed after their last try, recurring jobs queued once; the attachment sweep runs on it.
 - [x] In-app notifications (migration 0030), fed by `activities` through a job: the assignee, the reporter, the commenters and the people named told of what concerns them, never who acted, only while they see the issue. A bell in the top bar with the unread count, the latest in a menu, every notification on a page; marked read one by one or all at once; read ones pruned after 90 days. Mentions with `@` in comments and their edits, among the people who see the issue.
 - [x] Email (migrations 0031 and 0032): SMTP settings in the admin (password sealed with the instance key, never sent back), a test email that says why the server refused it, invitations emailed, password reset by email (token stored as a hash, every device signed out), notifications emailed 5 minutes later unless read in Toppo, each kind turned off in one's account (migration 0035); every email in the language of whoever receives it.
 - [x] New issues told to the roles that ask for it (migrations 0033 and 0034): a setting of each role in the matrix, Administrator and Team on, Requester off, the system role free to turn it off; the issue's assignee told at creation.
 
-## Step 5: requester portal
-
-- [ ] Requesters see and follow only the issues they reported (`issue.read.own`), in a simplified interface.
-- [ ] Issue creation with only the fields visible to requesters.
-- [ ] Internal notes, visible to the team only (see the open question below).
-- [ ] End-to-end: a requester submits an issue, the team answers, the requester sees the answer but not the internal note.
-
-## Step 6: release 0.1
+## Step 5: release 0.1
 
 - [ ] Import from Mantis and Redmine (CSV first).
 - [ ] Migration tests: upgrade a database created by the previous version.
@@ -148,10 +146,6 @@ _Done when an issue is found in under 3 seconds._
 Needed before 0.1:
 
 - **Lost passwords** while email is not set up: with email, people reset their password themselves; without it, a member who forgets their password, or the only administrator, has no way back in. Proposed: an administrator creates a one-time reset link from the members list (like an invitation), and a recovery code printed in the logs on demand covers the last administrator.
-
-Needed for step 5:
-
-- **Internal notes**: a visibility flag on comments (proposed), or a separate kind of entry?
 
 ## Watch list
 

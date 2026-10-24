@@ -43,6 +43,11 @@ export const ISSUE_LIST_FILTERS = [
 
 export type IssueListFilter = (typeof ISSUE_LIST_FILTERS)[number];
 
+/** The fields a project may hide: its lists then neither show, filter, sort nor group by them. */
+export const HIDEABLE_FIELDS = ['priority', 'category'] as const;
+
+export type HideableField = (typeof HIDEABLE_FIELDS)[number];
+
 /** The issues of a page that share a group, in the order the server sent them. */
 export interface IssueSection<Issue> {
   /** The status, priority or assignee's id; null for no one, and for a list not grouped. */

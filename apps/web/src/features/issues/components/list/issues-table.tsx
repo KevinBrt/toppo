@@ -10,7 +10,7 @@ import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
 import { Pager } from '../../../../shared/layout/pager.tsx';
 import { SORT_LABELS } from '../../constants/issue-list.constants.ts';
-import type { IssueSection } from '../../models/issue-list.model.ts';
+import type { HideableField, IssueSection } from '../../models/issue-list.model.ts';
 import { sectionsOf } from '../../utils/issue-groups.util.ts';
 import { LabelChips } from '../fields/label-chips.tsx';
 import { PersonName } from '../fields/person-name.tsx';
@@ -44,12 +44,24 @@ export interface TableSorting {
   onSort: (sort: IssueSort) => void;
 }
 
+/** The widths from which a column may show, as Tailwind's breakpoints, narrowest first. */
+const BREAKPOINTS = [
+  { breakpoint: 'md', query: '(min-width: 48rem)', className: 'hidden md:table-cell' },
+  { breakpoint: 'xl', query: '(min-width: 80rem)', className: 'hidden xl:table-cell' },
+  { breakpoint: '2xl', query: '(min-width: 96rem)', className: 'hidden 2xl:table-cell' },
+] as const;
+
+type Breakpoint = (typeof BREAKPOINTS)[number]['breakpoint'];
+
 /** A column of the table: what heads it, what sorts by it, from which width it shows. */
 interface Column<Issue> {
   header: string;
   sort?: IssueSort | undefined;
-  /** Its width, and its `hidden md:table-cell` when it shows only from a width on. */
-  className: string;
+  width: string;
+  /** Shown from this width on; at any width without it. */
+  from?: Breakpoint;
+  /** The field a project may hide, gone with it. */
+  field?: HideableField;
   cell: (issue: Issue) => ReactNode;
 }
 
@@ -65,6 +77,7 @@ export function IssuesTable<Issue extends IssueSummary>({
   last,
   grouping,
   sorting,
+  hidden = [],
   onPage,
 }: {
   issues: UseQueryResult<IssuesPage<Issue>>;
@@ -73,10 +86,12 @@ export function IssuesTable<Issue extends IssueSummary>({
   last: LastColumn<Issue>;
   grouping?: IssueGrouping | undefined;
   sorting?: TableSorting | undefined;
+  /** The fields the project hides. */
+  hidden?: readonly HideableField[];
   onPage: (page: number) => void;
 }) {
   const { t, locale } = useI18n();
-  const shownColumns = useShownColumns();
+  const reached = useReachedBreakpoints();
 
   if (issues.isPending) {
     return (
@@ -96,11 +111,11 @@ export function IssuesTable<Issue extends IssueSummary>({
   // Across every page: the server counts each group whole.
   const sizeOf = (section: IssueSection<Issue>) =>
     groups?.find(({ key }) => key === section.key)?.count ?? section.issues.length;
-  const columns: Column<Issue>[] = [
+  const allColumns: Column<Issue>[] = [
     {
       header: t(SORT_LABELS.key),
       sort: 'key',
-      className: 'w-24',
+      width: 'w-24',
       cell: (issue) => (
         <span className="font-mono text-xs font-medium text-muted-foreground">{issue.key}</span>
       ),
@@ -108,7 +123,7 @@ export function IssuesTable<Issue extends IssueSummary>({
     {
       header: t(SORT_LABELS.title),
       sort: 'title',
-      className: '',
+      width: '',
       cell: (issue) => (
         <span className="flex min-w-0 items-center gap-2">
           <Link
@@ -134,13 +149,16 @@ export function IssuesTable<Issue extends IssueSummary>({
     {
       header: t(SORT_LABELS.reporter),
       sort: 'reporter',
-      className: 'hidden w-40 2xl:table-cell',
+      width: 'w-40',
+      from: '2xl',
       cell: (issue) => <PersonName person={issue.reporter} withAvatar={false} />,
     },
     {
       header: t(SORT_LABELS.category),
       sort: 'category',
-      className: 'hidden w-36 2xl:table-cell',
+      width: 'w-36',
+      from: '2xl',
+      field: 'category',
       cell: (issue) => (
         <Badge tone={issue.category.color} className="max-w-full">
           <span className="truncate">{issue.category.name}</span>
@@ -150,19 +168,22 @@ export function IssuesTable<Issue extends IssueSummary>({
     {
       header: t(SORT_LABELS.priority),
       sort: 'priority',
-      className: 'hidden w-32 md:table-cell',
+      width: 'w-32',
+      from: 'md',
+      field: 'priority',
       cell: (issue) => <PriorityLabel priority={issue.priority} />,
     },
     {
       header: t(SORT_LABELS.status),
       sort: 'status',
-      className: 'w-36',
+      width: 'w-36',
       cell: (issue) => <StatusLabel status={issue.status} />,
     },
     {
       header: t(SORT_LABELS.updated),
       sort: 'updated',
-      className: 'hidden w-28 xl:table-cell',
+      width: 'w-28',
+      from: 'xl',
       cell: (issue) => (
         <time dateTime={issue.updatedAt} className="text-muted-foreground">
           {formatRelativeTime(issue.updatedAt, locale)}
@@ -172,10 +193,15 @@ export function IssuesTable<Issue extends IssueSummary>({
     {
       header: last.header,
       sort: last.sort,
-      className: 'hidden w-44 xl:table-cell',
+      width: 'w-44',
+      from: 'xl',
       cell: last.cell,
     },
   ];
+  const columns = allColumns.filter(({ field }) => !(field && hidden.includes(field)));
+  // A group's title spans exactly the columns shown: spanning more would add empty columns,
+  // which take their room from the subject.
+  const shownColumns = columns.filter(({ from }) => !from || reached.includes(from)).length;
   return (
     <section
       aria-busy={issues.isPlaceholderData}
@@ -215,7 +241,10 @@ export function IssuesTable<Issue extends IssueSummary>({
                   className="relative transition-[background-color] hover:bg-surface-hover"
                 >
                   {columns.map((column) => (
-                    <td key={column.header} className={cn(column.className, CELL_PADDING, 'py-3')}>
+                    <td
+                      key={column.header}
+                      className={cn(classNameOf(column), CELL_PADDING, 'py-3')}
+                    >
                       {column.cell(issue)}
                     </td>
                   ))}
@@ -226,7 +255,13 @@ export function IssuesTable<Issue extends IssueSummary>({
         })}
       </table>
       <div className="sm:hidden">
-        <IssueCards sections={sections} grouping={grouping} sizeOf={sizeOf} last={last} />
+        <IssueCards
+          sections={sections}
+          grouping={grouping}
+          sizeOf={sizeOf}
+          last={last}
+          showsPriority={!hidden.includes('priority')}
+        />
       </div>
       <Pager
         page={page}
@@ -243,6 +278,11 @@ export function IssuesTable<Issue extends IssueSummary>({
 /** Room between columns, and more at both ends of a row. */
 const CELL_PADDING = 'px-2 first:pl-4 last:pr-4';
 
+/** A column's width, and its `hidden md:table-cell` when it shows only from a width on. */
+function classNameOf<Issue>({ width, from }: Column<Issue>): string {
+  return cn(width, BREAKPOINTS.find(({ breakpoint }) => breakpoint === from)?.className);
+}
+
 /**
  * A column's header: a button sorting the list by it when the list is sortable and the server
  * can, its arrow saying in which order.
@@ -255,7 +295,7 @@ function ColumnHeader<Issue>({
   sorting: TableSorting | undefined;
 }) {
   const sort = column.sort;
-  const className = cn(column.className, CELL_PADDING, 'py-2.5 font-medium');
+  const className = cn(classNameOf(column), CELL_PADDING, 'py-2.5 font-medium');
   if (!(sorting && sort)) {
     return (
       <th scope="col" className={className}>
@@ -290,22 +330,8 @@ function ColumnHeader<Issue>({
   );
 }
 
-/** The columns always shown: the key, the subject and the status. */
-const BASE_COLUMNS = 3;
-
-/**
- * The columns that join from a width on, as their `md:`, `xl:` and `2xl:` classes show them
- * (Tailwind's breakpoints): the priority, then the last change and the last column, then the
- * requester and the category.
- */
-const WIDER_COLUMNS = [
-  { query: '(min-width: 48rem)', count: 1 },
-  { query: '(min-width: 80rem)', count: 2 },
-  { query: '(min-width: 96rem)', count: 2 },
-] as const;
-
 function subscribeToWidths(onChange: () => void): () => void {
-  const lists = WIDER_COLUMNS.map(({ query }) => window.matchMedia(query));
+  const lists = BREAKPOINTS.map(({ query }) => window.matchMedia(query));
   for (const list of lists) {
     list.addEventListener('change', onChange);
   }
@@ -316,16 +342,12 @@ function subscribeToWidths(onChange: () => void): () => void {
   };
 }
 
-/**
- * How many columns the table shows at the current width. A group's title spans exactly them:
- * spanning more would add empty columns, which take their room from the subject.
- */
-function useShownColumns(): number {
-  return useSyncExternalStore(subscribeToWidths, () =>
-    WIDER_COLUMNS.reduce(
-      (count, { query, count: joining }) =>
-        window.matchMedia(query).matches ? count + joining : count,
-      BASE_COLUMNS,
-    ),
-  );
+/** How many breakpoints the screen reaches, narrowest first: a number, stable between renders. */
+const reachedCount = () =>
+  BREAKPOINTS.filter(({ query }) => window.matchMedia(query).matches).length;
+
+/** The breakpoints the screen reaches at its current width. */
+function useReachedBreakpoints(): readonly Breakpoint[] {
+  const count = useSyncExternalStore(subscribeToWidths, reachedCount);
+  return BREAKPOINTS.slice(0, count).map(({ breakpoint }) => breakpoint);
 }

@@ -3,7 +3,7 @@ import { schema } from '@toppo/db';
 import { type IssueFieldsResponse, projectIssuesParamsSchema } from '@toppo/shared';
 import { asc, eq, isNull, or, sql } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
-import { propertyFields } from '../utils/issue-properties.util.ts';
+import { fieldSettingsOf, propertyFields } from '../utils/issue-properties.util.ts';
 
 const {
   issueCategories,
@@ -30,50 +30,53 @@ export const getIssueFields = defineQuery({
       .from(workflows)
       .where(or(isNull(workflows.projectId), eq(workflows.projectId, project.id)));
     const workflow = effectiveWorkflow(candidates, project.id);
-    const [steps, transitions, categories, levels, tags, fields] = await Promise.all([
-      db
-        .select({
-          id: statuses.id,
-          name: statuses.name,
-          color: statuses.color,
-          closes: statuses.closes,
-          isInitial: workflowStatuses.isInitial,
-        })
-        .from(workflowStatuses)
-        .innerJoin(statuses, eq(statuses.id, workflowStatuses.statusId))
-        .where(eq(workflowStatuses.workflowId, workflow.id))
-        .orderBy(asc(workflowStatuses.position)),
-      db
-        .select({
-          fromStatusId: workflowTransitions.fromStatusId,
-          toStatusId: workflowTransitions.toStatusId,
-        })
-        .from(workflowTransitions)
-        .where(eq(workflowTransitions.workflowId, workflow.id)),
-      db
-        .select({
-          id: issueCategories.id,
-          name: issueCategories.name,
-          color: issueCategories.color,
-          isDefault: issueCategories.isDefault,
-        })
-        .from(issueCategories)
-        .orderBy(asc(issueCategories.position)),
-      db
-        .select({
-          id: priorities.id,
-          name: priorities.name,
-          level: priorities.level,
-          isDefault: priorities.isDefault,
-        })
-        .from(priorities)
-        .orderBy(asc(priorities.level)),
-      db
-        .select({ id: labels.id, name: labels.name, color: labels.color })
-        .from(labels)
-        .orderBy(sql`lower(${labels.name})`, asc(labels.id)),
-      propertyFields(db),
-    ]);
+    const [steps, transitions, categories, levels, tags, fields, fieldSettings] = await Promise.all(
+      [
+        db
+          .select({
+            id: statuses.id,
+            name: statuses.name,
+            color: statuses.color,
+            closes: statuses.closes,
+            isInitial: workflowStatuses.isInitial,
+          })
+          .from(workflowStatuses)
+          .innerJoin(statuses, eq(statuses.id, workflowStatuses.statusId))
+          .where(eq(workflowStatuses.workflowId, workflow.id))
+          .orderBy(asc(workflowStatuses.position)),
+        db
+          .select({
+            fromStatusId: workflowTransitions.fromStatusId,
+            toStatusId: workflowTransitions.toStatusId,
+          })
+          .from(workflowTransitions)
+          .where(eq(workflowTransitions.workflowId, workflow.id)),
+        db
+          .select({
+            id: issueCategories.id,
+            name: issueCategories.name,
+            color: issueCategories.color,
+            isDefault: issueCategories.isDefault,
+          })
+          .from(issueCategories)
+          .orderBy(asc(issueCategories.position)),
+        db
+          .select({
+            id: priorities.id,
+            name: priorities.name,
+            level: priorities.level,
+            isDefault: priorities.isDefault,
+          })
+          .from(priorities)
+          .orderBy(asc(priorities.level)),
+        db
+          .select({ id: labels.id, name: labels.name, color: labels.color })
+          .from(labels)
+          .orderBy(sql`lower(${labels.name})`, asc(labels.id)),
+        propertyFields(db, project.id),
+        fieldSettingsOf(db, project.id),
+      ],
+    );
     const moves = { mode: workflow.mode, statusIds: steps.map(({ id }) => id), transitions };
 
     return {
@@ -85,6 +88,7 @@ export const getIssueFields = defineQuery({
       })),
       labels: tags,
       properties: fields,
+      fieldSettings,
     };
   },
 });

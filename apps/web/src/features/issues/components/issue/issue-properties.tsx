@@ -60,47 +60,51 @@ export function IssueProperties({
             }}
           />
         </Property>
-        <Property label={t('issues.priority')}>
-          <FieldMenu
-            label={t('issues.priority')}
-            disabled={!editsFields}
-            value={issue.priority.id}
-            options={(fields?.priorities ?? [issue.priority]).map((priority) => ({
-              value: priority.id,
-              text: priority.name,
-              content: <PriorityLabel priority={priority} />,
-            }))}
-            onChange={(priorityId) => {
-              const priority = fields?.priorities.find(({ id }) => id === priorityId);
-              if (priority) {
-                const { id, name, level } = priority;
-                onEdit({ field: 'priority', priority: { id, name, level } });
-              }
-            }}
-          />
-        </Property>
+        {fields?.fieldSettings.priority.hidden ? null : (
+          <Property label={t('issues.priority')}>
+            <FieldMenu
+              label={t('issues.priority')}
+              disabled={!editsFields}
+              value={issue.priority.id}
+              options={(fields?.priorities ?? [issue.priority]).map((priority) => ({
+                value: priority.id,
+                text: priority.name,
+                content: <PriorityLabel priority={priority} />,
+              }))}
+              onChange={(priorityId) => {
+                const priority = fields?.priorities.find(({ id }) => id === priorityId);
+                if (priority) {
+                  const { id, name, level } = priority;
+                  onEdit({ field: 'priority', priority: { id, name, level } });
+                }
+              }}
+            />
+          </Property>
+        )}
         <Property label={t('issues.assignee')}>
           <AssigneeField issue={issue} onEdit={onEdit} />
         </Property>
-        <Property label={t('issues.category')}>
-          <FieldMenu
-            label={t('issues.category')}
-            disabled={!editsFields}
-            value={issue.category.id}
-            options={(fields?.categories ?? [issue.category]).map((category) => ({
-              value: category.id,
-              text: category.name,
-              content: category.name,
-            }))}
-            onChange={(categoryId) => {
-              const category = fields?.categories.find(({ id }) => id === categoryId);
-              if (category) {
-                const { id, name, color } = category;
-                onEdit({ field: 'category', category: { id, name, color } });
-              }
-            }}
-          />
-        </Property>
+        {fields?.fieldSettings.category.hidden ? null : (
+          <Property label={t('issues.category')}>
+            <FieldMenu
+              label={t('issues.category')}
+              disabled={!editsFields}
+              value={issue.category.id}
+              options={(fields?.categories ?? [issue.category]).map((category) => ({
+                value: category.id,
+                text: category.name,
+                content: category.name,
+              }))}
+              onChange={(categoryId) => {
+                const category = fields?.categories.find(({ id }) => id === categoryId);
+                if (category) {
+                  const { id, name, color } = category;
+                  onEdit({ field: 'category', category: { id, name, color } });
+                }
+              }}
+            />
+          </Property>
+        )}
         <Property label={t('issues.labels')}>
           <LabelsField
             labels={issue.labels}

@@ -7,7 +7,13 @@ import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.t
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { Issues } from '../../api/issues.api.ts';
 import { IssuesQueries } from '../../queries/issues.queries.ts';
-import { isNarrowed, orderOf, sortedBy, sortOf } from '../../utils/issue-list.util.ts';
+import {
+  hiddenFieldsOf,
+  isNarrowed,
+  orderOf,
+  sortedBy,
+  sortOf,
+} from '../../utils/issue-list.util.ts';
 import { AssigneeDialog } from '../fields/assignee-dialog.tsx';
 import { PersonName } from '../fields/person-name.tsx';
 import { IssuesTable } from './issues-table.tsx';
@@ -19,8 +25,9 @@ const KNOWN_ERRORS = {
 } as const;
 
 /**
- * One page of a project's issues as the toolbar asks for them, each row opening its issue. Who
- * may assign issues gives an unassigned one to someone from the list.
+ * One page of a project's issues as the toolbar asks for them, each row opening its issue, the
+ * fields the project hides left out. Who may assign issues gives an unassigned one to someone
+ * from the list.
  */
 export function IssuesList({
   projectKey,
@@ -41,6 +48,8 @@ export function IssuesList({
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const issues = useQuery(IssuesQueries.list(projectKey, query));
+  const fields = useQuery(IssuesQueries.fields(projectKey));
+  const hidden = hiddenFieldsOf(fields.data?.fieldSettings);
   const [failure, setFailure] = useState<unknown>(null);
 
   const assign = useMutation({
@@ -58,6 +67,7 @@ export function IssuesList({
         query={query}
         seesEveryIssue={seesEveryIssue}
         canListPeople={canAssign}
+        hidden={hidden}
         onQueryChange={onQueryChange}
       />
       {failure ? (
@@ -66,6 +76,7 @@ export function IssuesList({
       <IssuesTable
         issues={issues}
         grouping={query.group}
+        hidden={hidden}
         empty={
           isNarrowed(query) ? (
             <EmptyState

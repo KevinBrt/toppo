@@ -119,3 +119,47 @@ test('an administrator adds a property, issues take it at creation and beside th
     .click();
   await expect(page.getByRole('button', { name: new RegExp(`^${name}`) })).toHaveCount(0);
 });
+
+test('a project requires the category and adds a property of its own, asked of its new issues', async ({
+  page,
+  baseURL,
+}) => {
+  const suffix = randomInt(36 ** 5)
+    .toString(36)
+    .toUpperCase();
+  const key = `R${suffix}`;
+  const created = await page.request.post('/api/v1/projects', {
+    headers: { origin: baseURL ?? '' },
+    data: { key, name: `Sprints ${key}` },
+  });
+  expect(created.status()).toBe(201);
+  await page.goto(`/projects/${key}/properties`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Issue properties' })).toBeVisible();
+  await page.getByRole('switch', { name: 'Required at creation, Category' }).click();
+  await expect(page.getByRole('switch', { name: 'Required at creation, Category' })).toBeChecked();
+  await expectAccessible(page);
+
+  await page.getByRole('button', { name: 'New property' }).click();
+  const panel = page.getByRole('dialog', { name: 'New property' });
+  await panel.getByRole('textbox', { name: 'Name' }).fill('Sprint');
+  await panel.getByRole('textbox', { name: 'New option' }).fill('Sprint 12');
+  await panel.getByRole('button', { name: 'Add', exact: true }).click();
+  await panel.getByRole('switch', { name: 'Asked when an issue is reported' }).click();
+  await panel.getByRole('button', { name: 'Save' }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Sprint Sprint 12/ })).toBeVisible();
+
+  await page.goto(`/issues/new?project=${key}`);
+  await page.getByRole('textbox', { name: 'Subject' }).fill('Plan the next sprint');
+  await expect(page.getByRole('radio', { name: 'Request' })).not.toBeChecked();
+  await page.getByRole('button', { name: 'Create the issue' }).click();
+  await expect(page.getByText('Choose a value: it is required.')).toBeVisible();
+  await expectAccessible(page);
+  await page.getByRole('radio', { name: 'Bug' }).check();
+  await page.getByRole('combobox', { name: 'Sprint' }).selectOption('Sprint 12');
+  await page.getByRole('button', { name: 'Create the issue' }).click();
+
+  const sidebar = page.getByRole('complementary', { name: 'Properties' });
+  await expect(sidebar.getByRole('button', { name: 'Sprint, Sprint 12' })).toBeVisible();
+  await expect(sidebar.getByRole('button', { name: 'Category, Bug' })).toBeVisible();
+});

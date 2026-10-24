@@ -1,6 +1,7 @@
 import { PALETTE_COLORS } from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   index,
   integer,
@@ -32,6 +33,14 @@ export const projects = pgTable(
      * row: two issues never share a number, and a deleted issue's number is never reused.
      */
     nextIssueNumber: integer('next_issue_number').notNull().default(1),
+    /**
+     * How the project adapts the issues' category and priority: hidden from its forms, list and
+     * issues (they keep the default), or asked at creation without a default chosen.
+     */
+    categoryHidden: boolean('category_hidden').notNull().default(false),
+    categoryRequired: boolean('category_required').notNull().default(false),
+    priorityHidden: boolean('priority_hidden').notNull().default(false),
+    priorityRequired: boolean('priority_required').notNull().default(false),
     ...timestamps,
   },
   (table) => [
@@ -44,6 +53,14 @@ export const projects = pgTable(
       sql`${table.color} in ('gray', 'blue', 'green', 'amber', 'violet', 'cyan', 'orange', 'pink')`,
     ),
     check('projects_next_issue_number_positive', sql`${table.nextIssueNumber} >= 1`),
+    check(
+      'projects_category_hidden_or_required',
+      sql`not (${table.categoryHidden} and ${table.categoryRequired})`,
+    ),
+    check(
+      'projects_priority_hidden_or_required',
+      sql`not (${table.priorityHidden} and ${table.priorityRequired})`,
+    ),
   ],
 );
 

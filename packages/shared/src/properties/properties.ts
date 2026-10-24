@@ -93,22 +93,21 @@ export const propertyParamsSchema = z.object({ propertyId: z.uuid() });
 
 export const createPropertyResponseSchema = z.object({ id: z.uuid() });
 
-/** Body of `GET /api/v1/properties`: every property, oldest first, with what uses its options. */
+/** A property as the settings show it, each option with how many issues have it. */
+export const propertyRowSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  type: z.enum(PROPERTY_TYPES),
+  shownInList: z.boolean(),
+  askedAtCreation: z.boolean(),
+  required: z.boolean(),
+  /** In their order, each with how many issues have it. */
+  options: z.array(propertyOptionRefSchema.extend({ issueCount: z.number().int() })),
+});
+
+/** Body of `GET /api/v1/properties`: every property of the instance, oldest first. */
 export const propertiesResponseSchema = z.object({
-  properties: z
-    .array(
-      z.object({
-        id: z.uuid(),
-        name: z.string(),
-        type: z.enum(PROPERTY_TYPES),
-        shownInList: z.boolean(),
-        askedAtCreation: z.boolean(),
-        required: z.boolean(),
-        /** In their order, each with how many issues have it. */
-        options: z.array(propertyOptionRefSchema.extend({ issueCount: z.number().int() })),
-      }),
-    )
-    .max(PROPERTIES_MAX),
+  properties: z.array(propertyRowSchema).max(PROPERTIES_MAX),
 });
 
 export type PropertiesResponse = z.infer<typeof propertiesResponseSchema>;
@@ -140,3 +139,62 @@ export type IssuePropertyValue = z.infer<typeof issuePropertyValueSchema>;
 export const issuePropertyRequestSchema = z.object({ optionId: z.uuid().nullable() });
 
 export type IssuePropertyRequest = z.infer<typeof issuePropertyRequestSchema>;
+
+/** How a project adapts one of the issues' fields: hidden there, or asked without a default. */
+export const projectFieldSettingSchema = z
+  .object({ hidden: z.boolean(), required: z.boolean() })
+  .refine(({ hidden, required }) => !(hidden && required), {
+    message: 'A hidden field cannot be required',
+  });
+
+/**
+ * Body of `PUT /api/v1/projects/:projectKey/fields`: how the project adapts the category and the
+ * priority of its issues.
+ */
+export const projectFieldsSchema = z.object({
+  category: projectFieldSettingSchema,
+  priority: projectFieldSettingSchema,
+});
+
+export type ProjectFields = z.infer<typeof projectFieldsSchema>;
+
+/**
+ * Body of `PUT /api/v1/projects/:projectKey/properties/:propertyId/adaptation`: how the project
+ * adapts a property of the instance. With `options`, its own options in their order, and those
+ * it removes, replace the instance's there (starting from them, by their ids); `null` takes the
+ * instance's again.
+ */
+export const propertyAdaptationRequestSchema = z.object({
+  hidden: z.boolean(),
+  options: z
+    .object({
+      options: z
+        .array(propertyOptionDraftSchema)
+        .min(1)
+        .max(PROPERTY_OPTIONS_MAX)
+        .superRefine(checkDistinctOptions),
+      removed: z.array(z.uuid()).max(PROPERTY_OPTIONS_MAX),
+    })
+    .refine(
+      ({ options, removed }) => !options.some(({ id }) => id !== undefined && removed.includes(id)),
+      { message: 'An option is kept and removed', path: ['removed'] },
+    )
+    .nullable(),
+});
+
+export type PropertyAdaptationRequest = z.input<typeof propertyAdaptationRequestSchema>;
+
+/**
+ * Body of `GET /api/v1/projects/:projectKey/properties`: how the project adapts the category, the
+ * priority and the instance's properties, then its own properties, each option with how many of
+ * the project's issues have it.
+ */
+export const projectPropertiesResponseSchema = z.object({
+  fields: projectFieldsSchema,
+  /** Oldest first, with the project's own options where it has them. */
+  instance: z.array(propertyRowSchema.extend({ hidden: z.boolean(), ownOptions: z.boolean() })),
+  /** Oldest first. */
+  own: z.array(propertyRowSchema),
+});
+
+export type ProjectPropertiesResponse = z.infer<typeof projectPropertiesResponseSchema>;

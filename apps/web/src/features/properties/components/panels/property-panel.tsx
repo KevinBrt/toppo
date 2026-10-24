@@ -15,7 +15,6 @@ import {
   SidePanelClose,
   SidePanelContent,
   SortableList,
-  Switch,
 } from '@toppo/ui';
 import { Trash2Icon } from 'lucide-react';
 import { type FormEvent, useId, useState } from 'react';
@@ -23,6 +22,7 @@ import { fieldErrors, requestErrorMessage } from '../../../../shared/forms/form-
 import { sortableMessages } from '../../../../shared/forms/sortable-messages.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
+import { ProjectProperties } from '../../api/project-properties.api.ts';
 import { Properties } from '../../api/properties.api.ts';
 import type { OptionDraft } from '../../models/option-draft.model.ts';
 import { PropertiesQueries } from '../../queries/properties.queries.ts';
@@ -36,6 +36,7 @@ import { AddOption } from '../options/add-option.tsx';
 import { CategoryOption } from '../options/category-option.tsx';
 import { OptionsSection } from '../options/options-section.tsx';
 import { DeletePropertyDialog } from './delete-property-dialog.tsx';
+import { SettingSwitch } from './setting-switch.tsx';
 
 const KNOWN_ERRORS = {
   PROPERTY_CHANGED: 'properties.changed',
@@ -46,25 +47,31 @@ const KNOWN_ERRORS = {
 } as const;
 
 /**
- * A property of the instance edited beside the page, or a new one: its name, its options, where
- * it shows and whether it is asked at creation, saved at once. Reports the save, or the deletion.
+ * A property of the instance, or of one project, edited beside the page, or a new one: its name,
+ * its options, where it shows and whether it is asked at creation, saved at once. Reports the
+ * save, or the deletion.
  */
 export function PropertyPanel({
   open,
   onOpenChange,
   property,
+  projectKey,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** `null` for a new property. */
   property: PropertyRow | null;
+  /** The project it belongs to; none for one of the instance. */
+  projectKey?: string | undefined;
   onSaved: () => Promise<void> | void;
 }) {
   return (
     <SidePanel open={open} onOpenChange={onOpenChange}>
       {/* Mounted while open only: each opening starts again from what is saved. */}
-      {open ? <PropertyEditor property={property} onSaved={onSaved} /> : null}
+      {open ? (
+        <PropertyEditor property={property} projectKey={projectKey} onSaved={onSaved} />
+      ) : null}
     </SidePanel>
   );
 }
@@ -77,9 +84,11 @@ interface Settings {
 
 function PropertyEditor({
   property,
+  projectKey,
   onSaved,
 }: {
   property: PropertyRow | null;
+  projectKey: string | undefined;
   onSaved: () => Promise<void> | void;
 }) {
   const { t, locale } = useI18n();
@@ -121,15 +130,14 @@ function PropertyEditor({
         name: optionName,
         color,
       }));
-      if (property) {
-        await Properties.update(property.id, {
-          name,
-          ...settings,
-          options,
-          removed: removed.map(({ id }) => id),
-        });
+      const update = { name, ...settings, options, removed: removed.map(({ id }) => id) };
+      const create = { name, type: 'list' as const, ...settings, options };
+      if (projectKey) {
+        await (property
+          ? ProjectProperties.update(projectKey, property.id, update)
+          : ProjectProperties.create(projectKey, create));
       } else {
-        await Properties.create({ name, type: 'list', ...settings, options });
+        await (property ? Properties.update(property.id, update) : Properties.create(create));
       }
     },
     onSuccess: done,
@@ -176,7 +184,9 @@ function PropertyEditor({
   return (
     <SidePanelContent
       title={property ? property.name : t('properties.newProperty')}
-      description={t('properties.customDescription')}
+      description={
+        projectKey ? t('projectProperties.ownDescription') : t('properties.customDescription')
+      }
       closeLabel={t('properties.close')}
       footer={
         <>
@@ -290,6 +300,7 @@ function PropertyEditor({
             </Button>
             <DeletePropertyDialog
               property={property}
+              projectKey={projectKey}
               open={deleting}
               onOpenChange={setDeleting}
               onDeleted={done}
@@ -298,42 +309,5 @@ function PropertyEditor({
         ) : null}
       </form>
     </SidePanelContent>
-  );
-}
-
-/** One setting of the property: what it does, a line of help, and its switch. */
-function SettingSwitch({
-  label,
-  help,
-  checked,
-  disabled = false,
-  onChange,
-}: {
-  label: string;
-  help: string;
-  checked: boolean;
-  disabled?: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  const labelId = useId();
-  const helpId = useId();
-  return (
-    <div className="flex items-center justify-between gap-4 px-3 py-2.5">
-      <div className="min-w-0">
-        <p id={labelId} className="text-sm font-medium text-foreground">
-          {label}
-        </p>
-        <p id={helpId} className="text-xs text-muted-foreground">
-          {help}
-        </p>
-      </div>
-      <Switch
-        checked={checked}
-        disabled={disabled}
-        aria-labelledby={labelId}
-        aria-describedby={helpId}
-        onCheckedChange={onChange}
-      />
-    </div>
   );
 }

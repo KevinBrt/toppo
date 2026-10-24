@@ -1,4 +1,4 @@
-import { CircleDotIcon, SlidersHorizontalIcon, UsersIcon } from 'lucide-react';
+import { CircleDotIcon, ListIcon, SlidersHorizontalIcon, UsersIcon } from 'lucide-react';
 import type { NavSection } from '../../../shared/layout/navigation.constants.ts';
 
 /** A project's own pages, each shown to those who manage that part of it. */
@@ -22,6 +22,12 @@ export const PROJECT_ADMIN_NAV: readonly NavSection[] = [
         to: '/projects/$projectKey/statuses',
         labelKey: 'projectAdmin.statuses',
         icon: CircleDotIcon,
+        requiresAnyOf: ['project.settings.manage'],
+      },
+      {
+        to: '/projects/$projectKey/properties',
+        labelKey: 'projectAdmin.properties',
+        icon: ListIcon,
         requiresAnyOf: ['project.settings.manage'],
       },
     ],

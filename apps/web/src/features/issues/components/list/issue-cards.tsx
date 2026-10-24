@@ -17,11 +17,13 @@ export function IssueCards<Issue extends IssueSummary>({
   grouping,
   sizeOf,
   last,
+  showsPriority,
 }: {
   sections: readonly IssueSection<Issue>[];
   grouping: IssueGrouping | undefined;
   sizeOf: (section: IssueSection<Issue>) => number;
   last: LastColumn<Issue>;
+  showsPriority: boolean;
 }) {
   return (
     <div className="divide-y divide-border">
@@ -36,7 +38,12 @@ export function IssueCards<Issue extends IssueSummary>({
             ) : null}
             <ul className="divide-y divide-border">
               {section.issues.map((issue) => (
-                <IssueCard key={issue.key} issue={issue} last={last} />
+                <IssueCard
+                  key={issue.key}
+                  issue={issue}
+                  last={last}
+                  showsPriority={showsPriority}
+                />
               ))}
             </ul>
           </div>
@@ -49,9 +56,11 @@ export function IssueCards<Issue extends IssueSummary>({
 function IssueCard<Issue extends IssueSummary>({
   issue,
   last,
+  showsPriority,
 }: {
   issue: Issue;
   last: LastColumn<Issue>;
+  showsPriority: boolean;
 }) {
   // Only the background eases: a card moving up gets its line at once, not fading from the text
   // color.
@@ -71,7 +80,7 @@ function IssueCard<Issue extends IssueSummary>({
       <LabelChips labels={issue.labels} max={3} />
       <PropertyChips values={issue.properties} />
       <span className="flex min-h-6 items-center justify-between gap-3 text-xs text-muted-foreground">
-        <PriorityLabel priority={issue.priority} />
+        {showsPriority ? <PriorityLabel priority={issue.priority} /> : <span />}
         <span className="min-w-0">{last.cell(issue)}</span>
       </span>
     </li>

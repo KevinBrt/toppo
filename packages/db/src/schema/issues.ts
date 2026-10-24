@@ -142,14 +142,16 @@ export const issues = pgTable(
 );
 
 /**
- * Properties of the issues (Version, Team…), defined for the whole instance in the settings: a
- * list of options for now. Each says whether it shows in the issue list and whether it is asked
- * at creation, then required.
+ * Properties of the issues (Version, Team…), defined for the whole instance in the settings, or
+ * for one project (`project_id`): a list of options for now. Each says whether it shows in the
+ * issue list and whether it is asked at creation, then required.
  */
 export const properties = pgTable(
   'properties',
   {
     id: id(),
+    /** The project it belongs to, or none for a property of the instance. */
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     type: text('type', { enum: PROPERTY_TYPES }).notNull(),
     shownInList: boolean('shown_in_list').notNull().default(false),
@@ -164,11 +166,23 @@ export const properties = pgTable(
     // Mirrors PROPERTY_TYPES (`@toppo/shared`).
     check('properties_type_check', sql`${table.type} in ('list')`),
     check('properties_required_if_asked', sql`${table.askedAtCreation} or not ${table.required}`),
-    uniqueIndex('properties_name_unique').on(sql`lower(${table.name})`),
+    // Each name once in the instance, and once in each project; the commands keep a project's
+    // own properties from taking the name of one of the instance's.
+    uniqueIndex('properties_instance_name_unique')
+      .on(sql`lower(${table.name})`)
+      .where(sql`${table.projectId} is null`),
+    uniqueIndex('properties_project_name_unique')
+      .on(table.projectId, sql`lower(${table.name})`)
+      .where(sql`${table.projectId} is not null`),
+    index('properties_project_id_idx').on(table.projectId),
   ],
 );
 
-/** The options of a list property, in their order; gone with their property. */
+/**
+ * The options of a list property, in their order; gone with their property. Those with a
+ * `project_id` are a project's own options of a property of the instance, replacing its options
+ * there (its own versions).
+ */
 export const propertyOptions = pgTable(
   'property_options',
   {
@@ -176,6 +190,7 @@ export const propertyOptions = pgTable(
     propertyId: uuid('property_id')
       .notNull()
       .references(() => properties.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     color: text('color', { enum: PALETTE_COLORS }).notNull().default('gray'),
     position: integer('position').notNull(),
@@ -189,8 +204,38 @@ export const propertyOptions = pgTable(
       'property_options_color_check',
       sql`${table.color} in ('gray', 'blue', 'green', 'amber', 'violet', 'cyan', 'orange', 'pink')`,
     ),
-    uniqueIndex('property_options_name_unique').on(table.propertyId, sql`lower(${table.name})`),
+    uniqueIndex('property_options_instance_name_unique')
+      .on(table.propertyId, sql`lower(${table.name})`)
+      .where(sql`${table.projectId} is null`),
+    uniqueIndex('property_options_project_name_unique')
+      .on(table.propertyId, table.projectId, sql`lower(${table.name})`)
+      .where(sql`${table.projectId} is not null`),
     index('property_options_property_id_idx').on(table.propertyId, table.position),
+    index('property_options_project_id_idx').on(table.projectId),
+  ],
+);
+
+/**
+ * How a project adapts a property of the instance: hidden there, or given options of its own
+ * (`property_options.project_id`). No row: the project takes the property as it is.
+ */
+export const projectProperties = pgTable(
+  'project_properties',
+  {
+    id: id(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    propertyId: uuid('property_id')
+      .notNull()
+      .references(() => properties.id, { onDelete: 'cascade' }),
+    hidden: boolean('hidden').notNull().default(false),
+    ownOptions: boolean('own_options').notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [
+    unique('project_properties_project_property_unique').on(table.projectId, table.propertyId),
+    index('project_properties_property_id_idx').on(table.propertyId),
   ],
 );
 

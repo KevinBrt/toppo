@@ -1,7 +1,11 @@
 import { z } from 'zod';
 import { PALETTE_COLORS } from '../colors.ts';
 import { projectKeySchema } from '../project-key.ts';
-import { issuePropertyFieldSchema, issuePropertyValueSchema } from '../properties/properties.ts';
+import {
+  issuePropertyFieldSchema,
+  issuePropertyValueSchema,
+  projectFieldsSchema,
+} from '../properties/properties.ts';
 import { issueDescriptionSchema, issueTitleSchema, PRIORITY_LEVELS } from './fields.ts';
 import { labelRefSchema } from './labels.ts';
 
@@ -19,6 +23,10 @@ export const issueKeyParamsSchema = z.object({ issueKey: issueKeySchema });
 export const issuePropertyParamsSchema = issueKeyParamsSchema.extend({ propertyId: z.uuid() });
 
 export const projectIssuesParamsSchema = z.object({ projectKey: projectKeySchema });
+
+export const projectPropertyParamsSchema = projectIssuesParamsSchema.extend({
+  propertyId: z.uuid(),
+});
 
 /** Someone an issue names: `name` is `null` once their account is deleted. */
 export const userRefSchema = z.object({ id: z.uuid(), name: z.string().nullable() });
@@ -301,8 +309,10 @@ export const issueFieldsResponseSchema = z.object({
   priorities: z.array(issuePrioritySchema.extend({ isDefault: z.boolean() })),
   /** Every label of the instance, by name. */
   labels: z.array(labelRefSchema),
-  /** Every property of the instance, oldest first. */
+  /** The properties of the project: the instance's it keeps, then its own, oldest first. */
   properties: z.array(issuePropertyFieldSchema),
+  /** Whether the project hides the category and the priority, or asks them without default. */
+  fieldSettings: projectFieldsSchema,
 });
 
 export type IssueFieldsResponse = z.infer<typeof issueFieldsResponseSchema>;

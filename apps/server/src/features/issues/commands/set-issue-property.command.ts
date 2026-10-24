@@ -1,17 +1,19 @@
 import { withPropertyValue } from '@toppo/core';
 import { schema } from '@toppo/db';
 import { issuePropertyParamsSchema, issuePropertyRequestSchema } from '@toppo/shared';
-import { and, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { recordActivity } from '../../../platform/activities/record-activity.ts';
-import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
+import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
+import { lockedPropertyRules } from '../utils/issue-properties.util.ts';
 
-const { issues, properties, propertyOptions } = schema;
+const { issues, propertyOptions } = schema;
 
 /**
- * Gives an issue an option of a property, or takes its value away (`issue.update`). The activity
- * names the property and the options as they are now; nothing changes, nothing is told.
+ * Gives an issue an option of a property of its project, or takes its value away
+ * (`issue.update`). The activity names the property and the options as they are now; nothing
+ * changes, nothing is told.
  */
 export const setIssueProperty = defineCommand({
   name: 'issue.setProperty',
@@ -19,16 +21,17 @@ export const setIssueProperty = defineCommand({
   input: issuePropertyParamsSchema.extend(issuePropertyRequestSchema.shape),
   async handler({ tx, actor, project, log }, { propertyId, optionId }): Promise<void> {
     const { issue } = project;
-    // Share-locked: the property and the option cannot be deleted while being given.
-    const [property] = await tx
-      .select({ id: properties.id, name: properties.name })
-      .from(properties)
-      .where(eq(properties.id, propertyId))
-      .for('share');
+    // Share-locked: the options cannot be deleted while being given.
+    const property = (await lockedPropertyRules(tx, project.id)).find(
+      ({ id }) => id === propertyId,
+    );
     if (!property) {
       throw new HttpError(404, 'PROPERTY_NOT_FOUND', 'This property does not exist');
     }
-    const option = optionId === null ? null : await lockedOption(tx, propertyId, optionId);
+    const option = optionId === null ? null : property.options.find(({ id }) => id === optionId);
+    if (option === undefined) {
+      throw new HttpError(400, 'INVALID_PROPERTY_OPTION', 'This option is not one of the property');
+    }
     // The issue locked: two changes of its properties apply one after the other.
     const [row] = await tx
       .select({ properties: issues.properties })
@@ -55,24 +58,12 @@ export const setIssueProperty = defineCommand({
       projectId: project.id,
       issueId: issue.id,
       actorId: actor.id,
-      ...activity('issue.propertyChanged', { property, from: current ?? null, to: option }),
+      ...activity('issue.propertyChanged', {
+        property: { id: property.id, name: property.name },
+        from: current ?? null,
+        to: option,
+      }),
     });
     log.info({ issueId: issue.id, propertyId, optionId, by: actor.id }, 'Issue property changed');
   },
 });
-
-async function lockedOption(
-  tx: Transaction,
-  propertyId: string,
-  optionId: string,
-): Promise<{ id: string; name: string }> {
-  const [option] = await tx
-    .select({ id: propertyOptions.id, name: propertyOptions.name })
-    .from(propertyOptions)
-    .where(and(eq(propertyOptions.id, optionId), eq(propertyOptions.propertyId, propertyId)))
-    .for('share');
-  if (!option) {
-    throw new HttpError(400, 'INVALID_PROPERTY_OPTION', 'This option is not one of the property');
-  }
-  return option;
-}

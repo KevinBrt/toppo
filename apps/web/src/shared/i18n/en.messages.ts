@@ -343,6 +343,7 @@ export const en = {
     general: 'General',
     access: 'Access',
     statuses: 'Statuses',
+    properties: 'Properties',
   },
   projectSettings: {
     title: 'General',
@@ -511,6 +512,39 @@ export const en = {
       mentioned: '{name} mentioned you in {key}',
       statusChanged: '{name} moved {key} to “{status}”',
     },
+  },
+  projectProperties: {
+    title: 'Issue properties',
+    description:
+      'How this project’s issues take the organization’s fields, and the properties of its own.',
+    loading: 'Loading properties…',
+    instanceSection: 'Organization fields',
+    instanceHint: 'defined for the whole organization',
+    ownSection: 'This project’s own',
+    ownHint: 'only in this project',
+    noOwn: 'No property of its own yet.',
+    ownDescription: 'A list of options only this project’s issues take.',
+    adaptDescription:
+      'How this project takes this property of the organization, without touching the other projects.',
+    hidden: 'Hidden in this project',
+    hiddenHelp: 'Left out of the forms, the list and the issues; their values stay.',
+    hiddenField: 'Hidden in this project, {name}',
+    requiredField: 'Required at creation, {name}',
+    required: 'Required at creation',
+    fieldsHelp:
+      'Hidden, issues keep the default. Required, nothing is chosen beforehand: whoever reports an issue picks one.',
+    ownOptions: 'Options of its own',
+    ownOptionsHelp:
+      'This project’s own list, starting from the organization’s, changed without touching the other projects.',
+    instanceOptions: 'The organization’s options',
+    backToInstance: 'Saving gives this project the organization’s options again; its own ones go.',
+    hiddenBadge: 'Hidden',
+    ownOptionsBadge: 'Own options',
+    takenOff: {
+      one: 'Saving takes an option off {count} issue of this project.',
+      other: 'Saving takes an option off {count} issues of this project.',
+    },
+    saved: 'Saved.',
   },
   properties: {
     title: 'Issue properties',

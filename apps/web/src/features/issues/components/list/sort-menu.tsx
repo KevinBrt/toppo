@@ -1,4 +1,4 @@
-import { ISSUE_SORT_ORDERS, ISSUE_SORTS, type IssueSort, type SortOrder } from '@toppo/shared';
+import { ISSUE_SORT_ORDERS, type IssueSort, type SortOrder } from '@toppo/shared';
 import {
   Button,
   DropdownMenu,
@@ -17,10 +17,13 @@ import { SORT_LABELS } from '../../constants/issue-list.constants.ts';
  * comes in its own order; the order can then be turned round.
  */
 export function SortMenu({
+  sorts,
   sort,
   order,
   onChange,
 }: {
+  /** The columns it offers. */
+  sorts: readonly IssueSort[];
   sort: IssueSort;
   order: SortOrder;
   onChange: (sort: IssueSort, order: SortOrder) => void;
@@ -40,13 +43,13 @@ export function SortMenu({
         <DropdownMenuRadioGroup
           value={sort}
           onValueChange={(value) => {
-            const chosen = ISSUE_SORTS.find((candidate) => candidate === value);
+            const chosen = sorts.find((candidate) => candidate === value);
             if (chosen) {
               onChange(chosen, ISSUE_SORT_ORDERS[chosen]);
             }
           }}
         >
-          {ISSUE_SORTS.map((value) => (
+          {sorts.map((value) => (
             <DropdownMenuRadioItem key={value} value={value}>
               {t(SORT_LABELS[value])}
             </DropdownMenuRadioItem>
