@@ -6,8 +6,10 @@ import { registerAttachmentRoutes } from './features/attachments/attachments.rou
 import { registerCategoryRoutes } from './features/categories/categories.routes.ts';
 import { registerCommentRoutes } from './features/comments/comments.routes.ts';
 import { registerInvitationRoutes } from './features/invitations/invitations.routes.ts';
+import { emailInvitationJob } from './features/invitations/jobs/email-invitation.job.ts';
 import { registerIssueRoutes } from './features/issues/issues.routes.ts';
 import { registerLabelRoutes } from './features/labels/labels.routes.ts';
+import { registerMailRoutes } from './features/mail/mail.routes.ts';
 import { notifyActivityJob } from './features/notifications/jobs/notify-activity.job.ts';
 import { pruneNotificationsJob } from './features/notifications/jobs/prune-notifications.job.ts';
 import { registerNotificationRoutes } from './features/notifications/notifications.routes.ts';
@@ -21,7 +23,9 @@ import { registerAccessControl } from './platform/auth/access-control.ts';
 import type { Auth } from './platform/auth/auth.ts';
 import { registerAuthRoutes } from './platform/auth/auth-routes.ts';
 import { registerMeRoute } from './platform/auth/me-route.ts';
+import { passwordResetMailJob } from './platform/auth/password-reset-mail.ts';
 import type { Config } from './platform/config/config.ts';
+import { createSecretBox } from './platform/config/secret-box.ts';
 import type { Services } from './platform/cqrs/cqrs.ts';
 import { registerExecutionContext } from './platform/cqrs/execution-context.ts';
 import { registerHealthRoute } from './platform/health/health-route.ts';
@@ -33,6 +37,7 @@ import { registerSecurityHeaders } from './platform/http/security-headers.ts';
 import { registerWebApp } from './platform/http/web-app.ts';
 import { serializerCompiler, validatorCompiler } from './platform/http/zod.ts';
 import type { RunnableJob } from './platform/jobs/jobs.ts';
+import { createMailer } from './platform/mail/mailer.ts';
 import { registerFileRoutes } from './platform/uploads/file-routes.ts';
 import type { FileStorage } from './platform/uploads/file-storage.ts';
 import { fileSweepJob } from './platform/uploads/file-sweeper.ts';
@@ -41,6 +46,8 @@ export interface AppDependencies {
   config: Pick<Config, 'publicUrl' | 'logLevel' | 'trustProxy'>;
   database: Pick<Database, 'db' | 'ping'>;
   auth: Auth;
+  /** The instance's key (`TOPPO_SECRET` or generated): signs sessions, seals stored secrets. */
+  secret: string;
   /** First-run code accepted by the setup wizard. */
   setupCode: string;
   /** Attached files, under `<dataDir>/uploads`. */
@@ -59,21 +66,33 @@ const REQUEST_TIMEOUT_MS = 300_000;
 /** What commands and queries may use besides the database. */
 export function createServices({
   auth,
+  secret,
   setupCode,
   files,
   publicUrl,
-}: Pick<AppDependencies, 'auth' | 'setupCode' | 'files'> & { publicUrl: URL }): Services {
+}: Pick<AppDependencies, 'auth' | 'secret' | 'setupCode' | 'files'> & {
+  publicUrl: URL;
+}): Services {
+  const secrets = createSecretBox(secret);
   return {
     hashPassword: async (password) => (await auth.$context).password.hash(password),
     setupCode,
     publicUrl,
     files,
+    secrets,
+    mailer: createMailer(secrets),
   };
 }
 
 /** Every job the workers run: each server process runs one worker, `main.ts` starts it. */
 export function createJobs({ files }: Pick<AppDependencies, 'files'>): RunnableJob[] {
-  return [fileSweepJob(files), notifyActivityJob, pruneNotificationsJob];
+  return [
+    fileSweepJob(files),
+    notifyActivityJob,
+    pruneNotificationsJob,
+    emailInvitationJob,
+    passwordResetMailJob,
+  ];
 }
 
 /** Builds the Fastify application without listening, so tests can drive it with `inject()`. */
@@ -81,6 +100,7 @@ export async function buildApp({
   config,
   database,
   auth,
+  secret,
   setupCode,
   files,
   webRoot,
@@ -109,7 +129,7 @@ export async function buildApp({
   registerAccessControl(app, { auth, db: database.db });
   registerExecutionContext(app, {
     db: database.db,
-    services: createServices({ auth, setupCode, files, publicUrl: config.publicUrl }),
+    services: createServices({ auth, secret, setupCode, files, publicUrl: config.publicUrl }),
   });
   registerFileRoutes(app, { files });
   app.addHook('onRequest', (request, reply, done) => {
@@ -134,6 +154,7 @@ export async function buildApp({
   registerCategoryRoutes(app);
   registerPriorityRoutes(app);
   registerLabelRoutes(app);
+  registerMailRoutes(app);
   registerNotificationRoutes(app);
   registerWorkflowRoutes(app);
 

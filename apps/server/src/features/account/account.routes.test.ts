@@ -79,3 +79,31 @@ describe('PATCH /api/v1/me', () => {
     expect(response.statusCode).toBe(401);
   });
 });
+
+describe('PUT /api/v1/me/locale', () => {
+  const setLocale = (body: object, sessionCookie = cookie) =>
+    app.inject({
+      method: 'PUT',
+      url: '/api/v1/me/locale',
+      headers: { origin: ORIGIN, cookie: sessionCookie },
+      body,
+    });
+
+  it('remembers the language the interface speaks, English until then', async () => {
+    const before = await app.inject({ method: 'GET', url: '/api/v1/me', headers: { cookie } });
+    expect(meResponseSchema.parse(before.json()).user?.locale).toBe('en');
+
+    expect((await setLocale({ locale: 'fr' })).statusCode).toBe(204);
+
+    const after = await app.inject({ method: 'GET', url: '/api/v1/me', headers: { cookie } });
+    expect(meResponseSchema.parse(after.json()).user?.locale).toBe('fr');
+    expect((await setLocale({ locale: 'en' })).statusCode).toBe(204);
+  });
+
+  it('refuses a language the interface does not speak, and needs a session', async () => {
+    const refused = await setLocale({ locale: 'de' });
+    expect(refused.statusCode).toBe(400);
+    expect(apiErrorSchema.parse(refused.json()).error.code).toBe('VALIDATION_FAILED');
+    expect((await setLocale({ locale: 'fr' }, '')).statusCode).toBe(401);
+  });
+});

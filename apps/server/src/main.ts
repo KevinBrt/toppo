@@ -36,17 +36,15 @@ function loadConfigOrExit(): Config {
 
 const config = loadConfigOrExit();
 const database = createDatabase({ url: config.databaseUrl });
-const auth = createAuth({
-  db: database.db,
-  secret: await resolveSecret(config.secret, config.dataDir),
-  publicUrl: config.publicUrl,
-});
+const secret = await resolveSecret(config.secret, config.dataDir);
+const auth = createAuth({ db: database.db, secret, publicUrl: config.publicUrl });
 const setupCode = config.setupCode ?? generateSetupCode();
 const files = await createFileStorage({
   root: join(config.dataDir, 'uploads'),
   maxFileSize: config.attachmentMaxSize,
 });
-const app = await buildApp({ config, database, auth, setupCode, files, webRoot: WEB_ROOT });
+const app = await buildApp({ config, database, auth, secret, setupCode, files, webRoot: WEB_ROOT });
+const services = createServices({ auth, secret, setupCode, files, publicUrl: config.publicUrl });
 const jobs = createJobs({ files });
 let worker: { stop: () => Promise<void> } | undefined;
 
@@ -78,20 +76,10 @@ try {
   await database.migrate(MIGRATIONS_FOLDER);
   await app.listen({ host: config.host, port: config.port });
   await scheduleRecurringJobs(database.db, jobs);
-  worker = startJobWorker({
-    db: database.db,
-    jobs,
-    log: app.log,
-    services: createServices({ auth, setupCode, files, publicUrl: config.publicUrl }),
-  });
+  worker = startJobWorker({ db: database.db, jobs, log: app.log, services });
 
   const { required } = await getSetupStatus.execute(
-    {
-      db: database.db,
-      actor: null,
-      log: app.log,
-      services: createServices({ auth, setupCode, files, publicUrl: config.publicUrl }),
-    },
+    { db: database.db, actor: null, log: app.log, services },
     {},
   );
   if (required) {

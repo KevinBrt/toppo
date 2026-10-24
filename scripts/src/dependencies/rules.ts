@@ -41,6 +41,8 @@ export const ALLOWED_LICENSES = new Set([
   'CC0-1.0',
   'ISC',
   'MIT',
+  // MIT without the notice to keep: Nodemailer.
+  'MIT-0',
   'MPL-2.0',
   'OFL-1.1',
   'Unlicense',

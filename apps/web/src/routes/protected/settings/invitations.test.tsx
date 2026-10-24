@@ -172,3 +172,33 @@ describe('invitations on the members screen', () => {
     });
   });
 });
+
+describe('invitations with email set up', () => {
+  it('say that each link left by email, and still show it', async () => {
+    fakeServer({
+      user: ADA,
+      mailSettings: {
+        host: 'smtp.example.com',
+        port: 587,
+        security: 'starttls',
+        username: null,
+        passwordSet: false,
+        fromAddress: 'toppo@example.com',
+        fromName: 'Toppo',
+      },
+    });
+    const { screen } = await renderApp({ path: '/settings/members' });
+
+    await screen.getByRole('button', { name: 'Invite members' }).click();
+    const dialog = screen.getByRole('dialog', { name: 'Invite members' });
+    await dialog.getByLabelText('Email addresses').fill('nina@example.com');
+    await dialog.getByLabelText('Role').selectOptions('Team');
+    await dialog.getByRole('button', { name: 'Create the links' }).click();
+
+    const links = screen.getByRole('dialog', { name: 'Invitation links' });
+    await expect
+      .element(links.getByText(/^Each person received their link by email/))
+      .toBeVisible();
+    await expect.element(links.getByLabelText('Link for nina@example.com')).toHaveValue(FIRST_LINK);
+  });
+});

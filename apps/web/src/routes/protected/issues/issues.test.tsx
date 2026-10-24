@@ -30,6 +30,7 @@ const RITA: CurrentUser = {
   id: '01a1569b-9900-7000-8000-000000000009',
   name: 'Rita Client',
   email: 'rita@example.com',
+  locale: 'en',
   permissions: [],
   managesProjects: false,
 };

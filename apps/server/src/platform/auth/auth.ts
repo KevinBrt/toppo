@@ -1,9 +1,16 @@
 import { type Db, schema, uuidv7 } from '@toppo/db';
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@toppo/shared';
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_RESET_LIFETIME_MINUTES,
+} from '@toppo/shared';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';
 import { eq } from 'drizzle-orm';
+import { createSecretBox } from '../config/secret-box.ts';
+import { enqueue } from '../jobs/jobs.ts';
+import { passwordResetMailJob } from './password-reset-mail.ts';
 
 export const AUTH_BASE_PATH = '/api/auth';
 
@@ -23,6 +30,7 @@ export interface AuthOptions {
 }
 
 export function createAuth({ db, secret, publicUrl }: AuthOptions) {
+  const secrets = createSecretBox(secret);
   return betterAuth({
     appName: 'Toppo',
     baseURL: publicUrl.origin,
@@ -53,7 +61,19 @@ export function createAuth({ db, secret, publicUrl }: AuthOptions) {
       disableSignUp: true,
       minPasswordLength: PASSWORD_MIN_LENGTH,
       maxPasswordLength: PASSWORD_MAX_LENGTH,
+      resetPasswordTokenExpiresIn: PASSWORD_RESET_LIFETIME_MINUTES * 60,
+      // Whoever had the old password, on whatever device, is out once it changes.
+      revokeSessionsOnPasswordReset: true,
+      // Never in the request: the link leaves from the job queue, its token sealed.
+      async sendResetPassword({ user, token }) {
+        await enqueue(db, passwordResetMailJob, {
+          userId: user.id,
+          sealedToken: secrets.seal(token),
+        });
+      },
     },
+    // Reset tokens are kept as hashes: a copy of the database gives none that works.
+    verification: { storeIdentifier: 'hashed' },
     session: {
       expiresIn: 30 * DAY_SECONDS,
       updateAge: DAY_SECONDS,

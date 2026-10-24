@@ -1,10 +1,13 @@
 import { type Db, schema } from '@toppo/db';
-import { type MeResponse, meResponseSchema } from '@toppo/shared';
+import { DEFAULT_LOCALE, type MeResponse, meResponseSchema } from '@toppo/shared';
+import { eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from '../http/zod.ts';
 import { resolveActor } from './actor.ts';
 import type { Auth } from './auth.ts';
 import { managedBy } from './project-access.ts';
+
+const { projects, users } = schema;
 
 /**
  * `GET /api/v1/me`: the signed-in user, their permissions and whether they manage a project (the
@@ -24,18 +27,23 @@ export function registerMeRoute(app: FastifyInstance, { auth, db }: { auth: Auth
       if (!actor) {
         return { user: null };
       }
-      const [managed] = await db
-        .select({ id: schema.projects.id })
-        .from(schema.projects)
-        .where(managedBy(actor.id))
-        .limit(1);
+      const [me] = await db
+        .select({
+          locale: users.locale,
+          managesProjects: sql<boolean>`exists (
+            select 1 from ${projects} where ${managedBy(actor.id)}
+          )`,
+        })
+        .from(users)
+        .where(eq(users.id, actor.id));
       return {
         user: {
           id: actor.id,
           name: actor.name,
           email: actor.email,
+          locale: me?.locale ?? DEFAULT_LOCALE,
           permissions: [...actor.permissions],
-          managesProjects: managed !== undefined,
+          managesProjects: me?.managesProjects ?? false,
         },
       };
     },

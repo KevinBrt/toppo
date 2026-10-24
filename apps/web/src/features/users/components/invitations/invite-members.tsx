@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { ProjectPickerSlot } from '../../models/invitation.model.ts';
 import { UsersQueries } from '../../queries/users.queries.ts';
-import { InvitationLinks } from './invitation-links.tsx';
+import { InvitationLinks, linksDescription } from './invitation-links.tsx';
 import { InviteForm } from './invite-form.tsx';
 
 /**
@@ -39,7 +39,7 @@ export function InviteMembers({ projectPicker }: { projectPicker: ProjectPickerS
         title={result ? t('invitations.linksTitle') : t('invitations.title')}
         description={
           result
-            ? t('invitations.linksDescription')
+            ? t(linksDescription(result.invitations))
             : t('invitations.description', { days: INVITATION_LIFETIME_DAYS })
         }
         closeLabel={t('invitations.close')}

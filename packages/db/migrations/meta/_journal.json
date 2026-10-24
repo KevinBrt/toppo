@@ -218,6 +218,13 @@
       "when": 1792842844137,
       "tag": "0030_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792846832431,
+      "tag": "0031_mail",
+      "breakpoints": true
     }
   ]
 }

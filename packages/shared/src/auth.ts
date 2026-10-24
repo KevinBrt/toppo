@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { localeSchema } from './locale.ts';
 
 /** Long passphrases beat complex short passwords; no composition rules (NIST SP 800-63B). */
 export const PASSWORD_MIN_LENGTH = 12;
@@ -15,6 +16,8 @@ export const currentUserSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   email: z.string(),
+  /** The language of the interface they last used, which emails to them speak. */
+  locale: localeSchema,
   /**
    * Instance permissions, by catalog name (`@toppo/core`), so the web app can hide what the user
    * cannot do. Plain strings on the wire: the server stays the only judge.
@@ -39,6 +42,30 @@ export const updateAccountRequestSchema = z.object({
 });
 
 export type UpdateAccountRequest = z.infer<typeof updateAccountRequestSchema>;
+
+/** How long a link to choose a new password works, in minutes. */
+export const PASSWORD_RESET_LIFETIME_MINUTES = 60;
+
+/** Body of `GET /api/auth/password-reset`: whether a forgotten password can be reset by email. */
+export const passwordResetAvailabilityResponseSchema = z.object({ available: z.boolean() });
+
+/** Body of `POST /api/auth/request-password-reset`. */
+export const passwordResetRequestSchema = z.object({ email: emailSchema });
+
+/** Body of `POST /api/auth/reset-password`: the token of the link emailed, and the new password. */
+export const resetPasswordRequestSchema = z.object({
+  token: z
+    .string()
+    .min(1)
+    .max(256)
+    .regex(/^[\w-]+$/u),
+  newPassword: passwordSchema,
+});
+
+export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>;
+
+/** Body of `PUT /api/v1/me/locale`: the language the interface now speaks to them. */
+export const accountLocaleRequestSchema = z.object({ locale: localeSchema });
 
 /** Body of `POST /api/auth/change-password`. Every other device is signed out, always. */
 export const changePasswordRequestSchema = z.object({

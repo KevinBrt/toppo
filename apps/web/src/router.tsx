@@ -17,14 +17,17 @@ import { projectGeneralRoute } from './routes/protected/projects/project-general
 import { projectStatusesRoute } from './routes/protected/projects/project-statuses.route.tsx';
 import { projectsRoute } from './routes/protected/projects/projects.route.tsx';
 import { protectedRoute } from './routes/protected/protected.route.tsx';
+import { emailRoute } from './routes/protected/settings/email.route.tsx';
 import { settingsIndexRoute } from './routes/protected/settings/index.route.tsx';
 import { membersRoute } from './routes/protected/settings/members.route.tsx';
 import { propertiesRoute } from './routes/protected/settings/properties.route.tsx';
 import { rolesRoute } from './routes/protected/settings/roles.route.tsx';
 import { settingsRoute } from './routes/protected/settings/settings.route.tsx';
 import { statusesRoute } from './routes/protected/settings/statuses.route.tsx';
+import { forgotPasswordRoute } from './routes/public/forgot-password.route.tsx';
 import { invitationRoute } from './routes/public/invitation.route.tsx';
 import { loginRoute } from './routes/public/login.route.tsx';
+import { resetPasswordRoute } from './routes/public/reset-password.route.tsx';
 import { setupRoute } from './routes/public/setup.route.tsx';
 import { rootRoute } from './routes/root.route.tsx';
 import type { PlainMessageKey } from './shared/i18n/i18n.types.ts';
@@ -35,6 +38,8 @@ const routeTree = rootRoute.addChildren([
   setupRoute,
   loginRoute,
   invitationRoute,
+  forgotPasswordRoute,
+  resetPasswordRoute,
   // Behind sign-in, inside the application frame.
   protectedRoute.addChildren([
     indexRoute,
@@ -51,6 +56,7 @@ const routeTree = rootRoute.addChildren([
       rolesRoute,
       statusesRoute,
       propertiesRoute,
+      emailRoute,
     ]),
     accountRoute,
     notFoundRoute,
@@ -82,6 +88,8 @@ declare module '@tanstack/react-router' {
   interface HistoryState {
     /** The address of someone who just accepted an invitation, for the sign-in page. */
     invitedEmail?: string;
+    /** Set by the page that changed a forgotten password, to say so on the sign-in page. */
+    passwordChanged?: boolean;
   }
   interface StaticDataRouteOption {
     /** Title shown in the top bar and the browser tab. */

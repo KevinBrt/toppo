@@ -118,3 +118,29 @@ describe('my account', () => {
       .toBeVisible();
   });
 });
+
+describe('the language of emails', () => {
+  it('follows the interface: the server is told when it changes, and only then', async () => {
+    const fake = fakeServer({ user: ADA });
+    const { screen } = await renderApp({ path: '/account', locale: 'fr' });
+
+    await expect
+      .element(screen.getByRole('heading', { level: 1, name: 'Mon compte' }))
+      .toBeVisible();
+    await expect.poll(() => fake.state.user?.locale).toBe('fr');
+    const told = fake.requests.filter(({ path }) => path === '/api/v1/me/locale');
+    expect(told).toStrictEqual([
+      { method: 'PUT', path: '/api/v1/me/locale', body: { locale: 'fr' } },
+    ]);
+  });
+
+  it('is left alone when the server already knows it', async () => {
+    const fake = fakeServer({ user: ADA });
+    const { screen } = await renderApp({ path: '/account' });
+
+    await expect
+      .element(screen.getByRole('heading', { level: 1, name: 'My account' }))
+      .toBeVisible();
+    expect(fake.requests.some(({ path }) => path === '/api/v1/me/locale')).toBe(false);
+  });
+});

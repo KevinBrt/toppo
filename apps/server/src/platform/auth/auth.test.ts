@@ -121,6 +121,7 @@ describe('the current user', () => {
     expect(Object.keys(response.json().user).sort()).toStrictEqual([
       'email',
       'id',
+      'locale',
       'managesProjects',
       'name',
       'permissions',
@@ -187,7 +188,8 @@ describe('routes for signed-in users only', () => {
 describe('exposed authentication endpoints', () => {
   it.each([
     ['POST', '/api/auth/sign-up/email'],
-    ['POST', '/api/auth/request-password-reset'],
+    // Better Auth's own landing for reset links: Toppo's links open the web app instead.
+    ['GET', '/api/auth/reset-password/abcdefghijklmnopqrstuvwx'],
     ['POST', '/api/auth/delete-user'],
     ['GET', '/api/auth/list-sessions'],
   ] as const)('%s %s is not reachable', async (method, url) => {

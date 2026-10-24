@@ -10,7 +10,7 @@ import { Invitations } from '../../api/invitations.api.ts';
 import { Users } from '../../api/users.api.ts';
 import { applyUserChange, type UserChange } from '../../models/user-change.model.ts';
 import { UsersQueries } from '../../queries/users.queries.ts';
-import { InvitationLinks } from '../invitations/invitation-links.tsx';
+import { InvitationLinks, linksDescription } from '../invitations/invitation-links.tsx';
 import { InvitationRow } from './invitation-row.tsx';
 import { MemberFilters } from './member-filters.tsx';
 import { MemberRow } from './member-row.tsx';
@@ -205,7 +205,7 @@ export function MembersTable({
       <Dialog open={renewed !== null} onOpenChange={(open) => (open ? null : setRenewed(null))}>
         <DialogContent
           title={t('invitations.linksTitle')}
-          description={t('invitations.linksDescription')}
+          description={t(linksDescription(renewed ? [renewed] : []))}
           closeLabel={t('invitations.close')}
         >
           {renewed ? (

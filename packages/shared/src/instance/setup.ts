@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { displayNameSchema, emailSchema, passwordSchema } from './auth.ts';
-import { DEFAULT_LOCALE, localeSchema } from './locale.ts';
+import { displayNameSchema, emailSchema, passwordSchema } from '../auth.ts';
+import { DEFAULT_LOCALE, localeSchema } from '../locale.ts';
 
 /** Body of `GET /api/v1/setup`: whether the first-run wizard still has to run. */
 export const setupStatusResponseSchema = z.object({

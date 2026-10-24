@@ -57,8 +57,11 @@ import {
   type LabelRef,
   type Locale,
   labelsRequestSchema,
+  localeSchema,
+  type MailSettings,
   MEMBERS_PAGE_SIZE,
   type MemberRow,
+  mailSettingsRequestSchema,
   type Notification,
   type PaletteColor,
   type PendingInvitation,
@@ -67,12 +70,14 @@ import {
   PROJECTS_PAGE_SIZE,
   type PriorityLevel,
   type ProjectAccessRow,
+  passwordResetRequestSchema,
   prioritiesRequestSchema,
   projectIssuesQuerySchema,
   ROLES_MAX,
   type RoleBadge,
   type RoleDetails,
   readNotificationsRequestSchema,
+  resetPasswordRequestSchema,
   type SortOrder,
   type UserSummary,
   type WorkflowMode,
@@ -94,6 +99,7 @@ export const ADA: CurrentUser = {
   id: '01a1569b-9900-7000-8000-000000000001',
   name: 'Ada Lovelace',
   email: 'ada@example.com',
+  locale: 'en',
   permissions: instancePermissionsOfRole(DEFAULT_ROLE_IDS.administrator),
   // The fake server works it out from its projects.
   managesProjects: false,
@@ -104,6 +110,7 @@ export const GRACE: CurrentUser = {
   id: '01a1569b-9900-7000-8000-000000000002',
   name: 'Grace Hopper',
   email: 'grace@example.com',
+  locale: 'en',
   permissions: instancePermissionsOfRole(DEFAULT_ROLE_IDS.team),
   managesProjects: false,
 };
@@ -177,6 +184,12 @@ export interface FakeServerState {
   notifications: Notification[];
   /** The largest file taken, in bytes: 20 MB unless a test sets another. */
   attachmentMaxSize: number;
+  /** How the instance sends email: not set up unless a test sets it. */
+  mailSettings: MailSettings | null;
+  /** What the mail server answers a test email: taken (`null`), or the code of a refusal. */
+  mailTestRefusal: string | null;
+  /** Tokens of the links to choose a new password that still work: each works once. */
+  resetTokens: string[];
 }
 
 /** A file as the fake server keeps it: on an issue's request, or on one of its comments. */
@@ -416,6 +429,9 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       labels: [],
       notifications: [],
       attachmentMaxSize: 20 * 1024 * 1024,
+      mailSettings: null,
+      mailTestRefusal: null,
+      resetTokens: [],
       ...initial,
     },
     requests: [],
@@ -476,6 +492,22 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
         return json({ code: 'ACCOUNT_DEACTIVATED', message: 'This account is deactivated' }, 403);
       }
       return json({ code: 'INVALID_EMAIL_OR_PASSWORD', message: 'Invalid email or password' }, 401);
+    },
+    'GET /api/auth/password-reset': () => json({ available: state.mailSettings !== null }),
+    'POST /api/auth/request-password-reset': (body) =>
+      passwordResetRequestSchema.safeParse(body).success
+        ? NO_CONTENT()
+        : apiError(400, 'VALIDATION_FAILED'),
+    'POST /api/auth/reset-password': (body) => {
+      const parsed = resetPasswordRequestSchema.safeParse(body);
+      if (!parsed.success) {
+        return apiError(400, 'VALIDATION_FAILED');
+      }
+      if (!state.resetTokens.includes(parsed.data.token)) {
+        return apiError(400, 'INVALID_RESET_LINK');
+      }
+      state.resetTokens = state.resetTokens.filter((token) => token !== parsed.data.token);
+      return NO_CONTENT();
     },
     'POST /api/auth/sign-out': () => {
       state.user = null;
@@ -563,6 +595,36 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
     'PUT /api/v1/roles/permissions': (body) =>
       asHolder(state, 'instance.roles.manage') ?? savePermissions(state, body),
     'POST /api/v1/invitations': (body) => asUserManager(state) ?? invite(state, body),
+    'GET /api/v1/settings/email': () =>
+      asHolder(state, 'instance.settings.manage') ?? json({ settings: state.mailSettings }),
+    'PUT /api/v1/settings/email': (body) =>
+      asHolder(state, 'instance.settings.manage') ?? saveMailSettings(state, body),
+    'DELETE /api/v1/settings/email': () => {
+      const refusal = asHolder(state, 'instance.settings.manage');
+      if (!refusal) {
+        state.mailSettings = null;
+      }
+      return refusal ?? NO_CONTENT();
+    },
+    'POST /api/v1/settings/email/test': () => {
+      if (!state.mailSettings) {
+        return asHolder(state, 'instance.settings.manage') ?? apiError(409, 'MAIL_NOT_CONFIGURED');
+      }
+      const refusal = state.mailTestRefusal;
+      return (
+        asHolder(state, 'instance.settings.manage') ??
+        (refusal ? apiError(422, refusal) : NO_CONTENT())
+      );
+    },
+    'PUT /api/v1/me/locale': (body) => {
+      const locale = localeSchema.safeParse(body['locale']);
+      if (state.user && locale.success) {
+        state.user = { ...state.user, locale: locale.data };
+      }
+      return (
+        asSignedIn(state) ?? (locale.success ? NO_CONTENT() : apiError(400, 'VALIDATION_FAILED'))
+      );
+    },
     'GET /api/v1/projects': (_body, search) => asSignedIn(state) ?? listProjects(state, search),
     'GET /api/v1/issues/assigned': (_body, search) =>
       asSignedIn(state) ?? listAssignedIssues(state, search),
@@ -718,6 +780,21 @@ function newLink(state: FakeServerState, email: string): string {
   return `http://localhost:3000/invitation#${token}`;
 }
 
+/** `PUT /api/v1/settings/email`: a password left out keeps the one saved, for the same account. */
+function saveMailSettings(state: FakeServerState, body: Record<string, unknown>): Response {
+  const parsed = mailSettingsRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  const { username, password, ...settings } = parsed.data;
+  const signsIn = Boolean(username);
+  if (signsIn && password === undefined && !state.mailSettings?.passwordSet) {
+    return apiError(400, 'MAIL_PASSWORD_REQUIRED');
+  }
+  state.mailSettings = { ...settings, username: username || null, passwordSet: signsIn };
+  return NO_CONTENT();
+}
+
 /** `POST /api/v1/invitations`: inviting an address again replaces its invitation. */
 function invite(state: FakeServerState, body: Record<string, unknown>): Response {
   const emails = (body['emails'] as string[] | undefined) ?? [];
@@ -741,7 +818,7 @@ function invite(state: FakeServerState, body: Record<string, unknown>): Response
       allProjects: body['allProjects'] === true,
       projectKeys: (body['projectKeys'] as string[] | undefined) ?? [],
     });
-    return { id, email, link: newLink(state, email) };
+    return { id, email, link: newLink(state, email), emailed: state.mailSettings !== null };
   });
   return json({ invitations: links, alreadyMembers }, 201);
 }
@@ -769,6 +846,7 @@ function changeInvitation(
     id: invitation.id,
     email: invitation.email,
     link: newLink(state, invitation.email),
+    emailed: state.mailSettings !== null,
   });
 }
 

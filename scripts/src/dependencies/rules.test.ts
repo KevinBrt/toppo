@@ -155,6 +155,7 @@ describe('checkLockfile', () => {
 describe('isLicenseAllowed', () => {
   it.each([
     ['MIT', true],
+    ['MIT-0', true],
     ['(MIT OR Apache-2.0)', true],
     ['(MIT OR GPL-3.0-only)', true],
     ['MIT AND BSD-3-Clause', true],

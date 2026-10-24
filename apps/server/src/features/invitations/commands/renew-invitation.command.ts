@@ -4,6 +4,7 @@ import { type InvitationLink, invitationIdParamsSchema } from '@toppo/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import { emailInvitations } from '../jobs/email-invitation.job.ts';
 import {
   hashInvitationToken,
   invitationLink,
@@ -14,7 +15,7 @@ const { invitations, roles } = schema;
 
 /**
  * Gives a pending invitation a new link, valid for another week; the previous link stops
- * working. Returns the link, which exists only now.
+ * working. The new one is emailed when email is set up. Returns the link, which exists only now.
  */
 export const renewInvitation = defineCommand({
   name: 'invitation.renew',
@@ -38,11 +39,13 @@ export const renewInvitation = defineCommand({
       .update(invitations)
       .set({ tokenHash: hashInvitationToken(token), expiresAt: invitationExpiry(new Date()) })
       .where(eq(invitations.id, invitationId));
-    log.info({ invitationId, by: actor.id }, 'Invitation renewed');
+    const emailed = await emailInvitations(tx, services, [{ id: invitationId, token }]);
+    log.info({ invitationId, emailed, by: actor.id }, 'Invitation renewed');
     return {
       id: invitationId,
       email: invitation.email,
       link: invitationLink(services.publicUrl, token),
+      emailed,
     };
   },
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { emailSchema, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, passwordSchema } from './auth.ts';
-import { setupRequestSchema } from './setup.ts';
+import { setupRequestSchema } from './instance/setup.ts';
 
 describe('emailSchema', () => {
   it('normalizes case and surrounding spaces so one person has one account', () => {

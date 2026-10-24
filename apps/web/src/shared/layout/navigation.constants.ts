@@ -6,6 +6,7 @@ import {
   InboxIcon,
   ListIcon,
   type LucideIcon,
+  MailIcon,
   ShieldCheckIcon,
   SlidersHorizontalIcon,
   UserIcon,
@@ -102,6 +103,17 @@ export const SETTINGS_NAV: readonly NavSection[] = [
         to: '/settings/properties',
         labelKey: 'properties.title',
         icon: ListIcon,
+        requiresAnyOf: ['instance.settings.manage'],
+      },
+    ],
+  },
+  {
+    labelKey: 'settings.instanceSection',
+    items: [
+      {
+        to: '/settings/email',
+        labelKey: 'mail.title',
+        icon: MailIcon,
         requiresAnyOf: ['instance.settings.manage'],
       },
     ],

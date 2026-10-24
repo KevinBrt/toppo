@@ -114,6 +114,7 @@ features/<feature>/
 - **Layers** (checked): a feature imports `platform/` and its own files only; `platform/` never imports a feature. Logic needed by several features goes to `@toppo/core` (pure) or becomes a query of its owner, wired in `app.ts`.
 - **Capabilities beyond the database** (password hashing, settings) come through `services` in the execution context, declared in `platform/cqrs/cqrs.ts`; never import Better Auth or the config from a feature.
 - **Background work is a job** (`platform/jobs/`): a command queues it with `enqueue(tx, job, payload)`, so it exists only if the command commits; any server's worker runs it in a transaction of its own, retried with backoff, kept as `failed` after `maxAttempts`. A job may run twice (a server stopped mid-way): what it does outside the database must bear it. Recurring work is a job with `every`, registered in `createJobs()` (`app.ts`).
+- **Email leaves from a job** through `services.mailer` (`platform/mail/`), written with `composeMail()` (plain text and escaped HTML) in the recipient's `users.locale`. A token an email carries is sealed in the job payload with `services.secrets`, never stored in clear.
 - **Tests**: a command or query is tested through its route (`app.inject`) and, for edge cases, directly with `execute()` on a `setupTestDatabase()` database.
 
 ## Front-end structure (`apps/web/src`)

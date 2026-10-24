@@ -44,6 +44,7 @@ const KATHERINE = memberOf(
     id: '01a1569b-9900-7000-8000-000000000003',
     name: 'Katherine Johnson',
     email: 'katherine@example.com',
+    locale: 'en',
     permissions: [],
     managesProjects: false,
   },

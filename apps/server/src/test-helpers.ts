@@ -10,7 +10,9 @@ import { afterAll, beforeAll } from 'vitest';
 import { buildApp } from './app.ts';
 import type { Actor } from './platform/auth/actor.ts';
 import { createAuth } from './platform/auth/auth.ts';
+import { createSecretBox } from './platform/config/secret-box.ts';
 import type { ExecutionContext, Services } from './platform/cqrs/cqrs.ts';
+import { createMailer } from './platform/mail/mailer.ts';
 import { createFileStorage, type FileStorage } from './platform/uploads/file-storage.ts';
 
 export const TEST_SECRET = 'test-secret-that-is-long-enough-to-be-accepted';
@@ -52,6 +54,7 @@ export async function buildTestApp({
     config: { publicUrl: url, logLevel: 'silent', trustProxy: false },
     database: { db: database.db, ping: ping ?? (() => Promise.resolve()) },
     auth: createAuth({ db: database.db, secret: TEST_SECRET, publicUrl: url }),
+    secret: TEST_SECRET,
     setupCode: TEST_SETUP_CODE,
     files: files ?? (await createTestFileStorage()),
     webRoot,
@@ -60,10 +63,13 @@ export async function buildTestApp({
 
 /**
  * Services for commands run directly in tests: passwords are "hashed" as themselves; no file is
- * kept unless a test gives a storage.
+ * kept unless a test gives a storage; mail goes to the server the saved settings name.
  */
 export function testServices(overrides: Partial<Services> = {}): Services {
+  const secrets = createSecretBox(TEST_SECRET);
   return {
+    secrets,
+    mailer: createMailer(secrets),
     hashPassword: (password) => Promise.resolve(password),
     setupCode: TEST_SETUP_CODE,
     publicUrl: new URL('http://localhost:3000'),

@@ -1,5 +1,6 @@
 export { type ApiError, apiErrorSchema } from './api-error.ts';
 export {
+  accountLocaleRequestSchema,
   type ChangePasswordRequest,
   type CurrentUser,
   changePasswordRequestSchema,
@@ -10,13 +11,37 @@ export {
   meResponseSchema,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  PASSWORD_RESET_LIFETIME_MINUTES,
+  passwordResetAvailabilityResponseSchema,
+  passwordResetRequestSchema,
   passwordSchema,
+  type ResetPasswordRequest,
+  resetPasswordRequestSchema,
   type UpdateAccountRequest,
   updateAccountRequestSchema,
 } from './auth.ts';
 export { PALETTE_COLORS, type PaletteColor } from './colors.ts';
 export { CSP_NONCE_PLACEHOLDER } from './csp.ts';
 export { type HealthResponse, healthResponseSchema } from './health.ts';
+export {
+  MAIL_DEFAULT_PORTS,
+  MAIL_SECURITY,
+  type MailSecurity,
+  type MailSettings,
+  type MailSettingsRequest,
+  type MailSettingsResponse,
+  mailSettingsRequestSchema,
+  mailSettingsResponseSchema,
+  mailSettingsSchema,
+} from './instance/mail.ts';
+export {
+  type SetupRequest,
+  type SetupResponse,
+  type SetupStatusResponse,
+  setupRequestSchema,
+  setupResponseSchema,
+  setupStatusResponseSchema,
+} from './instance/setup.ts';
 export {
   type HistoryType,
   ISSUE_ACTIVITY_PAYLOADS,
@@ -318,11 +343,3 @@ export {
   type UpdateProjectRequest,
   updateProjectRequestSchema,
 } from './projects/projects.ts';
-export {
-  type SetupRequest,
-  type SetupResponse,
-  type SetupStatusResponse,
-  setupRequestSchema,
-  setupResponseSchema,
-  setupStatusResponseSchema,
-} from './setup.ts';

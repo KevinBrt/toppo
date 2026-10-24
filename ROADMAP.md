@@ -142,7 +142,7 @@ _Done when an issue is found in under 3 seconds._
 
 Needed before 0.1:
 
-- **Lost passwords** while email is not set up: today a member who forgets their password, or the only administrator, has no way back in. Proposed: an administrator creates a one-time reset link from the members list (like an invitation), and a recovery code printed in the logs on demand covers the last administrator.
+- **Lost passwords** while email is not set up: with email, people reset their password themselves; without it, a member who forgets their password, or the only administrator, has no way back in. Proposed: an administrator creates a one-time reset link from the members list (like an invitation), and a recovery code printed in the logs on demand covers the last administrator.
 
 Needed for step 5:
 

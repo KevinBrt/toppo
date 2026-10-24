@@ -6,14 +6,19 @@ import {
   invitationLinkSchema,
   membersResponseSchema,
 } from '@toppo/shared';
+import { startSmtpServer, type TestSmtpServer } from '@toppo/testing';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createJobs } from '../../app.ts';
+import { runNextJob, type WorkerContext } from '../../platform/jobs/job-worker.ts';
 import {
   buildTestApp,
   cookieHeader,
+  createTestFileStorage,
   setupTestDatabase,
   TEST_SETUP_CODE,
+  testServices,
 } from '../../test-helpers.ts';
 import { hashInvitationToken } from './utils/invitation-token.util.ts';
 
@@ -248,5 +253,77 @@ describe('the projects an invitation gives', () => {
 
     expect(response.statusCode).toBe(400);
     expect(errorCode(response)).toBe('INVALID_PROJECT');
+  });
+});
+
+describe('emailing invitations', () => {
+  let mailServer: TestSmtpServer;
+  let worker: WorkerContext;
+
+  /** Runs every job due: the emails of what was just done leave. */
+  async function deliver(): Promise<void> {
+    while (await runNextJob(worker)) {
+      // Until none is due.
+    }
+  }
+
+  const mailsTo = (address: string) => mailServer.received.filter(({ to }) => to.includes(address));
+
+  beforeAll(async () => {
+    mailServer = await startSmtpServer();
+    worker = {
+      db: context.database.db,
+      jobs: createJobs({ files: await createTestFileStorage() }),
+      log: app.log,
+      services: testServices(),
+    };
+    await context.database.db.insert(schema.mailSettings).values({
+      host: '127.0.0.1',
+      port: mailServer.port,
+      security: 'none',
+      fromAddress: 'toppo@example.com',
+      fromName: 'Toppo',
+    });
+  });
+
+  afterAll(async () => {
+    await context.database.db.delete(schema.mailSettings);
+    await mailServer.close();
+  });
+
+  it('sends each link, in the words of whoever invites', async () => {
+    const [invitation] = (await invite(['emailed@example.com'])).invitations;
+    expect(invitation?.emailed).toBe(true);
+
+    await deliver();
+
+    const [mail] = mailsTo('emailed@example.com');
+    expect(mail?.subject).toBe('Ada Lovelace invited you to Toppo');
+    expect(mail?.content).toContain(invitation?.link);
+    expect(mail?.content).toContain('The link works once, for 7 days.');
+  });
+
+  it('sends only the link that replaced another before it left', async () => {
+    const [first] = (await invite(['renewed@example.com'])).invitations;
+    const renewed = await asAdmin('POST', `/api/v1/invitations/${first?.id}/renew`);
+    expect(renewed.statusCode).toBe(200);
+    const { link, emailed } = invitationLinkSchema.parse(renewed.json());
+
+    await deliver();
+
+    expect(emailed).toBe(true);
+    expect(
+      mailsTo('renewed@example.com').map(({ content }) => content.includes(link)),
+    ).toStrictEqual([true]);
+  });
+
+  it('leaves the links to pass on by hand once email is off', async () => {
+    await context.database.db.delete(schema.mailSettings);
+    const [invitation] = (await invite(['by-hand@example.com'])).invitations;
+
+    await deliver();
+
+    expect(invitation?.emailed).toBe(false);
+    expect(mailsTo('by-hand@example.com')).toStrictEqual([]);
   });
 });

@@ -1,6 +1,8 @@
 import {
   type CurrentUser,
   meResponseSchema,
+  passwordResetAvailabilityResponseSchema,
+  type ResetPasswordRequest,
   type SetupRequest,
   setupResponseSchema,
   setupStatusResponseSchema,
@@ -34,6 +36,33 @@ export const Session = {
       method: 'POST',
       body: { email, password },
       schema: z.unknown(),
+    });
+  },
+
+  /** Whether a forgotten password can be reset by email: only once email is set up. */
+  async isPasswordResetAvailable(): Promise<boolean> {
+    return (
+      await apiRequest('/api/auth/password-reset', {
+        schema: passwordResetAvailabilityResponseSchema,
+      })
+    ).available;
+  },
+
+  /** Asks for a link to choose a new password; answered the same whether the address has an account. */
+  async requestPasswordReset(email: string): Promise<void> {
+    await apiRequest('/api/auth/request-password-reset', {
+      method: 'POST',
+      body: { email },
+      schema: z.null(),
+    });
+  },
+
+  /** Sets a new password with the token of the link emailed; every device is signed out. */
+  async resetPassword(request: ResetPasswordRequest): Promise<void> {
+    await apiRequest('/api/auth/reset-password', {
+      method: 'POST',
+      body: request,
+      schema: z.null(),
     });
   },
 

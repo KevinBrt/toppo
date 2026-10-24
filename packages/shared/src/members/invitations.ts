@@ -33,6 +33,8 @@ export const invitationLinkSchema = z.object({
   id: z.uuid(),
   email: z.string(),
   link: z.url(),
+  /** Sent by email too, email being set up: otherwise the link is passed on by hand. */
+  emailed: z.boolean(),
 });
 
 export type InvitationLink = z.infer<typeof invitationLinkSchema>;

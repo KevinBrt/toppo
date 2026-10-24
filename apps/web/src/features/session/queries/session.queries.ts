@@ -13,6 +13,10 @@ export const SessionQueries = {
     queryKey: ['session', 'current-user'],
     queryFn: () => Session.currentUser(),
   }),
+  passwordReset: queryOptions({
+    queryKey: ['session', 'password-reset'],
+    queryFn: () => Session.isPasswordResetAvailable(),
+  }),
 };
 
 /** What route guards need to choose between the wizard, the sign-in page and the app. */

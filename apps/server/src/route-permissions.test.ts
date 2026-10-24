@@ -31,6 +31,11 @@ import {
 const OPEN_API_ROUTES = [
   'POST /api/auth/change-password',
   'GET /api/auth/get-session',
+  // Whether a forgotten password can be reset by email: nothing about any account.
+  'GET /api/auth/password-reset',
+  // Answer the same whatever the address, rate limited; the link is proof enough.
+  'POST /api/auth/request-password-reset',
+  'POST /api/auth/reset-password',
   'POST /api/auth/sign-in/email',
   'POST /api/auth/sign-out',
   'POST /api/v1/invitations/accept',
@@ -42,6 +47,7 @@ const OPEN_API_ROUTES = [
   'GET /api/v1/issues/search',
   'GET /api/v1/me',
   'PATCH /api/v1/me',
+  'PUT /api/v1/me/locale',
   // Each user's own notifications, filtered in the query by who they are and what they see.
   'GET /api/v1/notifications',
   'GET /api/v1/notifications/unread-count',

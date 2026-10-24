@@ -9,6 +9,15 @@ function canCopy(): boolean {
   return window.isSecureContext && navigator.clipboard !== undefined;
 }
 
+/** What the dialog of fresh links says: they left by email, or are to be passed on by hand. */
+export function linksDescription(
+  links: readonly InvitationLink[],
+): 'invitations.linksEmailedDescription' | 'invitations.linksDescription' {
+  return links.some(({ emailed }) => emailed)
+    ? 'invitations.linksEmailedDescription'
+    : 'invitations.linksDescription';
+}
+
 /**
  * Freshly made invitation links, to pass on now: they are never shown again. Each one can be
  * copied, or selected by hand where the clipboard is not available.

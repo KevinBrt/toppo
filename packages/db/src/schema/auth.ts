@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
@@ -38,6 +39,11 @@ export const users = pgTable(
      * `project_members` only. The system role reaches every project anyway.
      */
     allProjects: boolean('all_projects').notNull().default(false),
+    /**
+     * Toppo: the language of the interface they last used, for what reaches them outside it
+     * (email). Mirrors SUPPORTED_LOCALES (`@toppo/shared`).
+     */
+    locale: text('locale', { enum: SUPPORTED_LOCALES }).notNull().default(DEFAULT_LOCALE),
     /** Toppo: set while an administrator has deactivated the account. */
     deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
     /**
@@ -61,6 +67,7 @@ export const users = pgTable(
       sql`${table.instanceRoleId} is not null or ${table.deletedAt} is not null`,
     ),
     index('users_instance_role_id_idx').on(table.instanceRoleId),
+    check('users_locale_check', sql`${table.locale} in ('en', 'fr')`),
   ],
 );
 

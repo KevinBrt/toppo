@@ -15,8 +15,10 @@ import {
   resolveIssue,
   resolveProject,
 } from '../auth/project-access.ts';
+import type { SecretBox } from '../config/secret-box.ts';
 import { HttpError } from '../http/http-error.ts';
 import { RequestValidationError } from '../http/zod.ts';
+import type { Mailer } from '../mail/mailer.ts';
 import type { FileStorage } from '../uploads/file-storage.ts';
 
 /** The transaction a command runs in. */
@@ -32,6 +34,10 @@ export interface Services {
   publicUrl: URL;
   /** Attached files on disk: a command keeps a received file there, under a random key. */
   files: Pick<FileStorage, 'keep' | 'maxFileSize'>;
+  /** Seals what must not be kept in clear in the database, such as the mail password. */
+  secrets: SecretBox;
+  /** Sends email with the settings saved by an administrator. */
+  mailer: Mailer;
 }
 
 /** What every command and query runs with: per HTTP request today, per plugin call later. */

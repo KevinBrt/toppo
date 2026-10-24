@@ -1,14 +1,19 @@
-import type { ChangePasswordRequest, UpdateAccountRequest } from '@toppo/shared';
+import type { ChangePasswordRequest, Locale, UpdateAccountRequest } from '@toppo/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
 
-/** Both answer `204 No Content`. */
+/** Each answers `204 No Content`. */
 const noContent = z.null();
 
 /** Server calls about one's own account. */
 export const Account = {
   async update(account: UpdateAccountRequest): Promise<void> {
     await apiRequest('/api/v1/me', { method: 'PATCH', body: account, schema: noContent });
+  },
+
+  /** Remembers the language the interface speaks, which emails then speak too. */
+  async setLocale(locale: Locale): Promise<void> {
+    await apiRequest('/api/v1/me/locale', { method: 'PUT', body: { locale }, schema: noContent });
   },
 
   /** Signs out every other device; this one carries on in a new session. */

@@ -5,6 +5,7 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { reachableBy } from '../../../platform/auth/project-access.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import { emailInvitations } from '../jobs/email-invitation.job.ts';
 import {
   hashInvitationToken,
   invitationLink,
@@ -19,8 +20,9 @@ const INVITATIONS_LOCK_KEY = 7_461_756_325;
 /**
  * Invites addresses with one role, and access to every project or to chosen ones (none by
  * default). Inviting an address again replaces its pending invitation,
- * whose link stops working; addresses of existing members are left out. Unlike other commands it
- * returns more than ids: the links exist only now, since only their hash is stored.
+ * whose link stops working; addresses of existing members are left out. Each link is emailed
+ * when email is set up. Unlike other commands it returns more than ids: the links exist only
+ * now, since only their hash is stored.
  */
 export const createInvitations = defineCommand({
   name: 'invitation.create',
@@ -102,12 +104,14 @@ export const createInvitations = defineCommand({
         );
     }
 
-    log.info({ count: invited.length, roleId, by: actor.id }, 'Members invited');
+    const emailed = await emailInvitations(tx, services, invited);
+    log.info({ count: invited.length, roleId, emailed, by: actor.id }, 'Members invited');
     return {
       invitations: invited.map(({ id, email, token }) => ({
         id,
         email,
         link: invitationLink(services.publicUrl, token),
+        emailed,
       })),
       alreadyMembers: [...alreadyMembers],
     };
