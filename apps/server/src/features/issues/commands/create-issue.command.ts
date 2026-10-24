@@ -1,4 +1,11 @@
-import { can, effectiveWorkflow, formatIssueKey, initialStatusOf } from '@toppo/core';
+import {
+  can,
+  creationValuesProblem,
+  effectiveWorkflow,
+  formatIssueKey,
+  initialStatusOf,
+  type PropertyProblem,
+} from '@toppo/core';
 import { schema, uuidv7 } from '@toppo/db';
 import {
   createIssueRequestSchema,
@@ -10,13 +17,24 @@ import { recordActivity } from '../../../platform/activities/record-activity.ts'
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
+import { lockedPropertyRules } from '../utils/issue-properties.util.ts';
 import { assertAssignable } from './assign-issue.command.ts';
 
 const { issueCategories, issues, priorities, projects, workflowStatuses, workflows } = schema;
 
+/** What the reporter is told when the values of the properties cannot be taken. */
+const PROPERTY_REFUSALS: Readonly<
+  Record<PropertyProblem['problem'], [code: string, message: string]>
+> = {
+  unknownProperty: ['PROPERTY_NOT_FOUND', 'This property does not exist'],
+  unknownOption: ['INVALID_PROPERTY_OPTION', 'This option is not one of the property'],
+  missingRequired: ['PROPERTY_REQUIRED', 'This property is required'],
+};
+
 /**
  * Creates an issue in a project: numbered by the project's counter, in its workflow's initial
- * status, with the default category and priority unless others are given. Assigning it at once
+ * status, with the default category and priority unless others are given, and the values of the
+ * properties given, those required included (`creationValuesProblem`). Assigning it at once
  * needs `issue.assign`.
  */
 export const createIssue = defineCommand({
@@ -29,6 +47,11 @@ export const createIssue = defineCommand({
     }
     if (input.assigneeId) {
       await assertAssignable(tx, project.id, input.assigneeId);
+    }
+    const problem = creationValuesProblem(await lockedPropertyRules(tx), input.properties);
+    if (problem) {
+      const [code, message] = PROPERTY_REFUSALS[problem.problem];
+      throw new HttpError(400, code, message);
     }
     const categoryId = await categoryOf(tx, input.categoryId);
     const priorityId = await priorityOf(tx, input.priorityId);
@@ -56,6 +79,7 @@ export const createIssue = defineCommand({
       statusId,
       assigneeId: input.assigneeId ?? null,
       reporterId: actor.id,
+      properties: input.properties,
     });
     await recordActivity(tx, {
       projectId: project.id,

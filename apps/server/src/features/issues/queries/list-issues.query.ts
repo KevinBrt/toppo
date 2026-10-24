@@ -28,7 +28,7 @@ import {
 } from 'drizzle-orm';
 import { alias, type PgColumn } from 'drizzle-orm/pg-core';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
-import { labelsOfIssue, toIssueSummary } from '../utils/issue-rows.util.ts';
+import { labelsOfIssue, propertyValuesOfIssue, toIssueSummary } from '../utils/issue-rows.util.ts';
 import { textMatching } from '../utils/issue-search.util.ts';
 
 const {
@@ -144,6 +144,7 @@ export const listIssues = defineQuery({
         assignee: { id: assignees.id, name: assignees.name, deletedAt: assignees.deletedAt },
         reporter: { id: reporters.id, name: reporters.name, deletedAt: reporters.deletedAt },
         labels: labelsOfIssue,
+        properties: propertyValuesOfIssue({ listedOnly: true }),
         createdAt: issues.createdAt,
         updatedAt: issues.updatedAt,
       })

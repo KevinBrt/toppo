@@ -1,9 +1,15 @@
 import { formatIssueKey, priorityLevelOf } from '@toppo/core';
 import { schema } from '@toppo/db';
-import { type IssueSummary, type LabelRef, projectKeySchema, type UserRef } from '@toppo/shared';
+import {
+  type IssuePropertyValue,
+  type IssueSummary,
+  type LabelRef,
+  projectKeySchema,
+  type UserRef,
+} from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 
-const { issueLabels, issues, labels } = schema;
+const { issueLabels, issues, labels, properties, propertyOptions } = schema;
 
 /**
  * The labels of the issue a row is about, by name, as a column of the query itself: read from
@@ -17,6 +23,33 @@ export const labelsOfIssue = sql<LabelRef[]>`coalesce((
   from ${issueLabels} join ${labels} on ${labels.id} = ${issueLabels.labelId}
   where ${issueLabels.issueId} = ${issues.id}
 ), '[]'::json)`;
+
+/**
+ * The values of the properties of the issue a row is about, oldest property first, as a column
+ * of the query itself: those shown in the list, or all of them. Values are compared as text, so
+ * that one naming no option (none should) is left out rather than failing the query.
+ */
+export function propertyValuesOfIssue({ listedOnly }: { listedOnly: boolean }) {
+  return sql<IssuePropertyValue[]>`coalesce((
+    select json_agg(
+      json_build_object(
+        'id', ${properties.id},
+        'name', ${properties.name},
+        'option', json_build_object(
+          'id', ${propertyOptions.id},
+          'name', ${propertyOptions.name},
+          'color', ${propertyOptions.color}
+        )
+      )
+      order by ${properties.createdAt}, ${properties.id}
+    )
+    from jsonb_each_text(${issues.properties}) as chosen(property_id, option_id)
+    join ${propertyOptions} on ${propertyOptions.id}::text = chosen.option_id
+      and ${propertyOptions.propertyId}::text = chosen.property_id
+    join ${properties} on ${properties.id} = ${propertyOptions.propertyId}
+    ${listedOnly ? sql`where ${properties.shownInList}` : sql``}
+  ), '[]'::json)`;
+}
 
 /** Someone as an issue names them: an erased account keeps its id, not its name. */
 export function userRefOf(user: { id: string; name: string; deletedAt: Date | null }): UserRef {
@@ -33,6 +66,7 @@ export interface IssueSummaryRow {
   assignee: { id: string; name: string; deletedAt: Date | null } | null;
   reporter: { id: string; name: string; deletedAt: Date | null };
   labels: LabelRef[];
+  properties: IssuePropertyValue[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +82,7 @@ export function toIssueSummary(projectKey: string, row: IssueSummaryRow): IssueS
     assignee: row.assignee ? userRefOf(row.assignee) : null,
     reporter: userRefOf(row.reporter),
     labels: row.labels,
+    properties: row.properties,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };

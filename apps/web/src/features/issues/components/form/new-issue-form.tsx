@@ -22,6 +22,9 @@ const KNOWN_ERRORS = {
   INVALID_CATEGORY: 'issues.invalidCategory',
   INVALID_PRIORITY: 'issues.invalidPriority',
   PROJECT_ARCHIVED: 'projects.archivedNotice',
+  PROPERTY_REQUIRED: 'issues.propertyRequired',
+  PROPERTY_NOT_FOUND: 'issues.invalidProperty',
+  INVALID_PROPERTY_OPTION: 'issues.invalidProperty',
 } as const;
 
 /**
@@ -59,6 +62,8 @@ export function NewIssueForm({
   // Empty until chosen: the project's default applies.
   const [priorityId, setPriorityId] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  // The option chosen for each property asked at creation, by property id.
+  const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const limits = useQuery(IssuesQueries.attachmentLimits);
   const [drafts, setDrafts] = useState<FileDraft[]>([]);
@@ -102,6 +107,7 @@ export function NewIssueForm({
   const defaultCategory = fields.data?.categories.find(({ isDefault }) => isDefault)?.id ?? '';
   const chosenPriority = priorityId || defaultPriority;
   const chosenCategory = categoryId || defaultCategory;
+  const asked = (fields.data?.properties ?? []).filter(({ askedAtCreation }) => askedAtCreation);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,9 +116,16 @@ export function NewIssueForm({
       description,
       ...(chosenPriority ? { priorityId: chosenPriority } : {}),
       ...(chosenCategory ? { categoryId: chosenCategory } : {}),
+      properties: Object.fromEntries(Object.entries(values).filter(([, optionId]) => optionId)),
     });
-    setErrors(parsed.success ? {} : fieldErrors(parsed.error, t));
-    if (parsed.success && !busy) {
+    // Said beside each property, as the server would refuse it.
+    const missing = Object.fromEntries(
+      asked
+        .filter(({ id, required }) => required && !values[id])
+        .map(({ id }) => [`property.${id}`, t('issues.propertyRequired')]),
+    );
+    setErrors({ ...(parsed.success ? {} : fieldErrors(parsed.error, t)), ...missing });
+    if (parsed.success && Object.keys(missing).length === 0 && !busy) {
       create.mutate({ issue: parsed.data, files: drafts });
     }
   }
@@ -230,6 +243,34 @@ export function NewIssueForm({
           value={chosenCategory}
           onChange={setCategoryId}
         />
+        {asked.map((property) => (
+          <Field
+            key={property.id}
+            label={property.name}
+            required={property.required}
+            error={errors[`property.${property.id}`]}
+          >
+            {(control) => (
+              <Select
+                {...control}
+                value={values[property.id] ?? ''}
+                onChange={(event) => {
+                  setValues({ ...values, [property.id]: event.target.value });
+                  setErrors(({ [`property.${property.id}`]: _, ...others }) => others);
+                }}
+              >
+                <option value="">
+                  {property.required ? t('issues.chooseOption') : t('issues.noValue')}
+                </option>
+                {property.options.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+        ))}
       </aside>
     </form>
   );

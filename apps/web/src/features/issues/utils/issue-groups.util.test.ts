@@ -18,6 +18,7 @@ function issue(key: string, statusId: string, assigneeId: string | null = null):
     reporter: { id: GRACE, name: 'Grace' },
     createdAt: '2026-10-22T09:14:00.000Z',
     labels: [],
+    properties: [],
     updatedAt: '2026-10-22T09:14:00.000Z',
   };
 }

@@ -124,6 +124,15 @@ export const Issues = {
     });
   },
 
+  /** Gives the issue an option of a property, or takes its value away with `null`. */
+  async setProperty(key: string, propertyId: string, optionId: string | null): Promise<void> {
+    await apiRequest(`${issuePath(key)}/properties/${encodeURIComponent(propertyId)}`, {
+      method: 'PUT',
+      body: { optionId },
+      schema: noContent,
+    });
+  },
+
   /** For good: its history goes with it, its number is never given again. */
   async delete(key: string): Promise<void> {
     await apiRequest(issuePath(key), { method: 'DELETE', schema: noContent });

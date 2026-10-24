@@ -13,6 +13,7 @@ import {
   cleanFileName,
   commentActionsOf,
   createTextScan,
+  creationValuesProblem,
   DEFAULT_CATEGORIES,
   DEFAULT_PRIORITIES,
   DEFAULT_ROLE_IDS,
@@ -35,6 +36,7 @@ import {
   projectColorFor,
   projectPermissionsOf,
   rolePermissionsFrom,
+  withPropertyValue,
 } from '@toppo/core';
 import {
   ATTACHMENTS_MAX,
@@ -42,6 +44,7 @@ import {
   type CurrentUser,
   categoriesRequestSchema,
   commentRequestSchema,
+  createPropertyRequestSchema,
   emailNotificationsRequestSchema,
   FILE_NAME_HEADER,
   ISSUE_SEARCH_LIMIT,
@@ -50,6 +53,8 @@ import {
   type IssueActivity,
   type IssueAttachment,
   type IssueGrouping,
+  type IssuePropertyField,
+  type IssuePropertyValue,
   type IssueResponse,
   type IssueSort,
   type IssueSummary,
@@ -84,6 +89,7 @@ import {
   rolePermissionsRequestSchema,
   type SortOrder,
   type UserSummary,
+  updatePropertyRequestSchema,
   type WorkflowMode,
   workflowRequestSchema,
 } from '@toppo/shared';
@@ -197,6 +203,35 @@ export interface FakeServerState {
   mailTestRefusal: string | null;
   /** Tokens of the links to choose a new password that still work: each works once. */
   resetTokens: string[];
+  /** The instance's properties, oldest first: none unless a test adds some. */
+  properties: FakeProperty[];
+}
+
+/** A property as the fake server keeps it, with its options in their order. */
+export type FakeProperty = IssuePropertyField & { type: 'list' };
+
+/** A list property named `name`, with options named as given, made up ids from `seed`. */
+export function fakeProperty(
+  seed: number,
+  name: string,
+  optionNames: readonly string[],
+  overrides: Partial<Omit<FakeProperty, 'options'>> = {},
+): FakeProperty {
+  const id = (n: number) => `01a1569b-9900-7000-8000-0000000004${String(n).padStart(2, '0')}`;
+  return {
+    id: id(seed * 10),
+    name,
+    type: 'list',
+    shownInList: false,
+    askedAtCreation: false,
+    required: false,
+    options: optionNames.map((optionName, index) => ({
+      id: id(seed * 10 + index + 1),
+      name: optionName,
+      color: 'blue',
+    })),
+    ...overrides,
+  };
 }
 
 /** A file as the fake server keeps it: on an issue's request, or on one of its comments. */
@@ -305,6 +340,8 @@ export interface FakeIssue {
   reporterId: string;
   /** None unless said otherwise. */
   labelIds: string[];
+  /** The option of each property it has, by property id: none unless said otherwise. */
+  properties: Record<string, string>;
   /** UTC ISO 8601. */
   createdAt: string;
   closedAt: string | null;
@@ -337,6 +374,7 @@ export function fakeIssue(
     assigneeId: null,
     reporterId: ADA.id,
     labelIds: [],
+    properties: {},
     createdAt: '2026-10-22T09:14:00.000Z',
     closedAt: null,
     ...overrides,
@@ -439,6 +477,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       mailSettings: null,
       mailTestRefusal: null,
       resetTokens: [],
+      properties: [],
       ...initial,
     },
     requests: [],
@@ -685,6 +724,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
         changeUser(state, method, url.pathname, body) ??
         changeInvitation(state, method, url.pathname) ??
         changeRoleDefinition(state, method, url.pathname, body) ??
+        propertyRequest(state, method, url.pathname, body) ??
         apiError(404, 'NOT_FOUND'));
     return await Promise.resolve(answer);
   });
@@ -1718,7 +1758,22 @@ function issueFields(state: FakeServerState, projectKey: string) {
     categories: state.categories,
     priorities: state.priorities,
     labels: byLabelName(state.labels),
+    properties: state.properties.map(({ type: _type, ...field }) => field),
   };
+}
+
+/** The values of an issue's properties, oldest property first: those shown in lists, or all. */
+function propertyValuesOf(
+  state: FakeServerState,
+  issue: FakeIssue,
+  { listedOnly }: { listedOnly: boolean },
+): IssuePropertyValue[] {
+  return state.properties.flatMap((property) => {
+    const option = property.options.find(({ id }) => id === issue.properties[property.id]);
+    return option && (property.shownInList || !listedOnly)
+      ? [{ id: property.id, name: property.name, option }]
+      : [];
+  });
 }
 
 const keyOf = (issue: FakeIssue) => `${issue.projectKey}-${issue.number}`;
@@ -1740,6 +1795,7 @@ function summaryOf(state: FakeServerState, issue: FakeIssue): IssueSummary {
     assignee: issue.assigneeId ? userRef(state, issue.assigneeId) : null,
     reporter: userRef(state, issue.reporterId),
     labels: byLabelName(state.labels.filter(({ id }) => issue.labelIds.includes(id))),
+    properties: propertyValuesOf(state, issue, { listedOnly: true }),
     createdAt: issue.createdAt,
     updatedAt: issue.createdAt,
   };
@@ -1982,7 +2038,26 @@ function createIssue(
         .filter((issue) => issue.projectKey === project.key)
         .map((issue) => issue.number),
     ) + 1;
+  const values = (fields['properties'] ?? {}) as Record<string, string>;
+  const problem = creationValuesProblem(
+    state.properties.map(({ id, askedAtCreation, required, options }) => ({
+      id,
+      askedAtCreation,
+      required,
+      optionIds: options.map((option) => option.id),
+    })),
+    values,
+  );
+  if (problem) {
+    const codes = {
+      unknownProperty: 'PROPERTY_NOT_FOUND',
+      unknownOption: 'INVALID_PROPERTY_OPTION',
+      missingRequired: 'PROPERTY_REQUIRED',
+    } as const;
+    return apiError(400, codes[problem.problem]);
+  }
   const issue = fakeIssue(project.key, number, String(fields['title']).trim(), {
+    properties: values,
     description: String(fields['description'] ?? ''),
     ...(fields['categoryId'] ? { categoryId: String(fields['categoryId']) } : {}),
     ...(fields['priorityId'] ? { priorityId: String(fields['priorityId']) } : {}),
@@ -2001,7 +2076,7 @@ function createIssue(
 }
 
 const ISSUE_PATH =
-  /^\/api\/v1\/issues\/([^/]+)(?:\/(status|assignee|labels|activities|comments|mentionable)(?:\/([^/]+))?)?$/;
+  /^\/api\/v1\/issues\/([^/]+)(?:\/(status|assignee|labels|properties|activities|comments|mentionable)(?:\/([^/]+))?)?$/;
 
 /** An issue the signed-in user sees, with its project and what they may do there. */
 interface SeenIssue {
@@ -2053,6 +2128,7 @@ function issueRequest(
     case 'GET ':
       return json({
         ...summaryOf(state, issue),
+        properties: propertyValuesOf(state, issue, { listedOnly: false }),
         id: '01a1569b-9900-7000-8000-000000000700',
         project: { key: project.key, name: project.name },
         description: issue.description,
@@ -2065,6 +2141,8 @@ function issueRequest(
       return unless('issue.update', () => moveIssue(state, issue, String(fields['statusId'])));
     case 'PUT labels':
       return unless('issue.update', () => setLabels(state, issue, fields));
+    case 'PUT properties':
+      return unless('issue.update', () => setProperty(state, issue, commentId ?? '', fields));
     case 'PUT assignee':
       return unless('issue.assign', () =>
         assignIssue(state, issue, (fields['assigneeId'] as string | null | undefined) ?? null),
@@ -2452,4 +2530,158 @@ function moveIssue(state: FakeServerState, issue: FakeIssue, statusId: string): 
   issue.statusId = statusId;
   issue.closedAt = to?.closes ? (issue.closedAt ?? new Date().toISOString()) : null;
   return NO_CONTENT();
+}
+
+/** `PUT /api/v1/issues/:key/properties/:propertyId`: an option of the property, or none. */
+function setProperty(
+  state: FakeServerState,
+  issue: FakeIssue,
+  propertyId: string,
+  fields: Record<string, unknown>,
+): Response {
+  const property = state.properties.find(({ id }) => id === propertyId);
+  if (!property) {
+    return apiError(404, 'PROPERTY_NOT_FOUND');
+  }
+  const optionId = (fields['optionId'] ?? null) as string | null;
+  const option = property.options.find(({ id }) => id === optionId) ?? null;
+  if (optionId !== null && !option) {
+    return apiError(400, 'INVALID_PROPERTY_OPTION');
+  }
+  const current = property.options.find(({ id }) => id === issue.properties[propertyId]) ?? null;
+  if (current?.id === option?.id) {
+    return NO_CONTENT();
+  }
+  issue.properties = withPropertyValue(issue.properties, propertyId, optionId);
+  const named = (named: { id: string; name: string } | null) =>
+    named ? { id: named.id, name: named.name } : null;
+  record(state, keyOf(issue), {
+    type: 'issue.propertyChanged',
+    payload: {
+      property: { id: property.id, name: property.name },
+      from: named(current),
+      to: named(option),
+    },
+  });
+  return NO_CONTENT();
+}
+
+/**
+ * `/api/v1/properties[/:id]`: listed with how many issues have each option, created, saved
+ * whole and deleted, a removed option leaving its issues.
+ */
+function propertyRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+  body: unknown,
+): Response | undefined {
+  const match = /^\/api\/v1\/properties(?:\/([^/]+))?$/.exec(path);
+  if (!match) {
+    return undefined;
+  }
+  const refusal = asHolder(state, 'instance.settings.manage');
+  if (refusal) {
+    return refusal;
+  }
+  const [, propertyId] = match;
+  if (propertyId === undefined) {
+    return method === 'POST' ? createFakeProperty(state, body) : listFakeProperties(state);
+  }
+  const property = state.properties.find(({ id }) => id === propertyId);
+  if (!property) {
+    return apiError(404, 'PROPERTY_NOT_FOUND');
+  }
+  if (method === 'DELETE') {
+    takeFakeOptionsOff(
+      state,
+      property.id,
+      property.options.map(({ id }) => id),
+    );
+    state.properties = state.properties.filter((candidate) => candidate !== property);
+    return NO_CONTENT();
+  }
+  const parsed = updatePropertyRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  const { options, removed, ...fields } = parsed.data;
+  takeFakeOptionsOff(state, property.id, removed);
+  const saved: FakeProperty = {
+    ...property,
+    ...fields,
+    options: options.map(({ id, name, color }, index) => ({
+      id: id ?? `01a1569b-9900-7000-8000-0000000005${String(index).padStart(2, '0')}`,
+      name,
+      color,
+    })),
+  };
+  state.properties = state.properties.map((candidate) =>
+    candidate === property ? saved : candidate,
+  );
+  return NO_CONTENT();
+}
+
+function listFakeProperties(state: FakeServerState): Response {
+  return json({
+    properties: state.properties.map((property) => ({
+      ...property,
+      options: property.options.map((option) => ({
+        ...option,
+        issueCount: state.issues.filter((issue) => issue.properties[property.id] === option.id)
+          .length,
+      })),
+    })),
+  });
+}
+
+function createFakeProperty(state: FakeServerState, body: unknown): Response {
+  const parsed = createPropertyRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  if (state.properties.some(({ name }) => fold(name) === fold(parsed.data.name))) {
+    return apiError(409, 'PROPERTY_NAME_TAKEN');
+  }
+  const property = fakeProperty(
+    state.properties.length + 1,
+    parsed.data.name,
+    parsed.data.options.map(({ name }) => name),
+    {
+      shownInList: parsed.data.shownInList,
+      askedAtCreation: parsed.data.askedAtCreation,
+      required: parsed.data.required,
+    },
+  );
+  state.properties.push({
+    ...property,
+    options: property.options.map((option, index) => ({
+      ...option,
+      color: parsed.data.options[index]?.color ?? option.color,
+    })),
+  });
+  return json({ id: property.id }, 201);
+}
+
+/** Takes options off the issues having them, each told in its history. */
+function takeFakeOptionsOff(
+  state: FakeServerState,
+  propertyId: string,
+  optionIds: readonly string[],
+): void {
+  const property = state.properties.find(({ id }) => id === propertyId);
+  for (const issue of state.issues) {
+    const option = property?.options.find(({ id }) => id === issue.properties[propertyId]);
+    if (property && option && optionIds.includes(option.id)) {
+      issue.properties = withPropertyValue(issue.properties, propertyId, null);
+      record(state, keyOf(issue), {
+        type: 'issue.propertyChanged',
+        payload: {
+          property: { id: property.id, name: property.name },
+          from: { id: option.id, name: option.name },
+          to: null,
+        },
+      });
+    }
+  }
 }

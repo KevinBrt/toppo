@@ -11,6 +11,8 @@ export {
   labels,
   notifications,
   priorities,
+  properties,
+  propertyOptions,
 } from './issues.ts';
 export { jobs } from './jobs.ts';
 export { projectMembers, projects } from './projects.ts';

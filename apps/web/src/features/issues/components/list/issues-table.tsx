@@ -15,6 +15,7 @@ import { sectionsOf } from '../../utils/issue-groups.util.ts';
 import { LabelChips } from '../fields/label-chips.tsx';
 import { PersonName } from '../fields/person-name.tsx';
 import { PriorityLabel } from '../fields/priority-label.tsx';
+import { PropertyChips } from '../fields/property-chips.tsx';
 import { StatusLabel } from '../fields/status-label.tsx';
 import { GroupTitle } from './group-title.tsx';
 import { IssueCards } from './issue-cards.tsx';
@@ -118,6 +119,10 @@ export function IssuesTable<Issue extends IssueSummary>({
             {issue.title}
           </Link>
           {/* Beside the subject while there is room for both. */}
+          <PropertyChips
+            values={issue.properties}
+            className="hidden max-w-[40%] shrink-0 flex-nowrap overflow-hidden md:flex"
+          />
           <LabelChips
             labels={issue.labels}
             max={2}

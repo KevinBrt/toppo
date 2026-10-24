@@ -1,4 +1,4 @@
-import type { IssueResponse, LabelRef, UserRef } from '@toppo/shared';
+import type { IssueResponse, LabelRef, PropertyOptionRef, UserRef } from '@toppo/shared';
 
 /** One change to an issue, as the page asks for it: enough to show it before the server answers. */
 export type IssueEdit =
@@ -8,4 +8,10 @@ export type IssueEdit =
   | { field: 'priority'; priority: IssueResponse['priority'] }
   | { field: 'status'; status: IssueResponse['status'] }
   | { field: 'assignee'; assignee: UserRef | null }
-  | { field: 'labels'; labels: LabelRef[] };
+  | { field: 'labels'; labels: LabelRef[] }
+  | {
+      field: 'property';
+      property: { id: string; name: string };
+      /** `null` takes the value away. */
+      option: PropertyOptionRef | null;
+    };

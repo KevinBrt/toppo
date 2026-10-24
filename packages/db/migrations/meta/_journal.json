@@ -253,6 +253,13 @@
       "when": 1792851405979,
       "tag": "0035_email_muted_events",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792852513877,
+      "tag": "0036_properties",
+      "breakpoints": true
     }
   ]
 }

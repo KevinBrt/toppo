@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PALETTE_COLORS } from '../colors.ts';
 import { projectKeySchema } from '../project-key.ts';
+import { issuePropertyFieldSchema, issuePropertyValueSchema } from '../properties/properties.ts';
 import { issueDescriptionSchema, issueTitleSchema, PRIORITY_LEVELS } from './fields.ts';
 import { labelRefSchema } from './labels.ts';
 
@@ -14,6 +15,8 @@ export const ISSUE_ACTIVITIES_PAGE_SIZE = 50;
 export const issueKeySchema = z.string().regex(/^[A-Z][A-Z0-9]{1,9}-[1-9]\d{0,8}$/);
 
 export const issueKeyParamsSchema = z.object({ issueKey: issueKeySchema });
+
+export const issuePropertyParamsSchema = issueKeyParamsSchema.extend({ propertyId: z.uuid() });
 
 export const projectIssuesParamsSchema = z.object({ projectKey: projectKeySchema });
 
@@ -63,6 +66,8 @@ export const createIssueRequestSchema = z.object({
   priorityId: z.uuid().optional(),
   /** Needs `issue.assign`. */
   assigneeId: z.uuid().optional(),
+  /** The option of each property given, by property id; required ones must be. */
+  properties: z.record(z.uuid(), z.uuid()).default({}),
 });
 
 export type CreateIssueRequest = z.input<typeof createIssueRequestSchema>;
@@ -208,6 +213,8 @@ export const issueSummarySchema = z.object({
   reporter: userRefSchema,
   /** By name. */
   labels: z.array(labelRefSchema),
+  /** The values of the properties shown in the list, oldest property first. */
+  properties: z.array(issuePropertyValueSchema),
   /** UTC ISO 8601. */
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
@@ -269,6 +276,8 @@ export type IssueSearchResponse = z.infer<typeof issueSearchResponseSchema>;
 /** Body of `GET /api/v1/issues/:issueKey`. */
 export const issueResponseSchema = issueSummarySchema.extend({
   id: z.uuid(),
+  /** The values of every property it has, oldest property first. */
+  properties: z.array(issuePropertyValueSchema),
   project: z.object({ key: z.string(), name: z.string() }),
   /** Markdown. */
   description: z.string(),
@@ -292,6 +301,8 @@ export const issueFieldsResponseSchema = z.object({
   priorities: z.array(issuePrioritySchema.extend({ isDefault: z.boolean() })),
   /** Every label of the instance, by name. */
   labels: z.array(labelRefSchema),
+  /** Every property of the instance, oldest first. */
+  properties: z.array(issuePropertyFieldSchema),
 });
 
 export type IssueFieldsResponse = z.infer<typeof issueFieldsResponseSchema>;

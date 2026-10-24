@@ -14,8 +14,9 @@ export const NAME_FIELD_CLASS =
   'h-9 min-w-0 flex-1 border-transparent bg-transparent shadow-none hover:border-border';
 
 /**
- * One category in the panel: its handle, its color, its name typed in place, and the way to
- * remove it, which issues having it prevent (their count says why).
+ * One option in a panel: its handle, its color, its name typed in place, and the way to remove
+ * it. Issues having a category prevent removing it (their count says why); an option of a
+ * property is taken off them instead.
  */
 export function CategoryOption({
   draft,
@@ -23,6 +24,7 @@ export function CategoryOption({
   handle,
   problem,
   removable,
+  removableWhenUsed = false,
   onChange,
   onRemove,
 }: {
@@ -32,6 +34,8 @@ export function CategoryOption({
   problem: NameProblem | undefined;
   /** False for the last option left: a list keeps at least one. */
   removable: boolean;
+  /** Removed even while issues have it, taken off them: a property's option. */
+  removableWhenUsed?: boolean;
   onChange: (change: Partial<Pick<OptionDraft, 'name' | 'color'>>) => void;
   onRemove: () => void;
 }) {
@@ -40,6 +44,7 @@ export function CategoryOption({
   const usedId = useId();
   const name = draft.name.trim() || t('properties.unnamed');
   const used = draft.issueCount > 0;
+  const locked = used && !removableWhenUsed;
 
   return (
     <div className="flex flex-col py-1">
@@ -69,8 +74,8 @@ export function CategoryOption({
           variant="ghost"
           size="icon"
           aria-label={t('properties.remove', { name })}
-          {...(used ? { 'aria-describedby': usedId, title: t('properties.inUseHint') } : {})}
-          disabled={used || !removable}
+          {...(locked ? { 'aria-describedby': usedId, title: t('properties.inUseHint') } : {})}
+          disabled={locked || !removable}
           onClick={onRemove}
           className="text-muted-foreground"
         >

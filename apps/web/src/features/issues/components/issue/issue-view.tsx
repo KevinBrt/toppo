@@ -43,6 +43,8 @@ function send(key: string, edit: IssueEdit): Promise<void> {
         key,
         edit.labels.map(({ id }) => id),
       );
+    case 'property':
+      return Issues.setProperty(key, edit.property.id, edit.option?.id ?? null);
   }
 }
 

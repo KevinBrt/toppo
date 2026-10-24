@@ -29,6 +29,7 @@ const SHOWN: Readonly<Record<keyof typeof ISSUE_ACTIVITY_PAYLOADS, boolean>> = {
   'issue.statusChanged': true,
   'issue.assigneeChanged': true,
   'issue.labelsChanged': true,
+  'issue.propertyChanged': true,
   'issue.commented': true,
   'issue.commentEdited': false,
   'issue.commentDeleted': false,
@@ -311,6 +312,12 @@ function toActivity(row: ActivityRow, shown: Shown): IssueActivity {
         ...base,
         type: 'issue.labelsChanged',
         payload: payloads['issue.labelsChanged'].parse(payload),
+      };
+    case 'issue.propertyChanged':
+      return {
+        ...base,
+        type: 'issue.propertyChanged',
+        payload: payloads['issue.propertyChanged'].parse(payload),
       };
     case 'issue.commented': {
       if (!row.comment) {

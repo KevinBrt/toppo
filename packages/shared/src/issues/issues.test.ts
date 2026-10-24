@@ -72,6 +72,7 @@ describe('issue requests', () => {
     expect(createIssueRequestSchema.parse({ title: '  Broken link ' })).toStrictEqual({
       title: 'Broken link',
       description: '',
+      properties: {},
     });
     expect(createIssueRequestSchema.safeParse({ title: '   ' }).success).toBe(false);
   });

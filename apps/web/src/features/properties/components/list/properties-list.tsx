@@ -1,27 +1,36 @@
-import type { CategoryRow, LabelRow, PriorityRow } from '@toppo/shared';
-import { ChevronRightIcon, ListIcon, TagsIcon } from 'lucide-react';
+import type { CategoryRow, LabelRow, PriorityRow, PropertyRow } from '@toppo/shared';
+import { Button } from '@toppo/ui';
+import { ChevronRightIcon, ListIcon, PlusIcon, TagsIcon } from 'lucide-react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
 
 export type BuiltInProperty = 'priority' | 'category' | 'labels';
 
+/** A line of the list: one of the built-in fields, or a property an admin added, by its id. */
+type ListedProperty = BuiltInProperty | { id: string };
+
 /**
- * The properties of the whole organization, each opening its panel: for now Priority and
- * Category, two lists of options every project uses, and the labels.
+ * The properties of the whole organization, each opening its panel: Priority and Category, two
+ * lists of options every project uses, the labels, then the properties admins add (Version,
+ * Team…), and the way to add one.
  */
 export function PropertiesList({
   categories,
   priorities,
   labels,
+  properties,
   onEdit,
+  onCreate,
 }: {
   categories: readonly CategoryRow[];
   priorities: readonly PriorityRow[];
   labels: readonly LabelRow[];
-  onEdit: (property: BuiltInProperty) => void;
+  properties: readonly PropertyRow[];
+  onEdit: (property: ListedProperty) => void;
+  onCreate: () => void;
 }) {
   const { t, locale } = useI18n();
-  const rows: { property: BuiltInProperty; name: string; type: string; options: string[] }[] = [
+  const rows: { property: ListedProperty; name: string; type: string; options: string[] }[] = [
     {
       property: 'priority',
       name: t('properties.priority'),
@@ -41,6 +50,12 @@ export function PropertiesList({
       type: t('properties.labelList'),
       options: labels.map(({ name }) => name),
     },
+    ...properties.map(({ id, name, options }) => ({
+      property: { id },
+      name,
+      type: t('properties.optionList'),
+      options: options.map((option) => option.name),
+    })),
   ];
 
   return (
@@ -57,7 +72,7 @@ export function PropertiesList({
       </div>
       <ul className="divide-y divide-border">
         {rows.map(({ property, name, type, options }) => (
-          <li key={property}>
+          <li key={typeof property === 'string' ? property : property.id}>
             <button
               type="button"
               onClick={() => onEdit(property)}
@@ -95,6 +110,12 @@ export function PropertiesList({
           </li>
         ))}
       </ul>
+      <div className="border-t border-border px-4 py-2.5">
+        <Button variant="ghost" size="sm" onClick={onCreate}>
+          <PlusIcon aria-hidden="true" />
+          {t('properties.newProperty')}
+        </Button>
+      </div>
     </section>
   );
 }

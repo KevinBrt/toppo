@@ -1,4 +1,9 @@
-import { ATTACHMENT_MEDIA_TYPES, NOTIFICATION_REASONS, PALETTE_COLORS } from '@toppo/shared';
+import {
+  ATTACHMENT_MEDIA_TYPES,
+  NOTIFICATION_REASONS,
+  PALETTE_COLORS,
+  PROPERTY_TYPES,
+} from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -99,6 +104,11 @@ export const issues = pgTable(
     /** Set while the issue's status closes it. */
     closedAt: timestamp('closed_at', { withTimezone: true }),
     /**
+     * The value of each property it has, by property id: an option's id for a list. Checked by
+     * the commands against the properties (`@toppo/core`); one without a value is left out.
+     */
+    properties: jsonb('properties').$type<Record<string, string>>().notNull().default({}),
+    /**
      * The words of the title, weighing more, and of the description, folded by `fold_text()` so
      * that search ignores case and accents. Computed by PostgreSQL, never written.
      */
@@ -126,6 +136,61 @@ export const issues = pgTable(
     index('issues_search_vector_idx').using('gin', table.searchVector),
     // Finds any part of a title, even inside a word or a path, through containsText().
     index('issues_title_trigram_idx').using('gin', sql`fold_text(${table.title}) gin_trgm_ops`),
+    // Finds the issues having an option (`properties @> '{"<property>": "<option>"}'`).
+    index('issues_properties_idx').using('gin', sql`${table.properties} jsonb_path_ops`),
+  ],
+);
+
+/**
+ * Properties of the issues (Version, Team…), defined for the whole instance in the settings: a
+ * list of options for now. Each says whether it shows in the issue list and whether it is asked
+ * at creation, then required.
+ */
+export const properties = pgTable(
+  'properties',
+  {
+    id: id(),
+    name: text('name').notNull(),
+    type: text('type', { enum: PROPERTY_TYPES }).notNull(),
+    shownInList: boolean('shown_in_list').notNull().default(false),
+    askedAtCreation: boolean('asked_at_creation').notNull().default(false),
+    required: boolean('required').notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [
+    check('properties_name_not_blank', sql`btrim(${table.name}) <> ''`),
+    // Mirrors PROPERTY_NAME_MAX_LENGTH (`@toppo/shared`).
+    check('properties_name_length', sql`char_length(${table.name}) <= 40`),
+    // Mirrors PROPERTY_TYPES (`@toppo/shared`).
+    check('properties_type_check', sql`${table.type} in ('list')`),
+    check('properties_required_if_asked', sql`${table.askedAtCreation} or not ${table.required}`),
+    uniqueIndex('properties_name_unique').on(sql`lower(${table.name})`),
+  ],
+);
+
+/** The options of a list property, in their order; gone with their property. */
+export const propertyOptions = pgTable(
+  'property_options',
+  {
+    id: id(),
+    propertyId: uuid('property_id')
+      .notNull()
+      .references(() => properties.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    color: text('color', { enum: PALETTE_COLORS }).notNull().default('gray'),
+    position: integer('position').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    check('property_options_name_not_blank', sql`btrim(${table.name}) <> ''`),
+    // Mirrors PROPERTY_NAME_MAX_LENGTH (`@toppo/shared`).
+    check('property_options_name_length', sql`char_length(${table.name}) <= 40`),
+    check(
+      'property_options_color_check',
+      sql`${table.color} in ('gray', 'blue', 'green', 'amber', 'violet', 'cyan', 'orange', 'pink')`,
+    ),
+    uniqueIndex('property_options_name_unique').on(table.propertyId, sql`lower(${table.name})`),
+    index('property_options_property_id_idx').on(table.propertyId, table.position),
   ],
 );
 

@@ -27,6 +27,12 @@ export const ISSUE_ACTIVITY_PAYLOADS = {
   'issue.assigneeChanged': z.object({ from: z.uuid().nullable(), to: z.uuid().nullable() }),
   // Labels as they were named, so that a label deleted since still reads.
   'issue.labelsChanged': z.object({ added: z.array(namedSchema), removed: z.array(namedSchema) }),
+  // The property and its options as they were named: one deleted since still reads.
+  'issue.propertyChanged': z.object({
+    property: namedSchema,
+    from: namedSchema.nullable(),
+    to: namedSchema.nullable(),
+  }),
   // A comment is kept by id only: deleted, its words leave no trace. The people it names
   // (`@`), newly when it is edited, by id.
   'issue.commented': z.object({ commentId: z.uuid(), mentioned: z.array(z.uuid()).default([]) }),
@@ -82,6 +88,7 @@ export const issueActivitySchema = z.discriminatedUnion('type', [
     z.object({ from: userRefSchema.nullable(), to: userRefSchema.nullable() }),
   ),
   entry('issue.labelsChanged', ISSUE_ACTIVITY_PAYLOADS['issue.labelsChanged']),
+  entry('issue.propertyChanged', ISSUE_ACTIVITY_PAYLOADS['issue.propertyChanged']),
   // The comment as it is now; a deleted one leaves the history.
   entry('issue.commented', z.object({ comment: issueCommentSchema })),
   // A file of the request, while it is there.

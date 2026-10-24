@@ -18,5 +18,12 @@ export function applyEdit(issue: IssueResponse, edit: IssueEdit): IssueResponse 
       return { ...issue, assignee: edit.assignee };
     case 'labels':
       return { ...issue, labels: edit.labels };
+    case 'property': {
+      const others = issue.properties.filter(({ id }) => id !== edit.property.id);
+      return {
+        ...issue,
+        properties: edit.option ? [...others, { ...edit.property, option: edit.option }] : others,
+      };
+    }
   }
 }

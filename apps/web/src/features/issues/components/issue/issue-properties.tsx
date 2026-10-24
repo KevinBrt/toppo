@@ -1,5 +1,5 @@
-import type { IssueFieldsResponse, IssueResponse } from '@toppo/shared';
-import { StatusBadge } from '@toppo/ui';
+import type { IssueFieldsResponse, IssuePropertyField, IssueResponse } from '@toppo/shared';
+import { Badge, StatusBadge } from '@toppo/ui';
 import { ChevronDownIcon } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { formatFullDateTime } from '../../../../shared/i18n/dates.util.ts';
@@ -13,7 +13,8 @@ import { PriorityLabel } from '../fields/priority-label.tsx';
 
 /**
  * The issue's fields beside it, one per row, their values aligned: status, priority, assignee,
- * category and labels, changed in place by who may; then who reported it and when.
+ * category, labels and the instance's properties, changed in place by who may; then who
+ * reported it and when.
  */
 export function IssueProperties({
   issue,
@@ -108,6 +109,16 @@ export function IssueProperties({
             onChange={(labels) => onEdit({ field: 'labels', labels })}
           />
         </Property>
+        {(fields?.properties ?? []).map((property) => (
+          <Property key={property.id} label={property.name}>
+            <PropertyField
+              property={property}
+              issue={issue}
+              disabled={!editsFields}
+              onEdit={onEdit}
+            />
+          </Property>
+        ))}
         <Property label={t('issues.reporter')}>
           <PersonName person={issue.reporter} withAvatar={false} />
         </Property>
@@ -169,5 +180,54 @@ function AssigneeField({
         onChoose={(assignee) => onEdit({ field: 'assignee', assignee })}
       />
     </>
+  );
+}
+
+/** Stands for no value in the menu of a property: no option has this id. */
+const NO_VALUE = 'none';
+
+/** A property of the issue: its option, or none, chosen in a menu of the property's options. */
+function PropertyField({
+  property,
+  issue,
+  disabled,
+  onEdit,
+}: {
+  property: IssuePropertyField;
+  issue: IssueResponse;
+  disabled: boolean;
+  onEdit: (edit: IssueEdit) => void;
+}) {
+  const { t } = useI18n();
+  const current = issue.properties.find(({ id }) => id === property.id)?.option;
+  return (
+    <FieldMenu
+      label={property.name}
+      disabled={disabled}
+      value={current?.id ?? NO_VALUE}
+      options={[
+        {
+          value: NO_VALUE,
+          text: t('issues.noValue'),
+          content: <span className="text-muted-foreground">{t('issues.noValue')}</span>,
+        },
+        ...property.options.map((option) => ({
+          value: option.id,
+          text: option.name,
+          content: (
+            <Badge tone={option.color} className="max-w-full">
+              <span className="truncate">{option.name}</span>
+            </Badge>
+          ),
+        })),
+      ]}
+      onChange={(optionId) =>
+        onEdit({
+          field: 'property',
+          property: { id: property.id, name: property.name },
+          option: property.options.find(({ id }) => id === optionId) ?? null,
+        })
+      }
+    />
   );
 }

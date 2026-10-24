@@ -192,6 +192,7 @@ describe('a new issue', () => {
       description: 'Error **500**',
       priorityId: HIGH.id,
       categoryId: BUG.id,
+      properties: {},
     });
     await expect.element(breadcrumb().getByText('WEB-4')).toBeVisible();
   });

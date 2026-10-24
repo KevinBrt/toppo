@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
-import { ADA, fakeIssue, fakeServer, GRACE, renderApp } from '../../../test-helpers.tsx';
+import {
+  ADA,
+  fakeIssue,
+  fakeProperty,
+  fakeServer,
+  GRACE,
+  renderApp,
+} from '../../../test-helpers.tsx';
 
 beforeEach(async () => {
   await page.viewport(1280, 800);
@@ -195,5 +202,91 @@ describe('the priorities', () => {
     await expect
       .element(screen.getByRole('button', { name: /4 options · Urgent, Important, Normal, Low/ }))
       .toBeVisible();
+  });
+});
+
+describe('the properties admins add', () => {
+  const VERSION = fakeProperty(1, 'Version', ['1.2', '1.3']);
+
+  it('are created with their options and settings, then listed', async () => {
+    const fake = fakeServer({ user: ADA });
+    const { screen } = await renderApp({ path: '/settings/properties' });
+
+    await screen.getByRole('button', { name: 'New property' }).click();
+    await expect.element(panel()).toHaveAccessibleName('New property');
+    await panel().getByLabelText('Name').fill('Version');
+    for (const name of ['1.2', '1.3']) {
+      await panel().getByLabelText('New option').fill(name);
+      await userEvent.keyboard('{Enter}');
+    }
+    await expect.element(panel().getByRole('switch', { name: 'Required' })).toBeDisabled();
+    await panel().getByRole('switch', { name: 'Asked when an issue is reported' }).click();
+    await panel().getByRole('switch', { name: 'Required' }).click();
+    await panel().getByRole('button', { name: 'Save' }).click();
+
+    await expect.element(panel()).not.toBeInTheDocument();
+    await expect
+      .element(screen.getByRole('button', { name: /Version 2 options · 1.2, 1.3/ }))
+      .toBeVisible();
+    expect(lastBody(fake, 'POST', '/api/v1/properties')).toMatchObject({
+      name: 'Version',
+      type: 'list',
+      shownInList: false,
+      askedAtCreation: true,
+      required: true,
+      options: [{ name: '1.2' }, { name: '1.3' }],
+    });
+  });
+
+  it('ask for a name and an option before saving', async () => {
+    const fake = fakeServer({ user: ADA });
+    const { screen } = await renderApp({ path: '/settings/properties' });
+
+    await screen.getByRole('button', { name: 'New property' }).click();
+    await panel().getByRole('button', { name: 'Save' }).click();
+
+    await expect.element(panel().getByLabelText('Name')).toHaveAttribute('aria-invalid', 'true');
+    await expect.element(panel().getByText('Add at least one option.')).toBeVisible();
+    expect(lastBody(fake, 'POST', '/api/v1/properties')).toBeUndefined();
+  });
+
+  it('say how many issues lose an option removed, then save the list whole', async () => {
+    const fake = fakeServer({
+      user: ADA,
+      properties: [VERSION],
+      issues: [
+        fakeIssue('WEB', 1, 'Crash', {
+          properties: { [VERSION.id]: VERSION.options[0]?.id ?? '' },
+        }),
+      ],
+    });
+    const { screen } = await renderApp({ path: '/settings/properties' });
+
+    await screen.getByRole('button', { name: /^Version/ }).click();
+    await panel().getByRole('button', { name: 'Remove 1.2' }).click();
+    await expect
+      .element(panel().getByText('Saving takes the options you removed off 1 issue.'))
+      .toBeVisible();
+    await panel().getByRole('button', { name: 'Save' }).click();
+
+    await expect.element(panel()).not.toBeInTheDocument();
+    expect(lastBody(fake, 'PUT', `/api/v1/properties/${VERSION.id}`)).toMatchObject({
+      options: [{ id: VERSION.options[1]?.id, name: '1.3' }],
+      removed: [VERSION.options[0]?.id],
+    });
+  });
+
+  it('are deleted after asking', async () => {
+    const fake = fakeServer({ user: ADA, properties: [VERSION] });
+    const { screen } = await renderApp({ path: '/settings/properties' });
+
+    await screen.getByRole('button', { name: /^Version/ }).click();
+    await panel().getByRole('button', { name: 'Delete the property' }).click();
+    const dialog = screen.getByRole('dialog', { name: 'Delete Version?' });
+    await expect.element(dialog.getByText('No issue has a value of it yet.')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Delete the property' }).click();
+
+    await expect.element(screen.getByRole('button', { name: /^Version/ })).not.toBeInTheDocument();
+    expect(fake.state.properties).toStrictEqual([]);
   });
 });

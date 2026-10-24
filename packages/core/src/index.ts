@@ -121,3 +121,9 @@ export {
   roleInProject,
 } from './permissions/projects.ts';
 export { projectColorFor } from './projects/project-color.ts';
+export {
+  creationValuesProblem,
+  type PropertyProblem,
+  type PropertyRules,
+  withPropertyValue,
+} from './properties/property-values.ts';

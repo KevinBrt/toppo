@@ -10,6 +10,8 @@ import {
   issueFieldsResponseSchema,
   issueKeyParamsSchema,
   issueLabelsRequestSchema,
+  issuePropertyParamsSchema,
+  issuePropertyRequestSchema,
   issueResponseSchema,
   issueSearchQuerySchema,
   issueSearchResponseSchema,
@@ -28,6 +30,7 @@ import { changeIssueStatus } from './commands/change-issue-status.command.ts';
 import { createIssue } from './commands/create-issue.command.ts';
 import { deleteIssue } from './commands/delete-issue.command.ts';
 import { setIssueLabels } from './commands/set-issue-labels.command.ts';
+import { setIssueProperty } from './commands/set-issue-property.command.ts';
 import { updateIssue } from './commands/update-issue.command.ts';
 import { getIssue } from './queries/get-issue.query.ts';
 import { getIssueFields } from './queries/get-issue-fields.query.ts';
@@ -170,6 +173,25 @@ function registerIssueKeyRoutes(app: FastifyInstance): void {
     async (request, reply) =>
       reply.status(204).send(
         await changeIssueStatus.execute(request.executionContext, {
+          ...request.params,
+          ...request.body,
+        }),
+      ),
+  );
+
+  routes.put(
+    '/api/v1/issues/:issueKey/properties/:propertyId',
+    {
+      config: { access: setIssueProperty.access },
+      schema: {
+        params: issuePropertyParamsSchema,
+        body: issuePropertyRequestSchema,
+        response: NO_CONTENT,
+      },
+    },
+    async (request, reply) =>
+      reply.status(204).send(
+        await setIssueProperty.execute(request.executionContext, {
           ...request.params,
           ...request.body,
         }),

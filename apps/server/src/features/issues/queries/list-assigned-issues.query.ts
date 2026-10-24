@@ -4,7 +4,7 @@ import { and, count, desc, eq, isNull, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { grantedIn } from '../../../platform/auth/project-access.ts';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
-import { labelsOfIssue, toIssueSummary } from '../utils/issue-rows.util.ts';
+import { labelsOfIssue, propertyValuesOfIssue, toIssueSummary } from '../utils/issue-rows.util.ts';
 
 const { issueCategories, issues, priorities, projects, statuses, users } = schema;
 const assignees = alias(users, 'assignees');
@@ -48,6 +48,7 @@ export const listAssignedIssues = defineQuery({
         assignee: { id: assignees.id, name: assignees.name, deletedAt: assignees.deletedAt },
         reporter: { id: reporters.id, name: reporters.name, deletedAt: reporters.deletedAt },
         labels: labelsOfIssue,
+        properties: propertyValuesOfIssue({ listedOnly: true }),
         createdAt: issues.createdAt,
         updatedAt: issues.updatedAt,
       })

@@ -3,6 +3,7 @@ import { schema } from '@toppo/db';
 import { type IssueFieldsResponse, projectIssuesParamsSchema } from '@toppo/shared';
 import { asc, eq, isNull, or, sql } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
+import { propertyFields } from '../utils/issue-properties.util.ts';
 
 const {
   issueCategories,
@@ -16,7 +17,8 @@ const {
 
 /**
  * The short lists issue forms offer in a project: the statuses of its workflow and the moves
- * between them, the categories and the priorities. Bounded lists, loaded whole.
+ * between them, the categories, the priorities, the labels and the properties. Bounded lists,
+ * loaded whole.
  */
 export const getIssueFields = defineQuery({
   name: 'issue.fields',
@@ -28,7 +30,7 @@ export const getIssueFields = defineQuery({
       .from(workflows)
       .where(or(isNull(workflows.projectId), eq(workflows.projectId, project.id)));
     const workflow = effectiveWorkflow(candidates, project.id);
-    const [steps, transitions, categories, levels, tags] = await Promise.all([
+    const [steps, transitions, categories, levels, tags, fields] = await Promise.all([
       db
         .select({
           id: statuses.id,
@@ -70,6 +72,7 @@ export const getIssueFields = defineQuery({
         .select({ id: labels.id, name: labels.name, color: labels.color })
         .from(labels)
         .orderBy(sql`lower(${labels.name})`, asc(labels.id)),
+      propertyFields(db),
     ]);
     const moves = { mode: workflow.mode, statusIds: steps.map(({ id }) => id), transitions };
 
@@ -81,6 +84,7 @@ export const getIssueFields = defineQuery({
         level: priorityLevelOf(priority.level),
       })),
       labels: tags,
+      properties: fields,
     };
   },
 });

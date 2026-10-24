@@ -16,6 +16,7 @@ import { pruneNotificationsJob } from './features/notifications/jobs/prune-notif
 import { registerNotificationRoutes } from './features/notifications/notifications.routes.ts';
 import { registerPriorityRoutes } from './features/priorities/priorities.routes.ts';
 import { registerProjectRoutes } from './features/projects/projects.routes.ts';
+import { registerPropertyRoutes } from './features/properties/properties.routes.ts';
 import { registerRoleRoutes } from './features/roles/roles.routes.ts';
 import { registerSetupRoutes } from './features/setup/setup.routes.ts';
 import { registerUserRoutes } from './features/users/users.routes.ts';
@@ -156,6 +157,7 @@ export async function buildApp({
   registerCategoryRoutes(app);
   registerPriorityRoutes(app);
   registerLabelRoutes(app);
+  registerPropertyRoutes(app);
   registerMailRoutes(app);
   registerNotificationRoutes(app);
   registerWorkflowRoutes(app);

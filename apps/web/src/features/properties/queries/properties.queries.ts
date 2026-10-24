@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { Categories } from '../api/categories.api.ts';
 import { Labels } from '../api/labels.api.ts';
 import { Priorities } from '../api/priorities.api.ts';
+import { Properties } from '../api/properties.api.ts';
 
 /** Cached settings of the issues' properties. Keys start with `properties`. */
 export const PropertiesQueries = {
@@ -18,5 +19,10 @@ export const PropertiesQueries = {
   labels: queryOptions({
     queryKey: ['properties', 'labels'],
     queryFn: () => Labels.list(),
+  }),
+  /** The properties admins add: Version, Team… */
+  custom: queryOptions({
+    queryKey: ['properties', 'custom'],
+    queryFn: () => Properties.list(),
   }),
 };

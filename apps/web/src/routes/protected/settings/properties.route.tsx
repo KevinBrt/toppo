@@ -11,6 +11,7 @@ import {
 import { CategoryPanel } from '../../../features/properties/components/panels/category-panel.tsx';
 import { LabelPanel } from '../../../features/properties/components/panels/label-panel.tsx';
 import { PriorityPanel } from '../../../features/properties/components/panels/priority-panel.tsx';
+import { PropertyPanel } from '../../../features/properties/components/panels/property-panel.tsx';
 import { PropertiesQueries } from '../../../features/properties/queries/properties.queries.ts';
 import { SessionQueries } from '../../../features/session/queries/session.queries.ts';
 import { requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';
@@ -34,8 +35,10 @@ function PropertiesScreen() {
   const categories = useQuery({ ...PropertiesQueries.categories, enabled: allowed });
   const priorities = useQuery({ ...PropertiesQueries.priorities, enabled: allowed });
   const labels = useQuery({ ...PropertiesQueries.labels, enabled: allowed });
+  const custom = useQuery({ ...PropertiesQueries.custom, enabled: allowed });
   const queryClient = useQueryClient();
-  const [editing, setEditing] = useState<BuiltInProperty | null>(null);
+  // A built-in field, a property by its id, or a new one (no id yet).
+  const [editing, setEditing] = useState<BuiltInProperty | { id: string | null } | null>(null);
 
   if (!allowed) {
     return (
@@ -44,34 +47,44 @@ function PropertiesScreen() {
       </Page>
     );
   }
-  const failure = categories.error ?? priorities.error ?? labels.error;
+  const failure = categories.error ?? priorities.error ?? labels.error ?? custom.error;
+  // The issue forms show the new names and the new default at once.
+  const saved = async () => {
+    setEditing(null);
+    await queryClient.invalidateQueries({ queryKey: IssuesQueries.all });
+  };
   const panel = (property: BuiltInProperty) => ({
     open: editing === property,
     onOpenChange: (open: boolean) => setEditing(open ? property : null),
-    // The issue forms show the new names and the new default at once.
-    onSaved: async () => {
-      setEditing(null);
-      await queryClient.invalidateQueries({ queryKey: IssuesQueries.all });
-    },
+    onSaved: saved,
   });
+  const editingCustom = editing !== null && typeof editing === 'object' ? editing : null;
 
   return (
     <Page title={t('properties.title')} description={t('properties.description')}>
       {failure ? <Alert tone="danger">{requestErrorMessage(failure, t)}</Alert> : null}
-      {categories.data && priorities.data && labels.data ? (
+      {categories.data && priorities.data && labels.data && custom.data ? (
         <>
           <PropertiesList
             categories={categories.data}
             priorities={priorities.data}
             labels={labels.data}
+            properties={custom.data}
             onEdit={setEditing}
+            onCreate={() => setEditing({ id: null })}
+          />
+          <PropertyPanel
+            open={editingCustom !== null}
+            onOpenChange={(open) => setEditing(open ? editingCustom : null)}
+            property={custom.data.find(({ id }) => id === editingCustom?.id) ?? null}
+            onSaved={saved}
           />
           <CategoryPanel categories={categories.data} {...panel('category')} />
           <PriorityPanel priorities={priorities.data} {...panel('priority')} />
           <LabelPanel labels={labels.data} {...panel('labels')} />
         </>
       ) : null}
-      {categories.isPending || priorities.isPending || labels.isPending ? (
+      {categories.isPending || priorities.isPending || labels.isPending || custom.isPending ? (
         <p role="status" className="text-sm text-muted-foreground">
           {t('properties.loading')}
         </p>

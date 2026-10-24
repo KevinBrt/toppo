@@ -6,6 +6,7 @@ import {
   CircleDotIcon,
   FilePlusIcon,
   FlagIcon,
+  ListIcon,
   type LucideIcon,
   MessageSquareTextIcon,
   PaperclipIcon,
@@ -50,6 +51,8 @@ function iconOf(activity: IssueActivity): LucideIcon {
       return PaperclipIcon;
     case 'issue.labelsChanged':
       return TagsIcon;
+    case 'issue.propertyChanged':
+      return ListIcon;
   }
 }
 
@@ -212,6 +215,13 @@ function describe(
       return t('issues.activity.attached', { name: activity.payload.attachment.fileName });
     case 'issue.labelsChanged':
       return labelsChanged(activity.payload, t, locale);
+    case 'issue.propertyChanged':
+      return activity.payload.to
+        ? t('issues.activity.propertyChanged', {
+            property: activity.payload.property.name,
+            to: activity.payload.to.name,
+          })
+        : t('issues.activity.propertyCleared', { property: activity.payload.property.name });
   }
 }
 
@@ -282,6 +292,15 @@ function field(
       return t('issues.activity.attached', { name: activity.payload.attachment.fileName });
     case 'issue.labelsChanged':
       return labelsChanged(activity.payload, t, locale);
+    case 'issue.propertyChanged':
+      return labelled(
+        activity.payload.property.name,
+        <FromTo
+          from={activity.payload.from?.name ?? t('issues.activity.noValue')}
+          to={strong(activity.payload.to?.name ?? t('issues.activity.noValue'))}
+          t={t}
+        />,
+      );
   }
 }
 
