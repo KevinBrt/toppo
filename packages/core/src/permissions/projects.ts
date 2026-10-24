@@ -20,6 +20,17 @@ export function canReachProject({ role, allProjects, membership }: ProjectAccess
 }
 
 /**
+ * The role someone works with in a project: the one the project gives them, or else their own.
+ * The system role stays theirs whatever the project gives.
+ */
+export function roleInProject<Role extends { grantsAll: boolean }>(
+  own: Role,
+  given: Role | null | undefined,
+): Role {
+  return own.grantsAll ? own : (given ?? own);
+}
+
+/**
  * What a member may do inside a project, or `null` when they cannot reach it. The role the
  * project gives them replaces their own there, and grants project permissions only: what applies
  * to the whole instance comes from their own role alone. The system role keeps everything.
@@ -28,8 +39,9 @@ export function projectPermissionsOf(access: ProjectAccess): ProjectPermission[]
   if (!canReachProject(access)) {
     return null;
   }
-  const role = access.role.grantsAll ? access.role : (access.membership?.role ?? access.role);
-  return permissionsOfRole(role).filter(isProjectPermission);
+  return permissionsOfRole(roleInProject(access.role, access.membership?.role)).filter(
+    isProjectPermission,
+  );
 }
 
 /**

@@ -13,11 +13,12 @@ import { IssuesQueries } from '../../queries/issues.queries.ts';
 import { chooseFiles } from '../../utils/attachment-files.util.ts';
 import { AttachButton, useFileDrop } from '../attachments/attach-button.tsx';
 import { DraftFiles, FailedUploads, RefusedFiles } from '../attachments/draft-files.tsx';
+import { useMentions } from './mention-list.tsx';
 
 /**
  * The way to comment, above the history: plain text in a card, addressed to whoever reported
- * the issue, files joined to it by the paperclip or dropped on the card, and one button to send
- * it all. Reports the comment once sent, and empties itself.
+ * the issue, naming people with `@`, files joined to it by the paperclip or dropped on the card,
+ * and one button to send it all. Reports the comment once sent, and empties itself.
  */
 export function CommentForm({
   issueKey,
@@ -36,13 +37,15 @@ export function CommentForm({
   const [refused, setRefused] = useState<RefusedFile[]>([]);
   const [failed, setFailed] = useState<FailedUpload[]>([]);
   const limits = useQuery(IssuesQueries.attachmentLimits);
+  const mentions = useMentions({ issueKey, value: body, onChange: setBody });
   const add = useMutation({
     mutationFn: async ({ text, files }: { text: string; files: readonly FileDraft[] }) => {
-      const commentId = await Comments.add(issueKey, text);
+      const commentId = await Comments.add(issueKey, text, mentions.mentions(text));
       return await Attachments.addAll(issueKey, files, { commentId });
     },
     onSuccess: async (failures) => {
       setBody('');
+      mentions.reset();
       setDrafts([]);
       setFailed(failures);
       await onCommented();
@@ -89,19 +92,22 @@ export function CommentForm({
         <label htmlFor={fieldId} className="sr-only">
           {t('issues.comments.add')}
         </label>
-        <textarea
-          id={fieldId}
-          value={body}
-          rows={3}
-          maxLength={COMMENT_BODY_MAX_LENGTH}
-          placeholder={
-            firstName
-              ? t('issues.comments.replyTo', { name: firstName })
-              : t('issues.comments.placeholder')
-          }
-          onChange={(event) => setBody(event.target.value)}
-          className="block min-h-20 w-full resize-y rounded-t-xl bg-transparent px-4 pt-3 pb-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground pointer-coarse:text-base"
-        />
+        <div className="relative">
+          <textarea
+            id={fieldId}
+            value={body}
+            rows={3}
+            maxLength={COMMENT_BODY_MAX_LENGTH}
+            placeholder={
+              firstName
+                ? t('issues.comments.replyTo', { name: firstName })
+                : t('issues.comments.placeholder')
+            }
+            {...mentions.field}
+            className="block min-h-20 w-full resize-y rounded-t-xl bg-transparent px-4 pt-3 pb-2 text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground pointer-coarse:text-base"
+          />
+          {mentions.list}
+        </div>
         {drafts.length > 0 ? (
           <div className="px-3 pb-3">
             <DraftFiles

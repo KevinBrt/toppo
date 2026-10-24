@@ -9,7 +9,7 @@ import {
   projectPermissionsOf,
 } from '@toppo/core';
 import { type Db, schema } from '@toppo/db';
-import { and, eq, type SQL, sql } from 'drizzle-orm';
+import { and, eq, inArray, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { HttpError } from '../http/http-error.ts';
 import type { Actor } from './actor.ts';
@@ -97,13 +97,18 @@ export function grantedIn(actorId: string, permissions: readonly ProjectPermissi
       or ((${projectMembers.id} is not null or ${users.allProjects}) and (
         coalesce(${projectRoles.grantsAll}, false)
         or coalesce(${projectRoles.permissions}, ${ownRoles.permissions})
-          && array[${sql.join(
-            permissions.map((permission) => sql`${permission}`),
-            sql`, `,
-          )}]::text[]
+          && ${permissionsArray(permissions)}
       ))
     )
   )`;
+}
+
+/** `permissions` as a PostgreSQL array, to compare with the `&&` overlap operator. */
+function permissionsArray(permissions: readonly ProjectPermission[]): SQL {
+  return sql`array[${sql.join(
+    permissions.map((permission) => sql`${permission}`),
+    sql`, `,
+  )}]::text[]`;
 }
 
 /**
@@ -155,6 +160,47 @@ export async function resolveProject(
     throw new HttpError(403, 'FORBIDDEN', 'You do not have permission to do this');
   }
   return { id: row.id, key: row.key, archived: row.archivedAt !== null, permissions };
+}
+
+/**
+ * The users who see the issue `issueId`, as a condition on `users`: their account active, they
+ * reach its project and read every issue there or, having reported it, their own (`canSeeIssue`
+ * in `@toppo/core`, in SQL). To tell people of a change, or to let a comment name them.
+ */
+export function seeingIssue(issueId: string): SQL {
+  const reads = permissionsArray(['issue.read']);
+  const readsOwn = permissionsArray(['issue.read', 'issue.read.own']);
+  return sql`(${users.deactivatedAt} is null and ${users.deletedAt} is null and exists (
+    select 1 from ${issues}
+      join ${roles} as own_roles on ${ownRoles.id} = ${users.instanceRoleId}
+      left join ${projectMembers} on ${projectMembers.projectId} = ${issues.projectId}
+        and ${projectMembers.userId} = ${users.id}
+      left join ${roles} as project_roles on ${projectRoles.id} = ${projectMembers.roleId}
+    where ${issues.id} = ${issueId} and (
+      ${ownRoles.grantsAll}
+      or ((${projectMembers.id} is not null or ${users.allProjects}) and (
+        coalesce(${projectRoles.grantsAll}, false)
+        or coalesce(${projectRoles.permissions}, ${ownRoles.permissions})
+          && case when ${users.id} = ${issues.reporterId} then ${readsOwn} else ${reads} end
+      ))
+    )
+  ))`;
+}
+
+/** Those of `userIds` who see the issue `issueId` (`seeingIssue`). */
+export async function whoSeesIssue(
+  db: Pick<Db, 'select'>,
+  issueId: string,
+  userIds: readonly string[],
+): Promise<string[]> {
+  if (userIds.length === 0) {
+    return [];
+  }
+  const people = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(inArray(users.id, [...userIds]), seeingIssue(issueId)));
+  return people.map(({ id }) => id);
 }
 
 /**

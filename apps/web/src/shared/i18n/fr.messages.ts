@@ -170,6 +170,9 @@ export const fr: Messages = {
       deleteConfirm: 'Supprimer le commentaire',
       deleting: 'Suppression…',
       notFound: 'Ce commentaire n’existe plus. Rechargez la page.',
+      mentionTitle: 'Mentionner un utilisateur',
+      mentionKeys: '↑↓ pour naviguer · Entrée pour choisir · Échap pour fermer',
+      invalidMention: 'Une personne mentionnée ne peut plus l’être ici.',
     },
     attachments: {
       title: 'Pièces jointes',
@@ -427,6 +430,29 @@ export const fr: Messages = {
     emptyTitle: 'Rien à configurer pour l’instant',
     emptyDescription: 'Les workflows, champs personnalisés, labels et rôles se configureront ici.',
     issuesSection: 'Tickets',
+  },
+  notifications: {
+    title: 'Notifications',
+    description:
+      'Ce qui s’est passé sur les tickets qui vous concernent, du plus récent au plus ancien.',
+    bellUnread: {
+      one: 'Notifications, {count} non lue',
+      other: 'Notifications, {count} non lues',
+    },
+    unread: 'Non lue :',
+    markAllRead: 'Tout marquer comme lu',
+    seeAll: 'Tout voir',
+    empty: 'Aucune notification pour l’instant.',
+    emptyDescription:
+      'Vous êtes prévenu ici quand un ticket vous est assigné, quand quelqu’un commente ou fait avancer un ticket qui vous concerne, et quand on vous mentionne.',
+    loading: 'Chargement des notifications…',
+    shown: { one: '{count} notification affichée', other: '{count} notifications affichées' },
+    events: {
+      assigned: '{name} vous a assigné {key}',
+      commented: '{name} a commenté {key}',
+      mentioned: '{name} vous a mentionné dans {key}',
+      statusChanged: '{name} a passé {key} à « {status} »',
+    },
   },
   properties: {
     title: 'Propriétés des tickets',

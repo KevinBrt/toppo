@@ -71,6 +71,11 @@ export {
 export { closingChanges, planWorkflow, type WorkflowPlan } from './issues/workflow-plan.ts';
 export { retryDelay } from './jobs/retry.ts';
 export {
+  type IssuePeople,
+  type NotifiedChange,
+  recipientsOf,
+} from './notifications/recipients.ts';
+export {
   type AccountChange,
   canActOnRole,
   type InstanceAccounts,
@@ -113,5 +118,6 @@ export {
   canReachProject,
   type ProjectAccess,
   projectPermissionsOf,
+  roleInProject,
 } from './permissions/projects.ts';
 export { projectColorFor } from './projects/project-color.ts';

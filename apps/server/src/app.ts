@@ -8,6 +8,9 @@ import { registerCommentRoutes } from './features/comments/comments.routes.ts';
 import { registerInvitationRoutes } from './features/invitations/invitations.routes.ts';
 import { registerIssueRoutes } from './features/issues/issues.routes.ts';
 import { registerLabelRoutes } from './features/labels/labels.routes.ts';
+import { notifyActivityJob } from './features/notifications/jobs/notify-activity.job.ts';
+import { pruneNotificationsJob } from './features/notifications/jobs/prune-notifications.job.ts';
+import { registerNotificationRoutes } from './features/notifications/notifications.routes.ts';
 import { registerPriorityRoutes } from './features/priorities/priorities.routes.ts';
 import { registerProjectRoutes } from './features/projects/projects.routes.ts';
 import { registerRoleRoutes } from './features/roles/roles.routes.ts';
@@ -70,7 +73,7 @@ export function createServices({
 
 /** Every job the workers run: each server process runs one worker, `main.ts` starts it. */
 export function createJobs({ files }: Pick<AppDependencies, 'files'>): RunnableJob[] {
-  return [fileSweepJob(files)];
+  return [fileSweepJob(files), notifyActivityJob, pruneNotificationsJob];
 }
 
 /** Builds the Fastify application without listening, so tests can drive it with `inject()`. */
@@ -131,6 +134,7 @@ export async function buildApp({
   registerCategoryRoutes(app);
   registerPriorityRoutes(app);
   registerLabelRoutes(app);
+  registerNotificationRoutes(app);
   registerWorkflowRoutes(app);
 
   const servesWebApp = await registerWebApp(app, webRoot);

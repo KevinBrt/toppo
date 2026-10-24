@@ -6,6 +6,7 @@ import { CommandPalette } from '../../features/issues/components/palette/command
 import { PaletteButton } from '../../features/issues/components/palette/palette-button.tsx';
 import type { PaletteCommand } from '../../features/issues/models/palette.model.ts';
 import { lastProject } from '../../features/issues/utils/last-project.util.ts';
+import { NotificationBell } from '../../features/notifications/components/notification-bell.tsx';
 import { AccountFooter } from '../../features/session/components/account-footer.tsx';
 import { loadSession, SessionQueries } from '../../features/session/queries/session.queries.ts';
 import { useI18n } from '../../shared/i18n/i18n-provider.tsx';
@@ -85,7 +86,12 @@ function ProtectedLayout() {
             onSignedOut={() => router.navigate({ to: '/login' })}
           />
         )}
-        topbarEnd={<PaletteButton onOpen={() => setSearching(true)} />}
+        topbarEnd={
+          <>
+            <PaletteButton onOpen={() => setSearching(true)} />
+            <NotificationBell />
+          </>
+        }
       />
       <CommandPalette
         open={searching}

@@ -115,7 +115,8 @@ export const listIssueActivities = defineQuery({
       .leftJoin(comments, about)
       .leftJoin(attachments, aboutFile)
       .where(ofIssue);
-    const people = await peopleNamedIn(db, rows);
+    const namedByComments = await namedByCommentsIn(db, project.issue.id, rows);
+    const people = await peopleNamedIn(db, rows, namedByComments);
     const filesOfComments = await filesOfCommentsIn(db, rows);
     // Read-only while archived: nothing to offer.
     const actionsOn = (authorId: string) =>
@@ -126,6 +127,7 @@ export const listIssueActivities = defineQuery({
         : attachmentActionsOf(project.permissions, place, file.uploaderId === actor.id);
     const shown = {
       people,
+      namedByComments,
       filesOfComments,
       actionsOn,
       fileActions,
@@ -179,9 +181,50 @@ function toAttachment(file: AttachmentRow, actions: AttachmentAction[]): IssueAt
   return { id, fileName, mediaType, size, actions };
 }
 
-/** The people assignment changes name, by id, in one query: named as they are now. */
-async function peopleNamedIn(db: Db, rows: readonly ActivityRow[]): Promise<Map<string, UserRef>> {
-  const ids = new Set<string>();
+/**
+ * Whom each comment of a page has named, by comment id, in one query: what its activities told,
+ * when it was written and at each edit.
+ */
+async function namedByCommentsIn(
+  db: Db,
+  issueId: string,
+  rows: readonly ActivityRow[],
+): Promise<Map<string, string[]>> {
+  const commentIds = rows.flatMap(({ comment }) => (comment ? [comment.id] : []));
+  const named = new Map<string, string[]>();
+  if (commentIds.length === 0) {
+    return named;
+  }
+  const commentId = sql<string>`${activities.payload} ->> 'commentId'`;
+  const found = await db
+    .select({
+      commentId,
+      userId: sql<string>`jsonb_array_elements_text(${activities.payload} -> 'mentioned')`,
+    })
+    .from(activities)
+    .where(
+      and(
+        eq(activities.issueId, issueId),
+        inArray(activities.type, ['issue.commented', 'issue.commentEdited']),
+        inArray(commentId, commentIds),
+      ),
+    )
+    .orderBy(asc(activities.id));
+  for (const row of found) {
+    named.set(row.commentId, [...(named.get(row.commentId) ?? []), row.userId]);
+  }
+  return named;
+}
+
+/**
+ * The people assignment changes and comments name, by id, in one query: named as they are now.
+ */
+async function peopleNamedIn(
+  db: Db,
+  rows: readonly ActivityRow[],
+  namedByComments: ReadonlyMap<string, readonly string[]>,
+): Promise<Map<string, UserRef>> {
+  const ids = new Set([...namedByComments.values()].flat());
   for (const row of rows) {
     if (row.type === 'issue.assigneeChanged') {
       const { from, to } = ISSUE_ACTIVITY_PAYLOADS['issue.assigneeChanged'].parse(row.payload);
@@ -205,6 +248,7 @@ async function peopleNamedIn(db: Db, rows: readonly ActivityRow[]): Promise<Map<
 /** What a page of history needs, besides its rows, to show them. */
 interface Shown {
   people: ReadonlyMap<string, UserRef>;
+  namedByComments: ReadonlyMap<string, readonly string[]>;
   filesOfComments: ReadonlyMap<string, AttachmentRow[]>;
   actionsOn: (authorId: string) => CommentAction[];
   fileActions: FileActions;
@@ -283,6 +327,9 @@ function toActivity(row: ActivityRow, shown: Shown): IssueActivity {
             editedAt: editedAt?.toISOString() ?? null,
             attachments: (filesOfComments.get(id) ?? []).map((file) =>
               toAttachment(file, fileActions(file, place)),
+            ),
+            mentions: (shown.namedByComments.get(id) ?? []).map(
+              (named) => people.get(named) ?? { id: named, name: null },
             ),
             actions: actionsOn(authorId),
           },

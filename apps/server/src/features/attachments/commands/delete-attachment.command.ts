@@ -2,11 +2,12 @@ import { attachmentActionsOf } from '@toppo/core';
 import { schema } from '@toppo/db';
 import { attachmentParamsSchema, type IssueActivityPayload } from '@toppo/shared';
 import { and, eq, sql } from 'drizzle-orm';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { attachmentNotFound, placeOf } from '../utils/attachment-rows.util.ts';
 
-const { activities, attachments, comments, issues } = schema;
+const { attachments, comments, issues } = schema;
 
 /**
  * Removes a file for good (`attachmentActionsOf`, which needs no single permission): its row
@@ -36,7 +37,7 @@ export const deleteAttachment = defineCommand({
     await tx.delete(attachments).where(eq(attachments.id, attachmentId));
     await tx.update(issues).set({ updatedAt: sql`now()` }).where(eq(issues.id, issue.id));
     const payload: IssueActivityPayload<'issue.attachmentRemoved'> = { attachmentId };
-    await tx.insert(activities).values({
+    await recordActivity(tx, {
       projectId: project.id,
       issueId: issue.id,
       actorId: actor.id,

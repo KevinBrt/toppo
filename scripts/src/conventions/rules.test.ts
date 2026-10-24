@@ -79,6 +79,7 @@ describe('security rules', () => {
     ['node.insertAdjacentHTML("beforeend", html)', 'no-html-sink'],
     ['const run = new Function(code);', 'no-html-sink'],
     ['const token = Math.random().toString(36);', 'no-insecure-random'],
+    ['await tx.insert(activities).values({ type });', 'activities-through-record'],
   ])('flags %s', (source, rule) => {
     expect(rulesBroken(SERVER, source)).toContain(rule);
   });

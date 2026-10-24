@@ -42,6 +42,10 @@ const OPEN_API_ROUTES = [
   'GET /api/v1/issues/search',
   'GET /api/v1/me',
   'PATCH /api/v1/me',
+  // Each user's own notifications, filtered in the query by who they are and what they see.
+  'GET /api/v1/notifications',
+  'GET /api/v1/notifications/unread-count',
+  'POST /api/v1/notifications/read',
   // Lists only the projects the caller reaches, filtered in the query.
   'GET /api/v1/projects',
   'GET /api/v1/setup',

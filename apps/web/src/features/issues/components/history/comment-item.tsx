@@ -10,14 +10,16 @@ import {
   Textarea,
 } from '@toppo/ui';
 import { EllipsisIcon, MessageSquareTextIcon, PencilIcon, Trash2Icon } from 'lucide-react';
-import { useId, useState } from 'react';
+import { Fragment, useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { formatDateTime } from '../../../../shared/i18n/dates.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { Comments } from '../../api/comments.api.ts';
 import { COMMENT_ERRORS } from '../../constants/comments.constants.ts';
+import { mentionParts } from '../../utils/mentions.util.ts';
 import { AttachmentList } from '../attachments/attachment-list.tsx';
 import { DeleteCommentDialog } from './delete-comment-dialog.tsx';
+import { useMentions } from './mention-list.tsx';
 
 type CommentActivity = Extract<IssueActivity, { type: 'issue.commented' }>;
 
@@ -98,9 +100,24 @@ export function CommentItem({
         </div>
         <div className="mt-1 rounded-xl border border-border bg-surface px-4 py-3 shadow-xs">
           {draft === null ? (
-            // Plain text, as written: its line breaks kept, nothing interpreted.
+            // Plain text, as written: its line breaks kept, nothing interpreted but the people
+            // it names, set apart.
             <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-foreground">
-              {comment.body}
+              {mentionParts(
+                comment.body,
+                comment.mentions.flatMap(({ name }) => (name ? [name] : [])),
+              ).map((part) =>
+                part.mention ? (
+                  <span
+                    key={part.at}
+                    className="rounded bg-primary-subtle px-1 py-px font-medium text-primary-subtle-foreground"
+                  >
+                    {part.text}
+                  </span>
+                ) : (
+                  <Fragment key={part.at}>{part.text}</Fragment>
+                ),
+              )}
             </p>
           ) : (
             <EditComment
@@ -139,7 +156,7 @@ export function CommentItem({
   );
 }
 
-/** A comment's words, changed in place, saved or let go. */
+/** A comment's words, changed in place, naming people with `@`, saved or let go. */
 function EditComment({
   issueKey,
   commentId,
@@ -155,8 +172,9 @@ function EditComment({
 }) {
   const { t } = useI18n();
   const fieldId = useId();
+  const mentions = useMentions({ issueKey, value: draft, onChange: onDraft });
   const edit = useMutation({
-    mutationFn: (body: string) => Comments.edit(issueKey, commentId, body),
+    mutationFn: (body: string) => Comments.edit(issueKey, commentId, body, mentions.mentions(body)),
     onSuccess: () => onDone(true),
   });
 
@@ -177,14 +195,17 @@ function EditComment({
       <label htmlFor={fieldId} className="sr-only">
         {t('issues.comments.editLabel')}
       </label>
-      <Textarea
-        id={fieldId}
-        value={draft}
-        rows={3}
-        maxLength={COMMENT_BODY_MAX_LENGTH}
-        onChange={(event) => onDraft(event.target.value)}
-        className="min-h-20 resize-y"
-      />
+      <div className="relative">
+        <Textarea
+          id={fieldId}
+          value={draft}
+          rows={3}
+          maxLength={COMMENT_BODY_MAX_LENGTH}
+          {...mentions.field}
+          className="min-h-20 resize-y"
+        />
+        {mentions.list}
+      </div>
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={() => onDone(false)}>
           {t('issues.cancel')}

@@ -1,6 +1,7 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
 import type { IssuesQuery, ProjectIssuesQuery } from '@toppo/shared';
 import { Attachments } from '../api/attachments.api.ts';
+import { Comments } from '../api/comments.api.ts';
 import { Issues } from '../api/issues.api.ts';
 
 /** Cached issues data. Keys start with `issues`. */
@@ -72,6 +73,13 @@ export const IssuesQueries = {
     queryOptions({
       queryKey: ['issues', 'assignees', projectKey, search],
       queryFn: () => Issues.assignees(projectKey, search),
+      placeholderData: keepPreviousData,
+    }),
+  /** The people a comment on an issue may name, matching what follows the `@`. */
+  mentionable: (issueKey: string, search: string) =>
+    queryOptions({
+      queryKey: ['issues', 'mentionable', issueKey, search],
+      queryFn: () => Comments.mentionable(issueKey, search),
       placeholderData: keepPreviousData,
     }),
 };

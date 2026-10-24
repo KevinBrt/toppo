@@ -1,12 +1,13 @@
 import { schema } from '@toppo/db';
 import { assignIssueRequestSchema, issueKeyParamsSchema } from '@toppo/shared';
 import { and, eq, isNull } from 'drizzle-orm';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { reachableBy } from '../../../platform/auth/project-access.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
 
-const { activities, issues, projects, users } = schema;
+const { issues, projects, users } = schema;
 
 /** Gives an issue to someone who reaches its project, or to nobody (`null`). */
 export const assignIssue = defineCommand({
@@ -31,7 +32,7 @@ export const assignIssue = defineCommand({
     }
 
     await tx.update(issues).set({ assigneeId }).where(eq(issues.id, project.issue.id));
-    await tx.insert(activities).values({
+    await recordActivity(tx, {
       projectId: project.id,
       issueId: project.issue.id,
       actorId: actor.id,

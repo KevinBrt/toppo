@@ -5,19 +5,23 @@ import {
   issueKeyParamsSchema,
 } from '@toppo/shared';
 import { eq, sql } from 'drizzle-orm';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
+import { namedPeople } from '../utils/mentions.util.ts';
 
-const { activities, comments, issues } = schema;
+const { comments, issues } = schema;
 
 /**
  * Comments on an issue the caller sees, in plain text: the comment, the issue's last change and
- * the activity that tells it, together. Answers the comment's id.
+ * the activity that tells it, together, with the people it names (`namedPeople`) to tell them.
+ * Answers the comment's id.
  */
 export const createComment = defineCommand({
   name: 'comment.create',
   access: { project: 'issueKey', permission: 'comment.create' },
   input: issueKeyParamsSchema.extend(commentRequestSchema.shape),
-  async handler({ tx, actor, project, log }, { body }): Promise<{ id: string }> {
+  async handler({ tx, actor, project, log }, { body, mentions }): Promise<{ id: string }> {
+    const mentioned = await namedPeople(tx, project, actor.id, mentions);
     const [comment] = await tx
       .insert(comments)
       .values({ issueId: project.issue.id, authorId: actor.id, body })
@@ -26,8 +30,8 @@ export const createComment = defineCommand({
       throw new Error('The comment was not saved');
     }
     await tx.update(issues).set({ updatedAt: sql`now()` }).where(eq(issues.id, project.issue.id));
-    const payload: IssueActivityPayload<'issue.commented'> = { commentId: comment.id };
-    await tx.insert(activities).values({
+    const payload: IssueActivityPayload<'issue.commented'> = { commentId: comment.id, mentioned };
+    await recordActivity(tx, {
       projectId: project.id,
       issueId: project.issue.id,
       actorId: actor.id,

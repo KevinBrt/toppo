@@ -26,9 +26,13 @@ export const ISSUE_ACTIVITY_PAYLOADS = {
   'issue.assigneeChanged': z.object({ from: z.uuid().nullable(), to: z.uuid().nullable() }),
   // Labels as they were named, so that a label deleted since still reads.
   'issue.labelsChanged': z.object({ added: z.array(namedSchema), removed: z.array(namedSchema) }),
-  // A comment is kept by id only: deleted, its words leave no trace.
-  'issue.commented': z.object({ commentId: z.uuid() }),
-  'issue.commentEdited': z.object({ commentId: z.uuid() }),
+  // A comment is kept by id only: deleted, its words leave no trace. The people it names
+  // (`@`), newly when it is edited, by id.
+  'issue.commented': z.object({ commentId: z.uuid(), mentioned: z.array(z.uuid()).default([]) }),
+  'issue.commentEdited': z.object({
+    commentId: z.uuid(),
+    mentioned: z.array(z.uuid()).default([]),
+  }),
   'issue.commentDeleted': z.object({ commentId: z.uuid() }),
   // So is a file: removed, its name leaves no trace. One of a comment shows with the comment.
   'issue.attachmentAdded': z.object({ attachmentId: z.uuid() }),

@@ -102,6 +102,18 @@ export const RULES: readonly ConventionRule[] = [
     },
   },
   {
+    id: 'activities-through-record',
+    message:
+      'Write activities with recordActivity (platform/activities): it queues the job that tells people',
+    appliesTo: (path) =>
+      path.startsWith('apps/server/src/') &&
+      !TEST_FILE.test(path) &&
+      !path.endsWith('platform/activities/record-activity.ts'),
+    check(path, source) {
+      return lineMatches(this, path, source, [/\.insert\(\s*activities\s*\)/]);
+    },
+  },
+  {
     id: 'no-type-escape',
     message: '@ts-ignore and @ts-nocheck hide real errors; fix the types',
     appliesTo: (path) => SOURCE_FILE.test(path),

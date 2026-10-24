@@ -3,12 +3,13 @@ import { schema } from '@toppo/db';
 import { ATTACHMENTS_MAX, type IssueActivityPayload, issueKeyParamsSchema } from '@toppo/shared';
 import { and, count, eq, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import type { IssueContext } from '../../../platform/auth/project-access.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { receivedFileSchema } from '../../../platform/uploads/file-routes.ts';
 
-const { activities, attachments, comments, issues } = schema;
+const { attachments, comments, issues } = schema;
 
 const TYPE_REFUSALS = {
   typeNotAllowed: ['ATTACHMENT_TYPE_NOT_ALLOWED', 'Files of this type cannot be attached'],
@@ -91,7 +92,7 @@ export const addAttachment = defineCommand({
     }
     await tx.update(issues).set({ updatedAt: sql`now()` }).where(eq(issues.id, issue.id));
     const payload: IssueActivityPayload<'issue.attachmentAdded'> = { attachmentId: attachment.id };
-    await tx.insert(activities).values({
+    await recordActivity(tx, {
       projectId: project.id,
       issueId: issue.id,
       actorId: actor.id,

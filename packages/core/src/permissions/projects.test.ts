@@ -6,6 +6,7 @@ import {
   canReachProject,
   type ProjectAccess,
   projectPermissionsOf,
+  roleInProject,
 } from './projects.ts';
 
 const role = (...permissions: string[]) => ({ grantsAll: false, permissions });
@@ -52,6 +53,14 @@ describe('projectPermissionsOf', () => {
     expect(
       projectPermissionsOf(access({ role: SYSTEM_ROLE, membership: { role: READ_ONLY } })),
     ).toStrictEqual(ALL_PERMISSIONS.filter(isProjectPermission));
+  });
+});
+
+describe('roleInProject', () => {
+  it('is the role the project gives, else one’s own, the system role whatever is given', () => {
+    expect(roleInProject(TEAM, READ_ONLY)).toBe(READ_ONLY);
+    expect(roleInProject(TEAM, null)).toBe(TEAM);
+    expect(roleInProject(SYSTEM_ROLE, READ_ONLY)).toBe(SYSTEM_ROLE);
   });
 });
 

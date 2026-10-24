@@ -18,10 +18,10 @@ import {
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { createJobs } from '../../app.ts';
 import { runNextJob } from '../../platform/jobs/job-worker.ts';
 import { scheduleRecurringJobs } from '../../platform/jobs/jobs.ts';
 import { createFileStorage, type FileStorage } from '../../platform/uploads/file-storage.ts';
-import { fileSweepJob } from '../../platform/uploads/file-sweeper.ts';
 import {
   buildTestApp,
   cookieHeader,
@@ -540,17 +540,17 @@ describe('removing a file', () => {
     expect((await files.open(removed)).destroy()).toBeTruthy();
     ageEveryFile();
 
-    // The sweep runs as a recurring job, by whichever worker comes first.
-    const sweep = fileSweepJob(files);
-    await scheduleRecurringJobs(context.database.db, [sweep]);
-    expect(
-      await runNextJob({
-        db: context.database.db,
-        jobs: [sweep],
-        log: app.log,
-        services: testServices(),
-      }),
-    ).toBe(true);
+    // The sweep runs as a recurring job, by whichever worker comes first, among the others due.
+    const worker = {
+      db: context.database.db,
+      jobs: createJobs({ files }),
+      log: app.log,
+      services: testServices(),
+    };
+    await scheduleRecurringJobs(context.database.db, worker.jobs);
+    while (await runNextJob(worker)) {
+      // Until none is due.
+    }
     await expect(files.open(removed)).rejects.toThrow();
     await expect(files.open(ofGone)).rejects.toThrow();
     expect((await download(key, kept)).body).toBe('kept');

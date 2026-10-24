@@ -92,7 +92,7 @@ export function Topbar({ onOpenMenu, end }: { onOpenMenu: () => void; end?: Reac
             </ol>
           </nav>
         ) : null}
-        {end ? <div className="ml-auto shrink-0">{end}</div> : null}
+        {end ? <div className="ml-auto flex shrink-0 items-center gap-3">{end}</div> : null}
       </div>
     </header>
   );

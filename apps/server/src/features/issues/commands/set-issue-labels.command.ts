@@ -2,11 +2,12 @@ import { labelsChange } from '@toppo/core';
 import { schema } from '@toppo/db';
 import { issueKeyParamsSchema, issueLabelsRequestSchema } from '@toppo/shared';
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
 
-const { activities, issueLabels, issues, labels } = schema;
+const { issueLabels, issues, labels } = schema;
 
 /**
  * Gives an issue exactly the labels asked for (`issue.update`), labels of the instance only. One
@@ -60,7 +61,7 @@ export const setIssueLabels = defineCommand({
     await tx.update(issues).set({ updatedAt: sql`now()` }).where(eq(issues.id, issue.id));
     const named = (ids: readonly string[], among: readonly { id: string; name: string }[]) =>
       ids.flatMap((id) => among.filter((label) => label.id === id));
-    await tx.insert(activities).values({
+    await recordActivity(tx, {
       projectId: project.id,
       issueId: issue.id,
       actorId: actor.id,

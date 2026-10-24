@@ -9,6 +9,7 @@ export {
   issueLabels,
   issues,
   labels,
+  notifications,
   priorities,
 } from './issues.ts';
 export { jobs } from './jobs.ts';

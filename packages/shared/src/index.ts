@@ -72,6 +72,9 @@ export {
   commentRequestSchema,
   type IssueComment,
   issueCommentSchema,
+  MENTIONS_MAX,
+  type MentionableResponse,
+  mentionableResponseSchema,
 } from './issues/comments.ts';
 export {
   ISSUE_DESCRIPTION_MAX_LENGTH,
@@ -249,6 +252,21 @@ export {
   userIdParamsSchema,
   userSummarySchema,
 } from './members/users.ts';
+export {
+  NOTIFICATION_EVENTS,
+  NOTIFICATION_REASONS,
+  NOTIFICATIONS_PAGE_SIZE,
+  type Notification,
+  type NotificationEvent,
+  type NotificationReason,
+  type NotificationsResponse,
+  notificationSchema,
+  notificationsQuerySchema,
+  notificationsResponseSchema,
+  type ReadNotificationsRequest,
+  readNotificationsRequestSchema,
+  unreadNotificationsResponseSchema,
+} from './notifications.ts';
 export {
   PROJECT_KEY_MAX_LENGTH,
   PROJECT_KEY_MIN_LENGTH,

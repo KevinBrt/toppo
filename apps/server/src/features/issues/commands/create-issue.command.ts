@@ -6,13 +6,13 @@ import {
   projectKeySchema,
 } from '@toppo/shared';
 import { eq, isNull, or, sql } from 'drizzle-orm';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
 import { assertAssignable } from './assign-issue.command.ts';
 
-const { activities, issueCategories, issues, priorities, projects, workflowStatuses, workflows } =
-  schema;
+const { issueCategories, issues, priorities, projects, workflowStatuses, workflows } = schema;
 
 /**
  * Creates an issue in a project: numbered by the project's counter, in its workflow's initial
@@ -57,7 +57,7 @@ export const createIssue = defineCommand({
       assigneeId: input.assigneeId ?? null,
       reporterId: actor.id,
     });
-    await tx.insert(activities).values({
+    await recordActivity(tx, {
       projectId: project.id,
       issueId: id,
       actorId: actor.id,

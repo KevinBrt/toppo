@@ -1,10 +1,11 @@
 import { schema } from '@toppo/db';
 import { issueKeyParamsSchema } from '@toppo/shared';
 import { eq } from 'drizzle-orm';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { activity } from '../utils/activities.util.ts';
 
-const { activities, issues } = schema;
+const { issues } = schema;
 
 /**
  * Deletes an issue for good, its history with it. One activity, outside the issue, keeps its key
@@ -16,12 +17,17 @@ export const deleteIssue = defineCommand({
   input: issueKeyParamsSchema,
   async handler({ tx, actor, project, log }): Promise<void> {
     await tx.delete(issues).where(eq(issues.id, project.issue.id));
-    await tx.insert(activities).values({
-      projectId: project.id,
-      issueId: null,
-      actorId: actor.id,
-      ...activity('issue.deleted', { key: project.issue.key }),
-    });
+    // Recorded for history and audit; nobody is told about an issue that is gone.
+    await recordActivity(
+      tx,
+      {
+        projectId: project.id,
+        issueId: null,
+        actorId: actor.id,
+        ...activity('issue.deleted', { key: project.issue.key }),
+      },
+      { notify: false },
+    );
     log.info({ issueId: project.issue.id, key: project.issue.key, by: actor.id }, 'Issue deleted');
   },
 });

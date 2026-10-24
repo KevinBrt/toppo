@@ -2,11 +2,12 @@ import { canMoveTo, closedAtFor, effectiveWorkflow, type WorkflowMoves } from '@
 import { schema } from '@toppo/db';
 import { changeIssueStatusRequestSchema, issueKeyParamsSchema } from '@toppo/shared';
 import { and, eq, inArray, isNull, or } from 'drizzle-orm';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
 
-const { activities, issues, statuses, workflowStatuses, workflowTransitions, workflows } = schema;
+const { issues, statuses, workflowStatuses, workflowTransitions, workflows } = schema;
 
 /**
  * Moves an issue to another status, one its project's workflow allows from the current one, for
@@ -52,7 +53,7 @@ export const changeIssueStatus = defineCommand({
       .update(issues)
       .set({ statusId, closedAt: closedAtFor(to.closes, current.closedAt, new Date()) })
       .where(eq(issues.id, project.issue.id));
-    await tx.insert(activities).values({
+    await recordActivity(tx, {
       projectId: project.id,
       issueId: project.issue.id,
       actorId: actor.id,

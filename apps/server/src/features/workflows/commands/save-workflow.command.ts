@@ -7,11 +7,12 @@ import {
   workflowRequestSchema,
 } from '@toppo/shared';
 import { and, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
+import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { FOLLOWING_THE_INSTANCE } from '../queries/get-workflow.query.ts';
 
-const { activities, issues, statuses, workflowStatuses, workflowTransitions, workflows } = schema;
+const { issues, statuses, workflowStatuses, workflowTransitions, workflows } = schema;
 
 /** The workflow a save changes, and what it governs. */
 export interface WorkflowTarget {
@@ -246,17 +247,18 @@ export async function moveIssuesTo(
     from: { id: from.id, name: from.name },
     to: { id: to.id, name: to.name },
   };
-  if (rows.length > 0) {
-    await tx.insert(activities).values(
-      rows.map((row) => ({
-        projectId: row.projectId,
-        issueId: row.id,
-        actorId,
-        type: 'issue.statusChanged',
-        payload,
-      })),
-    );
-  }
+  // An administrator reorganizing a workflow: recorded on each issue, told to nobody.
+  await recordActivities(
+    tx,
+    rows.map((row) => ({
+      projectId: row.projectId,
+      issueId: row.id,
+      actorId,
+      type: 'issue.statusChanged',
+      payload,
+    })),
+    { notify: false },
+  );
   return rows.length;
 }
 

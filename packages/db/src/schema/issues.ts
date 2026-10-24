@@ -1,4 +1,4 @@
-import { ATTACHMENT_MEDIA_TYPES, PALETTE_COLORS } from '@toppo/shared';
+import { ATTACHMENT_MEDIA_TYPES, NOTIFICATION_REASONS, PALETTE_COLORS } from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -285,5 +285,40 @@ export const attachments = pgTable(
       .on(table.commentId, table.createdAt)
       .where(sql`${table.commentId} is not null`),
     index('attachments_uploader_id_idx').on(table.uploaderId),
+  ],
+);
+
+/**
+ * What someone is told about a change to an issue they are involved in, made from its activity
+ * by a job: once per person and activity, gone with the activity. Read ones are pruned after 90
+ * days.
+ */
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    activityId: uuid('activity_id')
+      .notNull()
+      .references(() => activities.id, { onDelete: 'cascade' }),
+    reason: text('reason', { enum: NOTIFICATION_REASONS }).notNull(),
+    readAt: timestamp('read_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    unique('notifications_user_activity_unique').on(table.userId, table.activityId),
+    // Mirrors NOTIFICATION_REASONS (`@toppo/shared`).
+    check(
+      'notifications_reason_check',
+      sql`${table.reason} in ('assigned', 'mentioned', 'participating')`,
+    ),
+    // Someone's notifications, the latest first.
+    index('notifications_user_id_created_at_idx').on(table.userId, table.createdAt),
+    // How many they have not read, from the index alone.
+    index('notifications_unread_idx').on(table.userId).where(sql`${table.readAt} is null`),
+    index('notifications_activity_id_idx').on(table.activityId),
+    index('notifications_read_at_idx').on(table.readAt).where(sql`${table.readAt} is not null`),
   ],
 );

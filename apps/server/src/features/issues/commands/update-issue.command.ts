@@ -9,11 +9,12 @@ import {
 import { schema } from '@toppo/db';
 import { issueKeyParamsSchema, updateIssueFieldsSchema } from '@toppo/shared';
 import { eq, inArray } from 'drizzle-orm';
+import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
 
-const { activities, issueCategories, issues, priorities } = schema;
+const { issueCategories, issues, priorities } = schema;
 
 /**
  * Changes an issue's title, description, category or priority: only the fields given, and one
@@ -54,7 +55,8 @@ export const updateIssue = defineCommand({
       values[field] = to;
     }
     await tx.update(issues).set(values).where(eq(issues.id, project.issue.id));
-    await tx.insert(activities).values(
+    await recordActivities(
+      tx,
       recorded.map((entry) => ({
         projectId: project.id,
         issueId: project.issue.id,

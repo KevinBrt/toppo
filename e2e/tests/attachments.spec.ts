@@ -160,6 +160,8 @@ test('a comment is sent with its file, shown with it', async ({ page, baseURL })
   await page.goto(`/issues/${key}-1`);
   const activity = page.getByRole('region', { name: 'Activity' });
   await activity.getByRole('textbox', { name: 'Add a comment' }).fill('Here is the log.');
+  // Files are taken once the size limit is known, as the paperclip says by being enabled.
+  await expect(activity.getByRole('button', { name: 'Attach files' })).toBeEnabled();
   await activity
     .locator('input[type=file]')
     .setInputFiles({ name: 'trace.log', mimeType: 'text/plain', buffer: Buffer.from('ERROR\n') });

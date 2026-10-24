@@ -2,10 +2,11 @@ import { type OptionsPlan, planOptions } from '@toppo/core';
 import { isUniqueViolation, schema, uuidv7 } from '@toppo/db';
 import { type IssueActivityPayload, type LabelDraft, labelsRequestSchema } from '@toppo/shared';
 import { eq, inArray, sql } from 'drizzle-orm';
+import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 
-const { activities, issueLabels, issues, labels } = schema;
+const { issueLabels, issues, labels } = schema;
 
 /** Rows written at once: far below PostgreSQL's limit of parameters per statement. */
 const BATCH = 1000;
@@ -93,14 +94,17 @@ async function takeOff(
           batch.map(([issueId]) => issueId),
         ),
       );
-    await tx.insert(activities).values(
+    // Recorded on each issue, told to nobody: an administrator tidying the labels.
+    await recordActivities(
+      tx,
       batch.map(([issueId, { projectId, removed: names }]) => {
         const payload: IssueActivityPayload<'issue.labelsChanged'> = {
           added: [],
           removed: names,
         };
-        return { projectId, issueId, actorId, type: 'issue.labelsChanged', payload };
+        return { projectId, issueId, actorId, type: 'issue.labelsChanged' as const, payload };
       }),
+      { notify: false },
     );
   }
   return lost.length;

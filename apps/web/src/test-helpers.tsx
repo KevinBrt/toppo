@@ -59,6 +59,7 @@ import {
   labelsRequestSchema,
   MEMBERS_PAGE_SIZE,
   type MemberRow,
+  type Notification,
   type PaletteColor,
   type PendingInvitation,
   PROJECT_ACCESS_PAGE_SIZE,
@@ -71,6 +72,7 @@ import {
   ROLES_MAX,
   type RoleBadge,
   type RoleDetails,
+  readNotificationsRequestSchema,
   type SortOrder,
   type UserSummary,
   type WorkflowMode,
@@ -171,6 +173,8 @@ export interface FakeServerState {
   attachments: FakeAttachment[];
   /** The instance's labels: none unless a test adds some. */
   labels: LabelRef[];
+  /** The signed-in user's notifications, the latest first: none unless a test adds some. */
+  notifications: Notification[];
   /** The largest file taken, in bytes: 20 MB unless a test sets another. */
   attachmentMaxSize: number;
 }
@@ -186,6 +190,23 @@ export interface FakeAttachment {
   uploaderId: string;
   /** What it downloads as. */
   content: BlobPart;
+}
+
+/** A notification for the signed-in user: Grace assigned them WEB-1, unread, unless said otherwise. */
+export function fakeNotification(
+  seed: number,
+  overrides: Partial<Notification> = {},
+): Notification {
+  return {
+    id: `01a1569b-9900-7000-8000-0000000012${String(seed).padStart(2, '0')}`,
+    event: 'assigned',
+    status: null,
+    actor: { id: GRACE.id, name: GRACE.name },
+    issue: { key: 'WEB-1', title: 'Empty CSV export' },
+    readAt: null,
+    createdAt: new Date(Date.now() - seed * 60_000).toISOString(),
+    ...overrides,
+  };
 }
 
 /** A file of WEB-1's request, uploaded by Ada unless said otherwise. */
@@ -393,6 +414,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       projectWorkflows: new Map(),
       attachments: [],
       labels: [],
+      notifications: [],
       attachmentMaxSize: 20 * 1024 * 1024,
       ...initial,
     },
@@ -471,6 +493,34 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       }),
     'PUT /api/v1/categories': (body) =>
       asHolder(state, 'instance.settings.manage') ?? saveCategories(state, body),
+    'GET /api/v1/notifications': (_body, search) => {
+      const page = Number(search.get('page') ?? '1');
+      return (
+        asSignedIn(state) ??
+        json({
+          rows: state.notifications.slice((page - 1) * 20, page * 20),
+          matching: state.notifications.length,
+          page,
+          pageSize: 20,
+        })
+      );
+    },
+    'GET /api/v1/notifications/unread-count': () =>
+      asSignedIn(state) ??
+      json({ count: state.notifications.filter(({ readAt }) => readAt === null).length }),
+    'POST /api/v1/notifications/read': (body) => {
+      const request = readNotificationsRequestSchema.safeParse(body);
+      if (!request.success) {
+        return apiError(400, 'VALIDATION_FAILED');
+      }
+      const now = new Date().toISOString();
+      for (const notification of state.notifications) {
+        if ('all' in request.data || request.data.ids.includes(notification.id)) {
+          notification.readAt ??= now;
+        }
+      }
+      return asSignedIn(state) ?? NO_CONTENT();
+    },
     'GET /api/v1/labels': () =>
       asHolder(state, 'instance.settings.manage') ??
       json({
@@ -1833,7 +1883,7 @@ function createIssue(
 }
 
 const ISSUE_PATH =
-  /^\/api\/v1\/issues\/([^/]+)(?:\/(status|assignee|labels|activities|comments)(?:\/([^/]+))?)?$/;
+  /^\/api\/v1\/issues\/([^/]+)(?:\/(status|assignee|labels|activities|comments|mentionable)(?:\/([^/]+))?)?$/;
 
 /** An issue the signed-in user sees, with its project and what they may do there. */
 interface SeenIssue {
@@ -1918,6 +1968,17 @@ function issueRequest(
         pageSize: 50,
       });
     }
+    case 'GET mentionable':
+      return unless('comment.create', () => {
+        const needle = fold(search.get('search') ?? '');
+        return json({
+          people: state.users
+            .filter((user) => !user.deactivatedAt && user.id !== state.user?.id)
+            .filter((user) => accessReason(state, project, user) !== null)
+            .filter(({ name }) => fold(name).includes(needle))
+            .map(({ id, name, role }) => ({ id, name, role })),
+        });
+      });
     case 'POST comments':
     case 'PATCH comments':
     case 'DELETE comments':
@@ -2145,7 +2206,14 @@ function commentRequest(
     record(state, key, {
       type: 'issue.commented',
       payload: {
-        comment: { id, body: body.data.body, editedAt: null, attachments: [], actions: [] },
+        comment: {
+          id,
+          body: body.data.body,
+          editedAt: null,
+          attachments: [],
+          mentions: body.data.mentions.map((named) => userRef(state, named)),
+          actions: [],
+        },
       },
     });
     return json({ id }, 201);
@@ -2175,10 +2243,13 @@ function commentRequest(
   if (!body.success) {
     return apiError(400, 'VALIDATION_FAILED');
   }
+  const { mentions } = entry.payload.comment;
+  const named = body.data.mentions.filter((id) => !mentions.some((person) => person.id === id));
   entry.payload.comment = {
     ...entry.payload.comment,
     body: body.data.body,
     editedAt: new Date().toISOString(),
+    mentions: [...mentions, ...named.map((id) => userRef(state, id))],
   };
   return NO_CONTENT();
 }

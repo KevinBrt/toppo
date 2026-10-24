@@ -2,11 +2,12 @@ import { commentActionsOf } from '@toppo/core';
 import { schema } from '@toppo/db';
 import { commentParamsSchema, type IssueActivityPayload } from '@toppo/shared';
 import { eq, sql } from 'drizzle-orm';
+import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { lockedComment } from './edit-comment.command.ts';
 
-const { activities, comments, issues } = schema;
+const { comments, issues } = schema;
 
 /**
  * Deletes a comment for good, by its author or a moderator (`commentActionsOf`, which needs no
@@ -25,7 +26,7 @@ export const deleteComment = defineCommand({
     await tx.delete(comments).where(eq(comments.id, commentId));
     await tx.update(issues).set({ updatedAt: sql`now()` }).where(eq(issues.id, project.issue.id));
     const payload: IssueActivityPayload<'issue.commentDeleted'> = { commentId };
-    await tx.insert(activities).values({
+    await recordActivity(tx, {
       projectId: project.id,
       issueId: project.issue.id,
       actorId: actor.id,

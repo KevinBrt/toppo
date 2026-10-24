@@ -161,6 +161,9 @@ export const en = {
       deleteConfirm: 'Delete the comment',
       deleting: 'Deleting…',
       notFound: 'This comment no longer exists. Reload the page.',
+      mentionTitle: 'Mention a user',
+      mentionKeys: '↑↓ to move · Enter to choose · Esc to close',
+      invalidMention: 'Someone you mentioned can no longer be mentioned here.',
     },
     attachments: {
       title: 'Attachments',
@@ -413,6 +416,25 @@ export const en = {
     emptyTitle: 'Nothing to configure yet',
     emptyDescription: 'Workflows, custom fields, labels and roles will be configured here.',
     issuesSection: 'Issues',
+  },
+  notifications: {
+    title: 'Notifications',
+    description: 'What happened on the issues you are involved in, the latest first.',
+    bellUnread: { one: 'Notifications, {count} unread', other: 'Notifications, {count} unread' },
+    unread: 'Unread:',
+    markAllRead: 'Mark all as read',
+    seeAll: 'See all',
+    empty: 'No notifications yet.',
+    emptyDescription:
+      'You are told here when an issue is given to you, when someone comments on or moves one you are involved in, and when someone mentions you.',
+    loading: 'Loading notifications…',
+    shown: { one: '{count} notification shown', other: '{count} notifications shown' },
+    events: {
+      assigned: '{name} assigned you {key}',
+      commented: '{name} commented on {key}',
+      mentioned: '{name} mentioned you in {key}',
+      statusChanged: '{name} moved {key} to “{status}”',
+    },
   },
   properties: {
     title: 'Issue properties',
