@@ -10,23 +10,24 @@ import { IssuesQueries } from '../../queries/issues.queries.ts';
 const SEARCH_DELAY_MS = 300;
 
 /**
- * Chooses who an issue goes to, among the people the server finds who reach its project, or
- * nobody. Reports the choice; the dialog closes with it.
+ * Chooses someone among the people the server finds who reach a project, or nobody: who an issue
+ * goes to, or who a person property names. Reports the choice; the dialog closes with it.
  */
-export function AssigneeDialog({
+export function PersonDialog({
   projectKey,
-  issueKey,
+  title,
   current,
   open,
   onOpenChange,
   onChoose,
 }: {
   projectKey: string;
-  issueKey: string;
+  /** What is chosen: "Assign WEB-42", "Reviewer". */
+  title: string;
   current: UserRef | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onChoose: (assignee: UserRef | null) => void;
+  onChoose: (person: UserRef | null) => void;
 }) {
   const { t } = useI18n();
   const [typed, setTyped] = useState('');
@@ -38,20 +39,17 @@ export function AssigneeDialog({
     return () => clearTimeout(timer);
   }, [typed]);
 
-  const choose = (assignee: UserRef | null) => {
+  const choose = (person: UserRef | null) => {
     onOpenChange(false);
     setTyped('');
-    if (assignee?.id !== current?.id) {
-      onChoose(assignee);
+    if (person?.id !== current?.id) {
+      onChoose(person);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        title={t('issues.assignTitle', { key: issueKey })}
-        closeLabel={t('issues.close')}
-      >
+      <DialogContent title={title} closeLabel={t('issues.close')}>
         <div className="flex flex-col gap-3">
           <Input
             type="search"

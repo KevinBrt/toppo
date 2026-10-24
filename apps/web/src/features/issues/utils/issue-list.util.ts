@@ -1,8 +1,11 @@
 import {
+  formatPropertyFilters,
   ISSUE_SORT_ORDERS,
   type IssueSort,
   type ProjectFields,
   type ProjectIssuesQuery,
+  type PropertyFilter,
+  propertyFiltersParameter,
   type SortOrder,
 } from '@toppo/shared';
 import { z } from 'zod';
@@ -39,6 +42,23 @@ function valuesIn(text: string | undefined, filter: IssueListFilter): string[] |
   return unique.length > 0 ? unique : undefined;
 }
 
+/** The property filters the address keeps, if they make sense; none as `undefined`. */
+function propertyFiltersIn(text: string | undefined): PropertyFilter[] | undefined {
+  const parsed = propertyFiltersParameter.safeParse(text);
+  return parsed.success && parsed.data?.length ? parsed.data : undefined;
+}
+
+/** The query with the filter of a property changed, or taken away with `null`. */
+export function withPropertyFilter(
+  query: ProjectIssuesQuery,
+  propertyId: string,
+  filter: PropertyFilter | null,
+): ProjectIssuesQuery {
+  const others = (query.property ?? []).filter((kept) => kept.propertyId !== propertyId);
+  const property = filter ? [...others, filter] : others;
+  return firstPageOf(query, { property: property.length > 0 ? property : undefined });
+}
+
 /** The fields a project hides, once its settings are known. */
 export function hiddenFieldsOf(settings: ProjectFields | undefined): HideableField[] {
   return HIDEABLE_FIELDS.filter((field) => settings?.[field].hidden);
@@ -62,6 +82,7 @@ export function issuesQueryOf(search: IssueListSearch): ProjectIssuesQuery {
     label: valuesIn(search.label, 'label'),
     assignee: valuesIn(search.assignee, 'assignee'),
     reporter: valuesIn(search.reporter, 'reporter'),
+    property: propertyFiltersIn(search.property),
     sort: search.sort,
     order: search.order,
     group: search.group,
@@ -83,6 +104,7 @@ export function searchOf(query: ProjectIssuesQuery): Omit<IssueListSearch, 'proj
     label: joined(query.label),
     assignee: joined(query.assignee),
     reporter: joined(query.reporter),
+    property: query.property?.length ? formatPropertyFilters(query.property) : undefined,
     sort: query.sort === 'key' ? undefined : query.sort,
     order: query.order === ISSUE_SORT_ORDERS[sortOf(query)] ? undefined : query.order,
     group: query.group,
@@ -130,7 +152,8 @@ export function isNarrowed(query: ProjectIssuesQuery): boolean {
   return (
     Boolean(query.search) ||
     stateOf(query) !== 'open' ||
-    ISSUE_LIST_FILTERS.some((filter) => (query[filter]?.length ?? 0) > 0)
+    ISSUE_LIST_FILTERS.some((filter) => (query[filter]?.length ?? 0) > 0) ||
+    (query.property?.length ?? 0) > 0
   );
 }
 

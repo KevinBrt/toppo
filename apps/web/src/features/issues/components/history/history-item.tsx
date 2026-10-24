@@ -18,8 +18,9 @@ import {
   UserXIcon,
 } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
-import { formatDateTime } from '../../../../shared/i18n/dates.util.ts';
+import { formatDateTime, formatDay } from '../../../../shared/i18n/dates.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
+import { formatNumber } from '../../../../shared/i18n/numbers.util.ts';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
 import type { HistoryEntry } from '../../utils/issue-history.util.ts';
 import { PriorityLabel } from '../fields/priority-label.tsx';
@@ -215,13 +216,55 @@ function describe(
       return t('issues.activity.attached', { name: activity.payload.attachment.fileName });
     case 'issue.labelsChanged':
       return labelsChanged(activity.payload, t, locale);
-    case 'issue.propertyChanged':
-      return activity.payload.to
-        ? t('issues.activity.propertyChanged', {
-            property: activity.payload.property.name,
-            to: activity.payload.to.name,
-          })
-        : t('issues.activity.propertyCleared', { property: activity.payload.property.name });
+    case 'issue.propertyChanged': {
+      const change = activity.payload;
+      const property = change.property.name;
+      if (change.type === 'checkbox') {
+        return change.to
+          ? t('issues.activity.propertyTicked', { property })
+          : t('issues.activity.propertyUnticked', { property });
+      }
+      const to = changedValueText(change, 'to', t, locale);
+      return to === null
+        ? t('issues.activity.propertyCleared', { property })
+        : t('issues.activity.propertyChanged', { property, to });
+    }
+  }
+}
+
+type PropertyChange = Extract<IssueActivity, { type: 'issue.propertyChanged' }>['payload'];
+
+/**
+ * A property's value before or after a change, in words: options and people by name, a day and
+ * a number as the reader writes them; `null` for no value.
+ */
+function changedValueText(
+  change: PropertyChange,
+  side: 'from' | 'to',
+  t: Translate,
+  locale: Locale,
+): string | null {
+  switch (change.type) {
+    case 'list':
+      return change[side]?.name ?? null;
+    case 'multiSelect':
+      return change[side]?.map(({ name }) => name).join(', ') ?? null;
+    case 'user': {
+      const person = change[side];
+      return person ? (person.name ?? t('issues.deletedUser')) : null;
+    }
+    case 'number': {
+      const number = change[side];
+      return number === null ? null : formatNumber(number, locale);
+    }
+    case 'date': {
+      const day = change[side];
+      return day === null ? null : formatDay(day, locale);
+    }
+    case 'checkbox':
+      return change[side] ? t('issues.checked') : t('issues.unchecked');
+    case 'text':
+      return change[side];
   }
 }
 
@@ -292,15 +335,18 @@ function field(
       return t('issues.activity.attached', { name: activity.payload.attachment.fileName });
     case 'issue.labelsChanged':
       return labelsChanged(activity.payload, t, locale);
-    case 'issue.propertyChanged':
+    case 'issue.propertyChanged': {
+      const change = activity.payload;
+      const noValue = t('issues.activity.noValue');
       return labelled(
-        activity.payload.property.name,
+        change.property.name,
         <FromTo
-          from={activity.payload.from?.name ?? t('issues.activity.noValue')}
-          to={strong(activity.payload.to?.name ?? t('issues.activity.noValue'))}
+          from={changedValueText(change, 'from', t, locale) ?? noValue}
+          to={strong(changedValueText(change, 'to', t, locale) ?? noValue)}
           t={t}
         />,
       );
+    }
   }
 }
 

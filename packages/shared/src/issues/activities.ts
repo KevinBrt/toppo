@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { userRefSchema } from '../members/users.ts';
+import type { PropertyType } from '../properties/properties.ts';
 import { issueAttachmentSchema } from './attachments.ts';
 import { issueCommentSchema } from './comments.ts';
 import { PRIORITY_LEVELS } from './fields.ts';
-import { userRefSchema } from './issues.ts';
 
 /** A status or a category as it was named when the change happened. */
 const namedSchema = z.object({ id: z.uuid(), name: z.string() });
@@ -10,6 +11,36 @@ const namedSchema = z.object({ id: z.uuid(), name: z.string() });
 const prioritySchema = namedSchema.extend({
   level: z.union(PRIORITY_LEVELS.map((level) => z.literal(level))),
 });
+
+/**
+ * A property's value before and after a change, by the property's type: its options as they were
+ * named, so that one deleted since still reads; someone as `person` has them (an id stored, named
+ * when read). A change recorded before properties had types is a list's.
+ */
+function propertyChangeSchema<Person extends z.ZodType>(person: Person) {
+  const change = <T extends PropertyType, V extends z.ZodType>(type: T, value: V) =>
+    z.object({
+      type: z.literal(type),
+      property: namedSchema,
+      from: value.nullable(),
+      to: value.nullable(),
+    });
+  return z.preprocess(
+    (payload) =>
+      typeof payload === 'object' && payload !== null && !('type' in payload)
+        ? { ...payload, type: 'list' }
+        : payload,
+    z.discriminatedUnion('type', [
+      change('list', namedSchema),
+      change('multiSelect', z.array(namedSchema)),
+      change('text', z.string()),
+      change('number', z.number()),
+      change('date', z.iso.date()),
+      change('user', person),
+      change('checkbox', z.literal(true)),
+    ]),
+  );
+}
 
 /**
  * What each kind of activity stores, by type: the record history, notifications, webhooks and
@@ -27,12 +58,7 @@ export const ISSUE_ACTIVITY_PAYLOADS = {
   'issue.assigneeChanged': z.object({ from: z.uuid().nullable(), to: z.uuid().nullable() }),
   // Labels as they were named, so that a label deleted since still reads.
   'issue.labelsChanged': z.object({ added: z.array(namedSchema), removed: z.array(namedSchema) }),
-  // The property and its options as they were named: one deleted since still reads.
-  'issue.propertyChanged': z.object({
-    property: namedSchema,
-    from: namedSchema.nullable(),
-    to: namedSchema.nullable(),
-  }),
+  'issue.propertyChanged': propertyChangeSchema(z.uuid()),
   // A comment is kept by id only: deleted, its words leave no trace. The people it names
   // (`@`), newly when it is edited, by id.
   'issue.commented': z.object({ commentId: z.uuid(), mentioned: z.array(z.uuid()).default([]) }),
@@ -88,7 +114,7 @@ export const issueActivitySchema = z.discriminatedUnion('type', [
     z.object({ from: userRefSchema.nullable(), to: userRefSchema.nullable() }),
   ),
   entry('issue.labelsChanged', ISSUE_ACTIVITY_PAYLOADS['issue.labelsChanged']),
-  entry('issue.propertyChanged', ISSUE_ACTIVITY_PAYLOADS['issue.propertyChanged']),
+  entry('issue.propertyChanged', propertyChangeSchema(userRefSchema)),
   // The comment as it is now; a deleted one leaves the history.
   entry('issue.commented', z.object({ comment: issueCommentSchema })),
   // A file of the request, while it is there.

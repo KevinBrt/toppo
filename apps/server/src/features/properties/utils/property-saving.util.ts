@@ -1,14 +1,21 @@
 import { type OptionsPlan, planOptions } from '@toppo/core';
 import { isUniqueViolation, schema, uuidv7 } from '@toppo/db';
 import {
-  type CreatePropertyRequest,
+  hasOptions,
+  type PaletteColor,
   PROPERTIES_MAX,
   type PropertyOptionDraft,
+  type PropertyType,
 } from '@toppo/shared';
 import { and, asc, count, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
-import { ofScope, takeOptionsOff } from './property-values.util.ts';
+import {
+  ofScope,
+  type PropertyRef,
+  takeOptionsOff,
+  takeValuesOff,
+} from './property-values.util.ts';
 
 const { properties, propertyOptions } = schema;
 
@@ -47,13 +54,46 @@ export async function assertNameFree(
 }
 
 /**
- * Adds a property to the instance or to one project, with its options in their order, at most
- * PROPERTIES_MAX in each. Answers its id.
+ * Refuses what a property of this type cannot be: options for a type without (or none for a
+ * list or a multi-select), a checkbox required. Its type is the stored one: it never changes.
+ */
+export function assertSuitsType(
+  type: PropertyType,
+  {
+    required,
+    options,
+    removed = [],
+  }: { required: boolean; options: readonly unknown[]; removed?: readonly string[] },
+): void {
+  if (hasOptions(type) && options.length === 0) {
+    throw new HttpError(400, 'PROPERTY_OPTIONS_REQUIRED', 'This property needs options');
+  }
+  if (!hasOptions(type) && options.length + removed.length > 0) {
+    throw new HttpError(400, 'PROPERTY_WITHOUT_OPTIONS', 'This property has no options');
+  }
+  if (type === 'checkbox' && required) {
+    throw new HttpError(400, 'CHECKBOX_NOT_REQUIRED', 'A checkbox is never required');
+  }
+}
+
+/**
+ * Adds a property to the instance or to one project, with its options in their order if its type
+ * has some, at most PROPERTIES_MAX in each. Answers its id.
  */
 export async function insertProperty(
   tx: Transaction,
   projectId: string | null,
-  { options, ...fields }: CreatePropertyRequest,
+  {
+    options,
+    ...fields
+  }: {
+    name: string;
+    type: PropertyType;
+    shownInList: boolean;
+    askedAtCreation: boolean;
+    required: boolean;
+    options: readonly { name: string; color: PaletteColor }[];
+  },
 ): Promise<string> {
   await tx.execute(sql`select pg_advisory_xact_lock(${PROPERTIES_LOCK_KEY})`);
   const [existing] = await tx.select({ count: count() }).from(properties).where(ofScope(projectId));
@@ -77,15 +117,17 @@ export async function insertProperty(
     }
     throw error;
   }
-  await tx.insert(propertyOptions).values(
-    options.map(({ name, color }, position) => ({
-      id: uuidv7(),
-      propertyId: id,
-      name,
-      color,
-      position,
-    })),
-  );
+  if (options.length > 0) {
+    await tx.insert(propertyOptions).values(
+      options.map(({ name, color }, position) => ({
+        id: uuidv7(),
+        propertyId: id,
+        name,
+        color,
+        position,
+      })),
+    );
+  }
   return id;
 }
 
@@ -120,7 +162,7 @@ type Plan = OptionsPlan<Omit<PropertyOptionDraft, 'id'>>;
 export async function saveOptions(
   tx: Transaction,
   actorId: string,
-  property: { id: string; name: string },
+  property: PropertyRef,
   ownedBy: string | null,
   requested: readonly PropertyOptionDraft[],
   removed: readonly string[],
@@ -216,21 +258,15 @@ async function keepAndAdd(
 }
 
 /**
- * Deletes a property: its values, of every option it has anywhere, leave their issues, each told
- * in its history; its options and the projects' adaptations go with it. Answers how many issues
- * lost one.
+ * Deletes a property: its values leave their issues in every project, each told in its history;
+ * its options and the projects' adaptations go with it. Answers how many issues lost one.
  */
 export async function deleteWithValues(
   tx: Transaction,
   actorId: string,
-  property: { id: string; name: string },
+  property: PropertyRef,
 ): Promise<number> {
-  const options = await tx
-    .select({ id: propertyOptions.id, name: propertyOptions.name })
-    .from(propertyOptions)
-    .where(eq(propertyOptions.propertyId, property.id))
-    .for('update');
-  const takenOff = await takeOptionsOff(tx, actorId, property, options);
+  const takenOff = await takeValuesOff(tx, actorId, property);
   await tx.delete(properties).where(eq(properties.id, property.id));
   return takenOff;
 }

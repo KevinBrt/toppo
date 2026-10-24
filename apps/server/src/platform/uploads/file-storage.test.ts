@@ -28,7 +28,7 @@ async function refusal(run: () => Promise<unknown>): Promise<{ status: number; c
 const anHourAgo = () => new Date(Date.now() - 61 * 60 * 1000);
 
 describe('receiving a file', () => {
-  it('writes the body to disk, readable by Toppo only, with what tells its type', async () => {
+  it('writes the body to disk, with what tells its type', async () => {
     const files = await createTestFileStorage();
     const received = await files.receive(bodyOf(PNG_HEAD, 'rest of the image'), '25');
 
@@ -36,9 +36,16 @@ describe('receiving a file', () => {
     expect(Buffer.from(received.head).subarray(0, 8)).toStrictEqual(PNG_HEAD);
     expect(received.text).toBe(true);
     expect(readFileSync(received.path, 'utf8')).toContain('rest of the image');
+    expect((await files.receive(bodyOf('a', '\0', 'b'), '3')).text).toBe(false);
+  });
+
+  // Windows has no such modes: Node reports every file as readable by all.
+  it.runIf(process.platform !== 'win32')('keeps the file readable by Toppo only', async () => {
+    const files = await createTestFileStorage();
+    const received = await files.receive(bodyOf('secret'), '6');
+
     expect(statSync(received.path).mode & 0o777).toBe(0o600);
     expect(statSync(dirname(received.path)).mode & 0o777).toBe(0o700);
-    expect((await files.receive(bodyOf('a', '\0', 'b'), '3')).text).toBe(false);
   });
 
   it('refuses, before reading anything, a body without a length, empty, or too large', async () => {

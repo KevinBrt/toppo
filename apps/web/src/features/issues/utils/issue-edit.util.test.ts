@@ -46,4 +46,17 @@ describe('applyEdit', () => {
     expect(applyEdit(ISSUE, { field: 'category', category }).category).toStrictEqual(category);
     expect(applyEdit(ISSUE, { field: 'priority', priority }).priority).toStrictEqual(priority);
   });
+
+  it('gives a property its value, or takes it away, keeping the others', () => {
+    const due = { id: 'due', name: 'Due', type: 'date', value: '2026-11-02' } as const;
+    const estimate = { id: 'estimate', name: 'Estimate', type: 'number', value: 3 } as const;
+    const issue = { ...ISSUE, properties: [estimate] };
+
+    expect(
+      applyEdit(issue, { field: 'property', propertyId: 'due', value: due }).properties,
+    ).toStrictEqual([estimate, due]);
+    expect(
+      applyEdit(issue, { field: 'property', propertyId: 'estimate', value: null }).properties,
+    ).toStrictEqual([]);
+  });
 });

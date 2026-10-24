@@ -14,8 +14,10 @@ function uniqueKey(): string {
 
 test('a project is created, set up, archived, brought back and deleted', async ({ page }) => {
   const key = uniqueKey();
-  const name = `Customer portal ${key}`;
-  const renamed = `Client portal ${key}`;
+  // Never first by name: `/issues` opens the first project, which other tests keep, while this
+  // one is deleted under them.
+  const name = `Portal ${key}`;
+  const renamed = `Partner portal ${key}`;
 
   await page.goto('/projects');
   await page.getByRole('button', { name: 'New project' }).click();

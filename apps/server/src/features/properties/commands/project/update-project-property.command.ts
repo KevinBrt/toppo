@@ -1,7 +1,11 @@
-import { projectPropertyParamsSchema, updatePropertyRequestSchema } from '@toppo/shared';
+import {
+  hasOptions,
+  projectPropertyParamsSchema,
+  updatePropertyRequestSchema,
+} from '@toppo/shared';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../../platform/http/http-error.ts';
-import { saveFields, saveOptions } from '../../utils/property-saving.util.ts';
+import { assertSuitsType, saveFields, saveOptions } from '../../utils/property-saving.util.ts';
 import { lockedProperty } from '../../utils/property-values.util.ts';
 
 /** Saves a project's own property and all its options at once, as the instance's are saved. */
@@ -17,8 +21,11 @@ export const updateProjectProperty = defineCommand({
     if (!property) {
       throw new HttpError(404, 'PROPERTY_NOT_FOUND', 'This property does not exist');
     }
+    assertSuitsType(property.type, { required: fields.required, options, removed });
     await saveFields(tx, propertyId, project.id, fields);
-    const takenOff = await saveOptions(tx, actor.id, property, null, options, removed);
+    const takenOff = hasOptions(property.type)
+      ? await saveOptions(tx, actor.id, property, null, options, removed)
+      : 0;
     log.info(
       { propertyId, projectId: project.id, takenOff, by: actor.id },
       'Project property saved',

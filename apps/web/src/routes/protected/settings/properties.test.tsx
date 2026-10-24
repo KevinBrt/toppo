@@ -238,6 +238,47 @@ describe('the properties admins add', () => {
     });
   });
 
+  it('are of a type chosen once, without options unless a list', async () => {
+    const fake = fakeServer({ user: ADA });
+    const { screen } = await renderApp({ path: '/settings/properties' });
+
+    await screen.getByRole('button', { name: 'New property' }).click();
+    await panel().getByLabelText('Name').fill('Due');
+    await panel().getByRole('radio', { name: 'Date' }).click();
+    await expect.element(panel().getByText('A day of the calendar.')).toBeVisible();
+    await expect.element(panel().getByLabelText('New option')).not.toBeInTheDocument();
+    await panel().getByRole('switch', { name: 'Shown in the issue list' }).click();
+    await panel().getByRole('button', { name: 'Save' }).click();
+
+    await expect.element(panel()).not.toBeInTheDocument();
+    expect(lastBody(fake, 'POST', '/api/v1/properties')).toStrictEqual({
+      name: 'Due',
+      type: 'date',
+      shownInList: true,
+      askedAtCreation: false,
+      required: false,
+      options: [],
+    });
+    await screen.getByRole('button', { name: /^Due A day of the calendar\. Date/ }).click();
+    await expect
+      .element(panel().getByText('A property keeps its type: create another one to change it.'))
+      .toBeVisible();
+    await expect.element(panel().getByRole('radio', { name: 'List' })).not.toBeInTheDocument();
+  });
+
+  it('never require a checkbox', async () => {
+    fakeServer({ user: ADA });
+    const { screen } = await renderApp({ path: '/settings/properties' });
+
+    await screen.getByRole('button', { name: 'New property' }).click();
+    await panel().getByRole('switch', { name: 'Asked when an issue is reported' }).click();
+    await panel().getByRole('switch', { name: 'Required' }).click();
+    await panel().getByRole('radio', { name: 'Checkbox' }).click();
+
+    await expect.element(panel().getByRole('switch', { name: 'Required' })).not.toBeChecked();
+    await expect.element(panel().getByRole('switch', { name: 'Required' })).toBeDisabled();
+  });
+
   it('ask for a name and an option before saving', async () => {
     const fake = fakeServer({ user: ADA });
     const { screen } = await renderApp({ path: '/settings/properties' });

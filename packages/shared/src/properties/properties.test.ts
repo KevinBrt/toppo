@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createPropertyRequestSchema,
-  issuePropertyRequestSchema,
+  PROPERTY_TYPES,
   projectFieldsSchema,
   propertyAdaptationRequestSchema,
   updatePropertyRequestSchema,
@@ -11,19 +11,18 @@ const ID = '01a1569b-9900-7000-8000-000000000001';
 const fields = { name: 'Version', shownInList: false, askedAtCreation: true, required: true };
 
 describe('a new property', () => {
-  it('has a name, options of its own names, and is required only if asked at creation', () => {
-    const create = (overrides: object) =>
-      createPropertyRequestSchema.safeParse({
-        ...fields,
-        type: 'list',
-        options: [{ name: '1.2', color: 'blue' }],
-        ...overrides,
-      }).success;
+  const create = (overrides: object) =>
+    createPropertyRequestSchema.safeParse({
+      ...fields,
+      type: 'list',
+      options: [{ name: '1.2', color: 'blue' }],
+      ...overrides,
+    }).success;
 
+  it('has a name, options of its own names, and is required only if asked at creation', () => {
     expect(create({})).toBe(true);
     expect(create({ askedAtCreation: false, required: false })).toBe(true);
     expect(create({ askedAtCreation: false, required: true })).toBe(false);
-    expect(create({ options: [] })).toBe(false);
     expect(
       create({
         options: [
@@ -33,6 +32,23 @@ describe('a new property', () => {
       }),
     ).toBe(false);
     expect(create({ name: '  ' })).toBe(false);
+  });
+
+  it.each(PROPERTY_TYPES)(
+    'of type %s has options only if it is a list or a multi-select',
+    (type) => {
+      const withOptions = type === 'list' || type === 'multiSelect';
+      const required = type !== 'checkbox';
+
+      expect(create({ type, required })).toBe(withOptions);
+      expect(create({ type, required, options: [] })).toBe(!withOptions);
+      expect(create({ type, required, options: undefined })).toBe(!withOptions);
+    },
+  );
+
+  it('is never a checkbox that must be ticked', () => {
+    expect(create({ type: 'checkbox', options: [], required: true })).toBe(false);
+    expect(create({ type: 'checkbox', options: [], required: false })).toBe(true);
   });
 });
 
@@ -49,14 +65,8 @@ describe('a property saved', () => {
     expect(save({})).toBe(true);
     expect(save({ removed: [ID] })).toBe(false);
     expect(save({ askedAtCreation: false })).toBe(false);
-  });
-});
-
-describe('the value given to an issue', () => {
-  it('is an option, or none', () => {
-    expect(issuePropertyRequestSchema.safeParse({ optionId: ID }).success).toBe(true);
-    expect(issuePropertyRequestSchema.safeParse({ optionId: null }).success).toBe(true);
-    expect(issuePropertyRequestSchema.safeParse({ optionId: 'v1' }).success).toBe(false);
+    // A property without options saves none: its type is checked once it is found.
+    expect(save({ options: [] })).toBe(true);
   });
 });
 

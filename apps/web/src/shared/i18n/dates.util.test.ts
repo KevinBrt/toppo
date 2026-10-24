@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateTime, formatFullDateTime, formatRelativeTime } from './dates.util.ts';
+import { formatDateTime, formatDay, formatFullDateTime, formatRelativeTime } from './dates.util.ts';
 
 const NOW = new Date('2026-10-22T15:00:00');
 
@@ -18,6 +18,13 @@ describe('formatFullDateTime', () => {
     const today = new Date('2026-10-22T09:14:00').toISOString();
 
     expect(formatFullDateTime(today, 'fr')).toBe('22 oct. 2026, 09:14');
+  });
+});
+
+describe('formatDay', () => {
+  it('writes a calendar day the same wherever the reader is', () => {
+    expect(formatDay('2026-11-02', 'en')).toBe('Nov 2, 2026');
+    expect(formatDay('2026-01-01', 'fr')).toBe('1 janv. 2026');
   });
 });
 

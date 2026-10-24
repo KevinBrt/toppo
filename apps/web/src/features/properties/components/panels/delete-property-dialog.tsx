@@ -23,7 +23,7 @@ export function DeletePropertyDialog({
   onDeleted: () => Promise<void>;
 }) {
   const { t, locale } = useI18n();
-  const inUse = property.options.reduce((total, { issueCount }) => total + issueCount, 0);
+  const inUse = property.issueCount;
   const remove = useMutation({
     mutationFn: () =>
       projectKey

@@ -3,6 +3,7 @@ import {
   NOTIFICATION_REASONS,
   PALETTE_COLORS,
   PROPERTY_TYPES,
+  type PropertyValue,
 } from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 import {
@@ -104,10 +105,12 @@ export const issues = pgTable(
     /** Set while the issue's status closes it. */
     closedAt: timestamp('closed_at', { withTimezone: true }),
     /**
-     * The value of each property it has, by property id: an option's id for a list. Checked by
-     * the commands against the properties (`@toppo/core`); one without a value is left out.
+     * The value of each property it has, by property id, as its type stores it
+     * (`PROPERTY_VALUE_SCHEMAS`): an option's id for a list, an array of them for a multi-select…
+     * Checked by the commands against the properties (`@toppo/core`); one without a value is left
+     * out.
      */
-    properties: jsonb('properties').$type<Record<string, string>>().notNull().default({}),
+    properties: jsonb('properties').$type<Record<string, PropertyValue>>().notNull().default({}),
     /**
      * The words of the title, weighing more, and of the description, folded by `fold_text()` so
      * that search ignores case and accents. Computed by PostgreSQL, never written.
@@ -143,7 +146,7 @@ export const issues = pgTable(
 
 /**
  * Properties of the issues (Version, Team…), defined for the whole instance in the settings, or
- * for one project (`project_id`): a list of options for now. Each says whether it shows in the
+ * for one project (`project_id`), of a type fixed at creation. Each says whether it shows in the
  * issue list and whether it is asked at creation, then required.
  */
 export const properties = pgTable(
@@ -164,8 +167,16 @@ export const properties = pgTable(
     // Mirrors PROPERTY_NAME_MAX_LENGTH (`@toppo/shared`).
     check('properties_name_length', sql`char_length(${table.name}) <= 40`),
     // Mirrors PROPERTY_TYPES (`@toppo/shared`).
-    check('properties_type_check', sql`${table.type} in ('list')`),
+    check(
+      'properties_type_check',
+      sql`${table.type} in ('list', 'multiSelect', 'text', 'number', 'date', 'user', 'checkbox')`,
+    ),
     check('properties_required_if_asked', sql`${table.askedAtCreation} or not ${table.required}`),
+    // A box that must be ticked to create an issue would always be ticked: it says nothing.
+    check(
+      'properties_checkbox_not_required',
+      sql`${table.type} <> 'checkbox' or not ${table.required}`,
+    ),
     // Each name once in the instance, and once in each project; the commands keep a project's
     // own properties from taking the name of one of the instance's.
     uniqueIndex('properties_instance_name_unique')

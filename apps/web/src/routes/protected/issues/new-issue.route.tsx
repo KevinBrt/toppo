@@ -51,6 +51,7 @@ function NewIssueScreen() {
     >
       <NewIssueForm
         projectKey={projectKey}
+        canAssign={can(project.data.permissions, 'issue.assign')}
         onCreated={(issueKey) => navigate({ to: '/issues/$issueKey', params: { issueKey } })}
         onCancel={() => navigate({ to: '/issues', search: { project: projectKey } })}
       />

@@ -2,10 +2,27 @@ import { z } from 'zod';
 import { PALETTE_COLORS } from '../colors.ts';
 import { checkDistinctOptions } from '../issues/options.ts';
 
-/** Kinds of properties: a list of options first; multi-select, text, number, date… to come. */
-export const PROPERTY_TYPES = ['list'] as const;
+/**
+ * Kinds of properties: one option of a list, several, a line of text, a number, a calendar date,
+ * someone who reaches the project, or a box ticked. Chosen once: a property never changes kind.
+ */
+export const PROPERTY_TYPES = [
+  'list',
+  'multiSelect',
+  'text',
+  'number',
+  'date',
+  'user',
+  'checkbox',
+] as const;
 
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
+
+/** The types whose values are options of their own, edited in the settings. */
+export const PROPERTY_TYPES_WITH_OPTIONS: readonly PropertyType[] = ['list', 'multiSelect'];
+
+export const hasOptions = (type: PropertyType): boolean =>
+  PROPERTY_TYPES_WITH_OPTIONS.includes(type);
 
 /** Properties of the instance: few enough for the forms and the issue's side to show them all. */
 export const PROPERTIES_MAX = 20;
@@ -50,29 +67,41 @@ const propertyFieldsSchema = z.object({
 const askedIfRequired = ({ askedAtCreation, required }: z.infer<typeof propertyFieldsSchema>) =>
   askedAtCreation || !required;
 
-/** Body of `POST /api/v1/properties`: a new property of the instance, with its options in order. */
+/**
+ * Body of `POST /api/v1/properties`: a new property of the instance, of its type for good, with
+ * its options in order if its type has some. A box that must be ticked would say nothing: a
+ * checkbox is never required.
+ */
 export const createPropertyRequestSchema = propertyFieldsSchema
   .extend({
     type: z.enum(PROPERTY_TYPES),
     options: z
       .array(propertyOptionDraftSchema.omit({ id: true }))
-      .min(1)
       .max(PROPERTY_OPTIONS_MAX)
-      .superRefine(checkDistinctOptions),
+      .superRefine(checkDistinctOptions)
+      .default([]),
   })
-  .refine(askedIfRequired, { message: 'Only a property asked at creation is required' });
+  .refine(askedIfRequired, { message: 'Only a property asked at creation is required' })
+  .refine(({ type, options }) => hasOptions(type) === options.length > 0, {
+    message: 'A list or a multi-select has options, no other type does',
+    path: ['options'],
+  })
+  .refine(({ type, required }) => type !== 'checkbox' || !required, {
+    message: 'A checkbox is never required',
+    path: ['required'],
+  });
 
 export type CreatePropertyRequest = z.input<typeof createPropertyRequestSchema>;
 
 /**
  * Body of `PUT /api/v1/properties/:propertyId`: the property and all its options, in their new
- * order, saved at once, and the options it deletes, taken off their issues.
+ * order, saved at once, and the options it deletes, taken off their issues. Its type stays: a
+ * property without options saves none.
  */
 export const updatePropertyRequestSchema = propertyFieldsSchema
   .extend({
     options: z
       .array(propertyOptionDraftSchema)
-      .min(1)
       .max(PROPERTY_OPTIONS_MAX)
       .superRefine(checkDistinctOptions),
     /**
@@ -93,7 +122,10 @@ export const propertyParamsSchema = z.object({ propertyId: z.uuid() });
 
 export const createPropertyResponseSchema = z.object({ id: z.uuid() });
 
-/** A property as the settings show it, each option with how many issues have it. */
+/**
+ * A property as the settings show it, with how many issues have a value of it, and each option
+ * with how many have that one.
+ */
 export const propertyRowSchema = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -101,7 +133,9 @@ export const propertyRowSchema = z.object({
   shownInList: z.boolean(),
   askedAtCreation: z.boolean(),
   required: z.boolean(),
-  /** In their order, each with how many issues have it. */
+  /** Issues having a value of it: deleting it takes the values off them. */
+  issueCount: z.number().int(),
+  /** In their order, each with how many issues have it; none unless its type has options. */
   options: z.array(propertyOptionRefSchema.extend({ issueCount: z.number().int() })),
 });
 
@@ -114,31 +148,19 @@ export type PropertiesResponse = z.infer<typeof propertiesResponseSchema>;
 
 export type PropertyRow = PropertiesResponse['properties'][number];
 
-/** A property as the issue forms offer it: what it asks, and its options in order. */
+/** A property as the issue forms offer it: its type, what it asks, and its options in order. */
 export const issuePropertyFieldSchema = z.object({
   id: z.uuid(),
   name: z.string(),
+  type: z.enum(PROPERTY_TYPES),
   shownInList: z.boolean(),
   askedAtCreation: z.boolean(),
   required: z.boolean(),
+  /** None unless its type has options. */
   options: z.array(propertyOptionRefSchema),
 });
 
 export type IssuePropertyField = z.infer<typeof issuePropertyFieldSchema>;
-
-/** The value of one property on an issue: the property, and the option it has. */
-export const issuePropertyValueSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  option: propertyOptionRefSchema,
-});
-
-export type IssuePropertyValue = z.infer<typeof issuePropertyValueSchema>;
-
-/** Body of `PUT /api/v1/issues/:issueKey/properties/:propertyId`: the option, or none. */
-export const issuePropertyRequestSchema = z.object({ optionId: z.uuid().nullable() });
-
-export type IssuePropertyRequest = z.infer<typeof issuePropertyRequestSchema>;
 
 /** How a project adapts one of the issues' fields: hidden there, or asked without a default. */
 export const projectFieldSettingSchema = z

@@ -79,7 +79,7 @@ const save = (propertyId: string, request: UpdatePropertyRequest) =>
   call('PUT', `/api/v1/properties/${propertyId}`, adminCookie, request);
 
 /** Reports an issue with these values, and the first option of each property required. */
-async function report(properties: Record<string, string> = {}): Promise<string> {
+async function report(properties: Record<string, unknown> = {}): Promise<string> {
   const required = (await listed()).flatMap(({ id, required: isRequired, options }) =>
     isRequired && options[0] ? [[id, options[0].id] as const] : [],
   );
@@ -273,6 +273,113 @@ describe('the properties of the instance', () => {
       payload: { property: { name: 'Sprint' }, from: { name: 'S1' }, to: null },
     });
     expect((await call('DELETE', `/api/v1/properties/${id}`, adminCookie)).statusCode).toBe(404);
+  });
+
+  it('of a type without options are created without any, a checkbox never required', async () => {
+    const id = await create({ name: 'Ticket ref', type: 'text', options: [] });
+    expect((await listed()).find((row) => row.id === id)).toMatchObject({
+      type: 'text',
+      issueCount: 0,
+      options: [],
+    });
+
+    for (const wrong of [
+      { type: 'text', options: [{ name: 'A', color: 'gray' }] },
+      { type: 'multiSelect', options: [] },
+      { type: 'checkbox', options: [], askedAtCreation: true, required: true },
+    ]) {
+      const refused = await call('POST', '/api/v1/properties', adminCookie, {
+        name: 'Odd',
+        shownInList: false,
+        askedAtCreation: false,
+        required: false,
+        ...wrong,
+      });
+      expect(refused.statusCode, JSON.stringify(wrong)).toBe(400);
+    }
+  });
+
+  it('save as their type allows, which never changes', async () => {
+    const text = await create({ name: 'Reference', type: 'text', options: [] });
+    const box = await create({ name: 'Blocking', type: 'checkbox', options: [] });
+    const list = await create({ name: 'Edition', options: [{ name: 'Pro', color: 'gray' }] });
+    const fields = { shownInList: false, askedAtCreation: true, required: false, removed: [] };
+
+    const optionsOnText = await save(text, {
+      ...fields,
+      name: 'Reference',
+      options: [{ name: 'A', color: 'gray' }],
+    });
+    const requiredBox = await save(box, {
+      ...fields,
+      name: 'Blocking',
+      required: true,
+      options: [],
+    });
+    const emptyList = await save(list, { ...fields, name: 'Edition', options: [] });
+
+    expect(errorCode(optionsOnText)).toBe('PROPERTY_WITHOUT_OPTIONS');
+    expect(errorCode(requiredBox)).toBe('CHECKBOX_NOT_REQUIRED');
+    expect(errorCode(emptyList)).toBe('PROPERTY_OPTIONS_REQUIRED');
+    expect((await save(text, { ...fields, name: 'Ref', options: [] })).statusCode).toBe(204);
+    expect((await listed()).find((row) => row.id === text)).toMatchObject({
+      name: 'Ref',
+      type: 'text',
+    });
+  });
+
+  it("take a multi-select's removed option off its issues, keeping their others", async () => {
+    const id = await create({
+      name: 'Platforms',
+      type: 'multiSelect',
+      options: [
+        { name: 'iOS', color: 'gray' },
+        { name: 'Android', color: 'green' },
+      ],
+    });
+    const [ios, android] = (await listed()).find((row) => row.id === id)?.options ?? [];
+    const key = await report({ [id]: [ios?.id, android?.id] });
+    expect((await listed()).find((row) => row.id === id)).toMatchObject({
+      issueCount: 1,
+      options: [{ issueCount: 1 }, { issueCount: 1 }],
+    });
+
+    const saved = await save(id, {
+      name: 'Platforms',
+      shownInList: false,
+      askedAtCreation: false,
+      required: false,
+      options: [{ id: android?.id, name: 'Android', color: 'green' }],
+      removed: [ios?.id ?? ''],
+    });
+
+    expect(saved.statusCode, saved.body).toBe(204);
+    expect((await issue(key)).properties.find((value) => value.id === id)).toMatchObject({
+      type: 'multiSelect',
+      value: [{ name: 'Android' }],
+    });
+    expect(await lastStep(key)).toMatchObject({
+      type: 'issue.propertyChanged',
+      payload: {
+        type: 'multiSelect',
+        from: [{ name: 'iOS' }, { name: 'Android' }],
+        to: [{ name: 'Android' }],
+      },
+    });
+  });
+
+  it('are deleted whatever their type, their values leaving their issues', async () => {
+    const id = await create({ name: 'Due', type: 'date', options: [] });
+    const key = await report({ [id]: '2026-11-02' });
+    expect((await listed()).find((row) => row.id === id)?.issueCount).toBe(1);
+
+    expect((await call('DELETE', `/api/v1/properties/${id}`, adminCookie)).statusCode).toBe(204);
+
+    expect((await issue(key)).properties.some((value) => value.id === id)).toBe(false);
+    expect(await lastStep(key)).toMatchObject({
+      type: 'issue.propertyChanged',
+      payload: { type: 'date', property: { name: 'Due' }, from: '2026-11-02', to: null },
+    });
   });
 
   it('are kept from those who do not manage the settings', async () => {

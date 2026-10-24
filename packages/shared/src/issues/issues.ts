@@ -1,11 +1,13 @@
 import { z } from 'zod';
 import { PALETTE_COLORS } from '../colors.ts';
+import { userRefSchema } from '../members/users.ts';
 import { projectKeySchema } from '../project-key.ts';
+import { issuePropertyFieldSchema, projectFieldsSchema } from '../properties/properties.ts';
+import { type PropertyFilter, propertyFiltersParameter } from '../properties/property-filters.ts';
 import {
-  issuePropertyFieldSchema,
+  givenPropertyValueSchema,
   issuePropertyValueSchema,
-  projectFieldsSchema,
-} from '../properties/properties.ts';
+} from '../properties/property-values.ts';
 import { issueDescriptionSchema, issueTitleSchema, PRIORITY_LEVELS } from './fields.ts';
 import { labelRefSchema } from './labels.ts';
 
@@ -27,11 +29,6 @@ export const projectIssuesParamsSchema = z.object({ projectKey: projectKeySchema
 export const projectPropertyParamsSchema = projectIssuesParamsSchema.extend({
   propertyId: z.uuid(),
 });
-
-/** Someone an issue names: `name` is `null` once their account is deleted. */
-export const userRefSchema = z.object({ id: z.uuid(), name: z.string().nullable() });
-
-export type UserRef = z.infer<typeof userRefSchema>;
 
 export const issueStatusSchema = z.object({
   id: z.uuid(),
@@ -74,8 +71,8 @@ export const createIssueRequestSchema = z.object({
   priorityId: z.uuid().optional(),
   /** Needs `issue.assign`. */
   assigneeId: z.uuid().optional(),
-  /** The option of each property given, by property id; required ones must be. */
-  properties: z.record(z.uuid(), z.uuid()).default({}),
+  /** The value of each property given, by property id; required ones must be. */
+  properties: z.record(z.uuid(), givenPropertyValueSchema).default({}),
 });
 
 export type CreateIssueRequest = z.input<typeof createIssueRequestSchema>;
@@ -188,6 +185,8 @@ export const projectIssuesQuerySchema = issuesQuerySchema.extend({
   assignee: listParameter(z.union([z.uuid(), z.literal('me'), z.literal('none')])),
   /** Someone, or the caller (`me`). */
   reporter: listParameter(z.union([z.uuid(), z.literal('me')])),
+  /** Values or ranges of the project's properties: `<id>:<a>,<b>;<id>:<from>..<to>`. */
+  property: propertyFiltersParameter,
   sort: z.enum(ISSUE_SORTS).default('key'),
   /** The sort's own order when left out (`ISSUE_SORT_ORDERS`). */
   order: z.enum(SORT_ORDERS).optional(),
@@ -205,6 +204,7 @@ export interface ProjectIssuesQuery extends IssuesQuery {
   label?: readonly string[] | undefined;
   assignee?: readonly string[] | undefined;
   reporter?: readonly string[] | undefined;
+  property?: readonly PropertyFilter[] | undefined;
   sort?: IssueSort | undefined;
   order?: SortOrder | undefined;
   group?: IssueGrouping | undefined;

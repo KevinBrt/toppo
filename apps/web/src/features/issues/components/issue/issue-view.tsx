@@ -6,6 +6,7 @@ import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.t
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { Issues } from '../../api/issues.api.ts';
 import type { IssueEdit } from '../../models/issue-edit.model.ts';
+import { storedValueOf } from '../../models/property-value.model.ts';
 import { IssuesQueries } from '../../queries/issues.queries.ts';
 import { applyEdit } from '../../utils/issue-edit.util.ts';
 import { IssueHistory } from '../history/issue-history.tsx';
@@ -19,6 +20,10 @@ const KNOWN_ERRORS = {
   INVALID_CATEGORY: 'issues.invalidCategory',
   INVALID_PRIORITY: 'issues.invalidPriority',
   INVALID_LABEL: 'issues.invalidLabel',
+  PROPERTY_NOT_FOUND: 'issues.invalidProperty',
+  INVALID_PROPERTY_OPTION: 'issues.invalidProperty',
+  INVALID_PROPERTY_VALUE: 'issues.invalidValue',
+  INVALID_PROPERTY_USER: 'issues.invalidPropertyUser',
   ISSUE_NOT_FOUND: 'issues.notFound',
   PROJECT_ARCHIVED: 'projects.archivedNotice',
 } as const;
@@ -44,7 +49,11 @@ function send(key: string, edit: IssueEdit): Promise<void> {
         edit.labels.map(({ id }) => id),
       );
     case 'property':
-      return Issues.setProperty(key, edit.property.id, edit.option?.id ?? null);
+      return Issues.setProperty(
+        key,
+        edit.propertyId,
+        edit.value === null ? null : storedValueOf(edit.value),
+      );
   }
 }
 

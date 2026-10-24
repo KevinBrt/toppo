@@ -19,20 +19,23 @@ import {
   sortOf,
   stateOf,
   withoutFilters,
+  withPropertyFilter,
 } from '../../utils/issue-list.util.ts';
 import { PriorityLabel } from '../fields/priority-label.tsx';
 import { StatusLabel } from '../fields/status-label.tsx';
 import { ChoiceMenu } from './choice-menu.tsx';
 import { FilterButton, FilterMenu, type FilterOption } from './filter-menu.tsx';
+import { PropertyFilters } from './property-filters.tsx';
 import { SortMenu } from './sort-menu.tsx';
 
 /** The search goes to the server once typing pauses, not on every key. */
 const SEARCH_DELAY_MS = 300;
 
 /**
- * What a project's list shows: a search, then a menu per filter, its state first, and the
- * grouping. Phones also get the sort, which wider screens find in the column headers. Every
- * change starts again from the first page. A field the project hides is in none of them.
+ * What a project's list shows: a search, then a menu per filter, its state first, those of its
+ * properties, and the grouping. Phones also get the sort, which wider screens find in the column
+ * headers. Every change starts again from the first page. A field the project hides is in none
+ * of them.
  */
 export function IssuesToolbar({
   projectKey,
@@ -106,6 +109,14 @@ export function IssuesToolbar({
               onChange={(chosen) => change({ [filter]: chosen.length > 0 ? chosen : undefined })}
             />
           ))}
+        <PropertyFilters
+          projectKey={projectKey}
+          filters={query.property ?? []}
+          canListPeople={canListPeople}
+          onChange={(propertyId, filter) =>
+            onQueryChange(withPropertyFilter(query, propertyId, filter))
+          }
+        />
       </fieldset>
       {isNarrowed(query) ? (
         <Button variant="ghost" size="sm" onClick={() => onQueryChange(withoutFilters(query))}>

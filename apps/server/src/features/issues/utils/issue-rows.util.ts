@@ -9,7 +9,8 @@ import {
 } from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 
-const { issueLabels, issues, labels, projectProperties, properties, propertyOptions } = schema;
+const { issueLabels, issues, labels, projectProperties, properties, propertyOptions, users } =
+  schema;
 
 /**
  * The labels of the issue a row is about, by name, as a column of the query itself: read from
@@ -24,11 +25,47 @@ export const labelsOfIssue = sql<LabelRef[]>`coalesce((
   where ${issueLabels.issueId} = ${issues.id}
 ), '[]'::json)`;
 
+/** An option as values show it. */
+const optionJson = sql`json_build_object(
+  'id', ${propertyOptions.id},
+  'name', ${propertyOptions.name},
+  'color', ${propertyOptions.color}
+)`;
+
+/**
+ * A value as it reads, by its property's type: options of the property in their order, someone
+ * named as they are now, anything else as stored. A value not of its type's shape, or naming no
+ * option (none should), reads as null and is left out rather than failing the query.
+ */
+const shownValue = sql`case ${properties.type}
+  when 'list' then (
+    select ${optionJson} from ${propertyOptions}
+    where ${propertyOptions.propertyId} = ${properties.id}
+      and jsonb_typeof(chosen.value) = 'string'
+      and ${propertyOptions.id}::text = chosen.value #>> '{}'
+  )
+  when 'multiSelect' then (
+    select json_agg(${optionJson} order by ${propertyOptions.position}) from ${propertyOptions}
+    where ${propertyOptions.propertyId} = ${properties.id}
+      and jsonb_typeof(chosen.value) = 'array'
+      and chosen.value ? ${propertyOptions.id}::text
+  )
+  when 'user' then (
+    select json_build_object(
+      'id', ${users.id},
+      'name', case when ${users.deletedAt} is null then ${users.name} end
+    ) from ${users}
+    where jsonb_typeof(chosen.value) = 'string' and ${users.id}::text = chosen.value #>> '{}'
+  )
+  when 'number' then case when jsonb_typeof(chosen.value) = 'number' then chosen.value::json end
+  when 'checkbox' then case when chosen.value = 'true'::jsonb then chosen.value::json end
+  else case when jsonb_typeof(chosen.value) = 'string' then chosen.value::json end
+end`;
+
 /**
  * The values of the properties of the issue a row is about, oldest property first, as a column
  * of the query itself: those shown in the list, or all of them, of the properties its project
- * takes (not one it hides). Values are compared as text, so that one naming no option (none
- * should) is left out rather than failing the query.
+ * takes (not one it hides).
  */
 export function propertyValuesOfIssue({ listedOnly }: { listedOnly: boolean }) {
   return sql<IssuePropertyValue[]>`coalesce((
@@ -36,19 +73,16 @@ export function propertyValuesOfIssue({ listedOnly }: { listedOnly: boolean }) {
       json_build_object(
         'id', ${properties.id},
         'name', ${properties.name},
-        'option', json_build_object(
-          'id', ${propertyOptions.id},
-          'name', ${propertyOptions.name},
-          'color', ${propertyOptions.color}
-        )
+        'type', ${properties.type},
+        'value', shown.value
       )
       order by ${properties.createdAt}, ${properties.id}
     )
-    from jsonb_each_text(${issues.properties}) as chosen(property_id, option_id)
-    join ${propertyOptions} on ${propertyOptions.id}::text = chosen.option_id
-      and ${propertyOptions.propertyId}::text = chosen.property_id
-    join ${properties} on ${properties.id} = ${propertyOptions.propertyId}
-    where (${properties.projectId} = ${issues.projectId} or (
+    from jsonb_each(${issues.properties}) as chosen(property_id, value)
+    join ${properties} on ${properties.id}::text = chosen.property_id
+    cross join lateral (select ${shownValue} as value) as shown
+    where shown.value is not null
+    and (${properties.projectId} = ${issues.projectId} or (
       ${properties.projectId} is null and not exists (
         select 1 from ${projectProperties}
         where ${projectProperties.projectId} = ${issues.projectId}

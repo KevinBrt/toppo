@@ -4,7 +4,6 @@ import {
   type CreateIssueRequest,
   createIssueRequestSchema,
   ISSUE_TITLE_MAX_LENGTH,
-  type IssuePropertyField,
 } from '@toppo/shared';
 import { Alert, Button, cn, Field, Input, Select, swatchClassName } from '@toppo/ui';
 import { type FormEvent, useId, useState } from 'react';
@@ -13,12 +12,18 @@ import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { Attachments, type FailedUpload } from '../../api/attachments.api.ts';
 import { Issues } from '../../api/issues.api.ts';
 import type { FileDraft, RefusedFile } from '../../models/attachment-draft.model.ts';
-import { choiceOf, missingChoices } from '../../models/new-issue-form.model.ts';
+import {
+  choiceOf,
+  formProblems,
+  type PropertyDraft,
+  valuesOfDrafts,
+} from '../../models/new-issue-form.model.ts';
 import { IssuesQueries } from '../../queries/issues.queries.ts';
 import { chooseFiles } from '../../utils/attachment-files.util.ts';
 import { DraftFiles, FailedUploads, RefusedFiles } from '../attachments/draft-files.tsx';
 import { FileDropZone } from '../attachments/file-drop-zone.tsx';
 import { MarkdownEditor } from '../markdown/markdown-editor.tsx';
+import { PropertyInput } from '../properties/property-input.tsx';
 
 const KNOWN_ERRORS = {
   INVALID_CATEGORY: 'issues.invalidCategory',
@@ -29,6 +34,14 @@ const KNOWN_ERRORS = {
   PRIORITY_REQUIRED: 'issues.propertyRequired',
   PROPERTY_NOT_FOUND: 'issues.invalidProperty',
   INVALID_PROPERTY_OPTION: 'issues.invalidProperty',
+  INVALID_PROPERTY_VALUE: 'issues.invalidValue',
+  INVALID_PROPERTY_USER: 'issues.invalidPropertyUser',
+} as const;
+
+/** What a field the form refuses says beside it. */
+const PROBLEM_MESSAGES = {
+  required: 'issues.propertyRequired',
+  invalid: 'issues.invalidValue',
 } as const;
 
 /**
@@ -51,10 +64,13 @@ interface Sending {
  */
 export function NewIssueForm({
   projectKey,
+  canAssign,
   onCreated,
   onCancel,
 }: {
   projectKey: string;
+  /** Whether the reporter may name people: a person property is asked of those only. */
+  canAssign: boolean;
   onCreated: (key: string) => Promise<void> | void;
   onCancel: () => void;
 }) {
@@ -66,8 +82,8 @@ export function NewIssueForm({
   // Empty until chosen: the project's default applies.
   const [priorityId, setPriorityId] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  // The option chosen for each property asked at creation, by property id.
-  const [values, setValues] = useState<Record<string, string>>({});
+  // What the field of each property asked at creation holds, by property id.
+  const [properties, setProperties] = useState<Record<string, PropertyDraft>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const limits = useQuery(IssuesQueries.attachmentLimits);
   const [drafts, setDrafts] = useState<FileDraft[]>([]);
@@ -110,7 +126,9 @@ export function NewIssueForm({
   const settings = fields.data?.fieldSettings;
   const chosenPriority = choiceOf(priorityId, fields.data?.priorities, settings?.priority.required);
   const chosenCategory = choiceOf(categoryId, fields.data?.categories, settings?.category.required);
-  const asked = (fields.data?.properties ?? []).filter(({ askedAtCreation }) => askedAtCreation);
+  const asked = (fields.data?.properties ?? []).filter(
+    ({ askedAtCreation, type }) => askedAtCreation && (canAssign || type !== 'user'),
+  );
   const clearError = (key: string) => setErrors(({ [key]: _, ...others }) => others);
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -120,20 +138,22 @@ export function NewIssueForm({
       description,
       ...(chosenPriority ? { priorityId: chosenPriority } : {}),
       ...(chosenCategory ? { categoryId: chosenCategory } : {}),
-      properties: Object.fromEntries(Object.entries(values).filter(([, optionId]) => optionId)),
+      properties: valuesOfDrafts(asked, properties),
     });
     // Said beside each field, as the server would refuse it.
-    const missing = Object.fromEntries(
-      missingChoices({
-        asked,
-        values,
-        settings,
-        priorityId: chosenPriority,
-        categoryId: chosenCategory,
-      }).map((key) => [key, t('issues.propertyRequired')]),
+    const problems = Object.fromEntries(
+      Object.entries(
+        formProblems({
+          asked,
+          drafts: properties,
+          settings,
+          priorityId: chosenPriority,
+          categoryId: chosenCategory,
+        }),
+      ).map(([key, problem]) => [key, t(PROBLEM_MESSAGES[problem])]),
     );
-    setErrors({ ...(parsed.success ? {} : fieldErrors(parsed.error, t)), ...missing });
-    if (parsed.success && Object.keys(missing).length === 0 && !busy) {
+    setErrors({ ...(parsed.success ? {} : fieldErrors(parsed.error, t)), ...problems });
+    if (parsed.success && Object.keys(problems).length === 0 && !busy) {
       create.mutate({ issue: parsed.data, files: drafts });
     }
   }
@@ -248,13 +268,14 @@ export function NewIssueForm({
           />
         )}
         {asked.map((property) => (
-          <PropertyChoice
+          <PropertyInput
             key={property.id}
             property={property}
-            value={values[property.id] ?? ''}
+            draft={properties[property.id]}
             error={errors[`property.${property.id}`]}
-            onChange={(optionId) => {
-              setValues({ ...values, [property.id]: optionId });
+            projectKey={projectKey}
+            onChange={(draft) => {
+              setProperties({ ...properties, [property.id]: draft });
               clearError(`property.${property.id}`);
             }}
           />
@@ -271,37 +292,6 @@ function SubmitLabel({ sending, creating }: { sending: Sending | null; creating:
     return t('issues.attachments.sendingCount', sending);
   }
   return creating ? t('issues.creating') : t('issues.create');
-}
-
-/** A property asked at creation: one of its options, or none unless it is required. */
-function PropertyChoice({
-  property,
-  value,
-  error,
-  onChange,
-}: {
-  property: IssuePropertyField;
-  value: string;
-  error: string | undefined;
-  onChange: (optionId: string) => void;
-}) {
-  const { t } = useI18n();
-  return (
-    <Field label={property.name} required={property.required} error={error}>
-      {(control) => (
-        <Select {...control} value={value} onChange={(event) => onChange(event.target.value)}>
-          <option value="">
-            {property.required ? t('issues.chooseOption') : t('issues.noValue')}
-          </option>
-          {property.options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </Select>
-      )}
-    </Field>
-  );
 }
 
 /** The priorities in a list, none chosen beforehand when the project asks for one. */

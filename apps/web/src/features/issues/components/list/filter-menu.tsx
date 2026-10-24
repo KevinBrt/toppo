@@ -53,6 +53,7 @@ export function FilterMenu({
   options,
   chosen,
   loading = false,
+  defaultOpen = false,
   onChange,
 }: {
   label: string;
@@ -60,6 +61,8 @@ export function FilterMenu({
   chosen: readonly string[];
   /** Options still on their way: said in the menu. */
   loading?: boolean;
+  /** Open as it appears: a filter just added. */
+  defaultOpen?: boolean;
   onChange: (chosen: string[]) => void;
 }) {
   const { t } = useI18n();
@@ -67,7 +70,7 @@ export function FilterMenu({
     onChange(checked ? [...chosen, value] : chosen.filter((other) => other !== value));
 
   return (
-    <DropdownMenu>
+    <DropdownMenu defaultOpen={defaultOpen}>
       <DropdownMenuTrigger asChild>
         <FilterButton active={chosen.length > 0}>
           {buttonText(t, label, options, chosen)}

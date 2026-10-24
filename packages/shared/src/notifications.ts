@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { userRefSchema } from './issues/issues.ts';
+import { userRefSchema } from './members/users.ts';
 
 /** Why someone is told: given the issue, named in a comment, or involved in the issue. */
 export const NOTIFICATION_REASONS = ['assigned', 'mentioned', 'participating', 'newIssue'] as const;

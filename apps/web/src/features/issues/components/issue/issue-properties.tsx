@@ -1,15 +1,16 @@
-import type { IssueFieldsResponse, IssuePropertyField, IssueResponse } from '@toppo/shared';
-import { Badge, StatusBadge } from '@toppo/ui';
+import type { IssueFieldsResponse, IssueResponse } from '@toppo/shared';
+import { StatusBadge } from '@toppo/ui';
 import { ChevronDownIcon } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { formatFullDateTime } from '../../../../shared/i18n/dates.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { IssueEdit } from '../../models/issue-edit.model.ts';
-import { AssigneeDialog } from '../fields/assignee-dialog.tsx';
+import { ChoicesField } from '../fields/choices-field.tsx';
 import { FIELD_TRIGGER_CLASS, FieldMenu } from '../fields/field-menu.tsx';
-import { LabelsField } from '../fields/labels-field.tsx';
+import { PersonDialog } from '../fields/person-dialog.tsx';
 import { PersonName } from '../fields/person-name.tsx';
 import { PriorityLabel } from '../fields/priority-label.tsx';
+import { PropertyField } from '../properties/property-field.tsx';
 
 /**
  * The issue's fields beside it, one per row, their values aligned: status, priority, assignee,
@@ -106,9 +107,12 @@ export function IssueProperties({
           </Property>
         )}
         <Property label={t('issues.labels')}>
-          <LabelsField
-            labels={issue.labels}
+          <ChoicesField
+            label={t('issues.labels')}
+            chosen={issue.labels}
             options={fields?.labels ?? []}
+            none={t('issues.noLabels')}
+            noOptions={t('issues.labelsEmpty')}
             disabled={!editsFields}
             onChange={(labels) => onEdit({ field: 'labels', labels })}
           />
@@ -117,9 +121,13 @@ export function IssueProperties({
           <Property key={property.id} label={property.name}>
             <PropertyField
               property={property}
-              issue={issue}
-              disabled={!editsFields}
-              onEdit={onEdit}
+              value={issue.properties.find(({ id }) => id === property.id)}
+              projectKey={issue.project.key}
+              // Naming someone is choosing among those who may be assigned.
+              disabled={
+                !editsFields || (property.type === 'user' && !issue.actions.includes('assign'))
+              }
+              onChange={(value) => onEdit({ field: 'property', propertyId: property.id, value })}
             />
           </Property>
         ))}
@@ -175,63 +183,14 @@ function AssigneeField({
         <span className="min-w-0">{shown}</span>
         <ChevronDownIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
       </button>
-      <AssigneeDialog
+      <PersonDialog
         projectKey={issue.project.key}
-        issueKey={issue.key}
+        title={t('issues.assignTitle', { key: issue.key })}
         current={issue.assignee}
         open={choosing}
         onOpenChange={setChoosing}
         onChoose={(assignee) => onEdit({ field: 'assignee', assignee })}
       />
     </>
-  );
-}
-
-/** Stands for no value in the menu of a property: no option has this id. */
-const NO_VALUE = 'none';
-
-/** A property of the issue: its option, or none, chosen in a menu of the property's options. */
-function PropertyField({
-  property,
-  issue,
-  disabled,
-  onEdit,
-}: {
-  property: IssuePropertyField;
-  issue: IssueResponse;
-  disabled: boolean;
-  onEdit: (edit: IssueEdit) => void;
-}) {
-  const { t } = useI18n();
-  const current = issue.properties.find(({ id }) => id === property.id)?.option;
-  return (
-    <FieldMenu
-      label={property.name}
-      disabled={disabled}
-      value={current?.id ?? NO_VALUE}
-      options={[
-        {
-          value: NO_VALUE,
-          text: t('issues.noValue'),
-          content: <span className="text-muted-foreground">{t('issues.noValue')}</span>,
-        },
-        ...property.options.map((option) => ({
-          value: option.id,
-          text: option.name,
-          content: (
-            <Badge tone={option.color} className="max-w-full">
-              <span className="truncate">{option.name}</span>
-            </Badge>
-          ),
-        })),
-      ]}
-      onChange={(optionId) =>
-        onEdit({
-          field: 'property',
-          property: { id: property.id, name: property.name },
-          option: property.options.find(({ id }) => id === optionId) ?? null,
-        })
-      }
-    />
   );
 }

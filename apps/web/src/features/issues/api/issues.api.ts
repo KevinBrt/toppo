@@ -5,6 +5,7 @@ import {
   assigneesResponseSchema,
   type CreateIssueRequest,
   createIssueResponseSchema,
+  formatPropertyFilters,
   type IssueActivitiesResponse,
   type IssueFieldsResponse,
   type IssueResponse,
@@ -17,6 +18,7 @@ import {
   issueSearchResponseSchema,
   issuesResponseSchema,
   type ProjectIssuesQuery,
+  type PropertyValue,
   type UpdateIssueRequest,
 } from '@toppo/shared';
 import { z } from 'zod';
@@ -44,6 +46,7 @@ function listQuery(query: ProjectIssuesQuery): string {
     label: query.label?.join(','),
     assignee: query.assignee?.join(','),
     reporter: query.reporter?.join(','),
+    property: query.property?.length ? formatPropertyFilters(query.property) : undefined,
     sort: query.sort,
     order: query.order,
     group: query.group,
@@ -124,11 +127,11 @@ export const Issues = {
     });
   },
 
-  /** Gives the issue an option of a property, or takes its value away with `null`. */
-  async setProperty(key: string, propertyId: string, optionId: string | null): Promise<void> {
+  /** Gives the issue a value of a property, as stored, or takes its value away with `null`. */
+  async setProperty(key: string, propertyId: string, value: PropertyValue | null): Promise<void> {
     await apiRequest(`${issuePath(key)}/properties/${encodeURIComponent(propertyId)}`, {
       method: 'PUT',
-      body: { optionId },
+      body: { value },
       schema: noContent,
     });
   },

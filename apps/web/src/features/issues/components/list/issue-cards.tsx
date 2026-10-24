@@ -3,8 +3,8 @@ import type { IssueGrouping, IssueSummary } from '@toppo/shared';
 import type { IssueSection } from '../../models/issue-list.model.ts';
 import { LabelChips } from '../fields/label-chips.tsx';
 import { PriorityLabel } from '../fields/priority-label.tsx';
-import { PropertyChips } from '../fields/property-chips.tsx';
 import { StatusLabel } from '../fields/status-label.tsx';
+import { PropertyChips } from '../properties/property-chips.tsx';
 import { GroupTitle } from './group-title.tsx';
 import type { LastColumn } from './issues-table.tsx';
 

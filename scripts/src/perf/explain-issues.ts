@@ -183,6 +183,13 @@ async function seed(): Promise<void> {
 function requests(admin: string, member: string): [label: string, cookie: string, path: string][] {
   const somebody = psql(`select id from users where email = 'person7@example.com'`).trim();
   const list = '/api/v1/projects/BIG/issues';
+  const property = (name: string) =>
+    psql(`select id from properties where name = '${name}'`).trim();
+  const option = (name: string) =>
+    psql(`select id from property_options where name = '${name}'`).trim();
+  const day = (offset: number) =>
+    new Date(Date.now() + offset * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const filtered = (filter: string) => `${list}?state=open&property=${filter}`;
   return [
     ['admin: list, open, newest', admin, `${list}?state=open`],
     ['admin: list, all, page 300', admin, `${list}?page=300`],
@@ -196,6 +203,21 @@ function requests(admin: string, member: string): [label: string, cookie: string
     ['admin: list, search an error code', admin, `${list}?search=E4821`],
     ['admin: list, search inside words', admin, `${list}?state=open&search=chargem`],
     ['admin: list, search a key', admin, `${list}?state=open&search=BIG-12345`],
+    ['admin: list, one version', admin, filtered(`${property('Version')}:${option('1.3')}`)],
+    ['admin: list, no version', admin, filtered(`${property('Version')}:none`)],
+    ['admin: list, one platform', admin, filtered(`${property('Platforms')}:${option('Android')}`)],
+    [
+      'admin: list, due within a month',
+      admin,
+      filtered(`${property('Due')}:${day(0)}..${day(30)}`),
+    ],
+    ['admin: list, estimate 3 to 5', admin, filtered(`${property('Estimate')}:3..5`)],
+    ['admin: list, blocking', admin, filtered(`${property('Blocking')}:yes`)],
+    [
+      'admin: list, version and platform',
+      admin,
+      filtered(`${property('Version')}:${option('1.3')};${property('Platforms')}:${option('iOS')}`),
+    ],
     ['admin: list, small project', admin, '/api/v1/projects/P05/issues?state=open'],
     ['admin: palette, a common word', admin, '/api/v1/issues/search?search=erreur'],
     ['admin: palette, a rarer word', admin, '/api/v1/issues/search?search=paiement'],

@@ -30,6 +30,7 @@ import { alias, type PgColumn } from 'drizzle-orm/pg-core';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { labelsOfIssue, propertyValuesOfIssue, toIssueSummary } from '../utils/issue-rows.util.ts';
 import { textMatching } from '../utils/issue-search.util.ts';
+import { propertyFiltersOf } from '../utils/property-filters.util.ts';
 
 const {
   issueCategories,
@@ -101,9 +102,9 @@ const GROUPINGS: Readonly<
 };
 
 /**
- * One page of a project's issues, searched, filtered, sorted and maybe grouped, all in the
- * query: every issue, or only those the caller reported when that is all they may see. Grouped,
- * the page comes with the size of every group.
+ * One page of a project's issues, searched, filtered (by its properties too), sorted and maybe
+ * grouped, all in the query: every issue, or only those the caller reported when that is all they
+ * may see. Grouped, the page comes with the size of every group.
  */
 export const listIssues = defineQuery({
   name: 'issue.list',
@@ -116,6 +117,7 @@ export const listIssues = defineQuery({
       visibility === 'own' ? eq(issues.reporterId, actor.id) : undefined,
       visibility === 'none' ? sql`false` : undefined,
       ...filtersOf(query, actor.id),
+      ...(await propertyFiltersOf(db, project.id, query.property, actor.id)),
       query.search ? searched(query.search, project.key) : undefined,
     );
     // Where each issue's status stands in the workflow the project follows.
@@ -125,31 +127,11 @@ export const listIssues = defineQuery({
     );
     const grouping = query.group ? GROUPINGS[query.group] : null;
 
-    const rows = await db
-      .select({
-        number: issues.number,
-        title: issues.title,
-        status: {
-          id: statuses.id,
-          name: statuses.name,
-          color: statuses.color,
-          closes: statuses.closes,
-        },
-        category: {
-          id: issueCategories.id,
-          name: issueCategories.name,
-          color: issueCategories.color,
-        },
-        priority: { id: priorities.id, name: priorities.name, level: priorities.level },
-        assignee: { id: assignees.id, name: assignees.name, deletedAt: assignees.deletedAt },
-        reporter: { id: reporters.id, name: reporters.name, deletedAt: reporters.deletedAt },
-        labels: labelsOfIssue,
-        properties: propertyValuesOfIssue({ listedOnly: true }),
-        createdAt: issues.createdAt,
-        updatedAt: issues.updatedAt,
-      })
+    // The page first, its issues alone: an offset reads every issue before it, and the labels
+    // and properties of each are worked out only for those shown (docs/performance.md).
+    const page = await db
+      .select({ id: issues.id })
       .from(issues)
-      .innerJoin(statuses, eq(statuses.id, issues.statusId))
       .innerJoin(issueCategories, eq(issueCategories.id, issues.categoryId))
       .innerJoin(priorities, eq(priorities.id, issues.priorityId))
       .innerJoin(reporters, eq(reporters.id, issues.reporterId))
@@ -166,6 +148,11 @@ export const listIssues = defineQuery({
       )
       .limit(ISSUES_PAGE_SIZE)
       .offset((query.page - 1) * ISSUES_PAGE_SIZE);
+    const ids = page.map(({ id }) => id);
+    const found = new Map(
+      (ids.length === 0 ? [] : await rowsOf(db, ids)).map((row) => [row.id, row]),
+    );
+    const rows = ids.flatMap((id) => found.get(id) ?? []);
     const [total] = await db.select({ count: count() }).from(issues).where(matching);
     const groups = grouping
       ? await db
@@ -188,6 +175,41 @@ export const listIssues = defineQuery({
     };
   },
 });
+
+/** The issues of a page, with what the list shows of each, in no particular order. */
+function rowsOf(db: Db, ids: readonly string[]) {
+  return db
+    .select({
+      id: issues.id,
+      number: issues.number,
+      title: issues.title,
+      status: {
+        id: statuses.id,
+        name: statuses.name,
+        color: statuses.color,
+        closes: statuses.closes,
+      },
+      category: {
+        id: issueCategories.id,
+        name: issueCategories.name,
+        color: issueCategories.color,
+      },
+      priority: { id: priorities.id, name: priorities.name, level: priorities.level },
+      assignee: { id: assignees.id, name: assignees.name, deletedAt: assignees.deletedAt },
+      reporter: { id: reporters.id, name: reporters.name, deletedAt: reporters.deletedAt },
+      labels: labelsOfIssue,
+      properties: propertyValuesOfIssue({ listedOnly: true }),
+      createdAt: issues.createdAt,
+      updatedAt: issues.updatedAt,
+    })
+    .from(issues)
+    .innerJoin(statuses, eq(statuses.id, issues.statusId))
+    .innerJoin(issueCategories, eq(issueCategories.id, issues.categoryId))
+    .innerJoin(priorities, eq(priorities.id, issues.priorityId))
+    .innerJoin(reporters, eq(reporters.id, issues.reporterId))
+    .leftJoin(assignees, eq(assignees.id, issues.assigneeId))
+    .where(inArray(issues.id, [...ids]));
+}
 
 /** The conditions the filters set, `me` standing for the caller. */
 function filtersOf(query: ProjectIssuesQuery, actorId: string): (SQL | undefined)[] {

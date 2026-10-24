@@ -96,7 +96,7 @@ describe('the properties of an issue', () => {
     expect(fake.requests).toContainEqual({
       method: 'PUT',
       path: `/api/v1/issues/WEB-1/properties/${VERSION.id}`,
-      body: { optionId: optionOf(VERSION, '1.3') },
+      body: { value: optionOf(VERSION, '1.3') },
     });
     const activity = screen.getByRole('region', { name: 'Activity' });
     await expect.element(activity.getByText(/cleared Team/)).toBeVisible();

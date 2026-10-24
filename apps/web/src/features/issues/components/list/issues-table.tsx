@@ -15,10 +15,16 @@ import { sectionsOf } from '../../utils/issue-groups.util.ts';
 import { LabelChips } from '../fields/label-chips.tsx';
 import { PersonName } from '../fields/person-name.tsx';
 import { PriorityLabel } from '../fields/priority-label.tsx';
-import { PropertyChips } from '../fields/property-chips.tsx';
 import { StatusLabel } from '../fields/status-label.tsx';
+import { PropertyChips } from '../properties/property-chips.tsx';
 import { GroupTitle } from './group-title.tsx';
 import { IssueCards } from './issue-cards.tsx';
+
+/** What the list says when the server refuses its filters: one on a property no longer there. */
+const LIST_ERRORS = {
+  INVALID_PROPERTY_FILTER: 'issues.list.invalidFilter',
+  PROPERTY_NOT_FOUND: 'issues.list.invalidFilter',
+} as const;
 
 /** One page of issues as the server answers it, with the size of every group when grouped. */
 interface IssuesPage<Issue> {
@@ -101,7 +107,7 @@ export function IssuesTable<Issue extends IssueSummary>({
     );
   }
   if (issues.isError) {
-    return <Alert tone="danger">{requestErrorMessage(issues.error, t)}</Alert>;
+    return <Alert tone="danger">{requestErrorMessage(issues.error, t, LIST_ERRORS)}</Alert>;
   }
   const { rows, matching, page, pageSize, groups } = issues.data;
   if (matching === 0) {

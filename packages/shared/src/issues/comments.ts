@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { roleBadgeSchema } from '../members/roles.ts';
+import { userRefSchema } from '../members/users.ts';
 import { ATTACHMENTS_MAX, issueAttachmentSchema } from './attachments.ts';
-import { issueKeyParamsSchema, userRefSchema } from './issues.ts';
+import { issueKeyParamsSchema } from './issues.ts';
 
 /** Mirrors the `comments_body_length` check of the database. */
 export const COMMENT_BODY_MAX_LENGTH = 20_000;

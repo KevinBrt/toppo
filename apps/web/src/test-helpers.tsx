@@ -13,7 +13,7 @@ import {
   cleanFileName,
   commentActionsOf,
   createTextScan,
-  creationValuesProblem,
+  creationValuesOf,
   DEFAULT_CATEGORIES,
   DEFAULT_PRIORITIES,
   DEFAULT_ROLE_IDS,
@@ -28,15 +28,23 @@ import {
   issueChanges,
   issueVisibilityOf,
   mediaTypeOf,
+  meetsCondition,
   nextStatusesOf,
   type ProjectPermission,
+  type PropertyCondition,
+  type PropertyProblem,
   permissionsOfRole,
   planCategories,
   planOptions,
   planWorkflow,
   projectColorFor,
   projectPermissionsOf,
+  propertyChangeOf,
+  propertyConditionOf,
+  propertyValueOf,
   rolePermissionsFrom,
+  samePropertyValue,
+  withoutOptions,
   withPropertyValue,
 } from '@toppo/core';
 import {
@@ -80,6 +88,7 @@ import {
   type ProjectAccessRow,
   type ProjectFields,
   type PropertyOptionRef,
+  type PropertyValue,
   passwordResetRequestSchema,
   prioritiesRequestSchema,
   projectFieldsSchema,
@@ -216,7 +225,6 @@ export interface FakeServerState {
 
 /** A property as the fake server keeps it, with its options in their order. */
 export type FakeProperty = IssuePropertyField & {
-  type: 'list';
   /** The project it belongs to; none for one of the instance. */
   projectKey?: string;
 };
@@ -229,7 +237,10 @@ export interface FakeAdaptation {
   options: PropertyOptionRef[] | null;
 }
 
-/** A list property named `name`, with options named as given, made up ids from `seed`. */
+/**
+ * A property named `name`, a list unless `overrides` says otherwise, with options named as given,
+ * made up ids from `seed`.
+ */
 export function fakeProperty(
   seed: number,
   name: string,
@@ -359,8 +370,8 @@ export interface FakeIssue {
   reporterId: string;
   /** None unless said otherwise. */
   labelIds: string[];
-  /** The option of each property it has, by property id: none unless said otherwise. */
-  properties: Record<string, string>;
+  /** The value of each property it has, as stored, by property id: none unless said otherwise. */
+  properties: Record<string, PropertyValue>;
   /** UTC ISO 8601. */
   createdAt: string;
   closedAt: string | null;
@@ -1286,7 +1297,9 @@ function projectRequest(
     case 'GET issues':
       return listIssues(state, project, permissions, search);
     case 'POST issues':
-      return unless('issue.create', () => createIssue(state, project, fields));
+      return unless('issue.create', () =>
+        createIssue(state, project, fields, can(permissions, 'issue.assign')),
+      );
     case 'GET properties':
     case 'POST properties':
     case 'PUT properties':
@@ -1789,7 +1802,7 @@ function issueFields(state: FakeServerState, projectKey: string) {
     priorities: state.priorities,
     labels: byLabelName(state.labels),
     properties: effectiveOf(state, projectKey).map(
-      ({ type: _type, projectKey: _projectKey, ...field }) => field,
+      ({ projectKey: _projectKey, ...field }) => field,
     ),
     fieldSettings: fieldSettingsOf(state.projects.find(({ key }) => key === projectKey)),
   };
@@ -1802,11 +1815,80 @@ function propertyValuesOf(
   { listedOnly }: { listedOnly: boolean },
 ): IssuePropertyValue[] {
   return effectiveOf(state, issue.projectKey).flatMap((property) => {
-    const option = property.options.find(({ id }) => id === issue.properties[property.id]);
-    return option && (property.shownInList || !listedOnly)
-      ? [{ id: property.id, name: property.name, option }]
-      : [];
+    const value = issue.properties[property.id];
+    const shown = value === undefined ? null : shownValueOf(state, property, value);
+    return shown && (property.shownInList || !listedOnly) ? [shown] : [];
   });
+}
+
+/** A value as it reads, by its property's type: options in their order, someone by name. */
+function shownValueOf(
+  state: FakeServerState,
+  property: IssuePropertyField,
+  value: PropertyValue,
+): IssuePropertyValue | null {
+  const { id, name } = property;
+  switch (property.type) {
+    case 'list': {
+      const option = property.options.find((candidate) => candidate.id === value);
+      return option ? { id, name, type: 'list', value: option } : null;
+    }
+    case 'multiSelect': {
+      const chosen = property.options.filter(
+        (option) => Array.isArray(value) && value.includes(option.id),
+      );
+      return chosen.length > 0 ? { id, name, type: 'multiSelect', value: chosen } : null;
+    }
+    case 'user':
+      return typeof value === 'string'
+        ? { id, name, type: 'user', value: userRef(state, value) }
+        : null;
+    case 'number':
+      return typeof value === 'number' ? { id, name, type: 'number', value } : null;
+    case 'checkbox':
+      return value === true ? { id, name, type: 'checkbox', value } : null;
+    case 'date':
+      return typeof value === 'string' ? { id, name, type: 'date', value } : null;
+    case 'text':
+      return typeof value === 'string' ? { id, name, type: 'text', value } : null;
+  }
+}
+
+/** What decides the values a property takes, as `@toppo/core` checks them. */
+const rulesOf = ({ id, type, askedAtCreation, required, options }: IssuePropertyField) =>
+  ({ id, type, askedAtCreation, required, optionIds: options.map((option) => option.id) }) as const;
+
+/** What the server answers when a value cannot be given. */
+const PROPERTY_REFUSALS: Readonly<Record<PropertyProblem['problem'], string>> = {
+  unknownProperty: 'PROPERTY_NOT_FOUND',
+  invalidValue: 'INVALID_PROPERTY_VALUE',
+  unknownOption: 'INVALID_PROPERTY_OPTION',
+  missingRequired: 'PROPERTY_REQUIRED',
+};
+
+/**
+ * A change of a property's value as the history shows it: options by their names now, wherever
+ * they belong, someone by name.
+ */
+function shownChange(
+  state: FakeServerState,
+  property: FakeProperty,
+  from: PropertyValue | null,
+  to: PropertyValue | null,
+): Extract<IssueActivity, { type: 'issue.propertyChanged' }>['payload'] {
+  const names = new Map(
+    [
+      ...property.options,
+      ...state.propertyAdaptations.flatMap((adaptation) =>
+        adaptation.propertyId === property.id ? (adaptation.options ?? []) : [],
+      ),
+    ].map((option) => [option.id, option.name]),
+  );
+  const change = propertyChangeOf(property, from, to, names);
+  const person = (userId: string | null) => (userId ? userRef(state, userId) : null);
+  return change.type === 'user'
+    ? { ...change, from: person(change.from), to: person(change.to) }
+    : change;
 }
 
 const keyOf = (issue: FakeIssue) => `${issue.projectKey}-${issue.number}`;
@@ -1849,6 +1931,15 @@ function listIssues(
     return apiError(400, 'VALIDATION_FAILED');
   }
   const query = parsed.data;
+  const conditions: PropertyCondition[] = [];
+  for (const filter of query.property ?? []) {
+    const property = effectiveOf(state, project.key).find(({ id }) => id === filter.propertyId);
+    const condition = property && propertyConditionOf(property, filter, state.user?.id ?? '');
+    if (!condition) {
+      return apiError(400, property ? 'INVALID_PROPERTY_FILTER' : 'PROPERTY_NOT_FOUND');
+    }
+    conditions.push(condition);
+  }
   const visibility = issueVisibilityOf(permissions);
   const statusOrder = workflowOf(state, project.key).statuses.map(({ id }) => id);
   const matching = state.issues
@@ -1858,6 +1949,11 @@ function listIssues(
         visibility === 'all' || (visibility === 'own' && issue.reporterId === state.user?.id),
     )
     .filter((issue) => matchesQuery(state, issue, query))
+    .filter((issue) =>
+      conditions.every((condition) =>
+        meetsCondition(condition, issue.properties[condition.propertyId]),
+      ),
+    )
     .map((issue) => summaryOf(state, issue));
   const values = sortValues(state, statusOrder);
   const grouping = query.group ? issueGroupings(values)[query.group] : null;
@@ -2058,11 +2154,15 @@ function record(
   state.activities.set(key, history);
 }
 
-/** `POST /api/v1/projects/:key/issues`: the next number, the defaults, its reporter the caller. */
+/**
+ * `POST /api/v1/projects/:key/issues`: the next number, the defaults, its reporter the caller; a
+ * person property given or required only of those who `mayName`.
+ */
 function createIssue(
   state: FakeServerState,
   project: FakeProject,
   fields: Record<string, unknown>,
+  mayName: boolean,
 ): Response {
   const number =
     Math.max(
@@ -2078,26 +2178,20 @@ function createIssue(
   if (settings.priority.required && !fields['priorityId']) {
     return apiError(400, 'PRIORITY_REQUIRED');
   }
-  const values = (fields['properties'] ?? {}) as Record<string, string>;
-  const problem = creationValuesProblem(
-    effectiveOf(state, project.key).map(({ id, askedAtCreation, required, options }) => ({
-      id,
-      askedAtCreation,
-      required,
-      optionIds: options.map((option) => option.id),
-    })),
+  const values = (fields['properties'] ?? {}) as Record<string, unknown>;
+  const properties = effectiveOf(state, project.key);
+  if (!mayName && properties.some(({ id, type }) => type === 'user' && id in values)) {
+    return apiError(403, 'FORBIDDEN');
+  }
+  const given = creationValuesOf(
+    properties.filter(({ type }) => mayName || type !== 'user').map(rulesOf),
     values,
   );
-  if (problem) {
-    const codes = {
-      unknownProperty: 'PROPERTY_NOT_FOUND',
-      unknownOption: 'INVALID_PROPERTY_OPTION',
-      missingRequired: 'PROPERTY_REQUIRED',
-    } as const;
-    return apiError(400, codes[problem.problem]);
+  if ('problem' in given) {
+    return apiError(400, PROPERTY_REFUSALS[given.problem]);
   }
   const issue = fakeIssue(project.key, number, String(fields['title']).trim(), {
-    properties: values,
+    properties: given.values,
     description: String(fields['description'] ?? ''),
     ...(fields['categoryId'] ? { categoryId: String(fields['categoryId']) } : {}),
     ...(fields['priorityId'] ? { priorityId: String(fields['priorityId']) } : {}),
@@ -2182,7 +2276,9 @@ function issueRequest(
     case 'PUT labels':
       return unless('issue.update', () => setLabels(state, issue, fields));
     case 'PUT properties':
-      return unless('issue.update', () => setProperty(state, issue, commentId ?? '', fields));
+      return unless('issue.update', () =>
+        setProperty(state, issue, commentId ?? '', fields, can(permissions, 'issue.assign')),
+      );
     case 'PUT assignee':
       return unless('issue.assign', () =>
         assignIssue(state, issue, (fields['assigneeId'] as string | null | undefined) ?? null),
@@ -2613,36 +2709,34 @@ function fieldSettingsOf(project: FakeProject | undefined): ProjectFields {
   );
 }
 
-/** `PUT /api/v1/issues/:key/properties/:propertyId`: an option of the property, or none. */
+/** `PUT /api/v1/issues/:key/properties/:propertyId`: a value of the property, or none. */
 function setProperty(
   state: FakeServerState,
   issue: FakeIssue,
   propertyId: string,
   fields: Record<string, unknown>,
+  mayName: boolean,
 ): Response {
   const property = effectiveOf(state, issue.projectKey).find(({ id }) => id === propertyId);
   if (!property) {
     return apiError(404, 'PROPERTY_NOT_FOUND');
   }
-  const optionId = (fields['optionId'] ?? null) as string | null;
-  const option = property.options.find(({ id }) => id === optionId) ?? null;
-  if (optionId !== null && !option) {
-    return apiError(400, 'INVALID_PROPERTY_OPTION');
+  if (property.type === 'user' && !mayName) {
+    return apiError(403, 'FORBIDDEN');
   }
-  const current = property.options.find(({ id }) => id === issue.properties[propertyId]) ?? null;
-  if (current?.id === option?.id) {
+  const given = fields['value'] ?? null;
+  const taken = given === null ? { value: null } : propertyValueOf(rulesOf(property), given);
+  if ('problem' in taken) {
+    return apiError(400, PROPERTY_REFUSALS[taken.problem]);
+  }
+  const current = issue.properties[propertyId] ?? null;
+  if (samePropertyValue(current, taken.value)) {
     return NO_CONTENT();
   }
-  issue.properties = withPropertyValue(issue.properties, propertyId, optionId);
-  const named = (named: { id: string; name: string } | null) =>
-    named ? { id: named.id, name: named.name } : null;
+  issue.properties = withPropertyValue(issue.properties, propertyId, taken.value);
   record(state, keyOf(issue), {
     type: 'issue.propertyChanged',
-    payload: {
-      property: { id: property.id, name: property.name },
-      from: named(current),
-      to: named(option),
-    },
+    payload: shownChange(state, property, current, taken.value),
   });
   return NO_CONTENT();
 }
@@ -2717,12 +2811,18 @@ function projectPropertyRequest(
   return changeFakeProperty(state, method, propertyId, body, project.key);
 }
 
-/** The properties of the instance or of a project, each option counted in `countedIn`'s issues. */
+/**
+ * The properties of the instance or of a project, each, and each option, counted in
+ * `countedIn`'s issues.
+ */
 function listedRows(
   state: FakeServerState,
   projectKey: string | undefined,
   countedIn: string | undefined,
 ) {
+  const counted = state.issues.filter(
+    (issue) => countedIn === undefined || issue.projectKey === countedIn,
+  );
   return state.properties
     .filter((property) => property.projectKey === projectKey)
     .map(({ projectKey: _, ...property }) => {
@@ -2731,13 +2831,13 @@ function listedRows(
       );
       return {
         ...property,
+        issueCount: counted.filter((issue) => property.id in issue.properties).length,
         options: (adaptation?.options ?? property.options).map((option) => ({
           ...option,
-          issueCount: state.issues.filter(
-            (issue) =>
-              (countedIn === undefined || issue.projectKey === countedIn) &&
-              issue.properties[property.id] === option.id,
-          ).length,
+          issueCount: counted.filter((issue) => {
+            const value = issue.properties[property.id];
+            return value === option.id || (Array.isArray(value) && value.includes(option.id));
+          }).length,
         })),
       };
     });
@@ -2771,6 +2871,7 @@ function createFakeProperty(
     parsed.data.name,
     parsed.data.options.map(({ name }) => name),
     {
+      type: parsed.data.type,
       shownInList: parsed.data.shownInList,
       askedAtCreation: parsed.data.askedAtCreation,
       required: parsed.data.required,
@@ -2802,11 +2903,16 @@ function changeFakeProperty(
     return apiError(404, 'PROPERTY_NOT_FOUND');
   }
   if (method === 'DELETE') {
-    takeFakeOptionsOff(
-      state,
-      property.id,
-      property.options.map(({ id }) => id),
-    );
+    for (const issue of state.issues) {
+      const value = issue.properties[property.id];
+      if (value !== undefined) {
+        issue.properties = withPropertyValue(issue.properties, property.id, null);
+        record(state, keyOf(issue), {
+          type: 'issue.propertyChanged',
+          payload: shownChange(state, property, value, null),
+        });
+      }
+    }
     state.properties = state.properties.filter((candidate) => candidate !== property);
     return NO_CONTENT();
   }
@@ -2872,7 +2978,10 @@ function optionsFrom(
   }));
 }
 
-/** Takes options off the issues having them, of one project or every one, each told in its history. */
+/**
+ * Takes options off the issues choosing them, of one project or every one, each told in its
+ * history: a list loses its value, a multi-select keeps its other options.
+ */
 function takeFakeOptionsOff(
   state: FakeServerState,
   propertyId: string,
@@ -2880,22 +2989,18 @@ function takeFakeOptionsOff(
   projectKey?: string,
 ): void {
   const property = state.properties.find(({ id }) => id === propertyId);
+  if (!property || optionIds.length === 0) {
+    return;
+  }
   for (const issue of state.issues) {
-    const optionId = issue.properties[propertyId];
-    const name = [
-      ...(property?.options ?? []),
-      ...state.propertyAdaptations.flatMap(({ options }) => options ?? []),
-    ].find(({ id }) => id === optionId)?.name;
+    const value = issue.properties[propertyId];
     const inScope = projectKey === undefined || issue.projectKey === projectKey;
-    if (property && optionId && name && inScope && optionIds.includes(optionId)) {
-      issue.properties = withPropertyValue(issue.properties, propertyId, null);
+    const kept = value === undefined ? null : withoutOptions(property.type, value, optionIds);
+    if (value !== undefined && inScope && !samePropertyValue(value, kept)) {
+      issue.properties = withPropertyValue(issue.properties, propertyId, kept);
       record(state, keyOf(issue), {
         type: 'issue.propertyChanged',
-        payload: {
-          property: { id: property.id, name: property.name },
-          from: { id: optionId, name },
-          to: null,
-        },
+        payload: shownChange(state, property, value, kept),
       });
     }
   }

@@ -59,7 +59,7 @@ async function offered(project: string) {
   ]);
 }
 
-async function report(project: string, properties: Record<string, string> = {}, extra = {}) {
+async function report(project: string, properties: Record<string, unknown> = {}, extra = {}) {
   const response = await call('POST', `/api/v1/projects/${project}/issues`, {
     title: 'Broken export',
     properties,
@@ -69,10 +69,18 @@ async function report(project: string, properties: Record<string, string> = {}, 
   return createIssueResponseSchema.parse(response.json()).key;
 }
 
+/** The values of an issue, by property name: the option of a list, those of a multi-select. */
 async function valuesOf(key: string) {
   return issueResponseSchema
     .parse((await call('GET', `/api/v1/issues/${key}`)).json())
-    .properties.map(({ name, option }) => [name, option.name]);
+    .properties.flatMap((property) => {
+      if (property.type === 'list') {
+        return [[property.name, property.value.name]];
+      }
+      return property.type === 'multiSelect'
+        ? [[property.name, property.value.map(({ name }) => name)]]
+        : [];
+    });
 }
 
 const adapt = (project: string, propertyId: string, body: object) =>
@@ -148,7 +156,7 @@ describe('a project', () => {
     expect((await offered('API')).map(([name]) => name)).toEqual(['Version', 'Team']);
     expect(await valuesOf(key)).toStrictEqual([]);
     const hidden = await call('PUT', `/api/v1/issues/${key}/properties/${TEAM.id}`, {
-      optionId: TEAM.web,
+      value: TEAM.web,
     });
     expect(hidden.statusCode).toBe(404);
 
@@ -215,6 +223,59 @@ describe('a project', () => {
       type: 'issue.propertyChanged',
       payload: { property: { name: 'Version' }, from: { name: '1.2.1' }, to: null },
     });
+  });
+
+  it("gives a multi-select options of its own, each issue's choices moved onto the copies", async () => {
+    const platforms = await call('POST', '/api/v1/properties', {
+      type: 'multiSelect',
+      name: 'Platforms',
+      shownInList: false,
+      askedAtCreation: false,
+      required: false,
+      options: [
+        { name: 'iOS', color: 'gray' },
+        { name: 'Android', color: 'green' },
+      ],
+    });
+    const id = createPropertyResponseSchema.parse(platforms.json()).id;
+    const [ios, android] =
+      (await fieldsOf('WEB')).properties.find((property) => property.id === id)?.options ?? [];
+    const key = await report('WEB', { [id]: [ios?.id, android?.id] });
+
+    const own = await adapt('WEB', id, {
+      hidden: false,
+      options: {
+        options: [{ id: android?.id, name: 'Android', color: 'green' }],
+        removed: [ios?.id ?? ''],
+      },
+    });
+
+    expect(own.statusCode, own.body).toBe(204);
+    expect(await valuesOf(key)).toContainEqual(['Platforms', ['Android']]);
+    const copy = (await adaptations('WEB')).instance.find((property) => property.id === id)
+      ?.options[0];
+    expect(copy).toMatchObject({ name: 'Android', issueCount: 1 });
+    expect(copy?.id).not.toBe(android?.id);
+  });
+
+  it('never gives options of its own to a property of another type', async () => {
+    const reference = await call('POST', '/api/v1/properties', {
+      type: 'text',
+      name: 'Reference',
+      shownInList: false,
+      askedAtCreation: false,
+      required: false,
+    });
+    const id = createPropertyResponseSchema.parse(reference.json()).id;
+
+    const refused = await adapt('WEB', id, {
+      hidden: false,
+      options: { options: [{ name: 'A', color: 'gray' }], removed: [] },
+    });
+
+    expect(refused.statusCode).toBe(400);
+    expect(errorCode(refused)).toBe('PROPERTY_WITHOUT_OPTIONS');
+    expect((await adapt('WEB', id, { hidden: true, options: null })).statusCode).toBe(204);
   });
 
   it('has properties of its own, named apart from the instance’s and its others', async () => {

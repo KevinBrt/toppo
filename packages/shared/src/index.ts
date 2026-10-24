@@ -164,10 +164,8 @@ export {
   SORT_ORDERS,
   type SortOrder,
   type UpdateIssueRequest,
-  type UserRef,
   updateIssueFieldsSchema,
   updateIssueRequestSchema,
-  userRefSchema,
 } from './issues/issues.ts';
 export {
   type IssueLabelsRequest,
@@ -277,8 +275,10 @@ export {
   assignableRolesResponseSchema,
   type ChangeUserRoleRequest,
   changeUserRoleRequestSchema,
+  type UserRef,
   type UserSummary,
   userIdParamsSchema,
+  userRefSchema,
   userSummarySchema,
 } from './members/users.ts';
 export {
@@ -351,16 +351,14 @@ export {
   type CreatePropertyRequest,
   createPropertyRequestSchema,
   createPropertyResponseSchema,
+  hasOptions,
   type IssuePropertyField,
-  type IssuePropertyRequest,
-  type IssuePropertyValue,
   issuePropertyFieldSchema,
-  issuePropertyRequestSchema,
-  issuePropertyValueSchema,
   PROPERTIES_MAX,
   PROPERTY_NAME_MAX_LENGTH,
   PROPERTY_OPTIONS_MAX,
   PROPERTY_TYPES,
+  PROPERTY_TYPES_WITH_OPTIONS,
   type ProjectFields,
   type ProjectPropertiesResponse,
   type PropertiesResponse,
@@ -381,3 +379,22 @@ export {
   type UpdatePropertyRequest,
   updatePropertyRequestSchema,
 } from './properties/properties.ts';
+export {
+  formatPropertyFilters,
+  PROPERTY_FILTER_WORDS,
+  type PropertyFilter,
+  parsePropertyFilters,
+  propertyFilterSchema,
+  propertyFiltersParameter,
+} from './properties/property-filters.ts';
+export {
+  givenPropertyValueSchema,
+  type IssuePropertyRequest,
+  type IssuePropertyValue,
+  issuePropertyRequestSchema,
+  issuePropertyValueSchema,
+  PROPERTY_NUMBER_MAX,
+  PROPERTY_TEXT_MAX_LENGTH,
+  PROPERTY_VALUE_SCHEMAS,
+  type PropertyValue,
+} from './properties/property-values.ts';

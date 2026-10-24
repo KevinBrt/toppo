@@ -14,7 +14,7 @@ import {
   sortedBy,
   sortOf,
 } from '../../utils/issue-list.util.ts';
-import { AssigneeDialog } from '../fields/assignee-dialog.tsx';
+import { PersonDialog } from '../fields/person-dialog.tsx';
 import { PersonName } from '../fields/person-name.tsx';
 import { IssuesTable } from './issues-table.tsx';
 import { IssuesToolbar } from './issues-toolbar.tsx';
@@ -159,9 +159,9 @@ function AssignButton({
         <PlusCircleIcon aria-hidden="true" />
         {t('issues.assign')}
       </Button>
-      <AssigneeDialog
+      <PersonDialog
         projectKey={projectKey}
-        issueKey={issue.key}
+        title={t('issues.assignTitle', { key: issue.key })}
         current={null}
         open={choosing}
         onOpenChange={setChoosing}

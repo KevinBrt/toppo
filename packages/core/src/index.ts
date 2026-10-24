@@ -123,8 +123,22 @@ export {
 export { projectColorFor } from './projects/project-color.ts';
 export { effectiveProperties, type PropertyAdaptation } from './properties/project-properties.ts';
 export {
-  creationValuesProblem,
+  propertyChangeOf,
+  samePropertyValue,
+  withOptionsMoved,
+  withoutOptions,
+} from './properties/property-changes.ts';
+export {
+  meetsCondition,
+  type PropertyCondition,
+  propertyConditionOf,
+} from './properties/property-filters.ts';
+export {
+  creationValuesOf,
+  optionsIn,
   type PropertyProblem,
   type PropertyRules,
+  peopleNamedIn,
+  propertyValueOf,
   withPropertyValue,
 } from './properties/property-values.ts';

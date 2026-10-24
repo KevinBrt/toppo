@@ -5,6 +5,11 @@ export const userIdParamsSchema = z.object({
   userId: z.uuid(),
 });
 
+/** Someone an issue names: `name` is `null` once their account is deleted. */
+export const userRefSchema = z.object({ id: z.uuid(), name: z.string().nullable() });
+
+export type UserRef = z.infer<typeof userRefSchema>;
+
 export const userSummarySchema = z.object({
   id: z.uuid(),
   name: z.string(),

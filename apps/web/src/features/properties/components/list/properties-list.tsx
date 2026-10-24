@@ -1,8 +1,15 @@
-import type { CategoryRow, LabelRow, PriorityRow, PropertyRow } from '@toppo/shared';
+import {
+  type CategoryRow,
+  hasOptions,
+  type LabelRow,
+  type PriorityRow,
+  type PropertyRow,
+} from '@toppo/shared';
 import { Button } from '@toppo/ui';
-import { ChevronRightIcon, ListIcon, PlusIcon, TagsIcon } from 'lucide-react';
+import { ChevronRightIcon, ListIcon, type LucideIcon, PlusIcon, TagsIcon } from 'lucide-react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
+import { PROPERTY_TYPE_ICONS } from '../../constants/property-types.constants.ts';
 
 export type BuiltInProperty = 'priority' | 'category' | 'labels';
 
@@ -30,31 +37,52 @@ export function PropertiesList({
   onCreate: () => void;
 }) {
   const { t, locale } = useI18n();
-  const rows: { property: ListedProperty; name: string; type: string; options: string[] }[] = [
+  const summaryOf = (options: readonly string[]) =>
+    options.length === 0
+      ? t('properties.noLabels')
+      : t('properties.summary', {
+          options: t(`properties.options.${pluralForm(locale, options.length)}`, {
+            count: options.length,
+          }),
+          names: options.join(', '),
+        });
+  const rows: {
+    property: ListedProperty;
+    name: string;
+    type: string;
+    icon: LucideIcon;
+    summary: string;
+  }[] = [
     {
       property: 'priority',
       name: t('properties.priority'),
       type: t('properties.optionList'),
+      icon: ListIcon,
       // The highest level first, as people rank them.
-      options: priorities.toReversed().map(({ name }) => name),
+      summary: summaryOf(priorities.toReversed().map(({ name }) => name)),
     },
     {
       property: 'category',
       name: t('properties.category'),
       type: t('properties.optionList'),
-      options: categories.map(({ name }) => name),
+      icon: ListIcon,
+      summary: summaryOf(categories.map(({ name }) => name)),
     },
     {
       property: 'labels',
       name: t('properties.labels'),
       type: t('properties.labelList'),
-      options: labels.map(({ name }) => name),
+      icon: TagsIcon,
+      summary: summaryOf(labels.map(({ name }) => name)),
     },
-    ...properties.map(({ id, name, options }) => ({
+    ...properties.map(({ id, name, type, options }) => ({
       property: { id },
       name,
-      type: t('properties.optionList'),
-      options: options.map((option) => option.name),
+      type: t(`properties.types.${type}`),
+      icon: PROPERTY_TYPE_ICONS[type],
+      summary: hasOptions(type)
+        ? summaryOf(options.map((option) => option.name))
+        : t(`properties.typeHelps.${type}`),
     })),
   ];
 
@@ -71,7 +99,7 @@ export function PropertiesList({
         </span>
       </div>
       <ul className="divide-y divide-border">
-        {rows.map(({ property, name, type, options }) => (
+        {rows.map(({ property, name, type, icon: Icon, summary }) => (
           <li key={typeof property === 'string' ? property : property.id}>
             <button
               type="button"
@@ -82,24 +110,11 @@ export function PropertiesList({
                 aria-hidden="true"
                 className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-muted text-muted-foreground"
               >
-                {property === 'labels' ? (
-                  <TagsIcon className="size-4" />
-                ) : (
-                  <ListIcon className="size-4" />
-                )}
+                <Icon className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-foreground">{name}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {options.length === 0
-                    ? t('properties.noLabels')
-                    : t('properties.summary', {
-                        options: t(`properties.options.${pluralForm(locale, options.length)}`, {
-                          count: options.length,
-                        }),
-                        names: options.join(', '),
-                      })}
-                </span>
+                <span className="block truncate text-xs text-muted-foreground">{summary}</span>
               </span>
               <span className="hidden w-40 shrink-0 text-sm text-foreground sm:block">{type}</span>
               <ChevronRightIcon

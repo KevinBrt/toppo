@@ -1,78 +1,175 @@
+import { propertyChangeOf, withOptionsMoved, withoutOptions } from '@toppo/core';
 import { schema } from '@toppo/db';
-import type { IssueActivityPayload } from '@toppo/shared';
-import { and, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
+import type { PropertyType, PropertyValue } from '@toppo/shared';
+import { and, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 
-const { issues, properties } = schema;
+const { issues, properties, propertyOptions } = schema;
 
 /** Rows written at once: far below PostgreSQL's limit of parameters per statement. */
 const BATCH = 1000;
 
-/** The option an issue has of `propertyId`, as text: none when it has no value. */
-const chosenOptionOf = (propertyId: string) =>
-  sql<string>`${issues.properties} ->> ${propertyId}::text`;
+/** A property as its values are rewritten and told: what it is called, what it holds. */
+export interface PropertyRef {
+  id: string;
+  name: string;
+  type: PropertyType;
+}
+
+/** What an issue had of a property, and has once rewritten (`null`: no value any more). */
+interface Rewritten {
+  id: string;
+  projectId: string;
+  from: PropertyValue;
+  to: PropertyValue | null;
+}
+
+/** The value an issue has of a property, as stored. */
+const storedValue = (propertyId: string) =>
+  sql<PropertyValue>`${issues.properties} -> ${propertyId}::text`;
+
+/** Issues choosing any of these options of a property, found through the index of the values. */
+function choosingAny(property: PropertyRef, optionIds: readonly string[]): SQL | undefined {
+  return or(
+    ...optionIds.map((id) => {
+      const chosen = { [property.id]: property.type === 'multiSelect' ? [id] : id };
+      return sql`${issues.properties} @> ${JSON.stringify(chosen)}::jsonb`;
+    }),
+  );
+}
+
+/** Issues having a value of a property, found through the index of the values. */
+function havingValue(propertyId: string): SQL {
+  return sql`${issues.properties} @? ${`$."${propertyId}"`}::jsonpath`;
+}
 
 /**
- * Takes options of a property off the issues having them, of one project or of every one, before
- * the options go; each issue is told in its history, which keeps the names. Answers how many
- * issues lost theirs.
+ * Rewrites the value of a property on the issues `where` finds, locked: each takes what `rewrite`
+ * makes of it, or loses it with `null`. Issues given the same value are written together;
+ * `touched`, they read as changed. Answers what each had and has.
+ */
+async function rewriteValues(
+  tx: Transaction,
+  propertyId: string,
+  where: SQL | undefined,
+  rewrite: (value: PropertyValue) => PropertyValue | null,
+  { touched }: { touched: boolean },
+): Promise<Rewritten[]> {
+  const found = await tx
+    .select({ id: issues.id, projectId: issues.projectId, value: storedValue(propertyId) })
+    .from(issues)
+    .where(where)
+    .for('update');
+  const rewritten = found.map(({ id, projectId, value }) => ({
+    id,
+    projectId,
+    from: value,
+    to: rewrite(value),
+  }));
+  const byValue = new Map<string, { to: PropertyValue | null; ids: string[] }>();
+  for (const { id, to } of rewritten) {
+    const key = JSON.stringify(to);
+    byValue.set(key, { to, ids: [...(byValue.get(key)?.ids ?? []), id] });
+  }
+  for (const { to, ids } of byValue.values()) {
+    const values =
+      to === null
+        ? sql`${issues.properties} - ${propertyId}::text`
+        : sql`jsonb_set(${issues.properties}, array[${propertyId}::text], ${JSON.stringify(to)}::jsonb)`;
+    for (let start = 0; start < ids.length; start += BATCH) {
+      await tx
+        .update(issues)
+        .set(touched ? { properties: values, updatedAt: sql`now()` } : { properties: values })
+        .where(inArray(issues.id, ids.slice(start, start + BATCH)));
+    }
+  }
+  return rewritten;
+}
+
+/** The names of every option of a property, wherever they belong, before any of them goes. */
+async function optionNamesOf(tx: Transaction, propertyId: string): Promise<Map<string, string>> {
+  const options = await tx
+    .select({ id: propertyOptions.id, name: propertyOptions.name })
+    .from(propertyOptions)
+    .where(eq(propertyOptions.propertyId, propertyId));
+  return new Map(options.map(({ id, name }) => [id, name]));
+}
+
+/**
+ * Records on each issue rewritten the change of its value, the options by their names now:
+ * told to nobody, someone tidying the properties.
+ */
+async function recordChanges(
+  tx: Transaction,
+  actorId: string,
+  property: PropertyRef,
+  rewritten: readonly Rewritten[],
+): Promise<void> {
+  if (rewritten.length === 0) {
+    return;
+  }
+  const names = await optionNamesOf(tx, property.id);
+  const ref = { id: property.id, name: property.name, type: property.type };
+  for (let start = 0; start < rewritten.length; start += BATCH) {
+    await recordActivities(
+      tx,
+      rewritten.slice(start, start + BATCH).map(({ id, projectId, from, to }) => ({
+        projectId,
+        issueId: id,
+        actorId,
+        type: 'issue.propertyChanged' as const,
+        payload: propertyChangeOf(ref, from, to, names),
+      })),
+      { notify: false },
+    );
+  }
+}
+
+/**
+ * Takes options of a property off the issues choosing them, of one project or of every one,
+ * before the options go: a list loses its value, a multi-select keeps its other options. Each
+ * issue is told in its history, which keeps the names. Answers how many issues changed.
  */
 export async function takeOptionsOff(
   tx: Transaction,
   actorId: string,
-  property: { id: string; name: string },
+  property: PropertyRef,
   options: readonly { id: string; name: string }[],
   { projectId }: { projectId?: string } = {},
 ): Promise<number> {
   if (options.length === 0) {
     return 0;
   }
-  const having = await tx
-    .select({ id: issues.id, projectId: issues.projectId, optionId: chosenOptionOf(property.id) })
-    .from(issues)
-    .where(
-      and(
-        inArray(
-          chosenOptionOf(property.id),
-          options.map(({ id }) => id),
-        ),
-        projectId === undefined ? undefined : eq(issues.projectId, projectId),
-      ),
-    )
-    .for('update');
-  for (let start = 0; start < having.length; start += BATCH) {
-    const batch = having.slice(start, start + BATCH);
-    await tx
-      .update(issues)
-      .set({ properties: sql`${issues.properties} - ${property.id}::text`, updatedAt: sql`now()` })
-      .where(
-        inArray(
-          issues.id,
-          batch.map(({ id }) => id),
-        ),
-      );
-    // Recorded on each issue, told to nobody: someone tidying the properties.
-    await recordActivities(
-      tx,
-      batch.map(({ id: issueId, projectId: issueProjectId, optionId }) => {
-        const payload: IssueActivityPayload<'issue.propertyChanged'> = {
-          property,
-          from: options.find((option) => option.id === optionId) ?? null,
-          to: null,
-        };
-        return {
-          projectId: issueProjectId,
-          issueId,
-          actorId,
-          type: 'issue.propertyChanged' as const,
-          payload,
-        };
-      }),
-      { notify: false },
-    );
-  }
-  return having.length;
+  const removed = options.map(({ id }) => id);
+  const rewritten = await rewriteValues(
+    tx,
+    property.id,
+    and(
+      choosingAny(property, removed),
+      projectId === undefined ? undefined : eq(issues.projectId, projectId),
+    ),
+    (value) => withoutOptions(property.type, value, removed),
+    { touched: true },
+  );
+  await recordChanges(tx, actorId, property, rewritten);
+  return rewritten.length;
+}
+
+/**
+ * Takes every value of a property off the issues of every project, before the property goes,
+ * each issue told in its history. Answers how many issues lost theirs.
+ */
+export async function takeValuesOff(
+  tx: Transaction,
+  actorId: string,
+  property: PropertyRef,
+): Promise<number> {
+  const rewritten = await rewriteValues(tx, property.id, havingValue(property.id), () => null, {
+    touched: true,
+  });
+  await recordChanges(tx, actorId, property, rewritten);
+  return rewritten.length;
 }
 
 /**
@@ -81,18 +178,20 @@ export async function takeOptionsOff(
  */
 export async function moveValues(
   tx: Transaction,
-  propertyId: string,
+  property: PropertyRef,
   projectId: string,
   moves: ReadonlyMap<string, string>,
 ): Promise<void> {
-  for (const [from, to] of moves) {
-    await tx
-      .update(issues)
-      .set({
-        properties: sql`jsonb_set(${issues.properties}, array[${propertyId}::text], to_jsonb(${to}::text))`,
-      })
-      .where(and(eq(issues.projectId, projectId), eq(chosenOptionOf(propertyId), from)));
+  if (moves.size === 0) {
+    return;
   }
+  await rewriteValues(
+    tx,
+    property.id,
+    and(eq(issues.projectId, projectId), choosingAny(property, [...moves.keys()])),
+    (value) => withOptionsMoved(property.type, value, moves),
+    { touched: false },
+  );
 }
 
 /**
@@ -103,9 +202,9 @@ export async function lockedProperty(
   tx: Transaction,
   propertyId: string,
   projectId: string | null,
-): Promise<{ id: string; name: string } | undefined> {
+): Promise<PropertyRef | undefined> {
   const [property] = await tx
-    .select({ id: properties.id, name: properties.name })
+    .select({ id: properties.id, name: properties.name, type: properties.type })
     .from(properties)
     .where(and(eq(properties.id, propertyId), ofScope(projectId)))
     .for('update');

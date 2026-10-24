@@ -1,11 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ProjectFields, ProjectPropertiesResponse, PropertyRow } from '@toppo/shared';
+import {
+  hasOptions,
+  type ProjectFields,
+  type ProjectPropertiesResponse,
+  type PropertyRow,
+  type PropertyType,
+} from '@toppo/shared';
 import { Alert, Badge, Button, Switch } from '@toppo/ui';
-import { ChevronRightIcon, ListIcon, PlusIcon } from 'lucide-react';
+import { ChevronRightIcon, PlusIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { ProjectProperties } from '../../api/project-properties.api.ts';
+import { PROPERTY_TYPE_ICONS } from '../../constants/property-types.constants.ts';
 import { PropertiesQueries } from '../../queries/properties.queries.ts';
 import { PropertyPanel } from '../panels/property-panel.tsx';
 import { AdaptationPanel } from './adaptation-panel.tsx';
@@ -168,18 +175,22 @@ function Section({ title, hint, children }: { title: string; hint: string; child
   );
 }
 
-function PropertyIcon() {
+function PropertyIcon({ type = 'list' }: { type?: PropertyType }) {
+  const Icon = PROPERTY_TYPE_ICONS[type];
   return (
     <span
       aria-hidden="true"
       className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-muted text-muted-foreground"
     >
-      <ListIcon className="size-4" />
+      <Icon className="size-4" />
     </span>
   );
 }
 
-/** A property as a line opening its panel: its name, its options, and how the project takes it. */
+/**
+ * A property as a line opening its panel: its name, its options or what its type holds, and how
+ * the project takes it.
+ */
 function PropertyLine({
   property,
   badges,
@@ -189,6 +200,7 @@ function PropertyLine({
   badges?: ReactNode;
   onOpen: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <li>
       <button
@@ -196,14 +208,16 @@ function PropertyLine({
         onClick={onOpen}
         className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors outline-none hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
       >
-        <PropertyIcon />
+        <PropertyIcon type={property.type} />
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
             {property.name}
             {badges}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
-            {property.options.map(({ name }) => name).join(', ')}
+            {hasOptions(property.type)
+              ? property.options.map(({ name }) => name).join(', ')
+              : t(`properties.types.${property.type}`)}
           </span>
         </span>
         <ChevronRightIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />

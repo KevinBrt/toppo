@@ -19,6 +19,8 @@ export const issueListSearchSchema = z.object({
   label: listInAddress,
   assignee: listInAddress,
   reporter: listInAddress,
+  /** Filters on the project's properties: `<id>:<a>,<b>;<id>:<from>..<to>`. */
+  property: z.string().max(4000).optional().catch(undefined),
   sort: z.enum(ISSUE_SORTS).optional().catch(undefined),
   order: z.enum(SORT_ORDERS).optional().catch(undefined),
   group: z.enum(ISSUE_GROUPINGS).optional().catch(undefined),

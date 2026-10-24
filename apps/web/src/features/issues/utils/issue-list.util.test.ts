@@ -9,6 +9,7 @@ import {
   sortedAs,
   sortedBy,
   withoutFilters,
+  withPropertyFilter,
 } from './issue-list.util.ts';
 
 const ID = '01a1569b-9900-7000-8000-000000000001';
@@ -26,6 +27,7 @@ describe('issuesQueryOf', () => {
       label: undefined,
       assignee: undefined,
       reporter: undefined,
+      property: undefined,
       sort: undefined,
       order: undefined,
       group: undefined,
@@ -56,6 +58,24 @@ describe('issuesQueryOf', () => {
     expect(
       issueListSearchSchema.parse({ state: 'archived', sort: 'name', order: 'up', page: '0' }),
     ).toEqual({});
+    expect(issuesQueryOf({ property: `${ID}:latest` }).property).toBeUndefined();
+  });
+});
+
+describe('withPropertyFilter', () => {
+  it('sets, replaces and takes away the filter of one property, from the first page', () => {
+    const query = { page: 3, property: [{ propertyId: ID, values: ['none'] }] };
+    const range = { propertyId: OTHER, from: '2', to: null };
+
+    expect(withPropertyFilter(query, OTHER, range)).toStrictEqual({
+      page: undefined,
+      property: [{ propertyId: ID, values: ['none'] }, range],
+    });
+    expect(
+      withPropertyFilter(query, ID, { propertyId: ID, values: [OTHER] }).property,
+    ).toStrictEqual([{ propertyId: ID, values: [OTHER] }]);
+    expect(withPropertyFilter(query, ID, null).property).toBeUndefined();
+    expect(isNarrowed({ state: 'open', property: [range] })).toBe(true);
   });
 });
 
@@ -73,6 +93,7 @@ describe('searchOf', () => {
       label: undefined,
       assignee: undefined,
       reporter: undefined,
+      property: undefined,
       sort: undefined,
       order: undefined,
       group: undefined,
@@ -90,6 +111,7 @@ describe('searchOf', () => {
       label: OTHER,
       assignee: 'me,none',
       reporter: undefined,
+      property: `${ID}:none;${OTHER}:2..`,
       sort: 'priority',
       order: 'asc',
       group: 'status',

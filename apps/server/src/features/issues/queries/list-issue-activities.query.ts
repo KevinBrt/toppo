@@ -217,8 +217,21 @@ async function namedByCommentsIn(
   return named;
 }
 
+/** Whom a change names, by id: the assignees, or the people a person property held. */
+function peopleOfChange(row: ActivityRow): (string | null)[] {
+  if (row.type === 'issue.assigneeChanged') {
+    const { from, to } = ISSUE_ACTIVITY_PAYLOADS['issue.assigneeChanged'].parse(row.payload);
+    return [from, to];
+  }
+  if (row.type === 'issue.propertyChanged') {
+    const change = ISSUE_ACTIVITY_PAYLOADS['issue.propertyChanged'].parse(row.payload);
+    return change.type === 'user' ? [change.from, change.to] : [];
+  }
+  return [];
+}
+
 /**
- * The people assignment changes and comments name, by id, in one query: named as they are now.
+ * The people changes and comments name, by id, in one query: named as they are now.
  */
 async function peopleNamedIn(
   db: Db,
@@ -226,14 +239,9 @@ async function peopleNamedIn(
   namedByComments: ReadonlyMap<string, readonly string[]>,
 ): Promise<Map<string, UserRef>> {
   const ids = new Set([...namedByComments.values()].flat());
-  for (const row of rows) {
-    if (row.type === 'issue.assigneeChanged') {
-      const { from, to } = ISSUE_ACTIVITY_PAYLOADS['issue.assigneeChanged'].parse(row.payload);
-      for (const id of [from, to]) {
-        if (id) {
-          ids.add(id);
-        }
-      }
+  for (const id of rows.flatMap(peopleOfChange)) {
+    if (id) {
+      ids.add(id);
     }
   }
   if (ids.size === 0) {
@@ -313,12 +321,17 @@ function toActivity(row: ActivityRow, shown: Shown): IssueActivity {
         type: 'issue.labelsChanged',
         payload: payloads['issue.labelsChanged'].parse(payload),
       };
-    case 'issue.propertyChanged':
+    case 'issue.propertyChanged': {
+      const change = payloads['issue.propertyChanged'].parse(payload);
       return {
         ...base,
         type: 'issue.propertyChanged',
-        payload: payloads['issue.propertyChanged'].parse(payload),
+        payload:
+          change.type === 'user'
+            ? { ...change, from: person(change.from), to: person(change.to) }
+            : change,
       };
+    }
     case 'issue.commented': {
       if (!row.comment) {
         throw new Error(`The comment of activity ${row.id} is gone`);

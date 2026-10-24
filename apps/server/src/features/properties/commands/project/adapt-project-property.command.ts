@@ -1,6 +1,7 @@
 import { planOptions } from '@toppo/core';
 import { schema, uuidv7 } from '@toppo/db';
 import {
+  hasOptions,
   type PropertyOptionDraft,
   projectPropertyParamsSchema,
   propertyAdaptationRequestSchema,
@@ -9,7 +10,12 @@ import { and, asc, eq, inArray } from 'drizzle-orm';
 import { defineCommand, type Transaction } from '../../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../../platform/http/http-error.ts';
 import { optionsOf, saveOptions } from '../../utils/property-saving.util.ts';
-import { lockedProperty, moveValues, takeOptionsOff } from '../../utils/property-values.util.ts';
+import {
+  lockedProperty,
+  moveValues,
+  type PropertyRef,
+  takeOptionsOff,
+} from '../../utils/property-values.util.ts';
 
 const { projectProperties, propertyOptions } = schema;
 
@@ -27,6 +33,9 @@ export const adaptProjectProperty = defineCommand({
     const property = await lockedProperty(tx, propertyId, null);
     if (!property) {
       throw new HttpError(404, 'PROPERTY_NOT_FOUND', 'This property does not exist');
+    }
+    if (options !== null && !hasOptions(property.type)) {
+      throw new HttpError(400, 'PROPERTY_WITHOUT_OPTIONS', 'This property has no options');
     }
     const [adaptation] = await tx
       .select({ ownOptions: projectProperties.ownOptions })
@@ -72,7 +81,7 @@ export const adaptProjectProperty = defineCommand({
 async function dropOwnOptions(
   tx: Transaction,
   actorId: string,
-  property: { id: string; name: string },
+  property: PropertyRef,
   projectId: string,
 ): Promise<number> {
   const own = await tx
@@ -100,7 +109,7 @@ async function dropOwnOptions(
 async function copyOptions(
   tx: Transaction,
   actorId: string,
-  property: { id: string; name: string },
+  property: PropertyRef,
   projectId: string,
   { options, removed }: { options: readonly PropertyOptionDraft[]; removed: readonly string[] },
 ): Promise<number> {
@@ -144,6 +153,6 @@ async function copyOptions(
       position,
     })),
   ]);
-  await moveValues(tx, property.id, projectId, copies);
+  await moveValues(tx, property, projectId, copies);
   return takenOff;
 }

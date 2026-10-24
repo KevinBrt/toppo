@@ -1,0 +1,3 @@
+ALTER TABLE "properties" DROP CONSTRAINT "properties_type_check";--> statement-breakpoint
+ALTER TABLE "properties" ADD CONSTRAINT "properties_checkbox_not_required" CHECK ("properties"."type" <> 'checkbox' or not "properties"."required");--> statement-breakpoint
+ALTER TABLE "properties" ADD CONSTRAINT "properties_type_check" CHECK ("properties"."type" in ('list', 'multiSelect', 'text', 'number', 'date', 'user', 'checkbox'));

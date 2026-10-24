@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import {
+  hasOptions,
   PROPERTY_OPTIONS_MAX,
   type ProjectPropertiesResponse,
   propertyAdaptationRequestSchema,
@@ -92,6 +93,8 @@ function AdaptationEditor({
 }) {
   const { t, locale } = useI18n();
   const formId = useId();
+  // Only a list or a multi-select may have options of its own.
+  const withOptions = hasOptions(property.type);
   const [hidden, setHidden] = useState(property.hidden);
   const [own, setOwn] = useState(property.ownOptions);
   // The project's own options, or the organization's to start from: kept by their ids.
@@ -178,14 +181,16 @@ function AdaptationEditor({
             checked={hidden}
             onChange={setHidden}
           />
-          <SettingSwitch
-            label={t('projectProperties.ownOptions')}
-            help={t('projectProperties.ownOptionsHelp')}
-            checked={own}
-            onChange={setOwn}
-          />
+          {withOptions ? (
+            <SettingSwitch
+              label={t('projectProperties.ownOptions')}
+              help={t('projectProperties.ownOptionsHelp')}
+              checked={own}
+              onChange={setOwn}
+            />
+          ) : null}
         </div>
-        {own ? (
+        {withOptions && own ? (
           <OptionsSection count={drafts.length}>
             <SortableList
               items={drafts}
@@ -217,7 +222,8 @@ function AdaptationEditor({
               }
             />
           </OptionsSection>
-        ) : (
+        ) : null}
+        {withOptions && !own ? (
           <section className="flex flex-col gap-2">
             <h3 className="text-sm font-medium text-foreground">
               {t('projectProperties.instanceOptions')}
@@ -235,7 +241,7 @@ function AdaptationEditor({
               </p>
             ) : null}
           </section>
-        )}
+        ) : null}
       </form>
     </SidePanelContent>
   );

@@ -21,6 +21,16 @@ export function formatFullDateTime(iso: string, locale: Locale): string {
   );
 }
 
+/**
+ * A calendar day, "2026-11-02", as the reader writes it: "Nov 2, 2026". Read in UTC, where it was
+ * written, so that it stays the same day wherever the reader is.
+ */
+export function formatDay(day: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(
+    new Date(`${day}T00:00:00Z`),
+  );
+}
+
 /** How long ago a moment was, roughly: "5 minutes ago", "yesterday", "3 months ago". */
 export function formatRelativeTime(iso: string, locale: Locale, now: Date = new Date()): string {
   const elapsed = now.getTime() - new Date(iso).getTime();

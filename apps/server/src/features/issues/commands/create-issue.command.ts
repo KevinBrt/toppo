@@ -1,10 +1,10 @@
 import {
   can,
-  creationValuesProblem,
+  creationValuesOf,
   effectiveWorkflow,
   formatIssueKey,
   initialStatusOf,
-  type PropertyProblem,
+  peopleNamedIn,
 } from '@toppo/core';
 import { schema, uuidv7 } from '@toppo/db';
 import {
@@ -17,26 +17,22 @@ import { recordActivity } from '../../../platform/activities/record-activity.ts'
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
-import { fieldSettingsOf, lockedPropertyRules } from '../utils/issue-properties.util.ts';
+import {
+  assertNameable,
+  fieldSettingsOf,
+  lockedPropertyRules,
+  propertyRefusal,
+} from '../utils/issue-properties.util.ts';
 import { assertAssignable } from './assign-issue.command.ts';
 
 const { issueCategories, issues, priorities, projects, workflowStatuses, workflows } = schema;
-
-/** What the reporter is told when the values of the properties cannot be taken. */
-const PROPERTY_REFUSALS: Readonly<
-  Record<PropertyProblem['problem'], [code: string, message: string]>
-> = {
-  unknownProperty: ['PROPERTY_NOT_FOUND', 'This property does not exist'],
-  unknownOption: ['INVALID_PROPERTY_OPTION', 'This option is not one of the property'],
-  missingRequired: ['PROPERTY_REQUIRED', 'This property is required'],
-};
 
 /**
  * Creates an issue in a project: numbered by the project's counter, in its workflow's initial
  * status, with the default category and priority unless others are given (the project may ask
  * for them), and the values of its properties given, those required included
- * (`creationValuesProblem`). Assigning it at once
- * needs `issue.assign`.
+ * (`creationValuesOf`), the people they name reaching the project. Assigning it at once, or
+ * naming someone in a person property, needs `issue.assign`.
  */
 export const createIssue = defineCommand({
   name: 'issue.create',
@@ -56,14 +52,19 @@ export const createIssue = defineCommand({
     if (settings.priority.required && input.priorityId === undefined) {
       throw new HttpError(400, 'PRIORITY_REQUIRED', 'This project asks for a priority');
     }
-    const problem = creationValuesProblem(
-      await lockedPropertyRules(tx, project.id),
-      input.properties,
-    );
-    if (problem) {
-      const [code, message] = PROPERTY_REFUSALS[problem.problem];
-      throw new HttpError(400, code, message);
+    // Naming someone in a person property is choosing among those who may be assigned: it needs
+    // `issue.assign`, and such a property is never required of those who cannot.
+    const mayName = can(project.permissions, 'issue.assign');
+    const all = await lockedPropertyRules(tx, project.id);
+    if (!mayName && all.some(({ id, type }) => type === 'user' && id in input.properties)) {
+      throw new HttpError(403, 'FORBIDDEN', 'You do not have permission to name people here');
     }
+    const rules = all.filter(({ type }) => mayName || type !== 'user');
+    const given = creationValuesOf(rules, input.properties);
+    if ('problem' in given) {
+      throw propertyRefusal(given);
+    }
+    await assertNameable(tx, project.id, peopleNamedIn(rules, given.values));
     const categoryId = await categoryOf(tx, input.categoryId);
     const priorityId = await priorityOf(tx, input.priorityId);
     const statusId = await initialStatusIn(tx, project.id);
@@ -90,7 +91,7 @@ export const createIssue = defineCommand({
       statusId,
       assigneeId: input.assigneeId ?? null,
       reporterId: actor.id,
-      properties: input.properties,
+      properties: given.values,
     });
     await recordActivity(tx, {
       projectId: project.id,

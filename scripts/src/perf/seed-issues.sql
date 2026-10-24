@@ -68,12 +68,46 @@ create temporary table perf_fields on commit drop as
     array(select id from issue_categories) as categories,
     array(select id from users where email like 'person%@example.com') as people;
 
+-- Properties as an instance has them: a version on most issues, a platform on some, a due day
+-- and an estimate on a few, a box ticked on one in twenty.
+insert into properties (id, name, type, shown_in_list) values
+  (uuidv7(), 'Version', 'list', true),
+  (uuidv7(), 'Platforms', 'multiSelect', true),
+  (uuidv7(), 'Due', 'date', true),
+  (uuidv7(), 'Estimate', 'number', false),
+  (uuidv7(), 'Blocking', 'checkbox', true);
+
+insert into property_options (id, property_id, name, position)
+  select uuidv7(), p.id, option.name, option.position
+  from properties p
+  cross join lateral (
+    select '1.' || n as name, n as position from generate_series(0, 9) as n
+      where p.name = 'Version'
+    union all
+    select name, position::int
+      from unnest(array['iOS', 'Android', 'Web', 'Desktop']) with ordinality as o(name, position)
+      where p.name = 'Platforms'
+  ) as option;
+
+create temporary table perf_properties on commit drop as
+  select
+    (select id from properties where name = 'Version') as version,
+    array(select o.id::text from property_options o join properties p on p.id = o.property_id
+          where p.name = 'Version' order by o.position) as versions,
+    (select id from properties where name = 'Platforms') as platforms,
+    array(select o.id::text from property_options o join properties p on p.id = o.property_id
+          where p.name = 'Platforms' order by o.position) as platform_options,
+    (select id from properties where name = 'Due') as due,
+    (select id from properties where name = 'Estimate') as estimate,
+    (select id from properties where name = 'Blocking') as blocking;
+
 insert into issues (
   id, project_id, number, category_id, title, description, status_id, priority_id,
-  assignee_id, reporter_id, closed_at, created_at, updated_at
+  assignee_id, reporter_id, closed_at, created_at, updated_at, properties
 )
   select uuidv7(), project_id, number, category_id, title, description, status_id, priority_id,
-    assignee_id, reporter_id, case when closed then updated_at end, created_at, updated_at
+    assignee_id, reporter_id, case when closed then updated_at end, created_at, updated_at,
+    properties
   from (
     select p.id as project_id, n as number,
       f.categories[1 + floor(random() * array_length(f.categories, 1))::int] as category_id,
@@ -92,10 +126,25 @@ insert into issues (
         else f.people[1 + floor(random() * array_length(f.people, 1))::int] end as assignee_id,
       f.people[1 + floor(random() * array_length(f.people, 1))::int] as reporter_id,
       draw.created_at,
-      draw.created_at + random() * (now() - draw.created_at) as updated_at
+      draw.created_at + random() * (now() - draw.created_at) as updated_at,
+      -- Values as the server stores them; a property without a value is left out.
+      jsonb_strip_nulls(jsonb_build_object(
+        pr.version::text,
+          case when random() < 0.8 then to_jsonb(pr.versions[1 + floor(random() * 10)::int]) end,
+        pr.platforms::text,
+          case when random() < 0.4
+            then to_jsonb(array[pr.platform_options[1 + floor(random() * 4)::int]]) end,
+        pr.due::text,
+          case when random() < 0.3 then to_jsonb(
+            to_char(now() + (random() * 120 - 60) * interval '1 day', 'YYYY-MM-DD')) end,
+        pr.estimate::text,
+          case when random() < 0.3 then to_jsonb(1 + floor(random() * 13)::int) end,
+        pr.blocking::text, case when random() < 0.05 then 'true'::jsonb end
+      )) as properties
     from perf_projects pp
     join projects p on p.key = pp.key
     cross join perf_fields f
+    cross join perf_properties pr
     cross join lateral generate_series(1, pp.size) as n
     cross join lateral (
       select random() < 0.65 as closed, random() as roll,
