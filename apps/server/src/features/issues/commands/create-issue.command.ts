@@ -23,6 +23,7 @@ import {
   lockedPropertyRules,
   propertyRefusal,
 } from '../utils/issue-properties.util.ts';
+import { rememberWords } from '../utils/issue-search.util.ts';
 import { assertAssignable } from './assign-issue.command.ts';
 
 const { issueCategories, issues, priorities, projects, workflowStatuses, workflows } = schema;
@@ -93,6 +94,7 @@ export const createIssue = defineCommand({
       reporterId: actor.id,
       properties: given.values,
     });
+    await rememberWords(tx, id);
     await recordActivity(tx, {
       projectId: project.id,
       issueId: id,

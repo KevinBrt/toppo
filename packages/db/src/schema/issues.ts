@@ -145,6 +145,27 @@ export const issues = pgTable(
 );
 
 /**
+ * The words issues are written with, folded as they are searched (`search_vector`): what a word
+ * typed with a typo is matched to, the closest first (`similar_issue_words()`, migration 0040).
+ * Words of letters and digits only, four at least: shorter ones are never corrected. Added as
+ * issues are written, rebuilt each night: a word may outlive its last issue until then.
+ */
+export const issueWords = pgTable(
+  'issue_words',
+  {
+    id: id(),
+    word: text('word').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    check('issue_words_word_plain', sql`${table.word} ~ '^[[:alnum:]]{4,}$'`),
+    uniqueIndex('issue_words_word_unique').on(table.word),
+    // Finds the words close to a typed one, and those it starts.
+    index('issue_words_word_trigram_idx').using('gin', sql`${table.word} gin_trgm_ops`),
+  ],
+);
+
+/**
  * Properties of the issues (Version, Team…), defined for the whole instance in the settings, or
  * for one project (`project_id`), of a type fixed at creation. Each says whether it shows in the
  * issue list and whether it is asked at creation, then required.

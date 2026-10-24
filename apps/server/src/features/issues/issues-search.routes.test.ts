@@ -1,4 +1,5 @@
 import { DEFAULT_ROLE_IDS } from '@toppo/core';
+import { schema, uuidv7 } from '@toppo/db';
 import { apiErrorSchema, ISSUE_SEARCH_LIMIT, issueSearchResponseSchema } from '@toppo/shared';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -9,6 +10,7 @@ import {
   setupTestDatabase,
   TEST_SETUP_CODE,
 } from '../../test-helpers.ts';
+import { rebuildWords } from './utils/issue-search.util.ts';
 
 const context = setupTestDatabase();
 let app: FastifyInstance;
@@ -110,8 +112,24 @@ describe('searching every project', () => {
     expect(await found('api-2')).toStrictEqual(['API-2', 'API-3']);
   });
 
-  it('names no issue by its number alone, which every project has', async () => {
-    expect(await found('1')).toStrictEqual([]);
+  it('finds by its number alone the issue so numbered in every project, the latest first', async () => {
+    expect(await found('1')).toStrictEqual(['API-1', 'WEB-1']);
+    expect(await found('#3')).toStrictEqual(['API-3']);
+  });
+
+  it('reads a key however it is written', async () => {
+    for (const search of ['web 2', 'WEB_2', 'web2']) {
+      expect((await found(search))[0], search).toBe('WEB-2');
+    }
+  });
+
+  it('finds the words a typo stands for, as soon as an issue is written', async () => {
+    await report('API', { title: 'Expired tokens', description: 'The renewal fails at night.' });
+
+    expect(await found('crasj')).toStrictEqual(['API-1', 'WEB-1', 'WEB-2', 'API-2']);
+    expect(await found('renewl tokn')).toStrictEqual(['API-4']);
+    // A word issues have, or begin with, is never corrected.
+    expect(await found('rate')).toStrictEqual(['API-2']);
   });
 
   it('leaves out archived projects, and those out of reach', async () => {
@@ -130,6 +148,23 @@ describe('searching every project', () => {
     }
 
     expect(await found('flaky')).toHaveLength(ISSUE_SEARCH_LIMIT);
+  });
+});
+
+describe('the words a typo is corrected to', () => {
+  it('are those of the issues as they are once rebuilt, a word no issue has any more gone', async () => {
+    const { db } = context.database;
+    const words = async () =>
+      (await db.select({ word: schema.issueWords.word }).from(schema.issueWords)).map(
+        ({ word }) => word,
+      );
+    await db.insert(schema.issueWords).values({ id: uuidv7(), word: 'zeppelin' });
+
+    const kept = await db.transaction((tx) => rebuildWords(tx));
+
+    expect(await words()).not.toContain('zeppelin');
+    expect(await words()).toContain('crash');
+    expect(kept).toBe((await words()).length);
   });
 });
 

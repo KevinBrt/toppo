@@ -1,7 +1,7 @@
 import { PROJECT_KEY_MAX_LENGTH, type ProjectKey, projectKeySchema } from '@toppo/shared';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { formatIssueKey, issueReferenceIn, parseIssueKey } from './issue-key.ts';
+import { formatIssueKey, issueReferenceIn, issueReferencesIn, parseIssueKey } from './issue-key.ts';
 
 const key = (value: string): ProjectKey => projectKeySchema.parse(value);
 
@@ -98,6 +98,43 @@ describe('issueReferenceIn', () => {
     fc.assert(
       fc.property(fc.string(), (search) => {
         expect(() => issueReferenceIn(search)).not.toThrow();
+      }),
+    );
+  });
+});
+
+describe('issueReferencesIn', () => {
+  it.each([
+    ['WEB-42', [{ projectKey: 'WEB', number: 42 }]],
+    ['#7', [{ projectKey: null, number: 7 }]],
+    ['web 42', [{ projectKey: 'WEB', number: 42 }]],
+    ['WEB_42', [{ projectKey: 'WEB', number: 42 }]],
+    [
+      'web42',
+      [
+        { projectKey: 'WEB', number: 42 },
+        { projectKey: 'WEB4', number: 2 },
+      ],
+    ],
+    ['A1B07', [{ projectKey: 'A1B0', number: 7 }]],
+  ])('reads %j every way it may be meant', (search, references) => {
+    expect(issueReferencesIn(search)).toStrictEqual(references);
+  });
+
+  it.each(['', 'broken link', 'WEB', 'W 42', 'WEB 042', 'WEB0', 'export 2 files'])(
+    'finds no issue named in %j',
+    (search) => {
+      expect(issueReferencesIn(search)).toStrictEqual([]);
+    },
+  );
+
+  it('names only keys and numbers an issue can carry, whatever the search', () => {
+    fc.assert(
+      fc.property(fc.string(), (search) => {
+        for (const { projectKey, number } of issueReferencesIn(search)) {
+          expect(projectKey === null || projectKeySchema.safeParse(projectKey).success).toBe(true);
+          expect(Number.isSafeInteger(number) && number > 0).toBe(true);
+        }
       }),
     );
   });

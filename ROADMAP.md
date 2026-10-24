@@ -13,8 +13,8 @@ Each step ends with a working demo, green CI and updated docs. Anything touching
 
 ## Next up
 
-1. Answer the [open question](#open-questions) on lost passwords without email.
-2. Step 5, the 0.1 release.
+1. Step 5, daily work: search that forgives typos, following an issue, actions on several issues, duplicates.
+2. Step 6, the 0.1 release.
 
 ## Step 1: roles, permissions and users
 
@@ -124,7 +124,16 @@ _Done when an issue is found in under 3 seconds._
 - [x] Email (migrations 0031 and 0032): SMTP settings in the admin (password sealed with the instance key, never sent back), a test email that says why the server refused it, invitations emailed, password reset by email (token stored as a hash, every device signed out), notifications emailed 5 minutes later unless read in Toppo, each kind turned off in one's account (migration 0035); every email in the language of whoever receives it.
 - [x] New issues told to the roles that ask for it (migrations 0033 and 0034): a setting of each role in the matrix, Administrator and Team on, Requester off, the system role free to turn it off; the issue's assignee told at creation.
 
-## Step 5: release 0.1
+## Step 5: daily work
+
+_Done when a team works its issues as it did in Mantis: found despite a typo, followed, changed several at once, duplicates closed._
+
+- [x] Search that forgives typos and finds issues sooner (migrations 0039 and 0040, `npm run perf:issues`: 40 to 51 ms with a typo on 100,000 issues, 44 ms for a member's two words instead of 149): in the palette and the list, a word no issue has is matched to the closest words issues have (one typo in 4 or 5 letters, two beyond), in titles and descriptions; references written loosely (`WEB42`, `WEB 42`, a number alone in every project); the palette checks access once per project rather than per match.
+- [ ] Following an issue: the reporter, the assignee and those who comment follow it until they stop; anyone who sees it may follow it. Followers are told of comments, status changes and assignments.
+- [ ] Actions on several issues of the list: a box per row and one for the page; status, priority, category, assignee, labels added or removed, deletion. Each issue takes the change if it may, with its activity and notifications; those that may not are named, with why.
+- [ ] Duplicates: an issue marked as a duplicate of another one the person sees, any project, and moved at once to a closing status they choose; each shows the other, and the duplicate's reporter follows the original.
+
+## Step 6: release 0.1
 
 - [ ] Import from Mantis and Redmine (CSV first).
 - [ ] Migration tests: upgrade a database created by the previous version.
@@ -143,9 +152,7 @@ _Done when an issue is found in under 3 seconds._
 
 ## Open questions
 
-Needed before 0.1:
-
-- **Lost passwords** while email is not set up: with email, people reset their password themselves; without it, a member who forgets their password, or the only administrator, has no way back in. Proposed: an administrator creates a one-time reset link from the members list (like an invitation), and a recovery code printed in the logs on demand covers the last administrator.
+None for now.
 
 ## Watch list
 
@@ -157,3 +164,4 @@ Known compromises to revisit, not blocking:
 - OpenAPI description of `/api/v1`, generated from the Zod schemas (`z.toJSONSchema`), is not published yet.
 - Dark theme: possible later by redefining the tokens in `packages/ui/src/theme.css`.
 - Statuses on phones: the “Closes the issue” column has no visible header (its boxes are labelled for screen readers only).
+- Lost passwords without email: no way back in for now, the only administrator's included (decided 2026-10-25). Proposed for later: a one-time reset link an administrator creates from the members list (like an invitation), and a recovery code printed in the logs on demand for the last administrator.

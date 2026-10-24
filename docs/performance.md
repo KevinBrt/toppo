@@ -22,7 +22,7 @@ npm run perf:issues -- --reuse   # replays on the database seeded by the last ru
 
 | What                 | How many                                                                                      |
 | -------------------- | --------------------------------------------------------------------------------------------- |
-| Issues               | 100,012, 224 MB with their indexes                                                            |
+| Issues               | 100,012, 170 MB with their indexes; 9,000 words to correct typos to                           |
 | Properties           | a version on 80 %, a platform on 40 %, a due day and an estimate on 30 %, a box ticked on 5 % |
 | Projects             | 30: one of 40,000 issues, one of 20,000, 28 of about 1,400                                    |
 | People               | 202, each in about six projects; Grace in ten, the large one among them                       |
@@ -39,19 +39,22 @@ Round trips through the server (session, project, permissions and JSON included:
 
 | Request                                                       | Time                 |
 | ------------------------------------------------------------- | -------------------- |
-| List of the large project: open, newest first (the default)   | 16 ms                |
-| Same, as a member                                             | 14 ms                |
-| All issues, page 300                                          | 63 ms                |
-| Sorted by last change / by title / by assignee                | 25–34 ms             |
-| Grouped by status, sorted by priority                         | 34 ms                |
-| One assignee / the caller's own                               | 14–16 ms             |
-| Searched: a common word / a rarer word / an error code        | 66 / 49 / 18 ms      |
-| Searched: inside words (`chargem`) / a key (`BIG-12345`)      | 23 / 8 ms            |
-| A version / no version / a platform / a box ticked            | 21 / 25 / 21 / 21 ms |
+| List of the large project: open, newest first (the default)   | 15 ms                |
+| Same, as a member                                             | 15 ms                |
+| All issues, page 300                                          | 44 ms                |
+| Sorted by last change / by title / by assignee                | 24–32 ms             |
+| Grouped by status, sorted by priority                         | 33 ms                |
+| One assignee / the caller's own                               | 15 ms                |
+| Searched: a common word / a rarer word / an error code        | 57 / 37 / 17 ms      |
+| Searched: inside words (`chargem`) / a key (`BIG-12345`)      | 23 / 12 ms           |
+| Searched with a typo (`paiment`)                              | 51 ms                |
+| A version / no version / a platform / a box ticked            | 20 / 23 / 20 / 21 ms |
 | Two property filters (a version and a platform)               | 20 ms                |
-| Due within a month / an estimate from 3 to 5                  | 40 / 47 ms           |
-| Palette: a common word / a rarer word / an error code / a key | 70 / 48 / 11 / 11 ms |
-| Palette as a member: a common word / two words                | 69 / 149 ms          |
+| Due within a month / an estimate from 3 to 5                  | 38 / 44 ms           |
+| Palette: a common word / a rarer word / an error code / a key | 61 / 41 / 14 / 12 ms |
+| Palette: a key written loosely (`mid777`) / a number alone    | 12 / 13 ms           |
+| Palette: a typo (`facutre`)                                   | 40 ms                |
+| Palette as a member: a common word / two words / with a typo  | 51 / 44 / 44 ms      |
 | My issues                                                     | 16 ms                |
 
 ## What the plans taught
@@ -62,12 +65,13 @@ Round trips through the server (session, project, permissions and JSON included:
 - **Rank the best few before fetching their fields.** The palette ranked and joined the fields of every match when PostgreSQL thought there were few; it now picks the ten best from the issues and their projects alone, then joins the fields of those ten (141 ms for two common words, 58 ms now).
 - **Count from an index.** Every list shows how many issues match; counting a project's open issues read the table (14 ms for the large project). `issues (project_id, closed_at)` (migration 0025) counts them from the index alone (1.4 ms).
 - **Work out the page's rows only.** An offset still produces every row before the page, the columns worked out by subqueries included: page 300 built the labels and property values of the 15,000 issues it skipped (1,077 ms). The list now picks the page's ids first, then reads those 50 issues with their labels and values (63 ms).
+- **Check access once per project.** The palette checked the caller's access for each issue a search matched: 27,000 checks for two common words as a member (149 ms). It now reads the projects the caller reads first, then keeps their issues by project (44 ms).
+- **Correct typos against the words issues have.** `issue_words` (migrations 0039 and 0040) holds the 9,000 words of the issues, with a trigram index: a typed word none has nor starts is matched to the closest by edit distance (`similar_issue_words()`, about 4 ms a word), then searched with them. Words issues have are never corrected, so a correct search costs nothing more.
 - **Filter properties through the index of their values.** Options, people and boxes are containment tests on `issues.properties` (`@>`), which its GIN index (`jsonb_path_ops`) answers; "no value" is `@?` on the property's path. Ranges of numbers and days compare each issue's value within the project, guarded by its JSON type, days as text in the `C` collation.
 
 ## Known limits
 
-- Pages are reached by offset: page 300 of the large project reads the 15,000 issues before it (63 ms). Deep pages are rare; keyset pagination would remove the cost if they became common.
+- Pages are reached by offset: page 300 of the large project reads the 15,000 issues before it (44 ms). Deep pages are rare; keyset pagination would remove the cost if they became common.
 - A range of numbers or days reads every issue of the project the other filters keep: about 45 ms at 40,000 issues, in proportion beyond. An expression index per property would remove it, at the cost of one index per property.
-- The member's palette search for two common words ranks and checks the access to every match (27,000 here): 149 ms, up from 58 ms since rows carry their property values and the table grew from 132 to 224 MB.
 - Sorting by a column of another table (priority, status, category, people, title) sorts every matching issue of the project: 30 to 60 ms at 40,000 issues, in proportion beyond.
 - Searching a word found in half of all issues ranks all of them: about 60 ms at 100,000 issues, in proportion beyond. Words typed one letter at a time wait for typing to pause (300 ms in the list, 200 ms in the palette).

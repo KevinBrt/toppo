@@ -8,6 +8,7 @@ export {
   issueCategories,
   issueLabels,
   issues,
+  issueWords,
   labels,
   notifications,
   priorities,

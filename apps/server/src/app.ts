@@ -8,6 +8,7 @@ import { registerCommentRoutes } from './features/comments/comments.routes.ts';
 import { registerInvitationRoutes } from './features/invitations/invitations.routes.ts';
 import { emailInvitationJob } from './features/invitations/jobs/email-invitation.job.ts';
 import { registerIssueRoutes } from './features/issues/issues.routes.ts';
+import { rebuildIssueWordsJob } from './features/issues/jobs/rebuild-issue-words.job.ts';
 import { registerLabelRoutes } from './features/labels/labels.routes.ts';
 import { registerMailRoutes } from './features/mail/mail.routes.ts';
 import { emailNotificationJob } from './features/notifications/jobs/email-notification.job.ts';
@@ -95,6 +96,7 @@ export function createJobs({ files }: Pick<AppDependencies, 'files'>): RunnableJ
     emailInvitationJob,
     passwordResetMailJob,
     emailNotificationJob,
+    rebuildIssueWordsJob,
   ];
 }
 

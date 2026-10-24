@@ -13,6 +13,7 @@ import { recordActivities } from '../../../platform/activities/record-activity.t
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { activity } from '../utils/activities.util.ts';
+import { rememberWords } from '../utils/issue-search.util.ts';
 
 const { issueCategories, issues, priorities } = schema;
 
@@ -55,6 +56,9 @@ export const updateIssue = defineCommand({
       values[field] = to;
     }
     await tx.update(issues).set(values).where(eq(issues.id, project.issue.id));
+    if (changes.some(({ field }) => field === 'title' || field === 'description')) {
+      await rememberWords(tx, project.issue.id);
+    }
     await recordActivities(
       tx,
       recorded.map((entry) => ({

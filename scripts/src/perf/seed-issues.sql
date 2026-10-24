@@ -153,6 +153,11 @@ insert into issues (
     ) as draw
   ) as drawn;
 
+-- The words a typo is corrected to, as the server's search.rebuildWords job keeps them.
+insert into issue_words (id, word)
+  select uuidv7(), word from ts_stat('select search_vector from issues')
+  where word ~ '^[[:alnum:]]{4,}$';
+
 update projects
   set next_issue_number = counts.last + 1
   from (select project_id, max(number) as last from issues group by project_id) as counts

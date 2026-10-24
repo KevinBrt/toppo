@@ -24,6 +24,7 @@ export {
   type IssueKeyParts,
   type IssueReference,
   issueReferenceIn,
+  issueReferencesIn,
   parseIssueKey,
 } from './issue-key.ts';
 export { type CategoriesPlan, planCategories } from './issues/categories.ts';

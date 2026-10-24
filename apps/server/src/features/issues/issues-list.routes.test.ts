@@ -357,6 +357,14 @@ describe('searching', () => {
     expect(await searching('web-3')).toStrictEqual([3]);
     expect(await searching('#3')).toStrictEqual([3]);
     expect(await searching('API-3')).toStrictEqual([]);
+    expect(await searching('web 3')).toStrictEqual([3]);
+    expect(await searching('WEB3')).toStrictEqual([3]);
+  });
+
+  it('finds the words a typo stands for, never correcting a word issues have', async () => {
+    expect(await searching('crasj sav')).toStrictEqual([4]);
+    expect(await searching('brokn')).toStrictEqual([1]);
+    expect(await searching('slow')).toStrictEqual([2]);
   });
 
   it('applies the filters too, and never shows a requester more than their own', async () => {

@@ -3,8 +3,8 @@ import { createTestDatabase } from '@toppo/testing';
 import { desc, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from './database.ts';
-import { users } from './schema/index.ts';
-import { containsText, escapeLike, matchesWords, wordsRank } from './search.ts';
+import { issueWords, users } from './schema/index.ts';
+import { containsText, escapeLike, matchesWords, similarWords, wordsRank } from './search.ts';
 import { uuidv7 } from './uuid.ts';
 
 let database: Database;
@@ -113,5 +113,42 @@ describe('matchesWords', () => {
 
     expect(named).toBe('Person Zero');
     expect(emailed.toSorted()).toStrictEqual(NAMES.toSorted());
+  });
+});
+
+describe('similarWords', () => {
+  beforeAll(async () => {
+    await database.db.insert(issueWords).values(
+      ['facture', 'paiement', 'payment', 'export', 'erreur'].map((word) => ({
+        id: uuidv7(),
+        word,
+      })),
+    );
+  });
+
+  it('corrects the words no issue has to the closest ones issues have', async () => {
+    expect(await similarWords(database.db, 'Facutre paiment')).toStrictEqual(
+      new Map([
+        ['Facutre', ['facture']],
+        ['paiment', ['paiement', 'payment']],
+      ]),
+    );
+  });
+
+  it('leaves the words issues have, start, or are too short to correct', async () => {
+    expect(await similarWords(database.db, 'export fact erur zzzzzz')).toStrictEqual(new Map());
+    expect(await similarWords(database.db, ' %& ')).toStrictEqual(new Map());
+  });
+
+  it('searches a word with those it stands for', async () => {
+    const similar = new Map([['matrin', ['martin']]]);
+
+    expect(
+      await database.db
+        .select({ name: users.name })
+        .from(users)
+        .where(matchesWords(personWords, 'matrin', similar)),
+    ).toStrictEqual([{ name: NAMES[0] }]);
+    expect(await namesWithWords('matrin')).toStrictEqual([]);
   });
 });

@@ -223,10 +223,19 @@ function requests(admin: string, member: string): [label: string, cookie: string
     ['admin: palette, a rarer word', admin, '/api/v1/issues/search?search=paiement'],
     ['admin: palette, an error code', admin, '/api/v1/issues/search?search=E4821'],
     ['admin: palette, a key', admin, '/api/v1/issues/search?search=MID-777'],
+    ['admin: palette, a key written loosely', admin, '/api/v1/issues/search?search=mid777'],
+    ['admin: palette, a number alone', admin, '/api/v1/issues/search?search=777'],
+    ['admin: palette, a typo', admin, '/api/v1/issues/search?search=facutre'],
+    ['admin: list, a typo', admin, `${list}?search=paiment`],
     ['member: list, open, newest', member, `${list}?state=open`],
     ['member: list, mine', member, `${list}?state=open&assignee=me`],
     ['member: palette, a common word', member, '/api/v1/issues/search?search=erreur'],
     ['member: palette, two words', member, '/api/v1/issues/search?search=export%20vide'],
+    [
+      'member: palette, two words, one with a typo',
+      member,
+      '/api/v1/issues/search?search=export%20conexion',
+    ],
     ['member: my issues', member, '/api/v1/issues/assigned'],
   ];
 }

@@ -1,5 +1,5 @@
-import { effectiveWorkflow, issueReferenceIn, issueVisibilityOf } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
+import { effectiveWorkflow, issueReferencesIn, issueVisibilityOf } from '@toppo/core';
+import { type Db, type SimilarWords, schema, similarWords } from '@toppo/db';
 import {
   ISSUE_SORT_ORDERS,
   ISSUES_PAGE_SIZE,
@@ -118,7 +118,9 @@ export const listIssues = defineQuery({
       visibility === 'none' ? sql`false` : undefined,
       ...filtersOf(query, actor.id),
       ...(await propertyFiltersOf(db, project.id, query.property, actor.id)),
-      query.search ? searched(query.search, project.key) : undefined,
+      query.search
+        ? searched(query.search, project.key, await similarWords(db, query.search))
+        : undefined,
     );
     // Where each issue's status stands in the workflow the project follows.
     const step = and(
@@ -236,11 +238,18 @@ function taggedWith(labelIds: readonly string[] | undefined): SQL | undefined {
       and ${inArray(issueLabels.labelId, [...labelIds])})`;
 }
 
-/** Issues a search finds by their text, and the one it names: `WEB-42`, or `42` in this project. */
-function searched(search: string, projectKey: string): SQL | undefined {
-  const reference = issueReferenceIn(search);
-  const named = (reference?.projectKey ?? projectKey) === projectKey ? reference : null;
-  return or(textMatching(search), named ? eq(issues.number, named.number) : undefined);
+/**
+ * Issues a search finds by their text, a typo corrected, and those it names in this project:
+ * `WEB-42` however written, or `42`.
+ */
+function searched(search: string, projectKey: string, similar: SimilarWords): SQL | undefined {
+  const numbers = issueReferencesIn(search)
+    .filter((reference) => (reference.projectKey ?? projectKey) === projectKey)
+    .map(({ number }) => number);
+  return or(
+    textMatching(search, similar),
+    numbers.length > 0 ? inArray(issues.number, numbers) : undefined,
+  );
 }
 
 /** Issues whose `column` is one of `values`; no condition when there are none. */

@@ -38,8 +38,12 @@ test('the palette finds an issue of any project and opens it', async ({
   await expect(search).toBeFocused();
   await expect(page.getByRole('option', { name: 'My issues' })).toBeVisible();
 
-  await search.fill(suffix.toLowerCase());
+  // A typo in its last letter finds it too.
+  await search.fill(`${suffix.slice(0, -1)}${suffix.endsWith('Q') ? 'W' : 'Q'}`.toLowerCase());
   const found = page.getByRole('option', { name: new RegExp(`${key}-1`) });
+  await expect(found).toBeVisible();
+
+  await search.fill(suffix.toLowerCase());
   await expect(found).toBeVisible();
   await expect(found).toHaveAttribute('aria-selected', 'true');
   await expectAccessible(page);
