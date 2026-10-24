@@ -5,10 +5,10 @@ import { MATRIX_SECTIONS } from '../../utils/permission-matrix.util.ts';
 import { PermissionControl } from './permission-control.tsx';
 import { RoleHeading } from './role-heading.tsx';
 import type { MatrixProps } from './roles-matrix.tsx';
-import { RowLabel } from './row-label.tsx';
+import { RowLabel, rowKey } from './row-label.tsx';
 
 /** The matrix for small screens: one role at a time, chosen with tabs that scroll sideways. */
-export function RolePermissions({ roles, permissionsOf, onChange }: MatrixProps) {
+export function RolePermissions({ roles, settingsOf, onChange }: MatrixProps) {
   const { t } = useI18n();
   const [chosenId, setChosenId] = useState<string>();
   const role = roles.find((candidate) => candidate.id === chosenId) ?? roles[0];
@@ -51,18 +51,15 @@ export function RolePermissions({ roles, permissionsOf, onChange }: MatrixProps)
           </div>
           <ul className="divide-y divide-border">
             {rows.map((row) => (
-              <li
-                key={row.kind === 'permission' ? row.permission : row.kind}
-                className="flex items-center justify-between gap-3 px-4 py-2.5"
-              >
+              <li key={rowKey(row)} className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <div className="min-w-0">
                   <RowLabel row={row} />
                 </div>
                 <PermissionControl
                   row={row}
                   role={role}
-                  permissions={permissionsOf(role)}
-                  onChange={(permissions) => onChange(role, permissions)}
+                  settings={settingsOf(role)}
+                  onChange={(settings) => onChange(role, settings)}
                 />
               </li>
             ))}

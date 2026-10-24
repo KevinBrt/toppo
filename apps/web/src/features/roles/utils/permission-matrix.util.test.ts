@@ -1,3 +1,4 @@
+import { ALL_PERMISSIONS, type Permission } from '@toppo/core';
 import { describe, expect, it } from 'vitest';
 import {
   changesToSave,
@@ -9,7 +10,7 @@ import {
 } from './permission-matrix.util.ts';
 
 describe('MATRIX_SECTIONS', () => {
-  it('shows every permission once, the two that read issues as one choice', () => {
+  it('shows every permission once, the two that read issues as one choice, then notifications', () => {
     expect(
       MATRIX_SECTIONS.map(({ section, scope, rows }) => ({
         section,
@@ -39,6 +40,7 @@ describe('MATRIX_SECTIONS', () => {
           'instance.roles.manage',
         ],
       },
+      { section: 'notifications', scope: 'project', rows: ['notifyNewIssues'] },
     ]);
   });
 });
@@ -80,16 +82,21 @@ describe('withPermission', () => {
 });
 
 describe('unsaved changes', () => {
+  const settings = (permissions: readonly Permission[], notifyNewIssues = false) => ({
+    permissions,
+    notifyNewIssues,
+  });
   const drafts = {
     team: {
-      from: ['issue.read', 'issue.read.own', 'issue.create'] as const,
-      to: ['issue.read.own', 'project.create'] as const,
+      from: settings(['issue.read', 'issue.read.own', 'issue.create'], true),
+      to: settings(['issue.read.own', 'project.create'], true),
     },
-    requester: { from: ['issue.create'] as const, to: ['issue.create'] as const },
+    requester: { from: settings(['issue.create']), to: settings(['issue.create']) },
+    administrator: { from: settings(ALL_PERMISSIONS, true), to: settings(ALL_PERMISSIONS, false) },
   };
 
   it('counts each cell that changed, the issue visibility as one', () => {
-    expect(countChanges(drafts)).toBe(3);
+    expect(countChanges(drafts)).toBe(4);
     expect(countChanges({})).toBe(0);
   });
 
@@ -99,6 +106,12 @@ describe('unsaved changes', () => {
         roleId: 'team',
         from: ['issue.read', 'issue.read.own', 'issue.create'],
         to: ['issue.read.own', 'project.create'],
+      },
+      {
+        roleId: 'administrator',
+        from: [...ALL_PERMISSIONS],
+        to: [...ALL_PERMISSIONS],
+        notifyNewIssues: { from: true, to: false },
       },
     ]);
   });

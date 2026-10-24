@@ -22,6 +22,22 @@ export const fr: Messages = {
     signOut: 'Déconnexion',
     signingOut: 'Déconnexion…',
     profile: 'Profil',
+    notifications: 'Notifications',
+    notificationsDescription:
+      'Comment Toppo vous tient au courant de ce qui se passe sur les tickets auxquels vous participez.',
+    emailNotificationsTitle: 'Par e-mail',
+    emailNotificationsHelp:
+      'Cinq minutes après chaque notification, sauf si vous l’avez lue dans Toppo entre-temps.',
+    emailEvents: {
+      created: 'Nouveaux tickets',
+      assigned: 'Tickets qui me sont assignés',
+      commented: 'Commentaires sur les tickets où je participe',
+      mentioned: 'Mentions',
+      statusChanged: 'Changements de statut de mes tickets',
+    },
+    emailEventsCreatedHelp: 'Si votre rôle vous en prévient.',
+    emailNotSetUp:
+      'L’e-mail n’est pas encore configuré sur cette instance : rien n’est envoyé pour l’instant.',
     profileDescription: 'Votre nom tel que le reste de l’équipe le voit.',
     name: 'Nom',
     email: 'E-mail',
@@ -502,6 +518,7 @@ export const fr: Messages = {
     loading: 'Chargement des notifications…',
     shown: { one: '{count} notification affichée', other: '{count} notifications affichées' },
     events: {
+      created: '{name} a créé {key}',
       assigned: '{name} vous a assigné {key}',
       commented: '{name} a commenté {key}',
       mentioned: '{name} vous a mentionné dans {key}',
@@ -764,6 +781,12 @@ export const fr: Messages = {
       conversation: 'Conversation',
       project: 'Projet',
       organisation: 'Organisation',
+      notifications: 'Notifications',
+    },
+    notifyNewIssues: {
+      label: 'Nouveaux tickets',
+      description:
+        'Prévenus de chaque nouveau ticket qu’ils peuvent voir, dans Toppo et par e-mail.',
     },
     visibility: {
       label: 'Voir les tickets',

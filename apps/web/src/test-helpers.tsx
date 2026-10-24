@@ -42,6 +42,7 @@ import {
   type CurrentUser,
   categoriesRequestSchema,
   commentRequestSchema,
+  emailNotificationsRequestSchema,
   FILE_NAME_HEADER,
   ISSUE_SEARCH_LIMIT,
   ISSUE_SORT_ORDERS,
@@ -62,6 +63,7 @@ import {
   MEMBERS_PAGE_SIZE,
   type MemberRow,
   mailSettingsRequestSchema,
+  NOTIFICATION_EVENTS,
   type Notification,
   type PaletteColor,
   type PendingInvitation,
@@ -76,8 +78,10 @@ import {
   ROLES_MAX,
   type RoleBadge,
   type RoleDetails,
+  type RolePermissionsRequest,
   readNotificationsRequestSchema,
   resetPasswordRequestSchema,
+  rolePermissionsRequestSchema,
   type SortOrder,
   type UserSummary,
   type WorkflowMode,
@@ -100,6 +104,7 @@ export const ADA: CurrentUser = {
   name: 'Ada Lovelace',
   email: 'ada@example.com',
   locale: 'en',
+  emailedEvents: [...NOTIFICATION_EVENTS],
   permissions: instancePermissionsOfRole(DEFAULT_ROLE_IDS.administrator),
   // The fake server works it out from its projects.
   managesProjects: false,
@@ -111,6 +116,7 @@ export const GRACE: CurrentUser = {
   name: 'Grace Hopper',
   email: 'grace@example.com',
   locale: 'en',
+  emailedEvents: [...NOTIFICATION_EVENTS],
   permissions: instancePermissionsOfRole(DEFAULT_ROLE_IDS.team),
   managesProjects: false,
 };
@@ -131,12 +137,13 @@ export type FakeRole = Omit<RoleDetails, 'memberCount' | 'invitationCount' | 'pr
 
 /** The default roles, as a fresh instance has them. */
 function defaultRoles(): FakeRole[] {
-  return DEFAULT_ROLES.map(({ id, name, color, grantsAll, permissions }) => ({
+  return DEFAULT_ROLES.map(({ id, name, color, grantsAll, permissions, notifyNewIssues }) => ({
     id,
     name,
     color,
     grantsAll,
     permissions: permissionsOfRole({ grantsAll, permissions }),
+    notifyNewIssues,
   }));
 }
 
@@ -616,6 +623,18 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
         (refusal ? apiError(422, refusal) : NO_CONTENT())
       );
     },
+    'PUT /api/v1/me/email-notifications': (body) => {
+      const parsed = emailNotificationsRequestSchema.safeParse(body);
+      if (state.user && parsed.success) {
+        state.user = {
+          ...state.user,
+          emailedEvents: NOTIFICATION_EVENTS.filter((event) => parsed.data.emailed.includes(event)),
+        };
+      }
+      return (
+        asSignedIn(state) ?? (parsed.success ? NO_CONTENT() : apiError(400, 'VALIDATION_FAILED'))
+      );
+    },
     'PUT /api/v1/me/locale': (body) => {
       const locale = localeSchema.safeParse(body['locale']);
       if (state.user && locale.success) {
@@ -921,35 +940,56 @@ function createRole(state: FakeServerState, body: Record<string, unknown>): Resp
     color: body['color'] as FakeRole['color'],
     grantsAll: false,
     permissions: [],
+    notifyNewIssues: false,
   });
   return json({ id }, 201);
 }
 
 /** `PUT /api/v1/roles/permissions`: every change or none, refused if a role changed meanwhile. */
 function savePermissions(state: FakeServerState, body: Record<string, unknown>): Response {
-  const changes = (body['changes'] as { roleId: string; from: string[]; to: string[] }[]) ?? [];
-  for (const { roleId, from, to } of changes) {
-    const role = state.roles.find((candidate) => candidate.id === roleId);
-    if (!role) {
-      return apiError(404, 'ROLE_NOT_FOUND');
-    }
-    if (role.grantsAll) {
-      return apiError(403, 'SYSTEM_ROLE_LOCKED');
-    }
-    if (rolePermissionsFrom(to).refused.length > 0) {
-      return apiError(400, 'INVALID_PERMISSIONS');
-    }
-    if ([...from].sort().join() !== [...role.permissions].sort().join()) {
-      return apiError(409, 'ROLES_CHANGED');
+  const parsed = rolePermissionsRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  for (const change of parsed.data.changes) {
+    const refusal = permissionsRefusal(
+      state.roles.find((candidate) => candidate.id === change.roleId),
+      change,
+    );
+    if (refusal) {
+      return refusal;
     }
   }
-  for (const { roleId, to } of changes) {
+  for (const { roleId, to, notifyNewIssues } of parsed.data.changes) {
     const role = state.roles.find((candidate) => candidate.id === roleId);
-    if (role) {
+    if (role && !role.grantsAll) {
       role.permissions = rolePermissionsFrom(to).permissions;
+    }
+    if (role && notifyNewIssues) {
+      role.notifyNewIssues = notifyNewIssues.to;
     }
   }
   return NO_CONTENT();
+}
+
+/** Why a change of the matrix cannot apply to `role`, as the server says it, if it cannot. */
+function permissionsRefusal(
+  role: FakeRole | undefined,
+  { from, to, notifyNewIssues }: RolePermissionsRequest['changes'][number],
+): Response | null {
+  const sameSet = (left: readonly string[], right: readonly string[]) =>
+    [...left].sort().join() === [...right].sort().join();
+  if (!role) {
+    return apiError(404, 'ROLE_NOT_FOUND');
+  }
+  if (role.grantsAll && !sameSet(from, to)) {
+    return apiError(403, 'SYSTEM_ROLE_LOCKED');
+  }
+  if (!role.grantsAll && rolePermissionsFrom(to).refused.length > 0) {
+    return apiError(400, 'INVALID_PERMISSIONS');
+  }
+  const changed = notifyNewIssues !== undefined && notifyNewIssues.from !== role.notifyNewIssues;
+  return !sameSet(from, role.permissions) || changed ? apiError(409, 'ROLES_CHANGED') : null;
 }
 
 /** `PATCH /api/v1/roles/:id` and `DELETE /api/v1/roles/:id`. */

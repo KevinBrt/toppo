@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { localeSchema } from './locale.ts';
+import { NOTIFICATION_EVENTS } from './notifications.ts';
 
 /** Long passphrases beat complex short passwords; no composition rules (NIST SP 800-63B). */
 export const PASSWORD_MIN_LENGTH = 12;
@@ -18,6 +19,8 @@ export const currentUserSchema = z.object({
   email: z.string(),
   /** The language of the interface they last used, which emails to them speak. */
   locale: localeSchema,
+  /** The kinds of their notifications emailed too, in catalog order. */
+  emailedEvents: z.array(z.enum(NOTIFICATION_EVENTS)),
   /**
    * Instance permissions, by catalog name (`@toppo/core`), so the web app can hide what the user
    * cannot do. Plain strings on the wire: the server stays the only judge.
@@ -63,6 +66,18 @@ export const resetPasswordRequestSchema = z.object({
 });
 
 export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>;
+
+/** Body of `PUT /api/v1/me/email-notifications`: the kinds of one's notifications emailed too. */
+export const emailNotificationsRequestSchema = z.object({
+  emailed: z
+    .array(z.enum(NOTIFICATION_EVENTS))
+    .max(NOTIFICATION_EVENTS.length)
+    .refine((events) => new Set(events).size === events.length, {
+      message: 'Each kind at most once',
+    }),
+});
+
+export type EmailNotificationsRequest = z.infer<typeof emailNotificationsRequestSchema>;
 
 /** Body of `PUT /api/v1/me/locale`: the language the interface now speaks to them. */
 export const accountLocaleRequestSchema = z.object({ locale: localeSchema });

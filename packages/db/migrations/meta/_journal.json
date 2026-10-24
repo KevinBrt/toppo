@@ -225,6 +225,34 @@
       "when": 1792846832431,
       "tag": "0031_mail",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792849368547,
+      "tag": "0032_notification_emails",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792850117890,
+      "tag": "0033_notify_new_issues",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792850126163,
+      "tag": "0034_default_roles_notify_new_issues",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1792851405979,
+      "tag": "0035_email_muted_events",
+      "breakpoints": true
     }
   ]
 }

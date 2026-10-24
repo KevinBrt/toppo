@@ -24,6 +24,20 @@ export const en = {
     signOut: 'Sign out',
     signingOut: 'Signing out…',
     profile: 'Profile',
+    notifications: 'Notifications',
+    notificationsDescription: 'How Toppo tells you what happens on the issues you take part in.',
+    emailNotificationsTitle: 'By email',
+    emailNotificationsHelp:
+      'Five minutes after each notification, unless you have read it in Toppo by then.',
+    emailEvents: {
+      created: 'New issues',
+      assigned: 'Issues given to me',
+      commented: 'Comments on the issues I take part in',
+      mentioned: 'Mentions',
+      statusChanged: 'Status changes on my issues',
+    },
+    emailEventsCreatedHelp: 'If your role tells you of them.',
+    emailNotSetUp: 'Email is not set up on this instance yet: nothing is sent for now.',
     profileDescription: 'Your name as the rest of the team sees it.',
     name: 'Name',
     email: 'Email',
@@ -484,6 +498,7 @@ export const en = {
     loading: 'Loading notifications…',
     shown: { one: '{count} notification shown', other: '{count} notifications shown' },
     events: {
+      created: '{name} created {key}',
       assigned: '{name} assigned you {key}',
       commented: '{name} commented on {key}',
       mentioned: '{name} mentioned you in {key}',
@@ -739,6 +754,11 @@ export const en = {
       conversation: 'Conversation',
       project: 'Project',
       organisation: 'Organisation',
+      notifications: 'Notifications',
+    },
+    notifyNewIssues: {
+      label: 'New issues',
+      description: 'Told of every new issue they can see, in Toppo and by email.',
     },
     visibility: {
       label: 'See issues',

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { EmailNotificationsSetting } from '../../../features/account/components/email-notifications-setting.tsx';
 import { PasswordForm } from '../../../features/account/components/password-form.tsx';
 import { ProfileForm } from '../../../features/account/components/profile-form.tsx';
 import { SessionQueries } from '../../../features/session/queries/session.queries.ts';
@@ -19,6 +20,10 @@ function AccountScreen() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const { data: user } = useQuery(SessionQueries.currentUser);
+  // Whether a forgotten password can be reset by email tells whether email is set up at all.
+  const { data: emailSetUp } = useQuery(SessionQueries.passwordReset);
+  const refreshUser = () =>
+    queryClient.invalidateQueries({ queryKey: SessionQueries.currentUser.queryKey });
 
   if (!user) {
     return null;
@@ -30,9 +35,17 @@ function AccountScreen() {
           <ProfileForm
             user={user}
             // The new name shows at once in the sidebar.
-            onSaved={() =>
-              queryClient.invalidateQueries({ queryKey: SessionQueries.currentUser.queryKey })
-            }
+            onSaved={refreshUser}
+          />
+        </Section>
+        <Section
+          title={t('account.notifications')}
+          description={t('account.notificationsDescription')}
+        >
+          <EmailNotificationsSetting
+            emailed={user.emailedEvents}
+            emailSetUp={emailSetUp}
+            onChanged={refreshUser}
           />
         </Section>
         <Section title={t('account.password')} description={t('account.passwordDescription')}>

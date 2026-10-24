@@ -5,8 +5,9 @@ import {
   type Permission,
   type PermissionScope,
   type PermissionSection,
+  permissionsOfRole,
 } from '@toppo/core';
-import type { RolePermissionsRequest } from '@toppo/shared';
+import type { RoleDetails, RolePermissionsRequest } from '@toppo/shared';
 
 /** How many issues of a project a role lets its members see. */
 export const ISSUE_VISIBILITIES = ['none', 'own', 'all'] as const;
@@ -21,15 +22,29 @@ export type SwitchPermission = Exclude<Permission, (typeof READS_ISSUES)[number]
 const isSwitchPermission = (permission: Permission): permission is SwitchPermission =>
   !READS_ISSUES.some((reading) => reading === permission);
 
-/** A line of the matrix: a permission, or one choice standing for the two that read issues. */
+/**
+ * A line of the matrix: a permission, one choice standing for the two that read issues, or
+ * whether members are told of new issues, a setting rather than a permission.
+ */
 export type MatrixRow =
   | { kind: 'permission'; permission: SwitchPermission }
-  | { kind: 'issueVisibility' };
+  | { kind: 'issueVisibility' }
+  | { kind: 'notifyNewIssues' };
 
 export interface MatrixSection {
-  section: PermissionSection;
+  section: PermissionSection | 'notifications';
   scope: PermissionScope;
   rows: readonly MatrixRow[];
+}
+
+/** What the matrix edits of a role: its permissions, and whether it is told of new issues. */
+export interface RoleSettings {
+  permissions: readonly Permission[];
+  notifyNewIssues: boolean;
+}
+
+export function settingsOfRole(role: RoleDetails): RoleSettings {
+  return { permissions: permissionsOfRole(role), notifyNewIssues: role.notifyNewIssues };
 }
 
 const VISIBILITY: Readonly<Record<IssueVisibility, readonly Permission[]>> = {
@@ -39,8 +54,13 @@ const VISIBILITY: Readonly<Record<IssueVisibility, readonly Permission[]>> = {
   all: READS_ISSUES,
 };
 
-/** The sections of the matrix and their rows, in catalog order. */
-export const MATRIX_SECTIONS: readonly MatrixSection[] = PERMISSION_SECTIONS.map((section) => {
+/** The sections of the matrix and their rows, in catalog order, then the notifications. */
+export const MATRIX_SECTIONS: readonly MatrixSection[] = [
+  ...PERMISSION_SECTIONS.map((section) => permissionSection(section)),
+  { section: 'notifications', scope: 'project', rows: [{ kind: 'notifyNewIssues' }] },
+];
+
+function permissionSection(section: PermissionSection): MatrixSection {
   const permissions = ALL_PERMISSIONS.filter(
     (permission) => PERMISSIONS[permission].section === section,
   );
@@ -57,7 +77,7 @@ export const MATRIX_SECTIONS: readonly MatrixSection[] = PERMISSION_SECTIONS.map
       return permission === READS_ISSUES[0] ? [{ kind: 'issueVisibility' }] : [];
     }),
   };
-});
+}
 
 export function issueVisibilityOf(permissions: readonly Permission[]): IssueVisibility {
   if (permissions.includes('issue.read')) {
@@ -90,14 +110,19 @@ export function withIssueVisibility(
 
 /** A role being edited: what the matrix showed when the edit began, and what it shows now. */
 export interface RoleDraft {
-  from: readonly Permission[];
-  to: readonly Permission[];
+  from: RoleSettings;
+  to: RoleSettings;
 }
 
-function rowValue(row: MatrixRow, permissions: readonly Permission[]): string {
-  return row.kind === 'issueVisibility'
-    ? issueVisibilityOf(permissions)
-    : String(permissions.includes(row.permission));
+function rowValue(row: MatrixRow, { permissions, notifyNewIssues }: RoleSettings): string {
+  switch (row.kind) {
+    case 'issueVisibility':
+      return issueVisibilityOf(permissions);
+    case 'notifyNewIssues':
+      return String(notifyNewIssues);
+    case 'permission':
+      return String(permissions.includes(row.permission));
+  }
 }
 
 /** How many cells of the matrix differ from what was saved: what "N unsaved changes" counts. */
@@ -114,7 +139,21 @@ export function countChanges(drafts: Readonly<Record<string, RoleDraft>>): numbe
 export function changesToSave(
   drafts: Readonly<Record<string, RoleDraft>>,
 ): RolePermissionsRequest['changes'] {
-  return Object.entries(drafts)
-    .filter(([, { from, to }]) => from.join() !== to.join())
-    .map(([roleId, { from, to }]) => ({ roleId, from: [...from], to: [...to] }));
+  return Object.entries(drafts).flatMap(([roleId, { from, to }]) => {
+    const permissionsChanged = from.permissions.join() !== to.permissions.join();
+    const notifyChanged = from.notifyNewIssues !== to.notifyNewIssues;
+    if (!(permissionsChanged || notifyChanged)) {
+      return [];
+    }
+    return [
+      {
+        roleId,
+        from: [...from.permissions],
+        to: [...to.permissions],
+        ...(notifyChanged
+          ? { notifyNewIssues: { from: from.notifyNewIssues, to: to.notifyNewIssues } }
+          : {}),
+      },
+    ];
+  });
 }

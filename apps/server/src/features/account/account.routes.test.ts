@@ -1,4 +1,4 @@
-import { apiErrorSchema, meResponseSchema } from '@toppo/shared';
+import { apiErrorSchema, meResponseSchema, NOTIFICATION_EVENTS } from '@toppo/shared';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -105,5 +105,35 @@ describe('PUT /api/v1/me/locale', () => {
     expect(refused.statusCode).toBe(400);
     expect(apiErrorSchema.parse(refused.json()).error.code).toBe('VALIDATION_FAILED');
     expect((await setLocale({ locale: 'fr' }, '')).statusCode).toBe(401);
+  });
+});
+
+describe('PUT /api/v1/me/email-notifications', () => {
+  const setEmails = (body: object, sessionCookie = cookie) =>
+    app.inject({
+      method: 'PUT',
+      url: '/api/v1/me/email-notifications',
+      headers: { origin: ORIGIN, cookie: sessionCookie },
+      body,
+    });
+  const emailed = async () =>
+    meResponseSchema.parse(
+      (await app.inject({ method: 'GET', url: '/api/v1/me', headers: { cookie } })).json(),
+    ).user?.emailedEvents;
+
+  it('chooses which kinds of notifications are emailed, every kind by default', async () => {
+    expect(await emailed()).toStrictEqual([...NOTIFICATION_EVENTS]);
+
+    expect((await setEmails({ emailed: ['mentioned', 'assigned'] })).statusCode).toBe(204);
+    expect(await emailed()).toStrictEqual(['assigned', 'mentioned']);
+    expect((await setEmails({ emailed: [] })).statusCode).toBe(204);
+    expect(await emailed()).toStrictEqual([]);
+    expect((await setEmails({ emailed: [...NOTIFICATION_EVENTS] })).statusCode).toBe(204);
+  });
+
+  it('refuses an unknown kind or the same twice, and needs a session', async () => {
+    expect((await setEmails({ emailed: ['everything'] })).statusCode).toBe(400);
+    expect((await setEmails({ emailed: ['created', 'created'] })).statusCode).toBe(400);
+    expect((await setEmails({ emailed: [] }, '')).statusCode).toBe(401);
   });
 });

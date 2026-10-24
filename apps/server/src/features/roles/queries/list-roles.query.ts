@@ -20,6 +20,7 @@ export const listRoles = defineQuery({
         color: roles.color,
         grantsAll: roles.grantsAll,
         permissions: roles.permissions,
+        notifyNewIssues: roles.notifyNewIssues,
       })
       .from(roles)
       .orderBy(roles.createdAt, roles.id)

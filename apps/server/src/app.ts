@@ -10,6 +10,7 @@ import { emailInvitationJob } from './features/invitations/jobs/email-invitation
 import { registerIssueRoutes } from './features/issues/issues.routes.ts';
 import { registerLabelRoutes } from './features/labels/labels.routes.ts';
 import { registerMailRoutes } from './features/mail/mail.routes.ts';
+import { emailNotificationJob } from './features/notifications/jobs/email-notification.job.ts';
 import { notifyActivityJob } from './features/notifications/jobs/notify-activity.job.ts';
 import { pruneNotificationsJob } from './features/notifications/jobs/prune-notifications.job.ts';
 import { registerNotificationRoutes } from './features/notifications/notifications.routes.ts';
@@ -92,6 +93,7 @@ export function createJobs({ files }: Pick<AppDependencies, 'files'>): RunnableJ
     pruneNotificationsJob,
     emailInvitationJob,
     passwordResetMailJob,
+    emailNotificationJob,
   ];
 }
 

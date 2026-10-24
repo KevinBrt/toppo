@@ -312,7 +312,7 @@ export const notifications = pgTable(
     // Mirrors NOTIFICATION_REASONS (`@toppo/shared`).
     check(
       'notifications_reason_check',
-      sql`${table.reason} in ('assigned', 'mentioned', 'participating')`,
+      sql`${table.reason} in ('assigned', 'mentioned', 'participating', 'newIssue')`,
     ),
     // Someone's notifications, the latest first.
     index('notifications_user_id_created_at_idx').on(table.userId, table.createdAt),

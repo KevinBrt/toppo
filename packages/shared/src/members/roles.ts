@@ -30,6 +30,11 @@ export const roleDetailsSchema = roleBadgeSchema.extend({
   grantsAll: z.boolean(),
   /** What the role grants, in catalog order: every permission for the system role. */
   permissions: z.array(z.string()),
+  /**
+   * Its members are told of every new issue of the projects where it applies: a setting, not a
+   * permission, which the system role may turn off too.
+   */
+  notifyNewIssues: z.boolean(),
   /** Members holding it, deactivated ones included. */
   memberCount: z.number().int().nonnegative(),
   /** Pending invitations giving it, expired ones included. */
@@ -70,6 +75,8 @@ export const rolePermissionsRequestSchema = z.object({
         /** What the matrix showed: if the role changed since, nothing is saved. */
         from: permissionListSchema,
         to: permissionListSchema,
+        /** Whether its members are told of new issues, before and after, if the matrix changed it. */
+        notifyNewIssues: z.object({ from: z.boolean(), to: z.boolean() }).optional(),
       }),
     )
     .min(1)

@@ -1,4 +1,4 @@
-import { canBeGranted, type Permission } from '@toppo/core';
+import { canBeGranted } from '@toppo/core';
 import type { RoleDetails } from '@toppo/shared';
 import { Select, Switch } from '@toppo/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
@@ -7,27 +7,43 @@ import {
   ISSUE_VISIBILITIES,
   issueVisibilityOf,
   type MatrixRow,
+  type RoleSettings,
   withIssueVisibility,
   withPermission,
 } from '../../utils/permission-matrix.util.ts';
 
 /**
- * The control of one row for one role: a switch, or the issue visibility. Locked for the system
- * role, which has everything, and for permissions only the system role may hold.
+ * The control of one row for one role: a switch, or the issue visibility. Permissions are locked
+ * for the system role, which has them all, and those only the system role may hold; whether it
+ * is told of new issues is not a permission, which any role may change.
  */
 export function PermissionControl({
   row,
   role,
-  permissions,
+  settings,
   onChange,
 }: {
   row: MatrixRow;
   role: RoleDetails;
-  /** What the role grants in the matrix, saved or not. */
-  permissions: readonly Permission[];
-  onChange: (permissions: Permission[]) => void;
+  /** What the role grants in the matrix, and whether it is told of new issues, saved or not. */
+  settings: RoleSettings;
+  onChange: (settings: RoleSettings) => void;
 }) {
   const { t } = useI18n();
+  const { permissions } = settings;
+
+  if (row.kind === 'notifyNewIssues') {
+    return (
+      <Switch
+        aria-label={t('roles.controlFor', {
+          permission: t('roles.notifyNewIssues.label'),
+          role: role.name,
+        })}
+        checked={settings.notifyNewIssues}
+        onCheckedChange={(notifyNewIssues) => onChange({ ...settings, notifyNewIssues })}
+      />
+    );
+  }
 
   if (row.kind === 'issueVisibility') {
     return (
@@ -41,7 +57,7 @@ export function PermissionControl({
         onChange={(event) => {
           const visibility = ISSUE_VISIBILITIES.find((option) => option === event.target.value);
           if (visibility) {
-            onChange(withIssueVisibility(permissions, visibility));
+            onChange({ ...settings, permissions: withIssueVisibility(permissions, visibility) });
           }
         }}
         className="h-9 min-w-28 pointer-coarse:h-11"
@@ -64,7 +80,9 @@ export function PermissionControl({
       })}
       checked={permissions.includes(permission)}
       disabled={role.grantsAll || !canBeGranted(permission)}
-      onCheckedChange={(granted) => onChange(withPermission(permissions, permission, granted))}
+      onCheckedChange={(granted) =>
+        onChange({ ...settings, permissions: withPermission(permissions, permission, granted) })
+      }
     />
   );
 }

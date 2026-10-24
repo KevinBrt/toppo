@@ -47,6 +47,7 @@ const OPEN_API_ROUTES = [
   'GET /api/v1/issues/search',
   'GET /api/v1/me',
   'PATCH /api/v1/me',
+  'PUT /api/v1/me/email-notifications',
   'PUT /api/v1/me/locale',
   // Each user's own notifications, filtered in the query by who they are and what they see.
   'GET /api/v1/notifications',

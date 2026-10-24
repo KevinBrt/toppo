@@ -3,12 +3,15 @@ import { schema } from '@toppo/db';
 import {
   addCommentResponseSchema,
   createIssueResponseSchema,
+  NOTIFICATION_EVENTS,
+  type NotificationEvent,
   notificationsResponseSchema,
   unreadNotificationsResponseSchema,
 } from '@toppo/shared';
-import { eq, sql } from 'drizzle-orm';
+import { startSmtpServer, type TestSmtpServer } from '@toppo/testing';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createJobs } from '../../app.ts';
 import { runNextJob, type WorkerContext } from '../../platform/jobs/job-worker.ts';
 import {
@@ -147,6 +150,8 @@ beforeAll(async () => {
     roleId: null,
   });
   expect(added.statusCode).toBe(204);
+  // Each issue reported here would tell the team: only the tests about new issues want that.
+  await context.database.db.update(schema.roles).set({ notifyNewIssues: false });
   return () => app.close();
 });
 
@@ -329,5 +334,228 @@ describe('notifications', () => {
 
     expect((await notificationsOf('grace')).rows.map(({ id }) => id)).toContain(newest?.id);
     expect((await notificationsOf('grace')).rows.map(({ id }) => id)).not.toContain(oldest?.id);
+  });
+});
+
+describe('new issues', () => {
+  beforeAll(async () => {
+    await context.database.db
+      .update(schema.roles)
+      .set({ notifyNewIssues: true })
+      .where(inArray(schema.roles.id, [DEFAULT_ROLE_IDS.administrator, DEFAULT_ROLE_IDS.team]));
+  });
+
+  afterAll(async () => {
+    await context.database.db.update(schema.roles).set({ notifyNewIssues: false });
+  });
+
+  it('tell the roles that ask for it, never the reporter nor those who cannot see the issue', async () => {
+    const byRita = await report('rita');
+    const byGrace = await report('grace');
+    await deliver();
+
+    expect(await toldAbout('ada', byRita)).toStrictEqual([
+      { event: 'created', by: 'Rita Client', status: null },
+    ]);
+    expect(await toldAbout('alan', byGrace)).toStrictEqual([
+      { event: 'created', by: 'Grace Hopper', status: null },
+    ]);
+    expect(await toldAbout('grace', byGrace)).toStrictEqual([]);
+    // A requester sees only the issues she reported, and her role does not ask for others.
+    expect(await toldAbout('rita', byGrace)).toStrictEqual([]);
+  });
+
+  it('tell whoever a new issue is given to that it is theirs', async () => {
+    const response = await call('POST', '/api/v1/projects/WEB/issues', 'ada', {
+      title: 'Broken export',
+      assigneeId: ids.alan,
+    });
+    expect(response.statusCode).toBe(201);
+    const { key } = createIssueResponseSchema.parse(response.json());
+    await deliver();
+
+    expect(await toldAbout('alan', key)).toStrictEqual([
+      { event: 'assigned', by: 'Ada Lovelace', status: null },
+    ]);
+    expect(await toldAbout('grace', key)).toStrictEqual([
+      { event: 'created', by: 'Ada Lovelace', status: null },
+    ]);
+  });
+
+  it('follow the role a project gives, and a role turned off', async () => {
+    // In WEB, Alan works as a requester: he is told of nothing he does not report.
+    await context.database.db
+      .update(schema.projectMembers)
+      .set({ roleId: DEFAULT_ROLE_IDS.requester })
+      .where(eq(schema.projectMembers.userId, ids.alan));
+    await context.database.db
+      .update(schema.roles)
+      .set({ notifyNewIssues: false })
+      .where(eq(schema.roles.id, DEFAULT_ROLE_IDS.administrator));
+    const key = await report('grace');
+    await deliver();
+    await context.database.db
+      .update(schema.projectMembers)
+      .set({ roleId: null })
+      .where(eq(schema.projectMembers.userId, ids.alan));
+    await context.database.db
+      .update(schema.roles)
+      .set({ notifyNewIssues: true })
+      .where(eq(schema.roles.id, DEFAULT_ROLE_IDS.administrator));
+
+    expect(await toldAbout('alan', key)).toStrictEqual([]);
+    expect(await toldAbout('ada', key)).toStrictEqual([]);
+  });
+});
+
+describe('notification emails', () => {
+  let mailServer: TestSmtpServer;
+
+  const mailsTo = (who: Person) =>
+    mailServer.received.filter(({ to }) => to.includes(`${who}@example.com`));
+
+  /** The emails of the notifications made so far, as if their few minutes had passed. */
+  async function deliverLater(): Promise<void> {
+    await context.database.db
+      .update(schema.jobs)
+      .set({ runAt: sql`now()` })
+      .where(and(eq(schema.jobs.type, 'notification.email'), eq(schema.jobs.status, 'pending')));
+    await deliver();
+  }
+
+  async function setEmails(who: Person, emailed: readonly NotificationEvent[]): Promise<void> {
+    const response = await call('PUT', '/api/v1/me/email-notifications', who, { emailed });
+    expect(response.statusCode).toBe(204);
+  }
+
+  beforeAll(async () => {
+    mailServer = await startSmtpServer();
+    await context.database.db.insert(schema.mailSettings).values({
+      host: '127.0.0.1',
+      port: mailServer.port,
+      security: 'none',
+      fromAddress: 'toppo@example.com',
+      fromName: 'Toppo',
+    });
+  });
+
+  afterAll(async () => {
+    await context.database.db.delete(schema.mailSettings);
+    await mailServer.close();
+  });
+
+  it('leave a few minutes after the notification, saying what it says', async () => {
+    const key = await report('ada');
+    const before = mailsTo('grace').length;
+    await assign(key, 'grace');
+    await deliver();
+    expect(mailsTo('grace')).toHaveLength(before);
+    const [queued] = await context.database.db
+      .select({ late: sql<boolean>`${schema.jobs.runAt} > now() + interval '4 minutes'` })
+      .from(schema.jobs)
+      .where(eq(schema.jobs.type, 'notification.email'));
+    expect(queued?.late).toBe(true);
+
+    await deliverLater();
+
+    const mail = mailsTo('grace').at(-1);
+    expect(mail?.subject).toBe(`[${key}] Empty CSV export`);
+    expect(mail?.content).toContain(`Ada Lovelace assigned you ${key}`);
+    expect(mail?.content).toContain(`http://localhost:3000/issues/${key}`);
+  });
+
+  it('do not leave once read in Toppo, nor of the kinds turned off', async () => {
+    const key = await report('ada');
+    await assign(key, 'grace');
+    await deliver();
+    expect(
+      (await call('POST', '/api/v1/notifications/read', 'grace', { all: true })).statusCode,
+    ).toBe(204);
+    // Alan hears of comments by email, not of what is given to him.
+    await setEmails(
+      'alan',
+      NOTIFICATION_EVENTS.filter((event) => event !== 'assigned'),
+    );
+    await assign(key, 'alan');
+    await deliver();
+    await comment(key, 'grace');
+    await deliver();
+    const before = { grace: mailsTo('grace').length, alan: mailsTo('alan').length };
+
+    await deliverLater();
+    await setEmails('alan', NOTIFICATION_EVENTS);
+
+    expect(mailsTo('grace')).toHaveLength(before.grace);
+    expect(
+      mailsTo('alan')
+        .slice(before.alan)
+        .map(({ content }) => content.includes(`Grace Hopper commented on ${key}`)),
+    ).toStrictEqual([true]);
+  });
+
+  it('quote the comment, in the language of whoever receives them', async () => {
+    await context.database.db
+      .update(schema.users)
+      .set({ locale: 'fr' })
+      .where(eq(schema.users.id, ids.rita));
+    const key = await report('rita');
+    const said = await call('POST', `/api/v1/issues/${key}/comments`, 'grace', {
+      body: 'Corrigé dans la <b>1.3</b>.',
+    });
+    expect(said.statusCode).toBe(201);
+    await deliver();
+
+    await deliverLater();
+    await context.database.db
+      .update(schema.users)
+      .set({ locale: 'en' })
+      .where(eq(schema.users.id, ids.rita));
+
+    const mail = mailsTo('rita').at(-1);
+    expect(mail?.content).toContain(`Grace Hopper a commenté ${key}`);
+    expect(mail?.content).toContain('Corrigé dans la <b>1.3</b>.');
+    expect(mail?.content).toContain('Corrigé dans la &lt;b&gt;1.3&lt;/b&gt;.');
+    expect(mail?.content).toContain(
+      'désactivez-les dans votre compte : http://localhost:3000/account',
+    );
+  });
+
+  it('quote the description of a new issue', async () => {
+    await context.database.db
+      .update(schema.roles)
+      .set({ notifyNewIssues: true })
+      .where(eq(schema.roles.id, DEFAULT_ROLE_IDS.team));
+    const response = await call('POST', '/api/v1/projects/WEB/issues', 'rita', {
+      title: 'Invoices fail to download',
+      description: 'Since this morning, every invoice answers an error.',
+    });
+    expect(response.statusCode).toBe(201);
+    const { key } = createIssueResponseSchema.parse(response.json());
+    await deliver();
+
+    await deliverLater();
+    await context.database.db.update(schema.roles).set({ notifyNewIssues: false });
+
+    const mail = mailsTo('grace').at(-1);
+    expect(mail?.subject).toBe(`[${key}] Invoices fail to download`);
+    expect(mail?.content).toContain(`Rita Client created ${key}`);
+    expect(mail?.content).toContain('Since this morning, every invoice answers an error.');
+  });
+
+  it('are not queued while email is off', async () => {
+    await context.database.db.delete(schema.mailSettings);
+    await context.database.db.delete(schema.jobs).where(eq(schema.jobs.type, 'notification.email'));
+    const key = await report('ada');
+
+    await assign(key, 'grace');
+    await deliver();
+
+    expect(
+      await context.database.db
+        .select()
+        .from(schema.jobs)
+        .where(eq(schema.jobs.type, 'notification.email')),
+    ).toStrictEqual([]);
+    expect(await toldAbout('grace', key)).toHaveLength(1);
   });
 });

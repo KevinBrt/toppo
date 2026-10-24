@@ -177,6 +177,7 @@ describe('POST /api/v1/roles', () => {
       color: 'amber',
       grantsAll: false,
       permissions: [],
+      notifyNewIssues: false,
       memberCount: 0,
       invitationCount: 0,
       projectCount: 0,
@@ -368,6 +369,40 @@ describe('PUT /api/v1/roles/permissions', () => {
     expect(errorCode(system)).toBe('SYSTEM_ROLE_LOCKED');
     expect(unknown.statusCode).toBe(404);
     expect(errorCode(unknown)).toBe('ROLE_NOT_FOUND');
+  });
+
+  it('tells the team of new issues by default, and lets every role change it', async () => {
+    const notified = async () =>
+      Object.fromEntries(
+        (await listRoles()).map(({ id, notifyNewIssues }) => [id, notifyNewIssues]),
+      );
+    expect(await notified()).toMatchObject({
+      [DEFAULT_ROLE_IDS.administrator]: true,
+      [DEFAULT_ROLE_IDS.team]: true,
+      [DEFAULT_ROLE_IDS.requester]: false,
+    });
+    const turnOff = {
+      roleId: DEFAULT_ROLE_IDS.administrator,
+      from: ALL_PERMISSIONS,
+      to: ALL_PERMISSIONS,
+      notifyNewIssues: { from: true, to: false },
+    };
+
+    const saved = await call('PUT', '/api/v1/roles/permissions', adminCookie, {
+      changes: [turnOff],
+    });
+    const stale = await call('PUT', '/api/v1/roles/permissions', adminCookie, {
+      changes: [turnOff],
+    });
+
+    expect(saved.statusCode).toBe(204);
+    expect((await notified())[DEFAULT_ROLE_IDS.administrator]).toBe(false);
+    expect(stale.statusCode).toBe(409);
+    expect(errorCode(stale)).toBe('ROLES_CHANGED');
+    const back = await call('PUT', '/api/v1/roles/permissions', adminCookie, {
+      changes: [{ ...turnOff, notifyNewIssues: { from: false, to: true } }],
+    });
+    expect(back.statusCode).toBe(204);
   });
 
   it('refuses the same role twice in one save', async () => {

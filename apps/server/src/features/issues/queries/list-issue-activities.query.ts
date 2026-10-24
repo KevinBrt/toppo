@@ -266,7 +266,8 @@ function toActivity(row: ActivityRow, shown: Shown): IssueActivity {
 
   switch (row.type) {
     case 'issue.created':
-      return { ...base, type: 'issue.created', payload: payloads['issue.created'].parse(payload) };
+      // Who it was given to shows as a step of its own.
+      return { ...base, type: 'issue.created', payload: {} };
     case 'issue.titleChanged':
       return {
         ...base,

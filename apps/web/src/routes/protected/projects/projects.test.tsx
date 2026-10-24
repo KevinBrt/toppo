@@ -1,4 +1,5 @@
 import { DEFAULT_PRIORITIES } from '@toppo/core';
+import { NOTIFICATION_EVENTS } from '@toppo/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import {
@@ -28,6 +29,7 @@ const LEAD: FakeRole = {
   name: 'Lead',
   color: 'violet',
   grantsAll: false,
+  notifyNewIssues: false,
   permissions: ['issue.read', 'issue.create', 'project.members.manage'],
 };
 
@@ -45,6 +47,7 @@ const KATHERINE = memberOf(
     name: 'Katherine Johnson',
     email: 'katherine@example.com',
     locale: 'en',
+    emailedEvents: [...NOTIFICATION_EVENTS],
     permissions: [],
     managesProjects: false,
   },

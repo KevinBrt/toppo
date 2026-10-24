@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { emailSchema, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, passwordSchema } from './auth.ts';
+import {
+  emailNotificationsRequestSchema,
+  emailSchema,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  passwordSchema,
+} from './auth.ts';
 import { setupRequestSchema } from './instance/setup.ts';
 
 describe('emailSchema', () => {
@@ -58,5 +64,17 @@ describe('setupRequestSchema', () => {
       'admin.password',
       'setupCode',
     ]);
+  });
+});
+
+describe('emailNotificationsRequestSchema', () => {
+  it('takes the kinds of notifications to email, each once, none at all included', () => {
+    const emailed = (kinds: unknown[]) =>
+      emailNotificationsRequestSchema.safeParse({ emailed: kinds }).success;
+
+    expect(emailed(['created', 'mentioned'])).toBe(true);
+    expect(emailed([])).toBe(true);
+    expect(emailed(['mentioned', 'mentioned'])).toBe(false);
+    expect(emailed(['everything'])).toBe(false);
   });
 });

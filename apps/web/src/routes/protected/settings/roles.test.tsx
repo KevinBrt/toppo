@@ -252,3 +252,28 @@ describe('the roles and permissions screen', () => {
       .not.toBeInTheDocument();
   });
 });
+
+describe('new issue notifications', () => {
+  it('are on for the team by default, and any role turns them on or off, the system role too', async () => {
+    const { server, screen } = await openRoles();
+
+    await expect.element(control('New issues', 'Administrator')).toBeChecked();
+    await expect.element(control('New issues', 'Team')).toBeChecked();
+    await expect.element(control('New issues', 'Requester')).not.toBeChecked();
+    await expect.element(control('Create issues', 'Administrator')).toBeDisabled();
+    await control('New issues', 'Administrator').click();
+    await screen.getByRole('button', { name: 'Save' }).click();
+
+    await expect.element(screen.getByText('Permissions saved.')).toBeVisible();
+    await expect.element(control('New issues', 'Administrator')).not.toBeChecked();
+    const save = server.requests.find(({ method }) => method === 'PUT');
+    expect(save?.body).toMatchObject({
+      changes: [
+        {
+          roleId: DEFAULT_ROLE_IDS.administrator,
+          notifyNewIssues: { from: true, to: false },
+        },
+      ],
+    });
+  });
+});

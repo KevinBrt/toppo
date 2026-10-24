@@ -4,6 +4,31 @@ import { recipientsOf } from './recipients.ts';
 const people = { reporterId: 'rita', assigneeId: 'grace', commenterIds: ['alan', 'rita', 'ada'] };
 
 describe('recipientsOf', () => {
+  it('tells of a new issue its assignee, then those whose role asks for it, never its reporter', () => {
+    expect(
+      recipientsOf(
+        {
+          type: 'issue.created',
+          actorId: 'rita',
+          assigneeId: 'grace',
+          subscriberIds: ['grace', 'alan', 'rita'],
+        },
+        people,
+      ),
+    ).toStrictEqual(
+      new Map([
+        ['grace', 'assigned'],
+        ['alan', 'newIssue'],
+      ]),
+    );
+    expect(
+      recipientsOf(
+        { type: 'issue.created', actorId: 'rita', assigneeId: null, subscriberIds: [] },
+        people,
+      ).size,
+    ).toBe(0);
+  });
+
   it('tells the person an issue is given to, unless they took it themselves', () => {
     expect(
       recipientsOf({ type: 'issue.assigneeChanged', actorId: 'ada', assigneeId: 'grace' }, people),

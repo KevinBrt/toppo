@@ -1,5 +1,5 @@
 import { DEFAULT_PRIORITIES, DEFAULT_STATUSES } from '@toppo/core';
-import type { CurrentUser } from '@toppo/shared';
+import { type CurrentUser, NOTIFICATION_EVENTS } from '@toppo/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { rememberProject } from '../../../features/issues/utils/last-project.util.ts';
@@ -30,6 +30,7 @@ const RITA: CurrentUser = {
   name: 'Rita Client',
   email: 'rita@example.com',
   locale: 'en',
+  emailedEvents: [...NOTIFICATION_EVENTS],
   permissions: [],
   managesProjects: false,
 };

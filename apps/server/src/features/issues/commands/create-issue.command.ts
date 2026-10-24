@@ -61,7 +61,7 @@ export const createIssue = defineCommand({
       projectId: project.id,
       issueId: id,
       actorId: actor.id,
-      ...activity('issue.created', {}),
+      ...activity('issue.created', { assigneeId: input.assigneeId ?? null }),
     });
     const key = formatIssueKey({
       projectKey: projectKeySchema.parse(project.key),

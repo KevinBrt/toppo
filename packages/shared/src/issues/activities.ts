@@ -17,7 +17,8 @@ const prioritySchema = namedSchema.extend({
  * kept by id only, so that erasing an account erases its name from history too.
  */
 export const ISSUE_ACTIVITY_PAYLOADS = {
-  'issue.created': z.object({}),
+  // Who it was given to when created, if anyone: told so, as by an assignment.
+  'issue.created': z.object({ assigneeId: z.uuid().nullable().default(null) }),
   'issue.titleChanged': z.object({ from: z.string(), to: z.string() }),
   'issue.descriptionChanged': z.object({ from: z.string(), to: z.string() }),
   'issue.categoryChanged': z.object({ from: namedSchema, to: namedSchema }),
@@ -68,7 +69,8 @@ const entry = <T extends HistoryType, P extends z.ZodType>(type: T, payload: P) 
   });
 
 export const issueActivitySchema = z.discriminatedUnion('type', [
-  entry('issue.created', ISSUE_ACTIVITY_PAYLOADS['issue.created']),
+  // The history shows who an issue is given to by its own step: nothing more here.
+  entry('issue.created', z.object({})),
   entry('issue.titleChanged', ISSUE_ACTIVITY_PAYLOADS['issue.titleChanged']),
   entry('issue.descriptionChanged', ISSUE_ACTIVITY_PAYLOADS['issue.descriptionChanged']),
   entry('issue.categoryChanged', ISSUE_ACTIVITY_PAYLOADS['issue.categoryChanged']),

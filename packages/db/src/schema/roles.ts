@@ -22,6 +22,8 @@ export const roles = pgTable(
       .$type<Permission[]>()
       .notNull()
       .default(sql`'{}'::text[]`),
+    /** Its members are told of every new issue they may see: a setting, not a permission. */
+    notifyNewIssues: boolean('notify_new_issues').notNull().default(false),
     ...timestamps,
   },
   (table) => [

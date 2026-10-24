@@ -4,9 +4,22 @@ import { PERMISSION_MESSAGES } from '../../constants/permission-messages.constan
 import type { MatrixRow } from '../../utils/permission-matrix.util.ts';
 
 function messagesOf(row: MatrixRow): { label: PlainMessageKey; description: PlainMessageKey } {
-  return row.kind === 'issueVisibility'
-    ? { label: 'roles.visibility.label', description: 'roles.visibility.description' }
-    : PERMISSION_MESSAGES[row.permission];
+  switch (row.kind) {
+    case 'issueVisibility':
+      return { label: 'roles.visibility.label', description: 'roles.visibility.description' };
+    case 'notifyNewIssues':
+      return {
+        label: 'roles.notifyNewIssues.label',
+        description: 'roles.notifyNewIssues.description',
+      };
+    case 'permission':
+      return PERMISSION_MESSAGES[row.permission];
+  }
+}
+
+/** A key for a row, the same in both layouts of the matrix. */
+export function rowKey(row: MatrixRow): string {
+  return row.kind === 'permission' ? row.permission : row.kind;
 }
 
 /** What a row of the matrix allows, and a line of help. */

@@ -118,17 +118,19 @@ describe('initial data and constraints', () => {
         grantsAll: roles.grantsAll,
         color: roles.color,
         permissions: roles.permissions,
+        notifyNewIssues: roles.notifyNewIssues,
       })
       .from(roles);
 
     const byId = (left: { id: string }, right: { id: string }) => left.id.localeCompare(right.id);
     expect(seeded.sort(byId)).toStrictEqual(
-      DEFAULT_ROLES.map(({ id, name, grantsAll, color, permissions }) => ({
+      DEFAULT_ROLES.map(({ id, name, grantsAll, color, permissions, notifyNewIssues }) => ({
         id,
         name,
         grantsAll,
         color,
         permissions: [...permissions],
+        notifyNewIssues,
       })).sort(byId),
     );
   });

@@ -14,6 +14,8 @@ export interface RoleDefinition {
   color: RoleColor;
   /** Stored permissions; ignored when the role grants everything. */
   permissions: readonly Permission[];
+  /** Its members are told of every new issue they may see. */
+  notifyNewIssues: boolean;
 }
 
 /**
@@ -51,6 +53,7 @@ export const DEFAULT_ROLES: readonly RoleDefinition[] = [
     grantsAll: true,
     color: 'blue',
     permissions: [],
+    notifyNewIssues: true,
   },
   {
     id: DEFAULT_ROLE_IDS.team,
@@ -66,6 +69,7 @@ export const DEFAULT_ROLES: readonly RoleDefinition[] = [
       'issue.assign',
       'comment.create',
     ],
+    notifyNewIssues: true,
   },
   {
     id: DEFAULT_ROLE_IDS.requester,
@@ -74,5 +78,6 @@ export const DEFAULT_ROLES: readonly RoleDefinition[] = [
     grantsAll: false,
     color: 'gray',
     permissions: ['issue.read.own', 'issue.create', 'comment.create'],
+    notifyNewIssues: false,
   },
 ];

@@ -6,6 +6,8 @@ export {
   changePasswordRequestSchema,
   currentUserSchema,
   displayNameSchema,
+  type EmailNotificationsRequest,
+  emailNotificationsRequestSchema,
   emailSchema,
   type MeResponse,
   meResponseSchema,

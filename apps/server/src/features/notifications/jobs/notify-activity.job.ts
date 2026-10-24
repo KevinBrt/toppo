@@ -5,24 +5,27 @@ import { eq } from 'drizzle-orm';
 import { ACTIVITY_RECORDED } from '../../../platform/activities/record-activity.ts';
 import { whoSeesIssue } from '../../../platform/auth/project-access.ts';
 import { defineJob } from '../../../platform/jobs/jobs.ts';
+import { newIssueSubscribers } from '../utils/notification-rows.util.ts';
+import { emailNotifications } from './email-notification.job.ts';
 
 const { activities, comments, issues, notifications } = schema;
 
 /**
  * Tells the people concerned about a change to an issue (`recipientsOf`): those whose account is
- * active and who still see the issue get a notification, once. Queued with each activity
- * (`recordActivity`); an activity gone with its issue tells nobody.
+ * active and who still see the issue get a notification, once, emailed later when email is set
+ * up. Queued with each activity (`recordActivity`); an activity gone with its issue tells nobody.
  */
 export const notifyActivityJob = defineJob({
   type: ACTIVITY_RECORDED.type,
   payload: ACTIVITY_RECORDED.payload,
-  async handler({ tx }, { activityId }) {
+  async handler({ tx, services }, { activityId }) {
     const [activity] = await tx
       .select({
         type: activities.type,
         payload: activities.payload,
         actorId: activities.actorId,
         issueId: issues.id,
+        projectId: issues.projectId,
         reporterId: issues.reporterId,
         assigneeId: issues.assigneeId,
       })
@@ -32,7 +35,15 @@ export const notifyActivityJob = defineJob({
     if (!activity) {
       return;
     }
-    const change = changeOf(activity.type, activity.actorId, activity.payload);
+    const change: NotifiedChange =
+      activity.type === 'issue.created'
+        ? {
+            type: 'issue.created',
+            actorId: activity.actorId,
+            assigneeId: ISSUE_ACTIVITY_PAYLOADS['issue.created'].parse(activity.payload).assigneeId,
+            subscriberIds: await newIssueSubscribers(tx, activity.projectId),
+          }
+        : changeOf(activity.type, activity.actorId, activity.payload);
     const commenters =
       change.type === 'issue.commented'
         ? await tx
@@ -49,7 +60,7 @@ export const notifyActivityJob = defineJob({
     if (told.length === 0) {
       return;
     }
-    await tx
+    const made = await tx
       .insert(notifications)
       .values(
         told.map((userId) => ({
@@ -58,7 +69,9 @@ export const notifyActivityJob = defineJob({
           reason: recipients.get(userId) ?? 'participating',
         })),
       )
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ id: notifications.id });
+    await emailNotifications(tx, services, made);
   },
 });
 

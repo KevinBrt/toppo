@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { type Permission, permissionsOfRole } from '@toppo/core';
 import type { RoleDetails } from '@toppo/shared';
 import { Alert } from '@toppo/ui';
 import { useEffect, useState } from 'react';
@@ -9,7 +8,13 @@ import { UnsavedChangesBar } from '../../../shared/forms/unsaved-changes-bar.tsx
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';
 import { Roles } from '../api/roles.api.ts';
 import { RolesQueries } from '../queries/roles.queries.ts';
-import { changesToSave, countChanges, type RoleDraft } from '../utils/permission-matrix.util.ts';
+import {
+  changesToSave,
+  countChanges,
+  type RoleDraft,
+  type RoleSettings,
+  settingsOfRole,
+} from '../utils/permission-matrix.util.ts';
 import { RolePermissions } from './matrix/role-permissions.tsx';
 import { RolesMatrix } from './matrix/roles-matrix.tsx';
 
@@ -68,15 +73,15 @@ export function RolesEditor({ onPendingChange }: { onPendingChange?: (pending: b
     return <Alert tone="danger">{requestErrorMessage(roles.error, t)}</Alert>;
   }
 
-  const permissionsOf = (role: RoleDetails) => current[role.id]?.to ?? permissionsOfRole(role);
-  const change = (role: RoleDetails, permissions: Permission[]) => {
+  const settingsOf = (role: RoleDetails) => current[role.id]?.to ?? settingsOfRole(role);
+  const change = (role: RoleDetails, settings: RoleSettings) => {
     setOutcome(null);
     setDrafts((previous) => ({
       ...previous,
-      [role.id]: { from: previous[role.id]?.from ?? permissionsOfRole(role), to: permissions },
+      [role.id]: { from: previous[role.id]?.from ?? settingsOfRole(role), to: settings },
     }));
   };
-  const matrix = { roles: roles.data, permissionsOf, onChange: change };
+  const matrix = { roles: roles.data, settingsOf, onChange: change };
 
   return (
     <div className="flex flex-col gap-4">

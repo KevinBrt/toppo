@@ -1,5 +1,10 @@
 import { type Db, schema } from '@toppo/db';
-import { DEFAULT_LOCALE, type MeResponse, meResponseSchema } from '@toppo/shared';
+import {
+  DEFAULT_LOCALE,
+  type MeResponse,
+  meResponseSchema,
+  NOTIFICATION_EVENTS,
+} from '@toppo/shared';
 import { eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from '../http/zod.ts';
@@ -30,6 +35,7 @@ export function registerMeRoute(app: FastifyInstance, { auth, db }: { auth: Auth
       const [me] = await db
         .select({
           locale: users.locale,
+          emailMutedEvents: users.emailMutedEvents,
           managesProjects: sql<boolean>`exists (
             select 1 from ${projects} where ${managedBy(actor.id)}
           )`,
@@ -42,6 +48,9 @@ export function registerMeRoute(app: FastifyInstance, { auth, db }: { auth: Auth
           name: actor.name,
           email: actor.email,
           locale: me?.locale ?? DEFAULT_LOCALE,
+          emailedEvents: NOTIFICATION_EVENTS.filter(
+            (event) => !me?.emailMutedEvents.includes(event),
+          ),
           permissions: [...actor.permissions],
           managesProjects: me?.managesProjects ?? false,
         },

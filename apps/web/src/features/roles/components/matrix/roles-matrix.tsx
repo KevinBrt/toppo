@@ -1,23 +1,22 @@
-import type { Permission } from '@toppo/core';
 import type { RoleDetails } from '@toppo/shared';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
-import { MATRIX_SECTIONS } from '../../utils/permission-matrix.util.ts';
+import { MATRIX_SECTIONS, type RoleSettings } from '../../utils/permission-matrix.util.ts';
 import { PermissionControl } from './permission-control.tsx';
 import { RoleHeading } from './role-heading.tsx';
-import { RowLabel } from './row-label.tsx';
+import { RowLabel, rowKey } from './row-label.tsx';
 
 export interface MatrixProps {
   roles: readonly RoleDetails[];
-  /** What each role grants in the matrix, saved or not. */
-  permissionsOf: (role: RoleDetails) => readonly Permission[];
-  onChange: (role: RoleDetails, permissions: Permission[]) => void;
+  /** What each role grants in the matrix, and whether it is told of new issues, saved or not. */
+  settingsOf: (role: RoleDetails) => RoleSettings;
+  onChange: (role: RoleDetails, settings: RoleSettings) => void;
 }
 
 /**
  * Every role side by side, permissions in rows grouped by section, for wide screens. The
  * permission column stays in place while many roles scroll sideways.
  */
-export function RolesMatrix({ roles, permissionsOf, onChange }: MatrixProps) {
+export function RolesMatrix({ roles, settingsOf, onChange }: MatrixProps) {
   const { t } = useI18n();
 
   return (
@@ -60,7 +59,7 @@ export function RolesMatrix({ roles, permissionsOf, onChange }: MatrixProps) {
               </th>
             </tr>
             {rows.map((row) => (
-              <tr key={row.kind === 'permission' ? row.permission : row.kind}>
+              <tr key={rowKey(row)}>
                 <th
                   scope="row"
                   className="sticky left-0 z-10 bg-surface px-4 py-2.5 text-left font-normal"
@@ -72,8 +71,8 @@ export function RolesMatrix({ roles, permissionsOf, onChange }: MatrixProps) {
                     <PermissionControl
                       row={row}
                       role={role}
-                      permissions={permissionsOf(role)}
-                      onChange={(permissions) => onChange(role, permissions)}
+                      settings={settingsOf(role)}
+                      onChange={(settings) => onChange(role, settings)}
                     />
                   </td>
                 ))}

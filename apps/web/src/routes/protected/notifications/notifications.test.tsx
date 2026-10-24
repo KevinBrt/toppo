@@ -87,6 +87,17 @@ describe('the bell', () => {
     await expect.element(bell()).toHaveAccessibleName('Notifications');
   });
 
+  it('tells of a new issue', async () => {
+    server([fakeNotification(1, { event: 'created' })]);
+    const { screen } = await renderApp({ path: '/issues?project=WEB' });
+
+    await bell().click();
+
+    await expect
+      .element(screen.getByRole('menuitem', { name: /Grace Hopper created WEB-1/ }))
+      .toBeVisible();
+  });
+
   it('shows 9+ beyond nine unread', async () => {
     server(Array.from({ length: 12 }, (_, index) => fakeNotification(index + 1)));
     await renderApp({ path: '/issues?project=WEB' });

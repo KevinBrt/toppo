@@ -10,6 +10,13 @@ export interface IssuePeople {
 
 /** A change to an issue, as far as notifications care about it. */
 export type NotifiedChange =
+  | {
+      type: 'issue.created';
+      actorId: string;
+      assigneeId: string | null;
+      /** Those whose role tells them of new issues (`roles.notify_new_issues`). */
+      subscriberIds: readonly string[];
+    }
   | { type: 'issue.assigneeChanged'; actorId: string; assigneeId: string | null }
   | { type: 'issue.commented'; actorId: string; mentioned: readonly string[] }
   | { type: 'issue.commentEdited'; actorId: string; mentioned: readonly string[] }
@@ -17,7 +24,8 @@ export type NotifiedChange =
   | { type: 'other'; actorId: string };
 
 /**
- * Who is told about a change, and why: the person an issue is given to; those a comment names;
+ * Who is told about a change, and why: of a new issue, its assignee and those whose role asks
+ * for it; the person an issue is given to; those a comment names;
  * the reporter, the assignee and those who commented, of a new comment; the reporter and the
  * assignee, of a status change. Nothing else is told, and nobody is told of what they did
  * themselves. Whether they still see the issue is checked by the caller.
@@ -34,6 +42,12 @@ export function recipientsOf(
     }
   };
   switch (change.type) {
+    case 'issue.created':
+      tell(change.assigneeId, 'assigned');
+      for (const userId of change.subscriberIds) {
+        tell(userId, 'newIssue');
+      }
+      break;
     case 'issue.assigneeChanged':
       tell(change.assigneeId, 'assigned');
       break;

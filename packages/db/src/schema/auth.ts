@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@toppo/shared';
+import { DEFAULT_LOCALE, type NotificationEvent, SUPPORTED_LOCALES } from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
@@ -44,6 +44,15 @@ export const users = pgTable(
      * (email). Mirrors SUPPORTED_LOCALES (`@toppo/shared`).
      */
     locale: text('locale', { enum: SUPPORTED_LOCALES }).notNull().default(DEFAULT_LOCALE),
+    /**
+     * Toppo: the kinds of notifications not to email them (NOTIFICATION_EVENTS of
+     * `@toppo/shared`): every kind is emailed unless turned off, kinds to come included.
+     */
+    emailMutedEvents: text('email_muted_events')
+      .array()
+      .$type<NotificationEvent[]>()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     /** Toppo: set while an administrator has deactivated the account. */
     deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
     /**
@@ -68,6 +77,11 @@ export const users = pgTable(
     ),
     index('users_instance_role_id_idx').on(table.instanceRoleId),
     check('users_locale_check', sql`${table.locale} in ('en', 'fr')`),
+    // Mirrors NOTIFICATION_EVENTS (`@toppo/shared`).
+    check(
+      'users_email_muted_events_check',
+      sql`${table.emailMutedEvents} <@ array['created', 'assigned', 'commented', 'mentioned', 'statusChanged']::text[]`,
+    ),
   ],
 );
 

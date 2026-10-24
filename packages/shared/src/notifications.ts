@@ -2,12 +2,18 @@ import { z } from 'zod';
 import { userRefSchema } from './issues/issues.ts';
 
 /** Why someone is told: given the issue, named in a comment, or involved in the issue. */
-export const NOTIFICATION_REASONS = ['assigned', 'mentioned', 'participating'] as const;
+export const NOTIFICATION_REASONS = ['assigned', 'mentioned', 'participating', 'newIssue'] as const;
 
 export type NotificationReason = (typeof NOTIFICATION_REASONS)[number];
 
 /** What a notification tells, as the bell shows it. */
-export const NOTIFICATION_EVENTS = ['assigned', 'commented', 'mentioned', 'statusChanged'] as const;
+export const NOTIFICATION_EVENTS = [
+  'created',
+  'assigned',
+  'commented',
+  'mentioned',
+  'statusChanged',
+] as const;
 
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
 

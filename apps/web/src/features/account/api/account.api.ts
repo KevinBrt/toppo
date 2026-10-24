@@ -1,4 +1,9 @@
-import type { ChangePasswordRequest, Locale, UpdateAccountRequest } from '@toppo/shared';
+import type {
+  ChangePasswordRequest,
+  Locale,
+  NotificationEvent,
+  UpdateAccountRequest,
+} from '@toppo/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
 
@@ -14,6 +19,15 @@ export const Account = {
   /** Remembers the language the interface speaks, which emails then speak too. */
   async setLocale(locale: Locale): Promise<void> {
     await apiRequest('/api/v1/me/locale', { method: 'PUT', body: { locale }, schema: noContent });
+  },
+
+  /** Chooses the kinds of one's notifications emailed too; all keep arriving in Toppo. */
+  async setEmailNotifications(emailed: readonly NotificationEvent[]): Promise<void> {
+    await apiRequest('/api/v1/me/email-notifications', {
+      method: 'PUT',
+      body: { emailed },
+      schema: noContent,
+    });
   },
 
   /** Signs out every other device; this one carries on in a new session. */

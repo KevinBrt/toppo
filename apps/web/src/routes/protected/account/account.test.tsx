@@ -144,3 +144,62 @@ describe('the language of emails', () => {
     expect(fake.requests.some(({ path }) => path === '/api/v1/me/locale')).toBe(false);
   });
 });
+
+describe('notification emails', () => {
+  const kind = (name: string) => page.getByRole('switch', { name });
+
+  it('are chosen kind by kind, every kind on by default, each saved at once', async () => {
+    const fake = fakeServer({ user: ADA, mailSettings: null });
+    const { screen } = await renderApp({ path: '/account' });
+
+    for (const name of [
+      'New issues',
+      'Issues given to me',
+      'Comments on the issues I take part in',
+      'Mentions',
+      'Status changes on my issues',
+    ]) {
+      await expect.element(kind(name)).toBeChecked();
+    }
+    await expect
+      .element(
+        screen.getByText('Email is not set up on this instance yet: nothing is sent for now.'),
+      )
+      .toBeVisible();
+    await kind('Status changes on my issues').click();
+
+    await expect.element(kind('Status changes on my issues')).not.toBeChecked();
+    await expect.element(kind('Mentions')).toBeChecked();
+    expect(fake.state.user?.emailedEvents).toStrictEqual([
+      'created',
+      'assigned',
+      'commented',
+      'mentioned',
+    ]);
+    expect(fake.requests).toContainEqual({
+      method: 'PUT',
+      path: '/api/v1/me/email-notifications',
+      body: { emailed: ['created', 'assigned', 'commented', 'mentioned'] },
+    });
+  });
+
+  it('say nothing of email once it is set up', async () => {
+    fakeServer({
+      user: { ...ADA, emailedEvents: ['mentioned'] },
+      mailSettings: {
+        host: 'smtp.example.com',
+        port: 587,
+        security: 'starttls',
+        username: null,
+        passwordSet: false,
+        fromAddress: 'toppo@example.com',
+        fromName: 'Toppo',
+      },
+    });
+    const { screen } = await renderApp({ path: '/account' });
+
+    await expect.element(kind('Mentions')).toBeChecked();
+    await expect.element(kind('New issues')).not.toBeChecked();
+    await expect.element(screen.getByText(/^Email is not set up/)).not.toBeInTheDocument();
+  });
+});
