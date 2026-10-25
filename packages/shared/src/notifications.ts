@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { linkedIssueSchema } from './issues/issues.ts';
 import { userRefSchema } from './members/users.ts';
 
 /**
@@ -17,7 +18,8 @@ export type NotificationReason = (typeof NOTIFICATION_REASONS)[number];
 
 /**
  * What a notification tells, as the bell shows it: an issue created, given to the reader, given
- * to someone else (or no one), commented, naming the reader, moved to another status.
+ * to someone else (or no one), commented, naming the reader, moved to another status, marked as
+ * the duplicate of another (or no longer).
  */
 export const NOTIFICATION_EVENTS = [
   'created',
@@ -26,6 +28,7 @@ export const NOTIFICATION_EVENTS = [
   'commented',
   'mentioned',
   'statusChanged',
+  'duplicateChanged',
 ] as const;
 
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number];
@@ -40,6 +43,8 @@ export const notificationSchema = z.object({
   status: z.string().nullable(),
   /** For a change of assignee, whom the issue went to; `null` for no one, or another event. */
   assignee: userRefSchema.nullable(),
+  /** For a duplicate mark, the issue it repeats; `null` when the mark is taken off, or another event. */
+  original: linkedIssueSchema.nullable(),
   actor: userRefSchema,
   issue: z.object({ key: z.string(), title: z.string() }),
   /** UTC ISO 8601, or `null` while unread. */

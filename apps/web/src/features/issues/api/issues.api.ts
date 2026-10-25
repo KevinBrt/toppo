@@ -143,6 +143,20 @@ export const Issues = {
     });
   },
 
+  /** Marks the issue as a duplicate of another the caller sees, closing it in `statusId`. */
+  async markDuplicate(key: string, originalKey: string, statusId: string): Promise<void> {
+    await apiRequest(`${issuePath(key)}/duplicate-of`, {
+      method: 'PUT',
+      body: { originalKey, statusId },
+      schema: noContent,
+    });
+  },
+
+  /** Takes the duplicate mark off the issue, which keeps its status. */
+  async unmarkDuplicate(key: string): Promise<void> {
+    await apiRequest(`${issuePath(key)}/duplicate-of`, { method: 'DELETE', schema: noContent });
+  },
+
   /** Gives the issue exactly these labels. */
   async setLabels(key: string, labelIds: string[]): Promise<void> {
     await apiRequest(`${issuePath(key)}/labels`, {

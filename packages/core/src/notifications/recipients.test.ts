@@ -139,6 +139,21 @@ describe('recipientsOf', () => {
     ).toBe(0);
   });
 
+  it('tells followers of a duplicate mark, those who stopped following left out', () => {
+    expect(
+      recipientsOf(
+        { type: 'issue.duplicateChanged', actorId: 'alan' },
+        { ...people, followerIds: ['mary'], unfollowerIds: ['grace'] },
+      ),
+    ).toStrictEqual(
+      new Map([
+        ['rita', 'participating'],
+        ['ada', 'participating'],
+        ['mary', 'following'],
+      ]),
+    );
+  });
+
   it('tells nobody of anything else', () => {
     expect(recipientsOf({ type: 'other', actorId: 'ada' }, people).size).toBe(0);
   });

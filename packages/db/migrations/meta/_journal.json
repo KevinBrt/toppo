@@ -295,6 +295,13 @@
       "when": 1792882811236,
       "tag": "0041_issue_followers",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792951266603,
+      "tag": "0042_issue_duplicates",
+      "breakpoints": true
     }
   ]
 }

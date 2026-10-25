@@ -1,9 +1,10 @@
-import type { IssueActivity, Locale, PaletteColor } from '@toppo/shared';
+import type { IssueActivity, LinkedIssue, Locale, PaletteColor } from '@toppo/shared';
 import { cn, StatusBadge } from '@toppo/ui';
 import {
   ArrowRightIcon,
   ChevronDownIcon,
   CircleDotIcon,
+  CopyIcon,
   FilePlusIcon,
   FlagIcon,
   ListIcon,
@@ -54,6 +55,8 @@ function iconOf(activity: IssueActivity): LucideIcon {
       return TagsIcon;
     case 'issue.propertyChanged':
       return ListIcon;
+    case 'issue.duplicateChanged':
+      return CopyIcon;
   }
 }
 
@@ -229,6 +232,15 @@ function describe(
         ? t('issues.activity.propertyCleared', { property })
         : t('issues.activity.propertyChanged', { property, to });
     }
+    case 'issue.duplicateChanged': {
+      const { to } = activity.payload;
+      if (!to) {
+        return t('issues.activity.unmarkedDuplicate');
+      }
+      return to.key
+        ? t('issues.activity.markedDuplicate', { key: to.key })
+        : t('issues.activity.markedDuplicateHidden');
+    }
   }
 }
 
@@ -343,6 +355,18 @@ function field(
         <FromTo
           from={changedValueText(change, 'from', t, locale) ?? noValue}
           to={strong(changedValueText(change, 'to', t, locale) ?? noValue)}
+          t={t}
+        />,
+      );
+    }
+    case 'issue.duplicateChanged': {
+      const issue = (linked: LinkedIssue | null) =>
+        linked ? (linked.key ?? t('issues.activity.hiddenIssue')) : t('issues.activity.noValue');
+      return labelled(
+        t('issues.activity.duplicateOf'),
+        <FromTo
+          from={issue(activity.payload.from)}
+          to={strong(issue(activity.payload.to))}
           t={t}
         />,
       );

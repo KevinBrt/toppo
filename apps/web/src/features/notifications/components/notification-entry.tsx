@@ -23,6 +23,17 @@ function sentenceOf(notification: Notification, t: Translate): string {
             assignee: notification.assignee.name ?? t('issues.deletedUser'),
           })
         : t('notifications.unassigned', { name, key });
+    case 'duplicateChanged':
+      if (!notification.original) {
+        return t('notifications.unmarkedDuplicate', { name, key });
+      }
+      return notification.original.key
+        ? t('notifications.events.duplicateChanged', {
+            name,
+            key,
+            original: notification.original.key,
+          })
+        : t('notifications.duplicateHidden', { name, key });
     default:
       return t(`notifications.events.${notification.event}`, { name, key });
   }

@@ -1,7 +1,7 @@
 import { followersOf } from '@toppo/core';
 import { type Db, schema } from '@toppo/db';
 import { and, eq, isNull } from 'drizzle-orm';
-import { reachableBy, whoSeesIssue } from '../../../platform/auth/project-access.ts';
+import { reachableBy } from '../../../platform/auth/project-access.ts';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 
 const { comments, issueFollowers, projects, users } = schema;
@@ -31,27 +31,28 @@ export async function reachesProject(
 }
 
 /**
- * Those who follow an issue and would be told of it now (`followersOf`): its reporter, assignee
- * and commenters unless they stopped, and those who chose to, if they still see it.
+ * Whether `userId` follows an issue (`followersOf`): its reporter, assignee or a commenter unless
+ * they stopped, or by choice.
  */
-export async function followersOfIssue(
-  db: Pick<Db, 'select' | 'selectDistinct'>,
+export async function followsIssue(
+  db: Pick<Db, 'select'>,
   issue: { id: string; reporterId: string; assigneeId: string | null },
-): Promise<string[]> {
-  const commenters = await db
-    .selectDistinct({ authorId: comments.authorId })
+  userId: string,
+): Promise<boolean> {
+  const [commented] = await db
+    .select({ id: comments.id })
     .from(comments)
-    .where(eq(comments.issueId, issue.id));
-  const choices = await db
-    .select({ userId: issueFollowers.userId, following: issueFollowers.following })
+    .where(and(eq(comments.issueId, issue.id), eq(comments.authorId, userId)))
+    .limit(1);
+  const [choice] = await db
+    .select({ following: issueFollowers.following })
     .from(issueFollowers)
-    .where(eq(issueFollowers.issueId, issue.id));
-  const followers = followersOf({
+    .where(and(eq(issueFollowers.issueId, issue.id), eq(issueFollowers.userId, userId)));
+  return followersOf({
     reporterId: issue.reporterId,
     assigneeId: issue.assigneeId,
-    commenterIds: commenters.map(({ authorId }) => authorId),
-    followerIds: choices.filter(({ following }) => following).map(({ userId }) => userId),
-    unfollowerIds: choices.filter(({ following }) => !following).map(({ userId }) => userId),
-  });
-  return whoSeesIssue(db, issue.id, followers);
+    commenterIds: commented ? [userId] : [],
+    followerIds: choice?.following === true ? [userId] : [],
+    unfollowerIds: choice?.following === false ? [userId] : [],
+  }).includes(userId);
 }

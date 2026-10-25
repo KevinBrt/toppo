@@ -44,6 +44,7 @@ type Person = keyof typeof cookies;
 const ORIGIN = 'http://localhost:3000';
 const PASSWORD = 'correct horse battery staple';
 const IN_PROGRESS = DEFAULT_STATUSES.find(({ kind }) => kind === 'inProgress')?.id ?? '';
+const RESOLVED = DEFAULT_STATUSES.find(({ kind }) => kind === 'resolved')?.id ?? '';
 
 function call(method: 'GET' | 'POST' | 'PUT' | 'PATCH', url: string, who: Person, body?: object) {
   return app.inject({
@@ -422,6 +423,34 @@ describe('following an issue', () => {
   });
 });
 
+describe('duplicates', () => {
+  it('tell those who follow an issue that it is a duplicate, not that it moved', async () => {
+    const original = await report('ada', 'Export fails');
+    const key = await report('rita');
+    await assign(key, 'alan');
+    await deliver();
+
+    const marked = await call('PUT', `/api/v1/issues/${key}/duplicate-of`, 'grace', {
+      originalKey: original,
+      statusId: RESOLVED,
+    });
+    expect(marked.statusCode).toBe(204);
+    await deliver();
+
+    expect((await toldAbout('alan', key)).map(({ event }) => event)).toStrictEqual([
+      'assigned',
+      'duplicateChanged',
+    ]);
+    const originalOf = async (who: Person) =>
+      (await notificationsOf(who)).rows.find(
+        ({ event, issue }) => event === 'duplicateChanged' && issue.key === key,
+      )?.original;
+    expect(await originalOf('alan')).toStrictEqual({ key: original, title: 'Export fails' });
+    // Rita sees only the issues she reported: the original is named by nothing.
+    expect(await originalOf('rita')).toStrictEqual({ key: null, title: null });
+  });
+});
+
 describe('new issues', () => {
   beforeAll(async () => {
     await context.database.db
@@ -620,6 +649,30 @@ describe('notification emails', () => {
         .slice(before)
         .map(({ content }) => content),
     ).toStrictEqual([expect.stringContaining(`Ada Lovelace assigned ${key} to Alan Turing`)]);
+  });
+
+  it('name the issue a duplicate repeats', async () => {
+    const original = await report('ada', 'Export fails');
+    const key = await report('grace');
+    await deliver();
+    await deliverLater();
+    const before = mailsTo('grace').length;
+    const marked = await call('PUT', `/api/v1/issues/${key}/duplicate-of`, 'ada', {
+      originalKey: original,
+      statusId: RESOLVED,
+    });
+    expect(marked.statusCode).toBe(204);
+    await deliver();
+
+    await deliverLater();
+
+    expect(
+      mailsTo('grace')
+        .slice(before)
+        .map(({ content }) => content),
+    ).toStrictEqual([
+      expect.stringContaining(`Ada Lovelace marked ${key} as a duplicate of ${original}`),
+    ]);
   });
 
   it('quote the description of a new issue', async () => {

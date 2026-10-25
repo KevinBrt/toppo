@@ -10,6 +10,7 @@ import { storedValueOf } from '../../models/property-value.model.ts';
 import { IssuesQueries } from '../../queries/issues.queries.ts';
 import { applyEdit } from '../../utils/issue-edit.util.ts';
 import { IssueHistory } from '../history/issue-history.tsx';
+import { DuplicateList, DuplicateNotice } from './duplicates.tsx';
 import { IssueHeader } from './issue-header.tsx';
 import { IssueProperties } from './issue-properties.tsx';
 import { IssueRequest } from './issue-request.tsx';
@@ -110,13 +111,7 @@ export function IssueView({
       await queryClient.cancelQueries({ queryKey: detail });
       const previous = queryClient.getQueryData(detail);
       queryClient.setQueryData(detail, (current) =>
-        current && current.following !== following
-          ? {
-              ...current,
-              following,
-              followerCount: current.followerCount + (following ? 1 : -1),
-            }
-          : current,
+        current ? { ...current, following } : current,
       );
       return previous;
     },
@@ -127,6 +122,13 @@ export function IssueView({
       }
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: detail }),
+  });
+
+  const unmark = useMutation({
+    mutationFn: () => Issues.unmarkDuplicate(issue.key),
+    onMutate: () => setFailure(null),
+    onError: setFailure,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: IssuesQueries.all }),
   });
 
   return (
@@ -141,6 +143,13 @@ export function IssueView({
         onFollow={(following) => follow.mutate(following)}
         onDeleted={onDeleted}
       />
+      {issue.duplicateOf ? (
+        <DuplicateNotice
+          duplicateOf={issue.duplicateOf}
+          canUnmark={issue.actions.includes('changeStatus')}
+          onUnmark={() => unmark.mutate()}
+        />
+      ) : null}
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="flex min-w-0 flex-col gap-8">
           <IssueRequest issue={issue} onEdit={(change) => edit.mutate(change)} />
@@ -151,11 +160,15 @@ export function IssueView({
             statuses={fields.data?.statuses ?? []}
           />
         </div>
-        <IssueProperties
-          issue={issue}
-          fields={fields.data}
-          onEdit={(change) => edit.mutate(change)}
-        />
+        {/* Held in view while the history scrolls, the duplicates with the properties. */}
+        <div className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-24">
+          <IssueProperties
+            issue={issue}
+            fields={fields.data}
+            onEdit={(change) => edit.mutate(change)}
+          />
+          {issue.duplicateCount > 0 ? <DuplicateList issue={issue} /> : null}
+        </div>
       </div>
     </div>
   );

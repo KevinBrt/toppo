@@ -1,13 +1,14 @@
 import { type Db, schema } from '@toppo/db';
 import {
   ISSUE_ACTIVITY_PAYLOADS,
+  type LinkedIssue,
   type NotificationEvent,
   type NotificationReason,
   type UserRef,
 } from '@toppo/shared';
 import { and, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
-import { grantedIn } from '../../../platform/auth/project-access.ts';
+import { grantedIn, issuesSeenBy } from '../../../platform/auth/project-access.ts';
 
 const { issues, projectMembers, roles, users } = schema;
 const instanceRoles = alias(roles, 'instance_roles');
@@ -71,39 +72,65 @@ export async function peopleNamed(
   );
 }
 
-/**
- * What a notification tells, from the activity it was made of and why it was given; for a change
- * of assignee told to another than the new assignee, the id of whom the issue went to, named by
- * the caller.
- */
-export function eventOf(
-  type: string,
-  payload: unknown,
-  reason: NotificationReason,
-): { event: NotificationEvent; status: string | null; assigneeId: string | null } {
+/** What a notification tells, as `eventOf` reads it from its activity. */
+export interface Told {
+  event: NotificationEvent;
+  /** For a status change, the status the issue went to. */
+  status: string | null;
+  /** For a change of assignee told to another than the new assignee, whom it went to, by id. */
+  assigneeId: string | null;
+  /** For a duplicate mark, the issue it repeats, by id: named by the caller as the reader sees it. */
+  originalId: string | null;
+}
+
+const NOTHING_MORE = { status: null, assigneeId: null, originalId: null } as const;
+
+/** What a notification tells, from the activity it was made of and why it was given. */
+export function eventOf(type: string, payload: unknown, reason: NotificationReason): Told {
   if (type === 'issue.statusChanged') {
     return {
+      ...NOTHING_MORE,
       event: 'statusChanged',
       status: ISSUE_ACTIVITY_PAYLOADS['issue.statusChanged'].parse(payload).to.name,
-      assigneeId: null,
+    };
+  }
+  if (type === 'issue.duplicateChanged') {
+    return {
+      ...NOTHING_MORE,
+      event: 'duplicateChanged',
+      originalId: ISSUE_ACTIVITY_PAYLOADS['issue.duplicateChanged'].parse(payload).to,
     };
   }
   if (reason === 'assigned') {
-    return { event: 'assigned', status: null, assigneeId: null };
+    return { ...NOTHING_MORE, event: 'assigned' };
   }
   if (type === 'issue.assigneeChanged') {
     return {
+      ...NOTHING_MORE,
       event: 'assigneeChanged',
-      status: null,
       assigneeId: ISSUE_ACTIVITY_PAYLOADS['issue.assigneeChanged'].parse(payload).to,
     };
   }
   if (type === 'issue.created') {
-    return { event: 'created', status: null, assigneeId: null };
+    return { ...NOTHING_MORE, event: 'created' };
   }
-  return {
-    event: reason === 'mentioned' ? 'mentioned' : 'commented',
-    status: null,
-    assigneeId: null,
-  };
+  return { ...NOTHING_MORE, event: reason === 'mentioned' ? 'mentioned' : 'commented' };
+}
+
+/**
+ * The issues notifications name as originals, by id, as `userId` sees them: key and title, or
+ * `null`s for one gone or out of their sight.
+ */
+export async function originalsFor(
+  db: Pick<Db, 'select'>,
+  userId: string,
+  ids: readonly string[],
+): Promise<Map<string, LinkedIssue>> {
+  const seen = await issuesSeenBy(db, userId, ids);
+  return new Map(
+    ids.map((id) => {
+      const issue = seen.find((candidate) => candidate.id === id);
+      return [id, issue ? { key: issue.key, title: issue.title } : { key: null, title: null }];
+    }),
+  );
 }

@@ -392,15 +392,15 @@ describe('an issue’s page', () => {
       .toBeVisible();
   });
 
-  it('is followed or no longer, counting who follows it, and says why when refused', async () => {
+  it('is followed or no longer, and says why when refused', async () => {
     const fake = server(GRACE);
     const { screen } = await renderApp({ path: '/issues/WEB-1' });
-    const follow = screen.getByRole('button', { name: 'Follow' });
 
-    await expect.element(follow).toHaveAccessibleDescription('1 person follows this issue');
-    await follow.click();
+    await screen.getByRole('button', { name: 'Follow' }).click();
     const unfollow = screen.getByRole('button', { name: 'Unfollow' });
-    await expect.element(unfollow).toHaveAccessibleDescription('2 people follow this issue');
+    await expect.element(unfollow).toBeVisible();
+    // Nothing but its words: no count of who follows.
+    expect(unfollow.element().textContent).toBe('Unfollow');
     expect(fake.requests).toContainEqual({
       method: 'PUT',
       path: '/api/v1/issues/WEB-1/following',

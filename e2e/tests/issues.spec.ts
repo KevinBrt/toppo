@@ -46,13 +46,8 @@ test('an issue is reported, moved through the workflow and closed', async ({ pag
 
   // Its reporter follows it, until they stop.
   await page.getByRole('button', { name: 'Unfollow' }).click();
-  await expect(page.getByRole('button', { name: 'Follow' })).toHaveAccessibleDescription(
-    '0 people follow this issue',
-  );
   await page.getByRole('button', { name: 'Follow' }).click();
-  await expect(page.getByRole('button', { name: 'Unfollow' })).toHaveAccessibleDescription(
-    '1 person follows this issue',
-  );
+  await expect(page.getByRole('button', { name: 'Unfollow' })).toBeVisible();
 
   // Only the statuses the workflow allows next are offered.
   const status = (name: string) =>
@@ -209,5 +204,44 @@ test('several issues are moved, then deleted, at once from the list', async ({ p
     .click();
   await expect(page.getByText('3 issues deleted.')).toBeVisible();
   await expect(page.getByText('No open issues')).toBeVisible();
+  await expectAccessible(page);
+});
+
+test('an issue is marked as a duplicate of another, found by its words', async ({
+  page,
+  baseURL,
+}) => {
+  const key = uniqueKey();
+  const headers = { origin: baseURL ?? '' };
+  expect(
+    (
+      await page.request.post('/api/v1/projects', { headers, data: { key, name: `Twin ${key}` } })
+    ).status(),
+  ).toBe(201);
+  for (const title of ['Invoices fail to download', 'Cannot get my invoice']) {
+    expect(
+      (
+        await page.request.post(`/api/v1/projects/${key}/issues`, { headers, data: { title } })
+      ).status(),
+    ).toBe(201);
+  }
+
+  await page.goto(`/issues/${key}-2`);
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await page.getByRole('menuitem', { name: 'Mark as a duplicate…' }).click();
+  const dialog = page.getByRole('dialog', { name: `Mark ${key}-2 as a duplicate` });
+  await dialog.getByRole('searchbox', { name: 'Original issue' }).fill('fail to download');
+  await dialog.getByRole('radio', { name: new RegExp(`${key}-1`) }).check();
+  await expectAccessible(page);
+  await dialog.getByRole('button', { name: 'Mark as a duplicate' }).click();
+
+  await expect(dialog).toHaveCount(0);
+  const notice = page.getByRole('region', { name: 'This issue is a duplicate' });
+  await expect(notice).toBeVisible();
+  await expectAccessible(page);
+  await notice.getByRole('link', { name: new RegExp(`${key}-1`) }).click();
+  await expect(
+    page.getByRole('region', { name: '1 duplicate' }).getByRole('link', { name: `${key}-2` }),
+  ).toBeVisible();
   await expectAccessible(page);
 });

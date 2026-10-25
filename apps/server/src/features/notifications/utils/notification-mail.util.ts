@@ -1,4 +1,4 @@
-import type { Locale, NotificationEvent } from '@toppo/shared';
+import type { LinkedIssue, Locale, NotificationEvent } from '@toppo/shared';
 import { composeMail } from '../../../platform/mail/mail-layout.ts';
 import type { MailMessage } from '../../../platform/mail/mailer.ts';
 
@@ -12,6 +12,8 @@ interface NotificationMail {
   status: string | null;
   /** Whom an issue was given to, told to another; `null` for no one. Its name is `null` once deleted. */
   assignee: { name: string | null } | null;
+  /** The issue it was marked a duplicate of; `null` when the mark was taken off. */
+  original: LinkedIssue | null;
   /** The words of the comment it is about, or of a new issue's description, if any. */
   quote: string | null;
   issueLink: URL;
@@ -34,6 +36,10 @@ const WORDS = {
       commented: ({ actor, key }: Sentence) => `${actor} commented on ${key}`,
       mentioned: ({ actor, key }: Sentence) => `${actor} mentioned you in ${key}`,
       statusChanged: ({ actor, key, status }: Sentence) => `${actor} moved ${key} to “${status}”`,
+      duplicateChanged: ({ actor, key, original }: Sentence) =>
+        original
+          ? `${actor} marked ${key} as a duplicate of ${original.key ?? 'an issue you cannot see'}`
+          : `${actor} took the duplicate mark off ${key}`,
     },
     action: (key: string) => `Open ${key}`,
     footer: (accountLink: URL) =>
@@ -52,6 +58,13 @@ const WORDS = {
       mentioned: ({ actor, key }: Sentence) => `${actor} vous a mentionné dans ${key}`,
       statusChanged: ({ actor, key, status }: Sentence) =>
         `${actor} a passé ${key} à « ${status} »`,
+      duplicateChanged: ({ actor, key, original }: Sentence) => {
+        if (!original) {
+          return `${actor} a retiré la marque de doublon de ${key}`;
+        }
+        const of = original.key ? `de ${original.key}` : 'd’un ticket que vous ne voyez pas';
+        return `${actor} a marqué ${key} comme doublon ${of}`;
+      },
     },
     action: (key: string) => `Ouvrir ${key}`,
     footer: (accountLink: URL) =>
@@ -65,6 +78,8 @@ interface Sentence {
   status: string;
   /** Whom the issue went to, by name; `null` for no one. */
   assignee: string | null;
+  /** The issue it duplicates; `null` when the mark was taken off. */
+  original: LinkedIssue | null;
 }
 
 /**
@@ -82,6 +97,7 @@ export function notificationMail(
     key: mail.key,
     status: mail.status ?? '',
     assignee: mail.assignee ? (mail.assignee.name ?? words.deletedUser) : null,
+    original: mail.original,
   });
   return composeMail({
     subject: `[${mail.key}] ${mail.title}`,

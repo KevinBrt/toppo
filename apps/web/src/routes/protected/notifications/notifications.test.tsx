@@ -120,6 +120,28 @@ describe('the bell', () => {
     }
   });
 
+  it('tells of an issue marked as a duplicate, or no longer', async () => {
+    server([
+      fakeNotification(1, {
+        event: 'duplicateChanged',
+        original: { key: 'WEB-2', title: 'Crash on phones' },
+      }),
+      fakeNotification(2, { event: 'duplicateChanged', original: { key: null, title: null } }),
+      fakeNotification(3, { event: 'duplicateChanged', original: null }),
+    ]);
+    const { screen } = await renderApp({ path: '/issues?project=WEB' });
+
+    await bell().click();
+
+    for (const sentence of [
+      /Grace Hopper marked WEB-1 as a duplicate of WEB-2/,
+      /Grace Hopper marked WEB-1 as a duplicate of an issue you cannot see/,
+      /Grace Hopper took the duplicate mark off WEB-1/,
+    ]) {
+      await expect.element(screen.getByRole('menuitem', { name: sentence })).toBeVisible();
+    }
+  });
+
   it('shows 9+ beyond nine unread', async () => {
     server(Array.from({ length: 12 }, (_, index) => fakeNotification(index + 1)));
     await renderApp({ path: '/issues?project=WEB' });

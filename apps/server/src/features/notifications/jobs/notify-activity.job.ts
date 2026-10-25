@@ -15,6 +15,7 @@ const FOLLOWED: readonly NotifiedChange['type'][] = [
   'issue.commented',
   'issue.statusChanged',
   'issue.assigneeChanged',
+  'issue.duplicateChanged',
 ];
 
 /**
@@ -52,7 +53,8 @@ export const notifyActivityJob = defineJob({
             subscriberIds: await newIssueSubscribers(tx, activity.projectId),
           }
         : changeOf(activity.type, activity.actorId, activity.payload);
-    // Those who follow it are told of comments, status changes and assignments; those who
+    // Those who follow it are told of comments, status changes, assignments and duplicate
+    // marks; those who
     // commented later, by the time this runs, were not there yet.
     const followed = FOLLOWED.includes(change.type);
     const commenters = followed
@@ -113,6 +115,7 @@ function changeOf(type: string, actorId: string, payload: unknown): NotifiedChan
         mentioned: ISSUE_ACTIVITY_PAYLOADS[type].parse(payload).mentioned,
       };
     case 'issue.statusChanged':
+    case 'issue.duplicateChanged':
       return { type, actorId };
     default:
       return { type: 'other', actorId };

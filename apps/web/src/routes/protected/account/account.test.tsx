@@ -159,6 +159,7 @@ describe('notification emails', () => {
       'Comments on the issues I follow',
       'Mentions',
       'Status changes of the issues I follow',
+      'Duplicates among the issues I follow',
     ]) {
       await expect.element(kind(name)).toBeChecked();
     }
@@ -177,11 +178,21 @@ describe('notification emails', () => {
       'assigneeChanged',
       'commented',
       'mentioned',
+      'duplicateChanged',
     ]);
     expect(fake.requests).toContainEqual({
       method: 'PUT',
       path: '/api/v1/me/email-notifications',
-      body: { emailed: ['created', 'assigned', 'assigneeChanged', 'commented', 'mentioned'] },
+      body: {
+        emailed: [
+          'created',
+          'assigned',
+          'assigneeChanged',
+          'commented',
+          'mentioned',
+          'duplicateChanged',
+        ],
+      },
     });
   });
 

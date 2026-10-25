@@ -22,7 +22,9 @@ const ISSUE: IssueResponse = {
   closedAt: null,
   actions: [],
   following: true,
-  followerCount: 1,
+  duplicateOf: null,
+  duplicates: [],
+  duplicateCount: 0,
 };
 
 describe('applyEdit', () => {

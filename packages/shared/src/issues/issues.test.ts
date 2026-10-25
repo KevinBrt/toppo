@@ -9,6 +9,7 @@ import {
   createIssueRequestSchema,
   issueKeySchema,
   issuesQuerySchema,
+  markDuplicateRequestSchema,
   projectIssuesQuerySchema,
   updateIssueRequestSchema,
 } from './issues.ts';
@@ -98,6 +99,18 @@ describe('issue requests', () => {
   it('page from the first page', () => {
     expect(issuesQuerySchema.parse({})).toStrictEqual({ page: 1 });
     expect(issueActivitiesQuerySchema.parse({ page: '2' })).toStrictEqual({ page: 2 });
+  });
+});
+
+describe('duplicates', () => {
+  it('name their original by key, and the status they close in', () => {
+    expect(
+      markDuplicateRequestSchema.safeParse({ originalKey: 'API-7', statusId: ID }).success,
+    ).toBe(true);
+    expect(
+      markDuplicateRequestSchema.safeParse({ originalKey: 'api 7', statusId: ID }).success,
+    ).toBe(false);
+    expect(markDuplicateRequestSchema.safeParse({ originalKey: 'API-7' }).success).toBe(false);
   });
 });
 

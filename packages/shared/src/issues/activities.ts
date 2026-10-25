@@ -4,6 +4,7 @@ import type { PropertyType } from '../properties/properties.ts';
 import { issueAttachmentSchema } from './attachments.ts';
 import { issueCommentSchema } from './comments.ts';
 import { PRIORITY_LEVELS } from './fields.ts';
+import { linkedIssueSchema } from './issues.ts';
 
 /** A status or a category as it was named when the change happened. */
 const namedSchema = z.object({ id: z.uuid(), name: z.string() });
@@ -59,6 +60,8 @@ export const ISSUE_ACTIVITY_PAYLOADS = {
   // Labels as they were named, so that a label deleted since still reads.
   'issue.labelsChanged': z.object({ added: z.array(namedSchema), removed: z.array(namedSchema) }),
   'issue.propertyChanged': propertyChangeSchema(z.uuid()),
+  // The issue it was marked as a duplicate of, and no longer, by id: a project's key may change.
+  'issue.duplicateChanged': z.object({ from: z.uuid().nullable(), to: z.uuid().nullable() }),
   // A comment is kept by id only: deleted, its words leave no trace. The people it names
   // (`@`), newly when it is edited, by id.
   'issue.commented': z.object({ commentId: z.uuid(), mentioned: z.array(z.uuid()).default([]) }),
@@ -115,6 +118,11 @@ export const issueActivitySchema = z.discriminatedUnion('type', [
   ),
   entry('issue.labelsChanged', ISSUE_ACTIVITY_PAYLOADS['issue.labelsChanged']),
   entry('issue.propertyChanged', propertyChangeSchema(userRefSchema)),
+  // Issues are named when read, as far as the reader sees them.
+  entry(
+    'issue.duplicateChanged',
+    z.object({ from: linkedIssueSchema.nullable(), to: linkedIssueSchema.nullable() }),
+  ),
   // The comment as it is now; a deleted one leaves the history.
   entry('issue.commented', z.object({ comment: issueCommentSchema })),
   // A file of the request, while it is there.

@@ -72,6 +72,7 @@ import {
   issueLabelsRequestSchema,
   issueSearchQuerySchema,
   type LabelRef,
+  type LinkedIssue,
   type Locale,
   labelsRequestSchema,
   localeSchema,
@@ -289,6 +290,7 @@ export function fakeNotification(
     event: 'assigned',
     status: null,
     assignee: null,
+    original: null,
     actor: { id: GRACE.id, name: GRACE.name },
     issue: { key: 'WEB-1', title: 'Empty CSV export' },
     readAt: null,
@@ -377,6 +379,8 @@ export interface FakeIssue {
   properties: Record<string, PropertyValue>;
   /** Who chose to follow it (`true`) or stopped (`false`), by user id: none unless said otherwise. */
   followers: Record<string, boolean>;
+  /** The key of the issue it duplicates: none unless said otherwise. */
+  duplicateOfKey: string | null;
   /** UTC ISO 8601. */
   createdAt: string;
   closedAt: string | null;
@@ -411,6 +415,7 @@ export function fakeIssue(
     labelIds: [],
     properties: {},
     followers: {},
+    duplicateOfKey: null,
     createdAt: '2026-10-22T09:14:00.000Z',
     closedAt: null,
     ...overrides,
@@ -2301,7 +2306,7 @@ function createIssue(
 }
 
 const ISSUE_PATH =
-  /^\/api\/v1\/issues\/([^/]+)(?:\/(status|assignee|labels|properties|following|activities|comments|mentionable)(?:\/([^/]+))?)?$/;
+  /^\/api\/v1\/issues\/([^/]+)(?:\/(status|assignee|labels|properties|following|duplicate-of|activities|comments|mentionable)(?:\/([^/]+))?)?$/;
 
 /** An issue the signed-in user sees, with its project and what they may do there. */
 interface SeenIssue {
@@ -2325,11 +2330,85 @@ function seenIssue(state: FakeServerState, key: string): SeenIssue | Response {
   return { issue, project, permissions, actions };
 }
 
-/** Whether the signed-in user follows the issue, and how many people do (`followersOf`). */
-function followingOf(
+/** The issue with `key` as the signed-in user may know it: its key and title, or `null`s. */
+function linkedIssue(state: FakeServerState, key: string): LinkedIssue {
+  const seen = seenIssue(state, key);
+  return seen instanceof Response ? { key: null, title: null } : { key, title: seen.issue.title };
+}
+
+/** The issue it duplicates and its own duplicates, as the signed-in user may know them. */
+function duplicatesAround(
   state: FakeServerState,
   issue: FakeIssue,
-): Pick<IssueResponse, 'following' | 'followerCount'> {
+): Pick<IssueResponse, 'duplicateOf' | 'duplicates' | 'duplicateCount'> {
+  const duplicates = state.issues.flatMap((candidate) => {
+    const seen =
+      candidate.duplicateOfKey === keyOf(issue) ? seenIssue(state, keyOf(candidate)) : null;
+    return seen && !(seen instanceof Response) ? [seen.issue] : [];
+  });
+  const original = issue.duplicateOfKey ? seenIssue(state, issue.duplicateOfKey) : null;
+  // Marked, the original shows; out of the reader's sight, as nothing they could know.
+  const hidden = issue.duplicateOfKey ? { key: null, title: null, status: null } : null;
+  return {
+    duplicateOf:
+      original && !(original instanceof Response)
+        ? {
+            key: keyOf(original.issue),
+            title: original.issue.title,
+            status: summaryOf(state, original.issue).status,
+          }
+        : hidden,
+    duplicates: duplicates.map((duplicate) => ({
+      key: keyOf(duplicate),
+      title: duplicate.title,
+      status: summaryOf(state, duplicate).status,
+    })),
+    duplicateCount: duplicates.length,
+  };
+}
+
+/**
+ * `PUT /api/v1/issues/:key/duplicate-of`: the original seen and not looping back, the issue closed
+ * in a closing status its workflow allows, the mark told.
+ */
+function markDuplicate(
+  state: FakeServerState,
+  issue: FakeIssue,
+  fields: Record<string, unknown>,
+): Response {
+  const originalKey = String(fields['originalKey']);
+  const statusId = String(fields['statusId']);
+  if (seenIssue(state, originalKey) instanceof Response) {
+    return apiError(400, 'ORIGINAL_NOT_FOUND');
+  }
+  let chain: string | null = originalKey;
+  while (chain) {
+    if (chain === keyOf(issue)) {
+      return apiError(409, 'DUPLICATE_CYCLE');
+    }
+    const next: string | null = chain;
+    chain = state.issues.find((candidate) => keyOf(candidate) === next)?.duplicateOfKey ?? null;
+  }
+  const closing = issueFields(state, issue.projectKey).statuses.find(({ id }) => id === statusId);
+  if (!closing?.closes) {
+    return apiError(409, 'STATUS_NOT_ALLOWED');
+  }
+  if (issue.statusId !== statusId && moveIssue(state, issue, statusId).status === 409) {
+    return apiError(409, 'STATUS_NOT_ALLOWED');
+  }
+  record(state, keyOf(issue), {
+    type: 'issue.duplicateChanged',
+    payload: {
+      from: issue.duplicateOfKey ? linkedIssue(state, issue.duplicateOfKey) : null,
+      to: linkedIssue(state, originalKey),
+    },
+  });
+  issue.duplicateOfKey = originalKey;
+  return NO_CONTENT();
+}
+
+/** Whether the signed-in user follows the issue (`followersOf`). */
+function followingOf(state: FakeServerState, issue: FakeIssue): Pick<IssueResponse, 'following'> {
   const choices = Object.entries(issue.followers);
   const followers = followersOf({
     reporterId: issue.reporterId,
@@ -2342,7 +2421,6 @@ function followingOf(
   });
   return {
     following: state.user !== null && followers.includes(state.user.id),
-    followerCount: followers.length,
   };
 }
 
@@ -2381,6 +2459,7 @@ function issueRequest(
         closedAt: issue.closedAt,
         actions,
         ...followingOf(state, issue),
+        ...duplicatesAround(state, issue),
       } satisfies IssueResponse);
     case 'PATCH ':
       return updateIssue(state, issue, actions, fields);
@@ -2392,6 +2471,19 @@ function issueRequest(
       return unless('issue.update', () =>
         setProperty(state, issue, commentId ?? '', fields, can(permissions, 'issue.assign')),
       );
+    case 'PUT duplicate-of':
+      return unless('issue.update', () => markDuplicate(state, issue, fields));
+    case 'DELETE duplicate-of':
+      return unless('issue.update', () => {
+        if (issue.duplicateOfKey) {
+          record(state, keyOf(issue), {
+            type: 'issue.duplicateChanged',
+            payload: { from: linkedIssue(state, issue.duplicateOfKey), to: null },
+          });
+          issue.duplicateOfKey = null;
+        }
+        return NO_CONTENT();
+      });
     case 'PUT following': {
       const request = issueFollowingRequestSchema.safeParse(body);
       if (!(request.success && state.user)) {

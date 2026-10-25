@@ -13,6 +13,7 @@ const EVENT_LABELS = {
   commented: 'account.emailEvents.commented',
   mentioned: 'account.emailEvents.mentioned',
   statusChanged: 'account.emailEvents.statusChanged',
+  duplicateChanged: 'account.emailEvents.duplicateChanged',
 } as const satisfies Record<NotificationEvent, string>;
 
 /**

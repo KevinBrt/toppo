@@ -11,10 +11,12 @@ import {
   type IssueAttachment,
   issueActivitiesQuerySchema,
   issueKeyParamsSchema,
+  type LinkedIssue,
   type UserRef,
 } from '@toppo/shared';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
+import { linkedIssues } from '../utils/duplicates.util.ts';
 import { userRefOf } from '../utils/issue-rows.util.ts';
 
 const { activities, attachments, comments, users } = schema;
@@ -30,6 +32,7 @@ const SHOWN: Readonly<Record<keyof typeof ISSUE_ACTIVITY_PAYLOADS, boolean>> = {
   'issue.assigneeChanged': true,
   'issue.labelsChanged': true,
   'issue.propertyChanged': true,
+  'issue.duplicateChanged': true,
   'issue.commented': true,
   'issue.commentEdited': false,
   'issue.commentDeleted': false,
@@ -119,6 +122,7 @@ export const listIssueActivities = defineQuery({
     const namedByComments = await namedByCommentsIn(db, project.issue.id, rows);
     const people = await peopleNamedIn(db, rows, namedByComments);
     const filesOfComments = await filesOfCommentsIn(db, rows);
+    const issuesNamed = await linkedIssues(db, actor.id, rows.flatMap(issuesOfChange));
     // Read-only while archived: nothing to offer.
     const actionsOn = (authorId: string) =>
       project.archived ? [] : commentActionsOf(project.permissions, authorId === actor.id);
@@ -128,6 +132,7 @@ export const listIssueActivities = defineQuery({
         : attachmentActionsOf(project.permissions, place, file.uploaderId === actor.id);
     const shown = {
       people,
+      issuesNamed,
       namedByComments,
       filesOfComments,
       actionsOn,
@@ -254,9 +259,20 @@ async function peopleNamedIn(
   return new Map(named.map((user) => [user.id, userRefOf(user)]));
 }
 
+/** The issues a change names, by id: those it was marked as a duplicate of. */
+function issuesOfChange(row: ActivityRow): string[] {
+  if (row.type !== 'issue.duplicateChanged') {
+    return [];
+  }
+  const { from, to } = ISSUE_ACTIVITY_PAYLOADS['issue.duplicateChanged'].parse(row.payload);
+  return [from, to].filter((id): id is string => id !== null);
+}
+
 /** What a page of history needs, besides its rows, to show them. */
 interface Shown {
   people: ReadonlyMap<string, UserRef>;
+  /** The issues changes name, as the reader may know them. */
+  issuesNamed: ReadonlyMap<string, LinkedIssue>;
   namedByComments: ReadonlyMap<string, readonly string[]>;
   filesOfComments: ReadonlyMap<string, AttachmentRow[]>;
   actionsOn: (authorId: string) => CommentAction[];
@@ -330,6 +346,16 @@ function toActivity(row: ActivityRow, shown: Shown): IssueActivity {
           change.type === 'user'
             ? { ...change, from: person(change.from), to: person(change.to) }
             : change,
+      };
+    }
+    case 'issue.duplicateChanged': {
+      const { from, to } = payloads['issue.duplicateChanged'].parse(payload);
+      const named = (id: string | null) =>
+        id ? (shown.issuesNamed.get(id) ?? { key: null, title: null }) : null;
+      return {
+        ...base,
+        type: 'issue.duplicateChanged',
+        payload: { from: named(from), to: named(to) },
       };
     }
     case 'issue.commented': {

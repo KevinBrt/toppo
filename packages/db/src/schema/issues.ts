@@ -7,6 +7,7 @@ import {
 } from '@toppo/shared';
 import { sql } from 'drizzle-orm';
 import {
+  type AnyPgColumn,
   boolean,
   check,
   customType,
@@ -105,6 +106,13 @@ export const issues = pgTable(
     /** Set while the issue's status closes it. */
     closedAt: timestamp('closed_at', { withTimezone: true }),
     /**
+     * The issue this one repeats, in any project, if it was marked so: it was closed then. The
+     * mark goes with the original, the duplicate staying closed.
+     */
+    duplicateOfId: uuid('duplicate_of_id').references((): AnyPgColumn => issues.id, {
+      onDelete: 'set null',
+    }),
+    /**
      * The value of each property it has, by property id, as its type stores it
      * (`PROPERTY_VALUE_SCHEMAS`): an option's id for a list, an array of them for a multi-select…
      * Checked by the commands against the properties (`@toppo/core`); one without a value is left
@@ -129,11 +137,13 @@ export const issues = pgTable(
     // Mirror ISSUE_TITLE_MAX_LENGTH and ISSUE_DESCRIPTION_MAX_LENGTH (`@toppo/shared`).
     check('issues_title_length', sql`char_length(${table.title}) <= 200`),
     check('issues_description_length', sql`char_length(${table.description}) <= 50000`),
+    check('issues_not_duplicate_of_itself', sql`${table.duplicateOfId} <> ${table.id}`),
     index('issues_category_id_idx').on(table.categoryId),
     index('issues_status_id_idx').on(table.statusId),
     index('issues_priority_id_idx').on(table.priorityId),
     index('issues_assignee_id_idx').on(table.assigneeId),
     index('issues_reporter_id_idx').on(table.reporterId),
+    index('issues_duplicate_of_id_idx').on(table.duplicateOfId),
     // Counts a project's open (or closed) issues from the index alone, on every list shown.
     index('issues_project_closed_at_idx').on(table.projectId, table.closedAt),
     index('issues_search_vector_idx').using('gin', table.searchVector),

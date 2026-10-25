@@ -5,14 +5,18 @@ import { eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import { duplicatesAround } from '../utils/duplicates.util.ts';
 import { labelsOfIssue, propertyValuesOfIssue, toIssueSummary } from '../utils/issue-rows.util.ts';
-import { followersOfIssue } from '../utils/people.util.ts';
+import { followsIssue } from '../utils/people.util.ts';
 
 const { issueCategories, issues, priorities, projects, statuses, users } = schema;
 const assignees = alias(users, 'assignees');
 const reporters = alias(users, 'reporters');
 
-/** An issue the caller sees, by its key, with what they may do on it and who follows it. */
+/**
+ * An issue the caller sees, by its key, with what they may do on it, whether they follow it, and
+ * the issue it duplicates or its own duplicates.
+ */
 export const getIssue = defineQuery({
   name: 'issue.get',
   access: { project: 'issueKey' },
@@ -43,6 +47,7 @@ export const getIssue = defineQuery({
         createdAt: issues.createdAt,
         updatedAt: issues.updatedAt,
         closedAt: issues.closedAt,
+        duplicateOfId: issues.duplicateOfId,
       })
       .from(issues)
       .innerJoin(projects, eq(projects.id, issues.projectId))
@@ -55,19 +60,26 @@ export const getIssue = defineQuery({
     if (!row) {
       throw new HttpError(404, 'ISSUE_NOT_FOUND', 'This issue does not exist');
     }
-    const followers = await followersOfIssue(db, {
-      id: project.issue.id,
-      reporterId: row.reporter.id,
-      assigneeId: row.assignee?.id ?? null,
-    });
+    const [following, duplicates] = await Promise.all([
+      followsIssue(
+        db,
+        {
+          id: project.issue.id,
+          reporterId: row.reporter.id,
+          assigneeId: row.assignee?.id ?? null,
+        },
+        actor.id,
+      ),
+      duplicatesAround(db, actor.id, { id: project.issue.id, duplicateOfId: row.duplicateOfId }),
+    ]);
     return {
       ...toIssueSummary(project.key, row),
       id: project.issue.id,
       project: { key: project.key, name: row.projectName },
       description: row.description,
       closedAt: row.closedAt?.toISOString() ?? null,
-      following: followers.includes(actor.id),
-      followerCount: followers.length,
+      following,
+      ...duplicates,
       // Read-only while archived: nothing to offer.
       actions: project.archived
         ? []

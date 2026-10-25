@@ -282,6 +282,20 @@ export const issueSearchResponseSchema = z.object({
 
 export type IssueSearchResponse = z.infer<typeof issueSearchResponseSchema>;
 
+/**
+ * Another issue an issue names, the one it duplicates, as the reader may know it: its key and
+ * title, both `null` once it is gone or out of their sight.
+ */
+export const linkedIssueSchema = z.object({
+  key: z.string().nullable(),
+  title: z.string().nullable(),
+});
+
+export type LinkedIssue = z.infer<typeof linkedIssueSchema>;
+
+/** Duplicates an issue's page lists: the rest are counted. */
+export const DUPLICATES_SHOWN = 20;
+
 /** Body of `GET /api/v1/issues/:issueKey`. */
 export const issueResponseSchema = issueSummarySchema.extend({
   id: z.uuid(),
@@ -296,8 +310,14 @@ export const issueResponseSchema = issueSummarySchema.extend({
   actions: z.array(z.enum(ISSUE_ACTIONS)),
   /** Whether the caller follows it: told of its comments, status changes and assignments. */
   following: z.boolean(),
-  /** How many people follow it, the caller included. */
-  followerCount: z.number().int(),
+  /** The issue it duplicates, if it was marked so, with its status; `null`s out of sight. */
+  duplicateOf: linkedIssueSchema.extend({ status: issueStatusSchema.nullable() }).nullable(),
+  /** The issues marked as its duplicates that the caller sees, the latest first. */
+  duplicates: z
+    .array(z.object({ key: z.string(), title: z.string(), status: issueStatusSchema }))
+    .max(DUPLICATES_SHOWN),
+  /** How many duplicates of it the caller sees in all. */
+  duplicateCount: z.number().int(),
 });
 
 export type IssueResponse = z.infer<typeof issueResponseSchema>;
@@ -306,6 +326,17 @@ export type IssueResponse = z.infer<typeof issueResponseSchema>;
 export const issueFollowingRequestSchema = z.object({ following: z.boolean() });
 
 export type IssueFollowingRequest = z.infer<typeof issueFollowingRequestSchema>;
+
+/**
+ * Body of `PUT /api/v1/issues/:issueKey/duplicate-of`: the issue it repeats, in any project the
+ * caller sees, and the closing status it moves to.
+ */
+export const markDuplicateRequestSchema = z.object({
+  originalKey: issueKeySchema,
+  statusId: z.uuid(),
+});
+
+export type MarkDuplicateRequest = z.infer<typeof markDuplicateRequestSchema>;
 
 /** The most issues one action takes at once: a page of the list, with room to spare. */
 export const BULK_ISSUES_MAX = 100;

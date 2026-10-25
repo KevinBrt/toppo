@@ -36,7 +36,7 @@ export function IssueProperties({
   return (
     <aside
       aria-labelledby={titleId}
-      className="rounded-xl border border-border bg-surface p-5 shadow-xs lg:sticky lg:top-24"
+      className="rounded-xl border border-border bg-surface p-5 shadow-xs"
     >
       <h2 id={titleId} className="mb-3 text-base font-semibold text-foreground">
         {t('issues.properties')}

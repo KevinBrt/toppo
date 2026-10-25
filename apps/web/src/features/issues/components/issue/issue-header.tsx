@@ -13,13 +13,14 @@ import {
   DropdownMenuTrigger,
   Input,
 } from '@toppo/ui';
-import { EllipsisIcon, PencilIcon, Trash2Icon } from 'lucide-react';
+import { CopyIcon, EllipsisIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { formatDateTime } from '../../../../shared/i18n/dates.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { IssueEdit } from '../../models/issue-edit.model.ts';
 import { DeleteIssueDialog } from './delete-issue-dialog.tsx';
 import { FollowButton } from './follow-button.tsx';
+import { MarkDuplicateDialog } from './mark-duplicate-dialog.tsx';
 
 /**
  * The issue's title, edited in place, its status, whether one follows it and what else can be
@@ -41,7 +42,12 @@ export function IssueHeader({
   const { t, locale } = useI18n();
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [marking, setMarking] = useState(false);
   const canEditTitle = issue.actions.includes('editText');
+  // Marking a duplicate closes it: whoever may change its status may. A duplicate already
+  // loses its mark first, from its notice.
+  const canMark = issue.actions.includes('changeStatus') && issue.duplicateOf === null;
+  const canDelete = issue.actions.includes('delete');
   const reporter = issue.reporter.name ?? t('issues.deletedUser');
 
   return (
@@ -83,34 +89,46 @@ export function IssueHeader({
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <StatusMenu issue={issue} fields={fields} onEdit={onEdit} />
         {issue.actions.includes('follow') ? (
-          <FollowButton
-            following={issue.following}
-            followerCount={issue.followerCount}
-            onFollow={onFollow}
-          />
+          <FollowButton following={issue.following} onFollow={onFollow} />
         ) : null}
-        {issue.actions.includes('delete') ? (
-          <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="icon" aria-label={t('issues.more')}>
-                  <EllipsisIcon aria-hidden="true" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+        {canMark || canDelete ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" aria-label={t('issues.more')}>
+                <EllipsisIcon aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canMark ? (
+                <DropdownMenuItem onSelect={() => setMarking(true)}>
+                  <CopyIcon aria-hidden="true" />
+                  {t('issues.duplicate.mark')}
+                </DropdownMenuItem>
+              ) : null}
+              {canDelete ? (
                 <DropdownMenuItem tone="danger" onSelect={() => setDeleting(true)}>
                   <Trash2Icon aria-hidden="true" />
                   {t('issues.delete')}
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DeleteIssueDialog
-              issue={issue}
-              open={deleting}
-              onOpenChange={setDeleting}
-              onDeleted={onDeleted}
-            />
-          </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
+        {canMark ? (
+          <MarkDuplicateDialog
+            issue={issue}
+            statuses={fields?.statuses}
+            open={marking}
+            onOpenChange={setMarking}
+          />
+        ) : null}
+        {canDelete ? (
+          <DeleteIssueDialog
+            issue={issue}
+            open={deleting}
+            onOpenChange={setDeleting}
+            onDeleted={onDeleted}
+          />
         ) : null}
       </div>
     </header>

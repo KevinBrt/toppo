@@ -31,6 +31,7 @@ export type NotifiedChange =
   | { type: 'issue.commented'; actorId: string; mentioned: readonly string[] }
   | { type: 'issue.commentEdited'; actorId: string; mentioned: readonly string[] }
   | { type: 'issue.statusChanged'; actorId: string }
+  | { type: 'issue.duplicateChanged'; actorId: string }
   | { type: 'other'; actorId: string };
 
 /** Those who take part in an issue: its reporter, its assignee, those who commented on it. */
@@ -52,8 +53,8 @@ export function followersOf(people: IssuePeople): string[] {
 /**
  * Who is told about a change, and why: of a new issue, its assignee and those whose role asks
  * for it; the person an issue is given to; those a comment names; and those who follow the issue
- * (`followersOf`) of a comment, a status change and a change of assignee, the assignee it had
- * before included. Nothing else is told, and nobody is told of what they did themselves. Whether
+ * (`followersOf`) of a comment, a status change, a change of assignee, the assignee it had before
+ * included, and its marking as a duplicate. Nothing else is told, and nobody is told of what they did themselves. Whether
  * they still see the issue is checked by the caller.
  */
 export function recipientsOf(
@@ -103,6 +104,7 @@ export function recipientsOf(
       }
       break;
     case 'issue.statusChanged':
+    case 'issue.duplicateChanged':
       tellFollowers(people);
       break;
     case 'other':

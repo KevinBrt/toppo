@@ -24,6 +24,7 @@ import {
   issueSearchResponseSchema,
   issuesQuerySchema,
   issuesResponseSchema,
+  markDuplicateRequestSchema,
   pickerQuerySchema,
   projectIssuesParamsSchema,
   projectIssuesQuerySchema,
@@ -41,6 +42,8 @@ import { bulkUpdateIssues } from './commands/bulk/update-issues.command.ts';
 import { changeIssueStatus } from './commands/change-issue-status.command.ts';
 import { createIssue } from './commands/create-issue.command.ts';
 import { deleteIssue } from './commands/delete-issue.command.ts';
+import { markDuplicate } from './commands/duplicates/mark-duplicate.command.ts';
+import { unmarkDuplicate } from './commands/duplicates/unmark-duplicate.command.ts';
 import { followIssue } from './commands/follow-issue.command.ts';
 import { setIssueLabels } from './commands/set-issue-labels.command.ts';
 import { setIssueProperty } from './commands/set-issue-property.command.ts';
@@ -280,6 +283,37 @@ function registerIssueKeyRoutes(app: FastifyInstance): void {
           ...request.body,
         }),
       ),
+  );
+
+  routes.put(
+    '/api/v1/issues/:issueKey/duplicate-of',
+    {
+      config: { access: markDuplicate.access },
+      schema: {
+        params: issueKeyParamsSchema,
+        body: markDuplicateRequestSchema,
+        response: NO_CONTENT,
+      },
+    },
+    async (request, reply) =>
+      reply.status(204).send(
+        await markDuplicate.execute(request.executionContext, {
+          ...request.params,
+          ...request.body,
+        }),
+      ),
+  );
+
+  routes.delete(
+    '/api/v1/issues/:issueKey/duplicate-of',
+    {
+      config: { access: unmarkDuplicate.access },
+      schema: { params: issueKeyParamsSchema, response: NO_CONTENT },
+    },
+    async (request, reply) =>
+      reply
+        .status(204)
+        .send(await unmarkDuplicate.execute(request.executionContext, request.params)),
   );
 
   routes.put(

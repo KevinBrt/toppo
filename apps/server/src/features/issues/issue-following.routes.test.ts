@@ -57,12 +57,11 @@ async function report(project: string, who: Person = 'ada'): Promise<string> {
 const follow = (key: string, following: boolean, who: Person = 'ada') =>
   call('PUT', `/api/v1/issues/${key}/following`, who, { following });
 
-/** Whether `who` follows the issue, and how many people do, as its page shows it. */
+/** Whether `who` follows the issue, as its page shows it. */
 async function followingOf(key: string, who: Person) {
   const response = await call('GET', `/api/v1/issues/${key}`, who);
   expect(response.statusCode).toBe(200);
-  const { following, followerCount } = issueResponseSchema.parse(response.json());
-  return { following, followerCount };
+  return issueResponseSchema.parse(response.json()).following;
 }
 
 beforeAll(async () => {
@@ -107,17 +106,17 @@ beforeAll(async () => {
 });
 
 describe('following an issue', () => {
-  it('is implicit for its reporter, chosen by others, and counted', async () => {
+  it('is implicit for its reporter, chosen by others', async () => {
     const key = await report('WEB');
-    expect(await followingOf(key, 'ada')).toStrictEqual({ following: true, followerCount: 1 });
-    expect(await followingOf(key, 'grace')).toStrictEqual({ following: false, followerCount: 1 });
+    expect(await followingOf(key, 'ada')).toStrictEqual(true);
+    expect(await followingOf(key, 'grace')).toStrictEqual(false);
 
     expect((await follow(key, true, 'grace')).statusCode).toBe(204);
-    expect(await followingOf(key, 'grace')).toStrictEqual({ following: true, followerCount: 2 });
+    expect(await followingOf(key, 'grace')).toStrictEqual(true);
 
     expect((await follow(key, false)).statusCode).toBe(204);
     expect((await follow(key, false)).statusCode).toBe(204);
-    expect(await followingOf(key, 'ada')).toStrictEqual({ following: false, followerCount: 1 });
+    expect(await followingOf(key, 'ada')).toStrictEqual(false);
   });
 
   it('lasts once stopped, even for someone who takes part again', async () => {
@@ -125,10 +124,10 @@ describe('following an issue', () => {
     expect((await follow(key, false)).statusCode).toBe(204);
     const said = await call('POST', `/api/v1/issues/${key}/comments`, 'ada', { body: 'Seen it.' });
     expect(said.statusCode).toBe(201);
-    expect(await followingOf(key, 'ada')).toStrictEqual({ following: false, followerCount: 0 });
+    expect(await followingOf(key, 'ada')).toStrictEqual(false);
 
     expect((await follow(key, true)).statusCode).toBe(204);
-    expect(await followingOf(key, 'ada')).toStrictEqual({ following: true, followerCount: 1 });
+    expect(await followingOf(key, 'ada')).toStrictEqual(true);
   });
 
   it('is not a change to the issue: nothing is recorded', async () => {

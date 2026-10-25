@@ -9,7 +9,8 @@ import {
   projectPermissionsOf,
 } from '@toppo/core';
 import { type Db, schema } from '@toppo/db';
-import { and, eq, inArray, type SQL, sql } from 'drizzle-orm';
+import { projectKeySchema } from '@toppo/shared';
+import { and, eq, inArray, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { HttpError } from '../http/http-error.ts';
 import type { Actor } from './actor.ts';
@@ -185,6 +186,43 @@ export function seeingIssue(issueId: string): SQL {
       ))
     )
   ))`;
+}
+
+/**
+ * Those of `issueIds` that `userId` sees, with their key and title: issues where they hold
+ * `issue.read`, those they reported where they hold `issue.read.own` (`canSeeIssue`, in SQL).
+ */
+export async function issuesSeenBy(
+  db: Pick<Db, 'select'>,
+  userId: string,
+  issueIds: readonly string[],
+): Promise<{ id: string; key: string; title: string }[]> {
+  if (issueIds.length === 0) {
+    return [];
+  }
+  const seen = await db
+    .select({
+      id: issues.id,
+      number: issues.number,
+      title: issues.title,
+      projectKey: projects.key,
+    })
+    .from(issues)
+    .innerJoin(projects, eq(projects.id, issues.projectId))
+    .where(
+      and(
+        inArray(issues.id, [...new Set(issueIds)]),
+        or(
+          grantedIn(userId, ['issue.read']),
+          and(eq(issues.reporterId, userId), grantedIn(userId, ['issue.read.own'])),
+        ),
+      ),
+    );
+  return seen.map(({ id, number, title, projectKey }) => ({
+    id,
+    key: formatIssueKey({ projectKey: projectKeySchema.parse(projectKey), number }),
+    title,
+  }));
 }
 
 /** Those of `userIds` who see the issue `issueId` (`seeingIssue`). */
