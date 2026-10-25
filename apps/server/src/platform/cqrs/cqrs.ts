@@ -19,6 +19,7 @@ import type { SecretBox } from '../config/secret-box.ts';
 import { HttpError } from '../http/http-error.ts';
 import { RequestValidationError } from '../http/zod.ts';
 import type { Mailer } from '../mail/mailer.ts';
+import type { ReleaseFeed } from '../updates/release-feed.ts';
 import type { FileStorage } from '../uploads/file-storage.ts';
 
 /** The transaction a command runs in. */
@@ -38,6 +39,8 @@ export interface Services {
   secrets: SecretBox;
   /** Sends email with the settings saved by an administrator. */
   mailer: Mailer;
+  /** The versions of Toppo published, unless the instance does not look (`TOPPO_UPDATE_CHECK`). */
+  releases: ReleaseFeed;
 }
 
 /** What every command and query runs with: per HTTP request today, per plugin call later. */

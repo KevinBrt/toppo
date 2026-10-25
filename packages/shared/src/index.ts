@@ -45,6 +45,12 @@ export {
   setupStatusResponseSchema,
 } from './instance/setup.ts';
 export {
+  type InstanceVersionResponse,
+  instanceVersionResponseSchema,
+  releasedVersionSchema,
+  TOPPO_VERSION,
+} from './instance/version.ts';
+export {
   type HistoryType,
   ISSUE_ACTIVITY_PAYLOADS,
   type IssueActivitiesResponse,

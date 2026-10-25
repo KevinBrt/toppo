@@ -36,7 +36,7 @@ export function AccountFooter({
   }
 
   return (
-    <div className="flex items-center gap-1 border-t border-sidebar-border px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <div className="flex items-center gap-1 border-t border-sidebar-border px-2 pt-2 pb-1">
       <Link
         to="/account"
         onClick={onNavigate}

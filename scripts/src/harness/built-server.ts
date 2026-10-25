@@ -60,6 +60,7 @@ export async function startServer(options: ServerOptions): Promise<ChildProcess>
       TOPPO_LOG_LEVEL: 'error',
       TOPPO_DATA_DIR: options.dataDir,
       TOPPO_SETUP_CODE: options.setupCode,
+      TOPPO_UPDATE_CHECK: 'false',
     },
     stdio: ['ignore', 'inherit', 'inherit'],
   });

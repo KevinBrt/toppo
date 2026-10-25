@@ -21,7 +21,10 @@ export const acceptInvitation = defineCommand({
   // Public: the token is the credential. Its route is rate limited.
   access: 'public',
   input: acceptInvitationRequestSchema,
-  async handler({ tx, services, log }, { token, name, password }): Promise<{ email: string }> {
+  async handler(
+    { tx, services, log },
+    { token, name, password, locale },
+  ): Promise<{ email: string }> {
     // Locked: two attempts with the same link are serialized, and the second finds it used.
     const [invitation] = await tx
       .select({
@@ -61,6 +64,7 @@ export const acceptInvitation = defineCommand({
       emailVerified: false,
       instanceRoleId: invitation.roleId,
       allProjects: invitation.allProjects,
+      locale,
     });
     // The projects the invitation gives, those still there: archived ones keep their members too.
     const chosen = await tx

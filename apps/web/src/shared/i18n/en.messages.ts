@@ -24,6 +24,8 @@ export const en = {
     signOut: 'Sign out',
     signingOut: 'Signing out…',
     profile: 'Profile',
+    language: 'Language',
+    languageDescription: 'Toppo speaks it to you, here and in its emails, on every device.',
     notifications: 'Notifications',
     notificationsDescription: 'How Toppo tells you what happens on the issues you follow.',
     emailNotificationsTitle: 'By email',
@@ -604,6 +606,13 @@ export const en = {
         'The secure connection failed. Check the security and the port, or the certificate of the server.',
       rejected: 'The server refused the message. Check the sender address.',
     },
+  },
+  updates: {
+    title: 'Update',
+    available: 'Toppo {version} is available',
+    releaseNotes: 'What’s new',
+    howTo: 'How to upgrade',
+    version: 'Toppo {version}',
   },
   notifications: {
     title: 'Notifications',

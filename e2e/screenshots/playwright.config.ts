@@ -36,6 +36,7 @@ export default defineConfig({
       TOPPO_LOG_LEVEL: 'warn',
       TOPPO_DATA_DIR: fileURLToPath(new URL('../.data/screenshots', import.meta.url)),
       TOPPO_SETUP_CODE: SCREENSHOTS_SETUP_CODE,
+      TOPPO_UPDATE_CHECK: 'false',
     },
   },
 });

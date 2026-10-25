@@ -19,7 +19,7 @@ function withLink(status: 'pending' | 'expired' | 'used') {
 }
 
 describe('accepting an invitation', () => {
-  it('says whom the link is for, creates the account, then opens the sign-in page', async () => {
+  it('says whom the link is for, creates the account in the browser’s language, then opens the sign-in page', async () => {
     const { server, token } = withLink('pending');
     const { screen, router } = await renderApp({ path: `/invitation#${token}` });
 
@@ -40,7 +40,7 @@ describe('accepting an invitation', () => {
     expect(server.requests).toContainEqual({
       method: 'POST',
       path: '/api/v1/invitations/accept',
-      body: { token, name: 'Nina Petit', password: PASSWORD },
+      body: { token, name: 'Nina Petit', password: PASSWORD, locale: 'en' },
     });
   });
 

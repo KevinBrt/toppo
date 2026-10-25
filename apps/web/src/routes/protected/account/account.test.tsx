@@ -119,28 +119,34 @@ describe('my account', () => {
   });
 });
 
-describe('the language of emails', () => {
-  it('follows the interface: the server is told when it changes, and only then', async () => {
+describe('the language', () => {
+  it('is chosen on the account: the whole interface speaks it at once, and the server keeps it', async () => {
     const fake = fakeServer({ user: ADA });
-    const { screen } = await renderApp({ path: '/account', locale: 'fr' });
+    const { screen } = await renderApp({ path: '/account' });
+
+    await screen.getByRole('combobox', { name: 'Language' }).selectOptions('fr');
 
     await expect
       .element(screen.getByRole('heading', { level: 1, name: 'Mon compte' }))
       .toBeVisible();
-    await expect.poll(() => fake.state.user?.locale).toBe('fr');
-    const told = fake.requests.filter(({ path }) => path === '/api/v1/me/locale');
-    expect(told).toStrictEqual([
-      { method: 'PUT', path: '/api/v1/me/locale', body: { locale: 'fr' } },
-    ]);
+    await expect.element(screen.getByRole('link', { name: 'Tickets' })).toBeVisible();
+    expect(document.documentElement.lang).toBe('fr');
+    expect(fake.state.user?.locale).toBe('fr');
+    expect(fake.requests).toContainEqual({
+      method: 'PUT',
+      path: '/api/v1/me/locale',
+      body: { locale: 'fr' },
+    });
   });
 
-  it('is left alone when the server already knows it', async () => {
-    const fake = fakeServer({ user: ADA });
-    const { screen } = await renderApp({ path: '/account' });
+  it('is the account’s, whatever the browser speaks, and the browser’s never replaces it', async () => {
+    const fake = fakeServer({ user: { ...ADA, locale: 'fr' } });
+    const { screen } = await renderApp({ path: '/account', locale: 'en' });
 
     await expect
-      .element(screen.getByRole('heading', { level: 1, name: 'My account' }))
+      .element(screen.getByRole('heading', { level: 1, name: 'Mon compte' }))
       .toBeVisible();
+    await expect.element(screen.getByRole('combobox', { name: 'Langue' })).toHaveValue('fr');
     expect(fake.requests.some(({ path }) => path === '/api/v1/me/locale')).toBe(false);
   });
 });

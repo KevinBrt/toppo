@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { EmailNotificationsSetting } from '../../../features/account/components/email-notifications-setting.tsx';
+import { LanguageSetting } from '../../../features/account/components/language-setting.tsx';
 import { PasswordForm } from '../../../features/account/components/password-form.tsx';
 import { ProfileForm } from '../../../features/account/components/profile-form.tsx';
 import { SessionQueries } from '../../../features/session/queries/session.queries.ts';
@@ -36,6 +37,17 @@ function AccountScreen() {
             user={user}
             // The new name shows at once in the sidebar.
             onSaved={refreshUser}
+          />
+        </Section>
+        <Section title={t('account.language')} description={t('account.languageDescription')}>
+          <LanguageSetting
+            locale={user.locale}
+            // The whole interface speaks it at once: it reads the language of the session.
+            onChanged={(locale) =>
+              queryClient.setQueryData(SessionQueries.currentUser.queryKey, (current) =>
+                current ? { ...current, locale } : current,
+              )
+            }
           />
         </Section>
         <Section

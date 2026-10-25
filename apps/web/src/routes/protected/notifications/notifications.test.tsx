@@ -1,3 +1,4 @@
+import type { CurrentUser } from '@toppo/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import {
@@ -14,9 +15,9 @@ beforeEach(async () => {
 });
 
 /** Ada, who reaches WEB and has these notifications. */
-function server(notifications = [fakeNotification(1)]) {
+function server(notifications = [fakeNotification(1)], user: CurrentUser = ADA) {
   return fakeServer({
-    user: ADA,
+    user,
     projects: [fakeProject('WEB', 'Website', { members: [{ userId: ADA.id, roleId: null }] })],
     issues: [fakeIssue('WEB', 1, 'Empty CSV export'), fakeIssue('WEB', 2, 'Crash on phones')],
     notifications,
@@ -172,11 +173,14 @@ describe('the notifications page', () => {
   });
 
   it('reads in French', async () => {
-    server([
-      fakeNotification(1, { event: 'mentioned' }),
-      fakeNotification(2, { event: 'assigneeChanged', assignee: { id: ADA.id, name: 'Ada' } }),
-    ]);
-    const { screen } = await renderApp({ path: '/notifications', locale: 'fr' });
+    server(
+      [
+        fakeNotification(1, { event: 'mentioned' }),
+        fakeNotification(2, { event: 'assigneeChanged', assignee: { id: ADA.id, name: 'Ada' } }),
+      ],
+      { ...ADA, locale: 'fr' },
+    );
+    const { screen } = await renderApp({ path: '/notifications' });
 
     await expect
       .element(screen.getByRole('link', { name: /Grace Hopper vous a mentionné dans WEB-1/ }))

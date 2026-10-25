@@ -51,7 +51,7 @@ export async function buildTestApp({
 }: TestAppOptions = {}): Promise<FastifyInstance> {
   const url = new URL(publicUrl);
   return await buildApp({
-    config: { publicUrl: url, logLevel: 'silent', trustProxy: false },
+    config: { publicUrl: url, logLevel: 'silent', trustProxy: false, updateCheck: false },
     database: { db: database.db, ping: ping ?? (() => Promise.resolve()) },
     auth: createAuth({ db: database.db, secret: TEST_SECRET, publicUrl: url }),
     secret: TEST_SECRET,
@@ -76,6 +76,11 @@ export function testServices(overrides: Partial<Services> = {}): Services {
     files: {
       maxFileSize: TEST_ATTACHMENT_MAX_SIZE,
       keep: () => Promise.reject(new Error('No file storage in this test')),
+    },
+    // Tests never reach GitHub: a test that needs a release gives its own feed.
+    releases: {
+      enabled: false,
+      latest: () => Promise.reject(new Error('No release feed in this test')),
     },
     ...overrides,
   };

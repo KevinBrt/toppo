@@ -23,6 +23,9 @@ export const fr: Messages = {
     signingOut: 'Déconnexion…',
     profile: 'Profil',
     notifications: 'Notifications',
+    language: 'Langue',
+    languageDescription:
+      'Toppo vous parle dans cette langue, ici et dans ses e-mails, sur tous vos appareils.',
     notificationsDescription:
       'Comment Toppo vous tient au courant de ce qui se passe sur les tickets que vous suivez.',
     emailNotificationsTitle: 'Par e-mail',
@@ -621,6 +624,13 @@ export const fr: Messages = {
         'La connexion sécurisée a échoué. Vérifiez la sécurité et le port, ou le certificat du serveur.',
       rejected: 'Le serveur a refusé le message. Vérifiez l’adresse d’expédition.',
     },
+  },
+  updates: {
+    title: 'Mise à jour',
+    available: 'Toppo {version} est disponible',
+    releaseNotes: 'Nouveautés',
+    howTo: 'Comment mettre à jour',
+    version: 'Toppo {version}',
   },
   notifications: {
     title: 'Notifications',

@@ -122,6 +122,7 @@ jobs:
             echo "IMAGE_TAG=ci"
             echo "HTTP_PORT=3000"
             echo "TOPPO_URL=http://localhost:3000"
+            echo "TOPPO_UPDATE_CHECK=false"
           } > "$RUNNER_TEMP/toppo.env"
           docker compose --env-file "$RUNNER_TEMP/toppo.env" -f docker/docker-compose.yml up -d --wait
       - name: Read the setup code from the logs, as a user would

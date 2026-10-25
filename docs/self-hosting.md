@@ -171,6 +171,12 @@ Migrations run automatically at startup, all in one transaction: if one fails, T
 - **Going back**: migrations only go forward. To return to the previous version, restore the backup taken before the upgrade, with the previous `IMAGE_TAG`.
 - **PostgreSQL**: the compose file pins a major version of PostgreSQL. Moving to the next one (when the compose file does) needs a dump and a restore: back up as above, stop everything, remove the `toppo_toppo-db` volume, start the new `db` alone and [restore](#restore) into it.
 
+## Version and updates
+
+The version running shows at the bottom of the sidebar, for everyone: give it when you report a problem.
+
+Once a day, and at each start, Toppo asks GitHub for the latest version published (`api.github.com`, with its own version as the only thing it sends). When a newer one is out, those who manage the instance see it above their account, with what is new and how to upgrade; Toppo never upgrades itself. On a server cut from the internet, or to make no request at all, set `TOPPO_UPDATE_CHECK=false`.
+
 ## Security of the container
 
 The image is distroless (no shell, no package manager) and runs as an unprivileged user. The provided compose file also makes the filesystem read-only, drops every Linux capability and forbids privilege escalation. Keep these settings if you write your own deployment.
@@ -178,6 +184,7 @@ The image is distroless (no shell, no package manager) and runs as an unprivileg
 ## Troubleshooting
 
 - **The setup code is lost**: restart Toppo (`docker compose restart toppo`): it prints a new one until setup is done.
+- **The interface speaks the wrong language**: each person chooses theirs in **My account › Language**; emails follow it.
 - **Toppo does not start**: `docker compose logs toppo` tells why: an unknown or invalid `TOPPO_*` variable, a database that cannot be reached, a migration that failed.
 - **`/health` answers 503**: Toppo runs but cannot reach its database: check `docker compose ps` and the logs of `db`.
 - **Links in emails point to the wrong address**: set `TOPPO_URL` to the address people open.

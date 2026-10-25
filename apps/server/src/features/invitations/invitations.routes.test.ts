@@ -151,7 +151,7 @@ describe('inviting members', () => {
 });
 
 describe('accepting an invitation', () => {
-  it('shows whom the link is for, then creates the account with the invited role', async () => {
+  it('shows whom the link is for, then creates the account with the invited role and language', async () => {
     const [invitation] = (await invite(['joan@example.com'], DEFAULT_ROLE_IDS.requester))
       .invitations;
     const token = tokenOf(invitation?.link ?? '');
@@ -163,15 +163,24 @@ describe('accepting an invitation', () => {
       token,
       name: 'Joan Clarke',
       password: PASSWORD,
+      locale: 'fr',
     });
     expect(accepted.statusCode).toBe(201);
     expect(accepted.json()).toStrictEqual({ email: 'joan@example.com' });
 
     const [user] = await context.database.db
-      .select({ name: schema.users.name, roleId: schema.users.instanceRoleId })
+      .select({
+        name: schema.users.name,
+        roleId: schema.users.instanceRoleId,
+        locale: schema.users.locale,
+      })
       .from(schema.users)
       .where(eq(schema.users.email, 'joan@example.com'));
-    expect(user).toStrictEqual({ name: 'Joan Clarke', roleId: DEFAULT_ROLE_IDS.requester });
+    expect(user).toStrictEqual({
+      name: 'Joan Clarke',
+      roleId: DEFAULT_ROLE_IDS.requester,
+      locale: 'fr',
+    });
 
     const signIn = await asVisitor('/api/auth/sign-in/email', {
       email: 'joan@example.com',

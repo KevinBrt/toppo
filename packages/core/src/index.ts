@@ -144,3 +144,4 @@ export {
   propertyValueOf,
   withPropertyValue,
 } from './properties/property-values.ts';
+export { isNewerVersion } from './version.ts';

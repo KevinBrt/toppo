@@ -23,6 +23,8 @@ export interface Config {
   secret: string | undefined;
   /** Preset first-run code for automated deployments; otherwise a random one is logged. */
   setupCode: string | undefined;
+  /** Whether Toppo asks GitHub, once a day, for the latest version published. */
+  updateCheck: boolean;
 }
 
 export const SECRET_MIN_LENGTH = 32;
@@ -62,6 +64,7 @@ const envSchema = z.object({
     .string()
     .min(SETUP_CODE_MIN_LENGTH, `must be at least ${SETUP_CODE_MIN_LENGTH} characters`)
     .optional(),
+  TOPPO_UPDATE_CHECK: z.stringbool().default(true),
 });
 
 const KNOWN_VARIABLES = new Set(Object.keys(envSchema.shape));
@@ -111,6 +114,7 @@ export function loadConfig(env: Env, readFile: ReadFile = readFileUtf8): Config 
     attachmentMaxSize: parsed.TOPPO_ATTACHMENT_MAX_SIZE_MB * MEBIBYTE,
     secret: parsed.TOPPO_SECRET,
     setupCode: parsed.TOPPO_SETUP_CODE,
+    updateCheck: parsed.TOPPO_UPDATE_CHECK,
   };
 }
 

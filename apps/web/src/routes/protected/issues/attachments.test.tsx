@@ -412,8 +412,8 @@ describe('the files of a new issue', () => {
   });
 
   it('reads in French', async () => {
-    server(ADA, { attachments: [] });
-    const { screen } = await renderApp({ path: '/issues/new?project=WEB', locale: 'fr' });
+    server({ ...ADA, locale: 'fr' }, { attachments: [] });
+    const { screen } = await renderApp({ path: '/issues/new?project=WEB' });
 
     const zone = screen.getByRole('group', { name: 'Pièces jointes' });
     await expect

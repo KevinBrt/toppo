@@ -7,7 +7,8 @@
   "packages": {
     ".": {
       "package-name": "toppo",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": ["packages/shared/src/instance/version.ts"]
     }
   }
 }

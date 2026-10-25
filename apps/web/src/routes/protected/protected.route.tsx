@@ -1,9 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { createRoute, redirect, useRouter } from '@tanstack/react-router';
-import type { CurrentUser, Locale } from '@toppo/shared';
+import { can } from '@toppo/core';
 import { PlusIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { Account } from '../../features/account/api/account.api.ts';
+import { useEffect, useState } from 'react';
 import { CommandPalette } from '../../features/issues/components/palette/command-palette.tsx';
 import { PaletteButton } from '../../features/issues/components/palette/palette-button.tsx';
 import type { PaletteCommand } from '../../features/issues/models/palette.model.ts';
@@ -11,6 +10,8 @@ import { lastProject } from '../../features/issues/utils/last-project.util.ts';
 import { NotificationBell } from '../../features/notifications/components/notification-bell.tsx';
 import { AccountFooter } from '../../features/session/components/account-footer.tsx';
 import { loadSession, SessionQueries } from '../../features/session/queries/session.queries.ts';
+import { AppVersion } from '../../features/updates/components/app-version.tsx';
+import { UpdateNotice } from '../../features/updates/components/update-notice.tsx';
 import { useI18n } from '../../shared/i18n/i18n-provider.tsx';
 import { isPaletteShortcut } from '../../shared/keyboard/palette-shortcut.util.ts';
 import { AppShell } from '../../shared/layout/app-shell.tsx';
@@ -35,38 +36,12 @@ export const protectedRoute = createRoute({
   component: ProtectedLayout,
 });
 
-/**
- * Tells the server the language the interface speaks, which follows the browser, whenever it is
- * not the one it remembers: emails then speak it too.
- */
-function useRememberedLocale(user: CurrentUser | null | undefined) {
-  const { locale } = useI18n();
-  const queryClient = useQueryClient();
-  const { mutate } = useMutation({
-    mutationFn: (next: Locale) => Account.setLocale(next),
-    onSuccess: (_, next) =>
-      queryClient.setQueryData(SessionQueries.currentUser.queryKey, (current) =>
-        current ? { ...current, locale: next } : current,
-      ),
-  });
-  const remembered = user?.locale;
-  // Asked once per language, however often the effect runs before the server answers.
-  const asked = useRef<Locale | null>(null);
-  useEffect(() => {
-    if (remembered !== undefined && remembered !== locale && asked.current !== locale) {
-      asked.current = locale;
-      mutate(locale);
-    }
-  }, [remembered, locale, mutate]);
-}
-
 function ProtectedLayout() {
   const router = useRouter();
   const { t } = useI18n();
   // From the cache rather than the route context, so a refreshed role shows without navigating.
   const { data: user } = useQuery(SessionQueries.currentUser);
   const audience = user ?? { permissions: [] };
-  useRememberedLocale(user);
   const [searching, setSearching] = useState(false);
 
   // ⌘K or Ctrl K, wherever the focus is: the one shortcut of the application.
@@ -109,10 +84,14 @@ function ProtectedLayout() {
       <AppShell
         audience={audience}
         sidebarFooter={({ onNavigate }) => (
-          <AccountFooter
-            onNavigate={onNavigate}
-            onSignedOut={() => router.navigate({ to: '/login' })}
-          />
+          <>
+            <UpdateNotice enabled={can(audience.permissions, 'instance.settings.manage')} />
+            <AccountFooter
+              onNavigate={onNavigate}
+              onSignedOut={() => router.navigate({ to: '/login' })}
+            />
+            <AppVersion />
+          </>
         )}
         topbarEnd={
           <>

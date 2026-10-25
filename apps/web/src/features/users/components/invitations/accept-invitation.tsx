@@ -58,12 +58,13 @@ function AcceptInvitationForm({
   preview: InvitationPreview;
   onAccepted: (email: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [values, setValues] = useState<AcceptInvitationFormValues>(EMPTY_ACCEPT_INVITATION_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const accept = useMutation({
-    mutationFn: (form: AcceptInvitationFormValues) => Invitations.accept({ token, ...form }),
+    mutationFn: (form: AcceptInvitationFormValues) =>
+      Invitations.accept({ token, ...form, locale }),
     onSuccess: onAccepted,
   });
 

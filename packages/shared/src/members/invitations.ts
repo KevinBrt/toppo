@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { displayNameSchema, emailSchema, passwordSchema } from '../auth.ts';
+import { DEFAULT_LOCALE, localeSchema } from '../locale.ts';
 import { projectKeySchema } from '../project-key.ts';
 import { roleBadgeSchema } from './roles.ts';
 
@@ -79,6 +80,8 @@ export const acceptInvitationRequestSchema = z.object({
   token: invitationTokenSchema,
   name: displayNameSchema,
   password: passwordSchema,
+  /** The language their browser speaks: the interface and emails speak it until they choose. */
+  locale: localeSchema.default(DEFAULT_LOCALE),
 });
 
 export type AcceptInvitationRequest = z.input<typeof acceptInvitationRequestSchema>;

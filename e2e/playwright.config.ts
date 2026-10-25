@@ -76,6 +76,7 @@ export default defineConfig({
             TOPPO_LOG_LEVEL: 'warn',
             TOPPO_DATA_DIR: fileURLToPath(new URL('.data', import.meta.url)),
             TOPPO_SETUP_CODE: LOCAL_SETUP_CODE,
+            TOPPO_UPDATE_CHECK: 'false',
           },
         },
       }),

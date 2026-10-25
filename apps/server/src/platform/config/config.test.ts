@@ -30,6 +30,7 @@ describe('loadConfig', () => {
       attachmentMaxSize: 20 * 1024 * 1024,
       secret: undefined,
       setupCode: undefined,
+      updateCheck: true,
     });
     expect(config.publicUrl.href).toBe('http://localhost:3000/');
   });
@@ -46,6 +47,7 @@ describe('loadConfig', () => {
       TOPPO_ATTACHMENT_MAX_SIZE_MB: '100',
       TOPPO_SECRET: 's'.repeat(32),
       TOPPO_SETUP_CODE: 'ABCD-EFGH-JKLM',
+      TOPPO_UPDATE_CHECK: 'false',
     });
 
     expect(config).toMatchObject({
@@ -58,6 +60,7 @@ describe('loadConfig', () => {
       attachmentMaxSize: 100 * 1024 * 1024,
       secret: 's'.repeat(32),
       setupCode: 'ABCD-EFGH-JKLM',
+      updateCheck: false,
     });
     expect(config.publicUrl.origin).toBe('https://toppo.example.com');
   });

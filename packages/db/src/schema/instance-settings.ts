@@ -10,9 +10,26 @@ export const instanceSettings = pgTable(
     id: smallint('id').primaryKey().default(1),
     /** Set once the first-run wizard has created the first administrator. */
     setupCompletedAt: timestamp('setup_completed_at', { withTimezone: true }),
+    /**
+     * The latest version of Toppo published, as the daily check last found it (`0.2.0`), and the
+     * page of its release notes; `null` until found, or while checking is turned off.
+     */
+    latestVersion: text('latest_version'),
+    latestVersionUrl: text('latest_version_url'),
+    /** When the check last got an answer. */
+    latestVersionCheckedAt: timestamp('latest_version_checked_at', { withTimezone: true }),
     ...timestamps,
   },
-  (table) => [check('instance_settings_single_row', sql`${table.id} = 1`)],
+  (table) => [
+    check('instance_settings_single_row', sql`${table.id} = 1`),
+    // A version as the check stores it, with the page that tells about it.
+    check(
+      'instance_settings_latest_version',
+      sql`(${table.latestVersion} is null) = (${table.latestVersionUrl} is null)
+        and (${table.latestVersion} is null or ${table.latestVersion} ~ '^[0-9]+[.][0-9]+[.][0-9]+$')
+        and (${table.latestVersionUrl} is null or ${table.latestVersionUrl} like 'https://%')`,
+    ),
+  ],
 );
 
 export const INSTANCE_SETTINGS_ID = 1;

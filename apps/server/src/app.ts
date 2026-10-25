@@ -20,6 +20,8 @@ import { registerProjectRoutes } from './features/projects/projects.routes.ts';
 import { registerPropertyRoutes } from './features/properties/properties.routes.ts';
 import { registerRoleRoutes } from './features/roles/roles.routes.ts';
 import { registerSetupRoutes } from './features/setup/setup.routes.ts';
+import { checkForUpdatesJob } from './features/updates/jobs/check-for-updates.job.ts';
+import { registerUpdateRoutes } from './features/updates/updates.routes.ts';
 import { registerUserRoutes } from './features/users/users.routes.ts';
 import { registerWorkflowRoutes } from './features/workflows/workflows.routes.ts';
 import { registerAccessControl } from './platform/auth/access-control.ts';
@@ -41,12 +43,13 @@ import { registerWebApp } from './platform/http/web-app.ts';
 import { serializerCompiler, validatorCompiler } from './platform/http/zod.ts';
 import type { RunnableJob } from './platform/jobs/jobs.ts';
 import { createMailer } from './platform/mail/mailer.ts';
+import { createReleaseFeed } from './platform/updates/release-feed.ts';
 import { registerFileRoutes } from './platform/uploads/file-routes.ts';
 import type { FileStorage } from './platform/uploads/file-storage.ts';
 import { fileSweepJob } from './platform/uploads/file-sweeper.ts';
 
 export interface AppDependencies {
-  config: Pick<Config, 'publicUrl' | 'logLevel' | 'trustProxy'>;
+  config: Pick<Config, 'publicUrl' | 'logLevel' | 'trustProxy' | 'updateCheck'>;
   database: Pick<Database, 'db' | 'ping'>;
   auth: Auth;
   /** The instance's key (`TOPPO_SECRET` or generated): signs sessions, seals stored secrets. */
@@ -73,8 +76,10 @@ export function createServices({
   setupCode,
   files,
   publicUrl,
+  updateCheck,
 }: Pick<AppDependencies, 'auth' | 'secret' | 'setupCode' | 'files'> & {
   publicUrl: URL;
+  updateCheck: boolean;
 }): Services {
   const secrets = createSecretBox(secret);
   return {
@@ -84,6 +89,7 @@ export function createServices({
     files,
     secrets,
     mailer: createMailer(secrets),
+    releases: createReleaseFeed({ enabled: updateCheck }),
   };
 }
 
@@ -97,6 +103,7 @@ export function createJobs({ files }: Pick<AppDependencies, 'files'>): RunnableJ
     passwordResetMailJob,
     emailNotificationJob,
     rebuildIssueWordsJob,
+    checkForUpdatesJob,
   ];
 }
 
@@ -134,7 +141,14 @@ export async function buildApp({
   registerAccessControl(app, { auth, db: database.db });
   registerExecutionContext(app, {
     db: database.db,
-    services: createServices({ auth, secret, setupCode, files, publicUrl: config.publicUrl }),
+    services: createServices({
+      auth,
+      secret,
+      setupCode,
+      files,
+      publicUrl: config.publicUrl,
+      updateCheck: config.updateCheck,
+    }),
   });
   registerFileRoutes(app, { files });
   app.addHook('onRequest', (request, reply, done) => {
@@ -163,6 +177,7 @@ export async function buildApp({
   registerMailRoutes(app);
   registerNotificationRoutes(app);
   registerWorkflowRoutes(app);
+  registerUpdateRoutes(app);
 
   const servesWebApp = await registerWebApp(app, webRoot);
   if (!servesWebApp) {

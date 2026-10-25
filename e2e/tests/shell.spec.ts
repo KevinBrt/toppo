@@ -37,13 +37,14 @@ test('unknown pages show a not-found page inside the app', async ({ page }) => {
   await expect(page).toHaveURL(/\/issues(\?project=\w+)?$/);
 });
 
-test.describe('in French', () => {
-  test.use({ locale: 'fr-FR' });
+// Signed in, Toppo speaks the language of the account (component tests); before, the browser's.
+test.describe('in a French browser, signed out', () => {
+  test.use({ locale: 'fr-FR', storageState: { cookies: [], origins: [] } });
 
-  test('follows the browser language', async ({ page }) => {
+  test('the sign-in page speaks French', async ({ page }) => {
     await page.goto('/issues');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Tickets' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Connexion à Toppo' })).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   });
 });

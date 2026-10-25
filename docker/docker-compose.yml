@@ -23,6 +23,7 @@ services:
       TOPPO_SECRET: ${TOPPO_SECRET:-}
       TOPPO_SETUP_CODE: ${TOPPO_SETUP_CODE:-}
       TOPPO_ATTACHMENT_MAX_SIZE_MB: ${TOPPO_ATTACHMENT_MAX_SIZE_MB:-}
+      TOPPO_UPDATE_CHECK: ${TOPPO_UPDATE_CHECK:-true}
     volumes:
       - toppo-data:/data
     depends_on:

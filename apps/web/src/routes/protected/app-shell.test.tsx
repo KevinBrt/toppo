@@ -70,8 +70,9 @@ describe('AppShell on desktop', () => {
     await expect.element(screen.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
   });
 
-  it('speaks French when the locale is French', async () => {
-    const { screen } = await renderApp({ locale: 'fr' });
+  it('speaks French when the account does', async () => {
+    fakeServer({ user: { ...ADA, locale: 'fr' } });
+    const { screen } = await renderApp();
 
     await expect.element(screen.getByRole('heading', { level: 1, name: 'Tickets' })).toBeVisible();
     expect(document.documentElement.lang).toBe('fr');

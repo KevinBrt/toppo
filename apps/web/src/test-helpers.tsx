@@ -25,6 +25,7 @@ import {
   followersOf,
   type InstancePermission,
   instancePermissionsOf,
+  isNewerVersion,
   issueActionsOf,
   issueChanges,
   issueVisibilityOf,
@@ -105,6 +106,7 @@ import {
   resetPasswordRequestSchema,
   rolePermissionsRequestSchema,
   type SortOrder,
+  TOPPO_VERSION,
   type UserSummary,
   updatePropertyRequestSchema,
   type WorkflowMode,
@@ -212,6 +214,8 @@ export interface FakeServerState {
   labels: LabelRef[];
   /** The signed-in user's notifications, the latest first: none unless a test adds some. */
   notifications: Notification[];
+  /** The latest version published, as the daily check found it: none unless a test sets one. */
+  latestRelease: { version: string; url: string } | null;
   /** The largest file taken, in bytes: 20 MB unless a test sets another. */
   attachmentMaxSize: number;
   /** How the instance sends email: not set up unless a test sets it. */
@@ -516,6 +520,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       attachments: [],
       labels: [],
       notifications: [],
+      latestRelease: null,
       attachmentMaxSize: 20 * 1024 * 1024,
       mailSettings: null,
       mailTestRefusal: null,
@@ -627,6 +632,17 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
         })
       );
     },
+    'GET /api/v1/instance/version': () =>
+      asSignedIn(state) ??
+      json({
+        version: TOPPO_VERSION,
+        update:
+          state.latestRelease &&
+          can(state.user?.permissions ?? [], 'instance.settings.manage') &&
+          isNewerVersion(state.latestRelease.version, TOPPO_VERSION)
+            ? state.latestRelease
+            : null,
+      }),
     'GET /api/v1/notifications/unread-count': () =>
       asSignedIn(state) ??
       json({ count: state.notifications.filter(({ readAt }) => readAt === null).length }),

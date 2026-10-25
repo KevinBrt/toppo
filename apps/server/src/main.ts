@@ -44,7 +44,14 @@ const files = await createFileStorage({
   maxFileSize: config.attachmentMaxSize,
 });
 const app = await buildApp({ config, database, auth, secret, setupCode, files, webRoot: WEB_ROOT });
-const services = createServices({ auth, secret, setupCode, files, publicUrl: config.publicUrl });
+const services = createServices({
+  auth,
+  secret,
+  setupCode,
+  files,
+  publicUrl: config.publicUrl,
+  updateCheck: config.updateCheck,
+});
 const jobs = createJobs({ files });
 let worker: { stop: () => Promise<void> } | undefined;
 
