@@ -3,8 +3,9 @@ import {
   ISSUE_ACTIVITY_PAYLOADS,
   type NotificationEvent,
   type NotificationReason,
+  type UserRef,
 } from '@toppo/shared';
-import { and, eq, isNull, or, type SQL, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { grantedIn } from '../../../platform/auth/project-access.ts';
 
@@ -53,23 +54,56 @@ export async function newIssueSubscribers(
   return people.map(({ id }) => id);
 }
 
-/** What a notification tells, from the activity it was made of and why it was given. */
+/** People by id, named as they are now: a deleted account keeps its id, not its name. */
+export async function peopleNamed(
+  db: Pick<Db, 'select'>,
+  ids: readonly string[],
+): Promise<Map<string, UserRef>> {
+  if (ids.length === 0) {
+    return new Map();
+  }
+  const found = await db
+    .select({ id: users.id, name: users.name, deletedAt: users.deletedAt })
+    .from(users)
+    .where(inArray(users.id, [...new Set(ids)]));
+  return new Map(
+    found.map(({ id, name, deletedAt }) => [id, { id, name: deletedAt ? null : name }]),
+  );
+}
+
+/**
+ * What a notification tells, from the activity it was made of and why it was given; for a change
+ * of assignee told to another than the new assignee, the id of whom the issue went to, named by
+ * the caller.
+ */
 export function eventOf(
   type: string,
   payload: unknown,
   reason: NotificationReason,
-): { event: NotificationEvent; status: string | null } {
+): { event: NotificationEvent; status: string | null; assigneeId: string | null } {
   if (type === 'issue.statusChanged') {
     return {
       event: 'statusChanged',
       status: ISSUE_ACTIVITY_PAYLOADS['issue.statusChanged'].parse(payload).to.name,
+      assigneeId: null,
     };
   }
-  if (type === 'issue.assigneeChanged' || reason === 'assigned') {
-    return { event: 'assigned', status: null };
+  if (reason === 'assigned') {
+    return { event: 'assigned', status: null, assigneeId: null };
+  }
+  if (type === 'issue.assigneeChanged') {
+    return {
+      event: 'assigneeChanged',
+      status: null,
+      assigneeId: ISSUE_ACTIVITY_PAYLOADS['issue.assigneeChanged'].parse(payload).to,
+    };
   }
   if (type === 'issue.created') {
-    return { event: 'created', status: null };
+    return { event: 'created', status: null, assigneeId: null };
   }
-  return { event: reason === 'mentioned' ? 'mentioned' : 'commented', status: null };
+  return {
+    event: reason === 'mentioned' ? 'mentioned' : 'commented',
+    status: null,
+    assigneeId: null,
+  };
 }

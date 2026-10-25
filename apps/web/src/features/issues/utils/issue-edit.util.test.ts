@@ -21,6 +21,8 @@ const ISSUE: IssueResponse = {
   updatedAt: '2026-10-22T09:14:00.000Z',
   closedAt: null,
   actions: [],
+  following: true,
+  followerCount: 1,
 };
 
 describe('applyEdit', () => {

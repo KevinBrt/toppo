@@ -28,19 +28,22 @@ describe('issueActionsOf', () => {
       'assign',
       'delete',
       'comment',
+      'follow',
     ]);
   });
 
-  it('lets a reporter fix the words of their issue and attach files to it, nothing more', () => {
+  it('lets a reporter fix the words of their issue and attach files to it, anyone follow it', () => {
     expect(issueActionsOf(['issue.read.own', 'issue.create'], true)).toStrictEqual([
       'editText',
       'attach',
+      'follow',
     ]);
     expect(issueActionsOf(['issue.read.own', 'comment.create'], true)).toStrictEqual([
       'editText',
       'attach',
       'comment',
+      'follow',
     ]);
-    expect(issueActionsOf(['issue.read'], false)).toStrictEqual([]);
+    expect(issueActionsOf(['issue.read'], false)).toStrictEqual(['follow']);
   });
 });

@@ -1,17 +1,37 @@
 import type { Notification } from '@toppo/shared';
 import { cn } from '@toppo/ui';
 import { formatRelativeTime } from '../../../shared/i18n/dates.util.ts';
+import type { Translate } from '../../../shared/i18n/i18n.types.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';
+
+/** What happened, as one sentence: "Sarah assigned you TK-1046". */
+function sentenceOf(notification: Notification, t: Translate): string {
+  const name = notification.actor.name ?? t('issues.deletedUser');
+  const key = notification.issue.key;
+  switch (notification.event) {
+    case 'statusChanged':
+      return t('notifications.events.statusChanged', {
+        name,
+        key,
+        status: notification.status ?? '',
+      });
+    case 'assigneeChanged':
+      return notification.assignee
+        ? t('notifications.events.assigneeChanged', {
+            name,
+            key,
+            assignee: notification.assignee.name ?? t('issues.deletedUser'),
+          })
+        : t('notifications.unassigned', { name, key });
+    default:
+      return t(`notifications.events.${notification.event}`, { name, key });
+  }
+}
 
 /** "Sarah assigned you TK-1046", the issue's title under it, and how long ago; unread ones marked. */
 export function NotificationEntry({ notification }: { notification: Notification }) {
   const { t, locale } = useI18n();
-  const name = notification.actor.name ?? t('issues.deletedUser');
-  const key = notification.issue.key;
-  const sentence =
-    notification.event === 'statusChanged'
-      ? t('notifications.events.statusChanged', { name, key, status: notification.status ?? '' })
-      : t(`notifications.events.${notification.event}`, { name, key });
+  const sentence = sentenceOf(notification, t);
   const unread = notification.readAt === null;
 
   return (

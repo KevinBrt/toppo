@@ -8,6 +8,7 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from './dropdown-menu.tsx';
 
@@ -35,6 +36,25 @@ describe('DropdownMenu', () => {
 
     expect(onDeactivate).toHaveBeenCalledOnce();
     await expect.element(screen.getByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('heads items with a label that is not itself a choice', async () => {
+    const screen = await render(
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button>Labels</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuLabel>Add</DropdownMenuLabel>
+          <DropdownMenuItem aria-label="Add Mobile">Mobile</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>,
+    );
+
+    await screen.getByRole('button', { name: 'Labels' }).click();
+
+    await expect.element(screen.getByRole('menu').getByText('Add', { exact: true })).toBeVisible();
+    expect(screen.getByRole('menuitem').elements()).toHaveLength(1);
   });
 
   it('works with the keyboard and gives focus back to its trigger', async () => {

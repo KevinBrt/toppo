@@ -71,10 +71,15 @@ async function report(who: Person, title = 'Empty CSV export'): Promise<string> 
   return createIssueResponseSchema.parse(response.json()).key;
 }
 
-async function assign(key: string, to: Person, by: Person = 'ada'): Promise<void> {
+async function assign(key: string, to: Person | null, by: Person = 'ada'): Promise<void> {
   const response = await call('PUT', `/api/v1/issues/${key}/assignee`, by, {
-    assigneeId: ids[to],
+    assigneeId: to ? ids[to] : null,
   });
+  expect(response.statusCode).toBe(204);
+}
+
+async function follow(key: string, who: Person, following: boolean): Promise<void> {
+  const response = await call('PUT', `/api/v1/issues/${key}/following`, who, { following });
   expect(response.statusCode).toBe(204);
 }
 
@@ -176,6 +181,7 @@ describe('notifications', () => {
     await deliver();
 
     expect(await toldAbout('rita', key)).toStrictEqual([
+      { event: 'assigneeChanged', by: 'Ada Lovelace', status: null },
       { event: 'commented', by: 'Grace Hopper', status: null },
     ]);
     expect(await toldAbout('alan', key)).toStrictEqual([
@@ -189,7 +195,7 @@ describe('notifications', () => {
     expect(await toldAbout('ada', key)).toStrictEqual([]);
   });
 
-  it('tell the reporter and the assignee of a status change, and nobody of other changes', async () => {
+  it('tell everyone involved of a status change, and nobody of other changes', async () => {
     const key = await report('rita');
     await assign(key, 'alan');
     await deliver();
@@ -203,6 +209,7 @@ describe('notifications', () => {
     await deliver();
 
     expect(await toldAbout('rita', key)).toStrictEqual([
+      { event: 'assigneeChanged', by: 'Ada Lovelace', status: null },
       { event: 'statusChanged', by: 'Grace Hopper', status: 'In progress' },
     ]);
     expect((await toldAbout('alan', key)).map(({ event }) => event)).toStrictEqual([
@@ -337,6 +344,84 @@ describe('notifications', () => {
   });
 });
 
+describe('following an issue', () => {
+  it('tells those who chose to of its comments, status changes and assignments', async () => {
+    const key = await report('ada');
+    await follow(key, 'alan', true);
+    await comment(key, 'grace');
+    await assign(key, 'grace');
+    expect(
+      (await call('PUT', `/api/v1/issues/${key}/status`, 'grace', { statusId: IN_PROGRESS }))
+        .statusCode,
+    ).toBe(204);
+    await deliver();
+
+    expect(await toldAbout('alan', key)).toStrictEqual([
+      { event: 'commented', by: 'Grace Hopper', status: null },
+      { event: 'assigneeChanged', by: 'Ada Lovelace', status: null },
+      { event: 'statusChanged', by: 'Grace Hopper', status: 'In progress' },
+    ]);
+    const assignment = (await notificationsOf('alan')).rows.find(
+      ({ event, issue }) => event === 'assigneeChanged' && issue.key === key,
+    );
+    expect(assignment?.assignee).toStrictEqual({ id: ids.grace, name: 'Grace Hopper' });
+  });
+
+  it('tells the assignee an issue leaves, and names nobody when it goes to no one', async () => {
+    const key = await report('ada');
+    await assign(key, 'grace');
+    await assign(key, 'alan');
+    await assign(key, null);
+    await deliver();
+
+    expect(await toldAbout('grace', key)).toStrictEqual([
+      { event: 'assigned', by: 'Ada Lovelace', status: null },
+      { event: 'assigneeChanged', by: 'Ada Lovelace', status: null },
+    ]);
+    expect(await toldAbout('alan', key)).toStrictEqual([
+      { event: 'assigned', by: 'Ada Lovelace', status: null },
+      { event: 'assigneeChanged', by: 'Ada Lovelace', status: null },
+    ]);
+    const [unassigned] = (await notificationsOf('alan')).rows;
+    expect(unassigned?.assignee).toBeNull();
+  });
+
+  it('stops once chosen, even for who takes part, but still tells what is given to them or names them', async () => {
+    const key = await report('rita');
+    await assign(key, 'grace');
+    await follow(key, 'grace', false);
+    await comment(key, 'grace');
+    await comment(key, 'rita');
+    expect(
+      (await call('PUT', `/api/v1/issues/${key}/status`, 'alan', { statusId: IN_PROGRESS }))
+        .statusCode,
+    ).toBe(204);
+    const named = await call('POST', `/api/v1/issues/${key}/comments`, 'alan', {
+      body: '@Grace Hopper, over to you.',
+      mentions: [ids.grace],
+    });
+    expect(named.statusCode).toBe(201);
+    await assign(key, 'alan');
+    await assign(key, 'grace');
+    await deliver();
+
+    expect((await toldAbout('grace', key)).map(({ event }) => event)).toStrictEqual([
+      'assigned',
+      'mentioned',
+      'assigned',
+    ]);
+
+    await follow(key, 'grace', true);
+    await comment(key, 'rita');
+    await deliver();
+    expect((await toldAbout('grace', key)).at(-1)).toStrictEqual({
+      event: 'commented',
+      by: 'Rita Client',
+      status: null,
+    });
+  });
+});
+
 describe('new issues', () => {
   beforeAll(async () => {
     await context.database.db
@@ -466,18 +551,17 @@ describe('notification emails', () => {
 
   it('do not leave once read in Toppo, nor of the kinds turned off', async () => {
     const key = await report('ada');
-    await assign(key, 'grace');
-    await deliver();
-    expect(
-      (await call('POST', '/api/v1/notifications/read', 'grace', { all: true })).statusCode,
-    ).toBe(204);
     // Alan hears of comments by email, not of what is given to him.
     await setEmails(
       'alan',
       NOTIFICATION_EVENTS.filter((event) => event !== 'assigned'),
     );
+    await assign(key, 'grace');
     await assign(key, 'alan');
     await deliver();
+    expect(
+      (await call('POST', '/api/v1/notifications/read', 'grace', { all: true })).statusCode,
+    ).toBe(204);
     await comment(key, 'grace');
     await deliver();
     const before = { grace: mailsTo('grace').length, alan: mailsTo('alan').length };
@@ -518,6 +602,24 @@ describe('notification emails', () => {
     expect(mail?.content).toContain(
       'désactivez-les dans votre compte : http://localhost:3000/account',
     );
+  });
+
+  it('name whom an issue went to, to those who follow it', async () => {
+    const key = await report('ada');
+    await assign(key, 'grace');
+    await deliver();
+    await deliverLater();
+    const before = mailsTo('grace').length;
+    await assign(key, 'alan');
+    await deliver();
+
+    await deliverLater();
+
+    expect(
+      mailsTo('grace')
+        .slice(before)
+        .map(({ content }) => content),
+    ).toStrictEqual([expect.stringContaining(`Ada Lovelace assigned ${key} to Alan Turing`)]);
   });
 
   it('quote the description of a new issue', async () => {

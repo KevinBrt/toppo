@@ -3,6 +3,8 @@ import {
   type AssigneesResponse,
   assignedIssuesResponseSchema,
   assigneesResponseSchema,
+  type BulkIssuesResponse,
+  bulkIssuesResponseSchema,
   type CreateIssueRequest,
   createIssueResponseSchema,
   formatPropertyFilters,
@@ -23,6 +25,7 @@ import {
 } from '@toppo/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
+import type { BulkChange } from '../models/bulk-change.model.ts';
 
 /** Commands answer `204 No Content`. */
 const noContent = z.null();
@@ -115,6 +118,28 @@ export const Issues = {
       method: 'PUT',
       body: { assigneeId },
       schema: noContent,
+    });
+  },
+
+  /** Follows the issue, or stops: told of its comments, status changes and assignments, or not. */
+  async follow(key: string, following: boolean): Promise<void> {
+    await apiRequest(`${issuePath(key)}/following`, {
+      method: 'PUT',
+      body: { following },
+      schema: noContent,
+    });
+  },
+
+  /** Applies one change to several issues of a project: each takes it if it may. */
+  async bulk(
+    projectKey: string,
+    issueKeys: readonly string[],
+    { action, ...change }: BulkChange,
+  ): Promise<BulkIssuesResponse> {
+    return await apiRequest(`${projectPath(projectKey)}/issues/bulk/${action}`, {
+      method: 'POST',
+      body: { issueKeys, ...change },
+      schema: bulkIssuesResponseSchema,
     });
   },
 

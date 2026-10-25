@@ -101,7 +101,8 @@ describe('the issues screen', () => {
             .getByRole('row')
             .nth(index + 1)
             .getByRole('cell')
-            .first()
+            // After the box that ticks it.
+            .nth(1)
             .element().textContent,
       ),
     );
@@ -389,6 +390,32 @@ describe('an issue’s page', () => {
     await expect
       .element(properties.getByRole('button', { name: 'Assignee, Unassigned' }))
       .toBeVisible();
+  });
+
+  it('is followed or no longer, counting who follows it, and says why when refused', async () => {
+    const fake = server(GRACE);
+    const { screen } = await renderApp({ path: '/issues/WEB-1' });
+    const follow = screen.getByRole('button', { name: 'Follow' });
+
+    await expect.element(follow).toHaveAccessibleDescription('1 person follows this issue');
+    await follow.click();
+    const unfollow = screen.getByRole('button', { name: 'Unfollow' });
+    await expect.element(unfollow).toHaveAccessibleDescription('2 people follow this issue');
+    expect(fake.requests).toContainEqual({
+      method: 'PUT',
+      path: '/api/v1/issues/WEB-1/following',
+      body: { following: true },
+    });
+
+    const web = fake.state.projects.find(({ key }) => key === 'WEB');
+    if (web) {
+      web.archived = true;
+    }
+    await unfollow.click();
+    await expect
+      .element(screen.getByText('This project is archived: it is read-only.'))
+      .toBeVisible();
+    await expect.element(screen.getByRole('button', { name: 'Follow' })).not.toBeInTheDocument();
   });
 
   it('changes its priority from the properties', async () => {

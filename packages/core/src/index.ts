@@ -72,6 +72,7 @@ export {
 export { closingChanges, planWorkflow, type WorkflowPlan } from './issues/workflow-plan.ts';
 export { retryDelay } from './jobs/retry.ts';
 export {
+  followersOf,
   type IssuePeople,
   type NotifiedChange,
   recipientsOf,

@@ -10,8 +10,10 @@ import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
 import { Pager } from '../../../../shared/layout/pager.tsx';
 import { SORT_LABELS } from '../../constants/issue-list.constants.ts';
+import type { IssueSelection } from '../../models/bulk-change.model.ts';
 import type { HideableField, IssueSection } from '../../models/issue-list.model.ts';
 import { sectionsOf } from '../../utils/issue-groups.util.ts';
+import { SelectCheckbox } from '../bulk/select-checkbox.tsx';
 import { LabelChips } from '../fields/label-chips.tsx';
 import { PersonName } from '../fields/person-name.tsx';
 import { PriorityLabel } from '../fields/priority-label.tsx';
@@ -62,6 +64,8 @@ type Breakpoint = (typeof BREAKPOINTS)[number]['breakpoint'];
 /** A column of the table: what heads it, what sorts by it, from which width it shows. */
 interface Column<Issue> {
   header: string;
+  /** What heads it instead of its header, which then only names it. */
+  head?: ReactNode;
   sort?: IssueSort | undefined;
   width: string;
   /** Shown from this width on; at any width without it. */
@@ -75,7 +79,7 @@ interface Column<Issue> {
  * One page of issues, each opening its issue, with the way to the other pages: a table, and cards
  * on phones. Columns give way as the screen narrows, so that the subject keeps room beside the
  * sidebar; their headers sort the list when it says how. Grouped, each group comes under its
- * title.
+ * title. With a selection, a box ticks each issue, and one every issue of the page.
  */
 export function IssuesTable<Issue extends IssueSummary>({
   issues,
@@ -84,6 +88,7 @@ export function IssuesTable<Issue extends IssueSummary>({
   grouping,
   sorting,
   hidden = [],
+  selection,
   onPage,
 }: {
   issues: UseQueryResult<IssuesPage<Issue>>;
@@ -94,6 +99,7 @@ export function IssuesTable<Issue extends IssueSummary>({
   sorting?: TableSorting | undefined;
   /** The fields the project hides. */
   hidden?: readonly HideableField[];
+  selection?: IssueSelection | undefined;
   onPage: (page: number) => void;
 }) {
   const { t, locale } = useI18n();
@@ -117,7 +123,26 @@ export function IssuesTable<Issue extends IssueSummary>({
   // Across every page: the server counts each group whole.
   const sizeOf = (section: IssueSection<Issue>) =>
     groups?.find(({ key }) => key === section.key)?.count ?? section.issues.length;
+  const pageBox = selection ? (
+    <PageCheckbox keys={rows.map(({ key }) => key)} selection={selection} />
+  ) : null;
   const allColumns: Column<Issue>[] = [
+    ...(selection
+      ? [
+          {
+            header: t('issues.bulk.selectPage'),
+            head: pageBox,
+            width: 'w-11',
+            cell: (issue: Issue) => (
+              <SelectCheckbox
+                label={t('issues.bulk.select', { key: issue.key })}
+                checked={selection.selected.includes(issue.key)}
+                onChange={(checked) => selection.onSelect([issue.key], checked)}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       header: t(SORT_LABELS.key),
       sort: 'key',
@@ -261,12 +286,19 @@ export function IssuesTable<Issue extends IssueSummary>({
         })}
       </table>
       <div className="sm:hidden">
+        {pageBox ? (
+          <div className="flex items-center gap-3 border-b border-border px-4 py-2 text-sm text-muted-foreground">
+            {pageBox}
+            <span aria-hidden="true">{t('issues.bulk.selectPage')}</span>
+          </div>
+        ) : null}
         <IssueCards
           sections={sections}
           grouping={grouping}
           sizeOf={sizeOf}
           last={last}
           showsPriority={!hidden.includes('priority')}
+          selection={selection}
         />
       </div>
       <Pager
@@ -302,6 +334,13 @@ function ColumnHeader<Issue>({
 }) {
   const sort = column.sort;
   const className = cn(classNameOf(column), CELL_PADDING, 'py-2.5 font-medium');
+  if (column.head) {
+    return (
+      <th scope="col" className={className}>
+        {column.head}
+      </th>
+    );
+  }
   if (!(sorting && sort)) {
     return (
       <th scope="col" className={className}>
@@ -333,6 +372,21 @@ function ColumnHeader<Issue>({
         />
       </button>
     </th>
+  );
+}
+
+/** Ticks every issue of the page, or none; half ticked when only some are. */
+function PageCheckbox({ keys, selection }: { keys: readonly string[]; selection: IssueSelection }) {
+  const { t } = useI18n();
+  const ticked = keys.filter((key) => selection.selected.includes(key)).length;
+
+  return (
+    <SelectCheckbox
+      label={t('issues.bulk.selectPage')}
+      checked={ticked > 0 && ticked === keys.length}
+      indeterminate={ticked > 0 && ticked < keys.length}
+      onChange={(checked) => selection.onSelect(keys, checked)}
+    />
   );
 }
 

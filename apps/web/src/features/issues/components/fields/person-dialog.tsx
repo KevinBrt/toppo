@@ -11,7 +11,7 @@ const SEARCH_DELAY_MS = 300;
 
 /**
  * Chooses someone among the people the server finds who reach a project, or nobody: who an issue
- * goes to, or who a person property names. Reports the choice; the dialog closes with it.
+ * or several go to, or who a person property names. Reports the choice; the dialog closes with it.
  */
 export function PersonDialog({
   projectKey,
@@ -24,7 +24,8 @@ export function PersonDialog({
   projectKey: string;
   /** What is chosen: "Assign WEB-42", "Reviewer". */
   title: string;
-  current: UserRef | null;
+  /** Who it is now; left out for several issues, which may each have another: anyone is a change. */
+  current?: UserRef | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onChoose: (person: UserRef | null) => void;
@@ -42,7 +43,7 @@ export function PersonDialog({
   const choose = (person: UserRef | null) => {
     onOpenChange(false);
     setTyped('');
-    if (person?.id !== current?.id) {
+    if (current === undefined || person?.id !== current?.id) {
       onChoose(person);
     }
   };
@@ -63,7 +64,7 @@ export function PersonDialog({
             aria-busy={people.isFetching}
             className="max-h-72 divide-y divide-border overflow-y-auto rounded-md border border-border"
           >
-            {current ? (
+            {current !== null ? (
               <li>
                 <button
                   type="button"

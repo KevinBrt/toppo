@@ -98,6 +98,28 @@ describe('the bell', () => {
       .toBeVisible();
   });
 
+  it('tells to whom an issue went, or that it went to no one', async () => {
+    server([
+      fakeNotification(1, {
+        event: 'assigneeChanged',
+        assignee: { id: ADA.id, name: 'Alan Turing' },
+      }),
+      fakeNotification(2, { event: 'assigneeChanged', assignee: { id: ADA.id, name: null } }),
+      fakeNotification(3, { event: 'assigneeChanged', assignee: null }),
+    ]);
+    const { screen } = await renderApp({ path: '/issues?project=WEB' });
+
+    await bell().click();
+
+    for (const sentence of [
+      /Grace Hopper assigned WEB-1 to Alan Turing/,
+      /Grace Hopper assigned WEB-1 to Deleted user/,
+      /Grace Hopper unassigned WEB-1/,
+    ]) {
+      await expect.element(screen.getByRole('menuitem', { name: sentence })).toBeVisible();
+    }
+  });
+
   it('shows 9+ beyond nine unread', async () => {
     server(Array.from({ length: 12 }, (_, index) => fakeNotification(index + 1)));
     await renderApp({ path: '/issues?project=WEB' });
@@ -128,11 +150,17 @@ describe('the notifications page', () => {
   });
 
   it('reads in French', async () => {
-    server([fakeNotification(1, { event: 'mentioned' })]);
+    server([
+      fakeNotification(1, { event: 'mentioned' }),
+      fakeNotification(2, { event: 'assigneeChanged', assignee: { id: ADA.id, name: 'Ada' } }),
+    ]);
     const { screen } = await renderApp({ path: '/notifications', locale: 'fr' });
 
     await expect
       .element(screen.getByRole('link', { name: /Grace Hopper vous a mentionné dans WEB-1/ }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByRole('link', { name: /Grace Hopper a assigné WEB-1 à Ada/ }))
       .toBeVisible();
   });
 });

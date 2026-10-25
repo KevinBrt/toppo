@@ -20,7 +20,8 @@ export function canSeeIssue(permissions: readonly string[], reportedByThem: bool
 
 /**
  * What someone may do on an issue they see. Whoever reported it may fix its title and
- * description, and attach files to it; the rest needs the permission, on their own issues too.
+ * description, and attach files to it; anyone may follow it; the rest needs the permission, on
+ * their own issues too.
  */
 export function issueActionsOf(
   permissions: readonly string[],
@@ -35,6 +36,7 @@ export function issueActionsOf(
     assign: can(permissions, 'issue.assign'),
     delete: can(permissions, 'issue.delete'),
     comment: can(permissions, 'comment.create'),
+    follow: true,
   };
   return (Object.keys(granted) as IssueAction[]).filter((action) => granted[action]);
 }

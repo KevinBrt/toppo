@@ -288,6 +288,13 @@
       "when": 1792880067893,
       "tag": "0040_similar_issue_words",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792882811236,
+      "tag": "0041_issue_followers",
+      "breakpoints": true
     }
   ]
 }

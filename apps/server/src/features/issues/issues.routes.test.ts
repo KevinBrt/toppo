@@ -174,7 +174,7 @@ describe('reporting an issue', () => {
       assignee: null,
       reporter: { id: teamId, name: 'Grace Hopper' },
       closedAt: null,
-      actions: ['editText', 'attach', 'editFields', 'changeStatus', 'assign', 'comment'],
+      actions: ['editText', 'attach', 'editFields', 'changeStatus', 'assign', 'comment', 'follow'],
     });
     expect((await history(first)).map(({ type }) => type)).toStrictEqual(['issue.created']);
   });
@@ -285,6 +285,7 @@ describe('seeing issues', () => {
       'editText',
       'attach',
       'comment',
+      'follow',
     ]);
   });
 

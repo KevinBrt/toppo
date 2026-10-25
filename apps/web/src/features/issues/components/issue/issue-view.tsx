@@ -102,6 +102,33 @@ export function IssueView({
       ]),
   });
 
+  // Following is not a change to the issue: its history stays as it is.
+  const follow = useMutation({
+    mutationFn: (following: boolean) => Issues.follow(issue.key, following),
+    onMutate: async (following) => {
+      setFailure(null);
+      await queryClient.cancelQueries({ queryKey: detail });
+      const previous = queryClient.getQueryData(detail);
+      queryClient.setQueryData(detail, (current) =>
+        current && current.following !== following
+          ? {
+              ...current,
+              following,
+              followerCount: current.followerCount + (following ? 1 : -1),
+            }
+          : current,
+      );
+      return previous;
+    },
+    onError: (error, _following, previous) => {
+      setFailure(error);
+      if (previous) {
+        queryClient.setQueryData(detail, previous);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: detail }),
+  });
+
   return (
     <div className="flex flex-col gap-6">
       {failure ? (
@@ -111,6 +138,7 @@ export function IssueView({
         issue={issue}
         fields={fields.data}
         onEdit={(change) => edit.mutate(change)}
+        onFollow={(following) => follow.mutate(following)}
         onDeleted={onDeleted}
       />
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]">

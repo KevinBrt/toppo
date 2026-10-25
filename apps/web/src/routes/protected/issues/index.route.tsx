@@ -91,6 +91,8 @@ function IssuesScreen() {
     );
   }
   const permissions = project.data?.permissions ?? [];
+  // Read-only while archived: nothing to change from the list.
+  const archived = project.data?.archived ?? false;
   const newIssue = can(permissions, 'issue.create') ? (
     <Link to="/issues/new" search={{ project: projectKey }} className={buttonVariants()}>
       <PlusIcon aria-hidden="true" />
@@ -102,7 +104,11 @@ function IssuesScreen() {
       <IssuesList
         projectKey={projectKey}
         query={query}
-        canAssign={can(permissions, 'issue.assign')}
+        can={{
+          update: !archived && can(permissions, 'issue.update'),
+          assign: !archived && can(permissions, 'issue.assign'),
+          delete: !archived && can(permissions, 'issue.delete'),
+        }}
         seesEveryIssue={issueVisibilityOf(permissions) === 'all'}
         empty={
           <EmptyState

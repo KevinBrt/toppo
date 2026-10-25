@@ -24,16 +24,17 @@ export const fr: Messages = {
     profile: 'Profil',
     notifications: 'Notifications',
     notificationsDescription:
-      'Comment Toppo vous tient au courant de ce qui se passe sur les tickets auxquels vous participez.',
+      'Comment Toppo vous tient au courant de ce qui se passe sur les tickets que vous suivez.',
     emailNotificationsTitle: 'Par e-mail',
     emailNotificationsHelp:
       'Cinq minutes après chaque notification, sauf si vous l’avez lue dans Toppo entre-temps.',
     emailEvents: {
       created: 'Nouveaux tickets',
       assigned: 'Tickets qui me sont assignés',
-      commented: 'Commentaires sur les tickets où je participe',
+      assigneeChanged: 'Assignations des tickets que je suis',
+      commented: 'Commentaires sur les tickets que je suis',
       mentioned: 'Mentions',
-      statusChanged: 'Changements de statut de mes tickets',
+      statusChanged: 'Changements de statut des tickets que je suis',
     },
     emailEventsCreatedHelp: 'Si votre rôle vous en prévient.',
     emailNotSetUp:
@@ -117,6 +118,12 @@ export const fr: Messages = {
     editTitle: 'Modifier le titre',
     editRequest: 'Modifier',
     noDescription: 'Aucune description.',
+    follow: 'Suivre',
+    unfollow: 'Ne plus suivre',
+    followerCount: {
+      one: '{count} personne suit ce ticket',
+      other: '{count} personnes suivent ce ticket',
+    },
     more: 'Plus d’actions',
     delete: 'Supprimer le ticket',
     deleteTitle: 'Supprimer {key} ?',
@@ -258,6 +265,69 @@ export const fr: Messages = {
         invalidName: 'Son nom ne peut pas être utilisé.',
         incomplete: 'Le fichier n’est pas arrivé entier. Réessayez.',
         notFound: 'Ce fichier n’existe plus. Rechargez la page.',
+      },
+    },
+    bulk: {
+      select: 'Sélectionner {key}',
+      selectPage: 'Sélectionner tous les tickets de la page',
+      region: 'Tickets sélectionnés',
+      selected: { one: '{count} sélectionné', other: '{count} sélectionnés' },
+      statusHeading: { one: 'Passer {count} ticket à', other: 'Passer {count} tickets à' },
+      priorityHeading: { one: 'Priorité de {count} ticket', other: 'Priorité des {count} tickets' },
+      categoryHeading: {
+        one: 'Catégorie de {count} ticket',
+        other: 'Catégorie des {count} tickets',
+      },
+      addHeading: { one: 'Ajouter à {count} ticket', other: 'Ajouter aux {count} tickets' },
+      removeHeading: { one: 'Retirer de {count} ticket', other: 'Retirer des {count} tickets' },
+      confirm: {
+        status: {
+          one: 'Passer {count} ticket à « {name} » ?',
+          other: 'Passer {count} tickets à « {name} » ?',
+        },
+        priority: {
+          one: 'Donner la priorité « {name} » à {count} ticket ?',
+          other: 'Donner la priorité « {name} » à {count} tickets ?',
+        },
+        category: {
+          one: 'Donner la catégorie « {name} » à {count} ticket ?',
+          other: 'Donner la catégorie « {name} » à {count} tickets ?',
+        },
+        assign: {
+          one: 'Assigner {count} ticket à {name} ?',
+          other: 'Assigner {count} tickets à {name} ?',
+        },
+        unassign: {
+          one: 'Retirer l’assignation de {count} ticket ?',
+          other: 'Retirer l’assignation de {count} tickets ?',
+        },
+        addLabel: {
+          one: 'Ajouter l’étiquette « {name} » à {count} ticket ?',
+          other: 'Ajouter l’étiquette « {name} » à {count} tickets ?',
+        },
+        removeLabel: {
+          one: 'Retirer l’étiquette « {name} » de {count} ticket ?',
+          other: 'Retirer l’étiquette « {name} » de {count} tickets ?',
+        },
+      },
+      confirmDescription:
+        'Chaque ticket qui le peut est modifié et les personnes qui le suivent sont prévenues. Les autres sont nommés ensuite.',
+      apply: 'Appliquer',
+      addNamed: 'Ajouter {name}',
+      removeNamed: 'Retirer {name}',
+      assignTitle: { one: 'Assigner {count} ticket', other: 'Assigner {count} tickets' },
+      delete: 'Supprimer',
+      deleteTitle: { one: 'Supprimer {count} ticket ?', other: 'Supprimer {count} tickets ?' },
+      deleteDescription:
+        'Les tickets et leur historique sont supprimés définitivement. Leurs numéros ne seront jamais réutilisés.',
+      clear: 'Désélectionner',
+      changed: { one: '{count} ticket modifié.', other: '{count} tickets modifiés.' },
+      deleted: { one: '{count} ticket supprimé.', other: '{count} tickets supprimés.' },
+      unchanged: 'Rien à changer : les tickets sélectionnés l’étaient déjà.',
+      refused: {
+        STATUS_NOT_ALLOWED:
+          'Non déplacés, le workflow ne le permet pas depuis leur statut : {keys}.',
+        ISSUE_NOT_FOUND: 'Introuvables, supprimés entre-temps ou hors de votre vue : {keys}.',
       },
     },
     list: {
@@ -543,7 +613,7 @@ export const fr: Messages = {
     seeAll: 'Tout voir',
     empty: 'Aucune notification pour l’instant.',
     emptyDescription:
-      'Vous êtes prévenu ici quand un ticket vous est assigné, quand quelqu’un commente ou fait avancer un ticket qui vous concerne, et quand on vous mentionne.',
+      'Vous êtes prévenu ici quand un ticket vous est assigné, quand quelqu’un commente, fait avancer ou assigne un ticket que vous suivez, et quand on vous mentionne.',
     loading: 'Chargement des notifications…',
     shown: { one: '{count} notification affichée', other: '{count} notifications affichées' },
     events: {
@@ -552,7 +622,9 @@ export const fr: Messages = {
       commented: '{name} a commenté {key}',
       mentioned: '{name} vous a mentionné dans {key}',
       statusChanged: '{name} a passé {key} à « {status} »',
+      assigneeChanged: '{name} a assigné {key} à {assignee}',
     },
+    unassigned: '{name} a retiré l’assignation de {key}',
   },
   projectProperties: {
     title: 'Propriétés des tickets',

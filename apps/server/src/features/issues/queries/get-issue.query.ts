@@ -6,17 +6,18 @@ import { alias } from 'drizzle-orm/pg-core';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { labelsOfIssue, propertyValuesOfIssue, toIssueSummary } from '../utils/issue-rows.util.ts';
+import { followersOfIssue } from '../utils/people.util.ts';
 
 const { issueCategories, issues, priorities, projects, statuses, users } = schema;
 const assignees = alias(users, 'assignees');
 const reporters = alias(users, 'reporters');
 
-/** An issue the caller sees, by its key, with what they may do on it. */
+/** An issue the caller sees, by its key, with what they may do on it and who follows it. */
 export const getIssue = defineQuery({
   name: 'issue.get',
   access: { project: 'issueKey' },
   input: issueKeyParamsSchema,
-  async handler({ db, project }): Promise<IssueResponse> {
+  async handler({ db, actor, project }): Promise<IssueResponse> {
     const [row] = await db
       .select({
         number: issues.number,
@@ -54,12 +55,19 @@ export const getIssue = defineQuery({
     if (!row) {
       throw new HttpError(404, 'ISSUE_NOT_FOUND', 'This issue does not exist');
     }
+    const followers = await followersOfIssue(db, {
+      id: project.issue.id,
+      reporterId: row.reporter.id,
+      assigneeId: row.assignee?.id ?? null,
+    });
     return {
       ...toIssueSummary(project.key, row),
       id: project.issue.id,
       project: { key: project.key, name: row.projectName },
       description: row.description,
       closedAt: row.closedAt?.toISOString() ?? null,
+      following: followers.includes(actor.id),
+      followerCount: followers.length,
       // Read-only while archived: nothing to offer.
       actions: project.archived
         ? []

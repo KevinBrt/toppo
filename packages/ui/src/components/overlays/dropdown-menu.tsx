@@ -91,3 +91,13 @@ export function DropdownMenuSeparator({
 }: ComponentProps<typeof Menu.Separator>) {
   return <Menu.Separator className={cn('-mx-1 my-1 h-px bg-border', className)} {...props} />;
 }
+
+/** A heading over the items that follow it, not itself a choice. */
+export function DropdownMenuLabel({ className, ...props }: ComponentProps<typeof Menu.Label>) {
+  return (
+    <Menu.Label
+      className={cn('px-2.5 pt-1.5 pb-1 text-xs font-medium text-muted-foreground', className)}
+      {...props}
+    />
+  );
+}

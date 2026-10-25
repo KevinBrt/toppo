@@ -8,7 +8,7 @@ import {
 } from '@toppo/shared';
 import { and, count, desc, eq } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
-import { eventOf, seenBy } from '../utils/notification-rows.util.ts';
+import { eventOf, peopleNamed, seenBy } from '../utils/notification-rows.util.ts';
 
 const { activities, issues, notifications, projects, users } = schema;
 
@@ -49,11 +49,18 @@ export const listNotifications = defineQuery({
       .innerJoin(issues, eq(issues.id, activities.issueId))
       .innerJoin(projects, eq(projects.id, issues.projectId))
       .where(mine);
+    const told = rows.map((row) => ({ row, ...eventOf(row.type, row.payload, row.reason) }));
+    const assignees = await peopleNamed(
+      db,
+      told.flatMap(({ assigneeId }) => (assigneeId ? [assigneeId] : [])),
+    );
 
     return {
-      rows: rows.map((row) => ({
+      rows: told.map(({ row, event, status, assigneeId }) => ({
         id: row.id,
-        ...eventOf(row.type, row.payload, row.reason),
+        event,
+        status,
+        assignee: assigneeId ? (assignees.get(assigneeId) ?? { id: assigneeId, name: null }) : null,
         actor: { id: row.actor.id, name: row.actor.deletedAt ? null : row.actor.name },
         issue: {
           key: formatIssueKey({

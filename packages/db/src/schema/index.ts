@@ -6,6 +6,7 @@ export {
   attachments,
   comments,
   issueCategories,
+  issueFollowers,
   issueLabels,
   issues,
   issueWords,

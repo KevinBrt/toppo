@@ -44,6 +44,16 @@ test('an issue is reported, moved through the workflow and closed', async ({ pag
   await expect(page.getByText('every', { exact: true })).toBeVisible();
   await expectAccessible(page);
 
+  // Its reporter follows it, until they stop.
+  await page.getByRole('button', { name: 'Unfollow' }).click();
+  await expect(page.getByRole('button', { name: 'Follow' })).toHaveAccessibleDescription(
+    '0 people follow this issue',
+  );
+  await page.getByRole('button', { name: 'Follow' }).click();
+  await expect(page.getByRole('button', { name: 'Unfollow' })).toHaveAccessibleDescription(
+    '1 person follows this issue',
+  );
+
   // Only the statuses the workflow allows next are offered.
   const status = (name: string) =>
     page
@@ -158,5 +168,46 @@ test('an issue is found by its words, its key, or a filter, the list grouped', a
   await expect(page.getByRole('button', { name: 'Group: Priority' })).toBeVisible();
   await expect(page.getByText('1 issue', { exact: true }).filter({ visible: true })).toBeAttached();
   await expect(page.getByRole('link', { name: 'Export is empty' })).toBeVisible();
+  await expectAccessible(page);
+});
+
+test('several issues are moved, then deleted, at once from the list', async ({ page, baseURL }) => {
+  const key = uniqueKey();
+  const headers = { origin: baseURL ?? '' };
+  expect(
+    (
+      await page.request.post('/api/v1/projects', { headers, data: { key, name: `Bulk ${key}` } })
+    ).status(),
+  ).toBe(201);
+  for (const title of ['Invoices fail to download', 'Export is empty', 'Typo on the home page']) {
+    expect(
+      (
+        await page.request.post(`/api/v1/projects/${key}/issues`, { headers, data: { title } })
+      ).status(),
+    ).toBe(201);
+  }
+
+  await page.goto(`/issues?project=${key}`);
+  await page.getByRole('checkbox', { name: `Select ${key}-1` }).check();
+  await page.getByRole('checkbox', { name: `Select ${key}-2` }).check();
+  const bar = page.getByRole('region', { name: 'Selected issues' });
+  await expect(bar.getByText('2 selected')).toBeVisible();
+  await expectAccessible(page);
+  await bar.getByRole('button', { name: 'Status' }).click();
+  await page.getByRole('menuitem', { name: 'In progress' }).click();
+  const confirmation = page.getByRole('dialog', { name: 'Move 2 issues to “In progress”?' });
+  await expectAccessible(page);
+  await confirmation.getByRole('button', { name: 'Apply' }).click();
+  await expect(page.getByText('2 issues changed.')).toBeVisible();
+  await expect(bar).toHaveCount(0);
+
+  await page.getByRole('checkbox', { name: 'Select every issue of the page' }).check();
+  await bar.getByRole('button', { name: 'Delete' }).click();
+  await page
+    .getByRole('dialog', { name: 'Delete 3 issues?' })
+    .getByRole('button', { name: 'Delete for good' })
+    .click();
+  await expect(page.getByText('3 issues deleted.')).toBeVisible();
+  await expect(page.getByText('No open issues')).toBeVisible();
   await expectAccessible(page);
 });

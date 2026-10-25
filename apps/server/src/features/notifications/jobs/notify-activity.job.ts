@@ -1,14 +1,21 @@
 import { type NotifiedChange, recipientsOf } from '@toppo/core';
 import { schema } from '@toppo/db';
 import { ISSUE_ACTIVITY_PAYLOADS } from '@toppo/shared';
-import { eq } from 'drizzle-orm';
+import { and, eq, lte } from 'drizzle-orm';
 import { ACTIVITY_RECORDED } from '../../../platform/activities/record-activity.ts';
 import { whoSeesIssue } from '../../../platform/auth/project-access.ts';
 import { defineJob } from '../../../platform/jobs/jobs.ts';
 import { newIssueSubscribers } from '../utils/notification-rows.util.ts';
 import { emailNotifications } from './email-notification.job.ts';
 
-const { activities, comments, issues, notifications } = schema;
+const { activities, comments, issueFollowers, issues, notifications } = schema;
+
+/** The changes told to those who follow an issue. */
+const FOLLOWED: readonly NotifiedChange['type'][] = [
+  'issue.commented',
+  'issue.statusChanged',
+  'issue.assigneeChanged',
+];
 
 /**
  * Tells the people concerned about a change to an issue (`recipientsOf`): those whose account is
@@ -24,6 +31,7 @@ export const notifyActivityJob = defineJob({
         type: activities.type,
         payload: activities.payload,
         actorId: activities.actorId,
+        createdAt: activities.createdAt,
         issueId: issues.id,
         projectId: issues.projectId,
         reporterId: issues.reporterId,
@@ -44,17 +52,32 @@ export const notifyActivityJob = defineJob({
             subscriberIds: await newIssueSubscribers(tx, activity.projectId),
           }
         : changeOf(activity.type, activity.actorId, activity.payload);
-    const commenters =
-      change.type === 'issue.commented'
-        ? await tx
-            .selectDistinct({ authorId: comments.authorId })
-            .from(comments)
-            .where(eq(comments.issueId, activity.issueId))
-        : [];
+    // Those who follow it are told of comments, status changes and assignments; those who
+    // commented later, by the time this runs, were not there yet.
+    const followed = FOLLOWED.includes(change.type);
+    const commenters = followed
+      ? await tx
+          .selectDistinct({ authorId: comments.authorId })
+          .from(comments)
+          .where(
+            and(
+              eq(comments.issueId, activity.issueId),
+              lte(comments.createdAt, activity.createdAt),
+            ),
+          )
+      : [];
+    const choices = followed
+      ? await tx
+          .select({ userId: issueFollowers.userId, following: issueFollowers.following })
+          .from(issueFollowers)
+          .where(eq(issueFollowers.issueId, activity.issueId))
+      : [];
     const recipients = recipientsOf(change, {
       reporterId: activity.reporterId,
       assigneeId: activity.assigneeId,
       commenterIds: commenters.map(({ authorId }) => authorId),
+      followerIds: choices.filter(({ following }) => following).map(({ userId }) => userId),
+      unfollowerIds: choices.filter(({ following }) => !following).map(({ userId }) => userId),
     });
     const told = await whoSeesIssue(tx, activity.issueId, [...recipients.keys()]);
     if (told.length === 0) {
@@ -78,12 +101,10 @@ export const notifyActivityJob = defineJob({
 /** A stored activity as `recipientsOf` reads it. */
 function changeOf(type: string, actorId: string, payload: unknown): NotifiedChange {
   switch (type) {
-    case 'issue.assigneeChanged':
-      return {
-        type,
-        actorId,
-        assigneeId: ISSUE_ACTIVITY_PAYLOADS['issue.assigneeChanged'].parse(payload).to,
-      };
+    case 'issue.assigneeChanged': {
+      const { from, to } = ISSUE_ACTIVITY_PAYLOADS['issue.assigneeChanged'].parse(payload);
+      return { type, actorId, assigneeId: to, previousAssigneeId: from };
+    }
     case 'issue.commented':
     case 'issue.commentEdited':
       return {

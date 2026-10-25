@@ -9,7 +9,7 @@ import {
   issuePropertyValueSchema,
 } from '../properties/property-values.ts';
 import { issueDescriptionSchema, issueTitleSchema, PRIORITY_LEVELS } from './fields.ts';
-import { labelRefSchema } from './labels.ts';
+import { LABELS_MAX, labelRefSchema } from './labels.ts';
 
 /** Rows per page of a project's issues. */
 export const ISSUES_PAGE_SIZE = 50;
@@ -59,6 +59,7 @@ export const ISSUE_ACTIONS = [
   'assign',
   'delete',
   'comment',
+  'follow',
 ] as const;
 
 export type IssueAction = (typeof ISSUE_ACTIONS)[number];
@@ -293,9 +294,97 @@ export const issueResponseSchema = issueSummarySchema.extend({
   closedAt: z.iso.datetime().nullable(),
   /** What the caller may do on it, to hide the rest. */
   actions: z.array(z.enum(ISSUE_ACTIONS)),
+  /** Whether the caller follows it: told of its comments, status changes and assignments. */
+  following: z.boolean(),
+  /** How many people follow it, the caller included. */
+  followerCount: z.number().int(),
 });
 
 export type IssueResponse = z.infer<typeof issueResponseSchema>;
+
+/** Body of `PUT /api/v1/issues/:issueKey/following`: follow the issue, or stop. */
+export const issueFollowingRequestSchema = z.object({ following: z.boolean() });
+
+export type IssueFollowingRequest = z.infer<typeof issueFollowingRequestSchema>;
+
+/** The most issues one action takes at once: a page of the list, with room to spare. */
+export const BULK_ISSUES_MAX = 100;
+
+const distinct = (values: readonly string[]) => new Set(values).size === values.length;
+
+/** The issues an action on several issues takes, by key, each once: all of the project named. */
+const bulkIssueKeysSchema = z
+  .array(issueKeySchema)
+  .min(1)
+  .max(BULK_ISSUES_MAX)
+  .refine(distinct, { message: 'An issue is given twice' });
+
+/** Body of `POST /api/v1/projects/:projectKey/issues/bulk/status`. */
+export const bulkStatusRequestSchema = z.object({
+  issueKeys: bulkIssueKeysSchema,
+  statusId: z.uuid(),
+});
+
+export type BulkStatusRequest = z.infer<typeof bulkStatusRequestSchema>;
+
+/** Body of `POST /api/v1/projects/:projectKey/issues/bulk/fields`: the fields given change. */
+export const bulkFieldsRequestSchema = z
+  .object({
+    issueKeys: bulkIssueKeysSchema,
+    categoryId: z.uuid().optional(),
+    priorityId: z.uuid().optional(),
+  })
+  .refine(({ categoryId, priorityId }) => categoryId !== undefined || priorityId !== undefined, {
+    message: 'Nothing to change',
+  });
+
+export type BulkFieldsRequest = z.infer<typeof bulkFieldsRequestSchema>;
+
+/** Body of `POST /api/v1/projects/:projectKey/issues/bulk/assignee`: someone, or nobody. */
+export const bulkAssigneeRequestSchema = z.object({
+  issueKeys: bulkIssueKeysSchema,
+  assigneeId: z.uuid().nullable(),
+});
+
+export type BulkAssigneeRequest = z.infer<typeof bulkAssigneeRequestSchema>;
+
+/** Body of `POST /api/v1/projects/:projectKey/issues/bulk/labels`: labels added, others removed. */
+export const bulkLabelsRequestSchema = z
+  .object({
+    issueKeys: bulkIssueKeysSchema,
+    add: z.array(z.uuid()).max(LABELS_MAX),
+    remove: z.array(z.uuid()).max(LABELS_MAX),
+  })
+  .refine(({ add, remove }) => add.length + remove.length > 0, { message: 'Nothing to change' })
+  .refine(({ add, remove }) => distinct([...add, ...remove]), {
+    message: 'A label is given twice',
+  });
+
+export type BulkLabelsRequest = z.infer<typeof bulkLabelsRequestSchema>;
+
+/** Body of `POST /api/v1/projects/:projectKey/issues/bulk/delete`. */
+export const bulkDeleteRequestSchema = z.object({ issueKeys: bulkIssueKeysSchema });
+
+export type BulkDeleteRequest = z.infer<typeof bulkDeleteRequestSchema>;
+
+/**
+ * Why an issue did not take an action on several: gone or out of sight, or a status its
+ * workflow does not allow from its own.
+ */
+export const BULK_REFUSALS = ['ISSUE_NOT_FOUND', 'STATUS_NOT_ALLOWED'] as const;
+
+export type BulkRefusal = (typeof BULK_REFUSALS)[number];
+
+/**
+ * Answer of an action on several issues: those it changed, and those it could not, with why.
+ * Those already as asked are in neither.
+ */
+export const bulkIssuesResponseSchema = z.object({
+  changed: z.array(z.string()),
+  refused: z.array(z.object({ key: z.string(), code: z.enum(BULK_REFUSALS) })),
+});
+
+export type BulkIssuesResponse = z.infer<typeof bulkIssuesResponseSchema>;
 
 /**
  * Body of `GET /api/v1/projects/:projectKey/issue-fields`: the short lists the forms offer. Each

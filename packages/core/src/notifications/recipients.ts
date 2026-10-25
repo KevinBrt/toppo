@@ -6,6 +6,10 @@ export interface IssuePeople {
   assigneeId: string | null;
   /** Everyone who commented on it, the comment just written included. */
   commenterIds: readonly string[];
+  /** Those who chose to follow it. */
+  followerIds: readonly string[];
+  /** Those who stopped following it: taking part in it no longer tells them anything. */
+  unfollowerIds: readonly string[];
 }
 
 /** A change to an issue, as far as notifications care about it. */
@@ -17,18 +21,40 @@ export type NotifiedChange =
       /** Those whose role tells them of new issues (`roles.notify_new_issues`). */
       subscriberIds: readonly string[];
     }
-  | { type: 'issue.assigneeChanged'; actorId: string; assigneeId: string | null }
+  | {
+      type: 'issue.assigneeChanged';
+      actorId: string;
+      assigneeId: string | null;
+      /** Whom it was given to before: told too, while following it. */
+      previousAssigneeId: string | null;
+    }
   | { type: 'issue.commented'; actorId: string; mentioned: readonly string[] }
   | { type: 'issue.commentEdited'; actorId: string; mentioned: readonly string[] }
   | { type: 'issue.statusChanged'; actorId: string }
   | { type: 'other'; actorId: string };
 
+/** Those who take part in an issue: its reporter, its assignee, those who commented on it. */
+function participantsOf(people: IssuePeople): string[] {
+  return [people.reporterId, people.assigneeId, ...people.commenterIds].filter(
+    (userId): userId is string => userId !== null,
+  );
+}
+
+/**
+ * Those who follow an issue, each once: those who take part in it, unless they stopped, and those
+ * who chose to follow it.
+ */
+export function followersOf(people: IssuePeople): string[] {
+  const taking = participantsOf(people).filter((userId) => !people.unfollowerIds.includes(userId));
+  return [...new Set([...taking, ...people.followerIds])];
+}
+
 /**
  * Who is told about a change, and why: of a new issue, its assignee and those whose role asks
- * for it; the person an issue is given to; those a comment names;
- * the reporter, the assignee and those who commented, of a new comment; the reporter and the
- * assignee, of a status change. Nothing else is told, and nobody is told of what they did
- * themselves. Whether they still see the issue is checked by the caller.
+ * for it; the person an issue is given to; those a comment names; and those who follow the issue
+ * (`followersOf`) of a comment, a status change and a change of assignee, the assignee it had
+ * before included. Nothing else is told, and nobody is told of what they did themselves. Whether
+ * they still see the issue is checked by the caller.
  */
 export function recipientsOf(
   change: NotifiedChange,
@@ -41,6 +67,11 @@ export function recipientsOf(
       recipients.set(userId, reason);
     }
   };
+  const tellFollowers = (involved: IssuePeople) => {
+    for (const userId of followersOf(involved)) {
+      tell(userId, involved.followerIds.includes(userId) ? 'following' : 'participating');
+    }
+  };
   switch (change.type) {
     case 'issue.created':
       tell(change.assigneeId, 'assigned');
@@ -50,14 +81,21 @@ export function recipientsOf(
       break;
     case 'issue.assigneeChanged':
       tell(change.assigneeId, 'assigned');
+      // Its assignee as the change left it, whoever has it by the time people are told.
+      tellFollowers({
+        ...people,
+        assigneeId: change.assigneeId,
+        commenterIds: [
+          ...people.commenterIds,
+          ...(change.previousAssigneeId === null ? [] : [change.previousAssigneeId]),
+        ],
+      });
       break;
     case 'issue.commented':
       for (const userId of change.mentioned) {
         tell(userId, 'mentioned');
       }
-      for (const userId of [people.reporterId, people.assigneeId, ...people.commenterIds]) {
-        tell(userId, 'participating');
-      }
+      tellFollowers(people);
       break;
     case 'issue.commentEdited':
       for (const userId of change.mentioned) {
@@ -65,8 +103,7 @@ export function recipientsOf(
       }
       break;
     case 'issue.statusChanged':
-      tell(people.reporterId, 'participating');
-      tell(people.assigneeId, 'participating');
+      tellFollowers(people);
       break;
     case 'other':
       break;

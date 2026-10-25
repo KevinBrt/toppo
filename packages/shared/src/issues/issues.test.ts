@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { issueActivitiesQuerySchema, issueActivitySchema } from './activities.ts';
 import {
   assignIssueRequestSchema,
+  BULK_ISSUES_MAX,
+  bulkFieldsRequestSchema,
+  bulkLabelsRequestSchema,
+  bulkStatusRequestSchema,
   createIssueRequestSchema,
   issueKeySchema,
   issuesQuerySchema,
@@ -94,6 +98,37 @@ describe('issue requests', () => {
   it('page from the first page', () => {
     expect(issuesQuerySchema.parse({})).toStrictEqual({ page: 1 });
     expect(issueActivitiesQuerySchema.parse({ page: '2' })).toStrictEqual({ page: 2 });
+  });
+});
+
+describe('actions on several issues', () => {
+  it('take from one issue to the most allowed, each once', () => {
+    const keys = (count: number) => Array.from({ length: count }, (_, index) => `WEB-${index + 1}`);
+    const status = (issueKeys: string[]) =>
+      bulkStatusRequestSchema.safeParse({ issueKeys, statusId: ID }).success;
+
+    expect(status(keys(1))).toBe(true);
+    expect(status(keys(BULK_ISSUES_MAX))).toBe(true);
+    expect(status([])).toBe(false);
+    expect(status(keys(BULK_ISSUES_MAX + 1))).toBe(false);
+    expect(status(['WEB-1', 'WEB-1'])).toBe(false);
+    expect(status(['web-1'])).toBe(false);
+  });
+
+  it('change at least one field, and labels each once', () => {
+    const issueKeys = ['WEB-1'];
+
+    expect(bulkFieldsRequestSchema.safeParse({ issueKeys, priorityId: ID }).success).toBe(true);
+    expect(bulkFieldsRequestSchema.safeParse({ issueKeys }).success).toBe(false);
+    expect(
+      bulkLabelsRequestSchema.safeParse({ issueKeys, add: [ID], remove: [OTHER] }).success,
+    ).toBe(true);
+    expect(bulkLabelsRequestSchema.safeParse({ issueKeys, add: [], remove: [] }).success).toBe(
+      false,
+    );
+    expect(bulkLabelsRequestSchema.safeParse({ issueKeys, add: [ID], remove: [ID] }).success).toBe(
+      false,
+    );
   });
 });
 

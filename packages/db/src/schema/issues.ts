@@ -316,6 +316,31 @@ export const issueLabels = pgTable(
 );
 
 /**
+ * Who chose to follow an issue, or to stop: its reporter, its assignee and those who comment
+ * follow it without a row, until they stop (`following` false); anyone else who sees it follows
+ * it by a row (`following` true). Gone with the issue or the person.
+ */
+export const issueFollowers = pgTable(
+  'issue_followers',
+  {
+    id: id(),
+    issueId: uuid('issue_id')
+      .notNull()
+      .references(() => issues.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    following: boolean('following').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    // Also finds an issue's followers from the index alone.
+    unique('issue_followers_unique').on(table.issueId, table.userId),
+    index('issue_followers_user_id_idx').on(table.userId),
+  ],
+);
+
+/**
  * What happened to issues, written in the same transaction as each change: the one source of
  * history, notifications, webhooks and plugins. Never updated.
  */
@@ -454,7 +479,7 @@ export const notifications = pgTable(
     // Mirrors NOTIFICATION_REASONS (`@toppo/shared`).
     check(
       'notifications_reason_check',
-      sql`${table.reason} in ('assigned', 'mentioned', 'participating', 'newIssue')`,
+      sql`${table.reason} in ('assigned', 'mentioned', 'participating', 'following', 'newIssue')`,
     ),
     // Someone's notifications, the latest first.
     index('notifications_user_id_created_at_idx').on(table.userId, table.createdAt),

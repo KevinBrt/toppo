@@ -22,6 +22,7 @@ import {
   DEFAULT_TRANSITIONS,
   effectiveProperties,
   FILE_HEAD_LENGTH,
+  followersOf,
   type InstancePermission,
   instancePermissionsOf,
   issueActionsOf,
@@ -67,6 +68,7 @@ import {
   type IssueResponse,
   type IssueSort,
   type IssueSummary,
+  issueFollowingRequestSchema,
   issueLabelsRequestSchema,
   issueSearchQuerySchema,
   type LabelRef,
@@ -286,6 +288,7 @@ export function fakeNotification(
     id: `01a1569b-9900-7000-8000-0000000012${String(seed).padStart(2, '0')}`,
     event: 'assigned',
     status: null,
+    assignee: null,
     actor: { id: GRACE.id, name: GRACE.name },
     issue: { key: 'WEB-1', title: 'Empty CSV export' },
     readAt: null,
@@ -372,6 +375,8 @@ export interface FakeIssue {
   labelIds: string[];
   /** The value of each property it has, as stored, by property id: none unless said otherwise. */
   properties: Record<string, PropertyValue>;
+  /** Who chose to follow it (`true`) or stopped (`false`), by user id: none unless said otherwise. */
+  followers: Record<string, boolean>;
   /** UTC ISO 8601. */
   createdAt: string;
   closedAt: string | null;
@@ -405,6 +410,7 @@ export function fakeIssue(
     reporterId: ADA.id,
     labelIds: [],
     properties: {},
+    followers: {},
     createdAt: '2026-10-22T09:14:00.000Z',
     closedAt: null,
     ...overrides,
@@ -1216,7 +1222,7 @@ function createProject(state: FakeServerState, body: Record<string, unknown>): R
 }
 
 const PROJECT_PATH =
-  /^\/api\/v1\/projects\/([^/]+)(?:\/(archive|unarchive|access|members|invitations|candidates|roles|issues|issue-fields|assignees|workflow|properties|fields))?(?:\/([^/]+))?(?:\/(adaptation))?$/;
+  /^\/api\/v1\/projects\/([^/]+)(?:\/(archive|unarchive|access|members|invitations|candidates|roles|issues|issue-fields|assignees|workflow|properties|fields))?(?:\/([^/]+))?(?:\/(adaptation|status|fields|assignee|labels|delete))?$/;
 
 /** `/api/v1/projects/:key` and what hangs off it, with the server's rules. */
 function projectRequest(
@@ -1297,6 +1303,11 @@ function projectRequest(
     case 'GET issues':
       return listIssues(state, project, permissions, search);
     case 'POST issues':
+      if (target === 'bulk') {
+        return unless(BULK_PERMISSIONS[sub] ?? 'issue.update', () =>
+          bulkIssues(state, project, permissions, sub, fields),
+        );
+      }
       return unless('issue.create', () =>
         createIssue(state, project, fields, can(permissions, 'issue.assign')),
       );
@@ -1622,6 +1633,86 @@ function saveLabels(state: FakeServerState, body: Record<string, unknown>): Resp
   }));
   state.labels = [...plan.kept.map(({ id, name, color }) => ({ id, name, color })), ...added];
   return NO_CONTENT();
+}
+
+/** What each action on several issues needs. */
+const BULK_PERMISSIONS: Record<string, ProjectPermission> = {
+  status: 'issue.update',
+  fields: 'issue.update',
+  assignee: 'issue.assign',
+  labels: 'issue.update',
+  delete: 'issue.delete',
+};
+
+/**
+ * `POST /api/v1/projects/:key/issues/bulk/:action`: each issue the caller sees takes the change
+ * as it would alone, the others refused with why.
+ */
+function bulkIssues(
+  state: FakeServerState,
+  project: FakeProject,
+  permissions: readonly ProjectPermission[],
+  action: string,
+  fields: Record<string, unknown>,
+): Response {
+  const keys = Array.isArray(fields['issueKeys']) ? (fields['issueKeys'] as string[]) : [];
+  const added = Array.isArray(fields['add']) ? (fields['add'] as string[]) : [];
+  if (added.some((id) => !state.labels.some((label) => label.id === id))) {
+    return apiError(400, 'INVALID_LABEL');
+  }
+  const changed: string[] = [];
+  const refused: { key: string; code: string }[] = [];
+  for (const key of keys) {
+    const issue = state.issues.find(
+      (candidate) => keyOf(candidate) === key && candidate.projectKey === project.key,
+    );
+    if (!(issue && canSeeIssue(permissions, issue.reporterId === state.user?.id))) {
+      refused.push({ key, code: 'ISSUE_NOT_FOUND' });
+      continue;
+    }
+    const before = JSON.stringify(issue);
+    const refusal = bulkChange(state, issue, action, fields);
+    if (refusal) {
+      refused.push({ key, code: refusal });
+    } else if (action === 'delete' || JSON.stringify(issue) !== before) {
+      changed.push(key);
+    }
+  }
+  return json({ changed, refused });
+}
+
+/** One issue taking an action on several, as it would alone: answers why not, if it may not. */
+function bulkChange(
+  state: FakeServerState,
+  issue: FakeIssue,
+  action: string,
+  fields: Record<string, unknown>,
+): 'STATUS_NOT_ALLOWED' | null {
+  const list = (name: string) => (Array.isArray(fields[name]) ? (fields[name] as string[]) : []);
+  const statusId = String(fields['statusId']);
+  const assigneeId = typeof fields['assigneeId'] === 'string' ? fields['assigneeId'] : null;
+  switch (action) {
+    case 'status':
+      return issue.statusId !== statusId && moveIssue(state, issue, statusId).status === 409
+        ? 'STATUS_NOT_ALLOWED'
+        : null;
+    case 'fields':
+      updateIssue(state, issue, ['editFields'], fields);
+      return null;
+    case 'assignee':
+      if (issue.assigneeId !== assigneeId) {
+        assignIssue(state, issue, assigneeId);
+      }
+      return null;
+    case 'labels': {
+      const kept = issue.labelIds.filter((id) => !list('remove').includes(id));
+      setLabels(state, issue, { labelIds: [...new Set([...kept, ...list('add')])] });
+      return null;
+    }
+    default:
+      state.issues = state.issues.filter((candidate) => candidate !== issue);
+      return null;
+  }
 }
 
 /** `PUT /api/v1/issues/:key/labels`: exactly the labels asked for, the change told once. */
@@ -2210,7 +2301,7 @@ function createIssue(
 }
 
 const ISSUE_PATH =
-  /^\/api\/v1\/issues\/([^/]+)(?:\/(status|assignee|labels|properties|activities|comments|mentionable)(?:\/([^/]+))?)?$/;
+  /^\/api\/v1\/issues\/([^/]+)(?:\/(status|assignee|labels|properties|following|activities|comments|mentionable)(?:\/([^/]+))?)?$/;
 
 /** An issue the signed-in user sees, with its project and what they may do there. */
 interface SeenIssue {
@@ -2232,6 +2323,27 @@ function seenIssue(state: FakeServerState, key: string): SeenIssue | Response {
   // Read-only while archived: nothing to offer.
   const actions = project.archived ? [] : issueActionsOf(permissions, reported);
   return { issue, project, permissions, actions };
+}
+
+/** Whether the signed-in user follows the issue, and how many people do (`followersOf`). */
+function followingOf(
+  state: FakeServerState,
+  issue: FakeIssue,
+): Pick<IssueResponse, 'following' | 'followerCount'> {
+  const choices = Object.entries(issue.followers);
+  const followers = followersOf({
+    reporterId: issue.reporterId,
+    assigneeId: issue.assigneeId,
+    commenterIds: (state.activities.get(keyOf(issue)) ?? []).flatMap((entry) =>
+      entry.type === 'issue.commented' ? [entry.actor.id] : [],
+    ),
+    followerIds: choices.filter(([, following]) => following).map(([userId]) => userId),
+    unfollowerIds: choices.filter(([, following]) => !following).map(([userId]) => userId),
+  });
+  return {
+    following: state.user !== null && followers.includes(state.user.id),
+    followerCount: followers.length,
+  };
 }
 
 /** `/api/v1/issues/:key` and what hangs off it, with the server's rules. */
@@ -2268,6 +2380,7 @@ function issueRequest(
         description: issue.description,
         closedAt: issue.closedAt,
         actions,
+        ...followingOf(state, issue),
       } satisfies IssueResponse);
     case 'PATCH ':
       return updateIssue(state, issue, actions, fields);
@@ -2279,6 +2392,14 @@ function issueRequest(
       return unless('issue.update', () =>
         setProperty(state, issue, commentId ?? '', fields, can(permissions, 'issue.assign')),
       );
+    case 'PUT following': {
+      const request = issueFollowingRequestSchema.safeParse(body);
+      if (!(request.success && state.user)) {
+        return apiError(400, 'VALIDATION_ERROR');
+      }
+      issue.followers[state.user.id] = request.data.following;
+      return NO_CONTENT();
+    }
     case 'PUT assignee':
       return unless('issue.assign', () =>
         assignIssue(state, issue, (fields['assigneeId'] as string | null | undefined) ?? null),

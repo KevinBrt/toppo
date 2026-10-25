@@ -19,17 +19,23 @@ import { formatDateTime } from '../../../../shared/i18n/dates.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { IssueEdit } from '../../models/issue-edit.model.ts';
 import { DeleteIssueDialog } from './delete-issue-dialog.tsx';
+import { FollowButton } from './follow-button.tsx';
 
-/** The issue's title, edited in place, its status and what else can be done with it. */
+/**
+ * The issue's title, edited in place, its status, whether one follows it and what else can be
+ * done with it.
+ */
 export function IssueHeader({
   issue,
   fields,
   onEdit,
+  onFollow,
   onDeleted,
 }: {
   issue: IssueResponse;
   fields: IssueFieldsResponse | undefined;
   onEdit: (edit: IssueEdit) => void;
+  onFollow: (following: boolean) => void;
   onDeleted: () => Promise<void> | void;
 }) {
   const { t, locale } = useI18n();
@@ -74,8 +80,15 @@ export function IssueHeader({
           {t('issues.openedBy', { name: reporter, date: formatDateTime(issue.createdAt, locale) })}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         <StatusMenu issue={issue} fields={fields} onEdit={onEdit} />
+        {issue.actions.includes('follow') ? (
+          <FollowButton
+            following={issue.following}
+            followerCount={issue.followerCount}
+            onFollow={onFollow}
+          />
+        ) : null}
         {issue.actions.includes('delete') ? (
           <>
             <DropdownMenu>

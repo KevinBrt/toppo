@@ -10,6 +10,8 @@ interface NotificationMail {
   title: string;
   /** The status an issue was moved to. */
   status: string | null;
+  /** Whom an issue was given to, told to another; `null` for no one. Its name is `null` once deleted. */
+  assignee: { name: string | null } | null;
   /** The words of the comment it is about, or of a new issue's description, if any. */
   quote: string | null;
   issueLink: URL;
@@ -25,6 +27,10 @@ const WORDS = {
     events: {
       created: ({ actor, key }: Sentence) => `${actor} created ${key}`,
       assigned: ({ actor, key }: Sentence) => `${actor} assigned you ${key}`,
+      assigneeChanged: ({ actor, key, assignee }: Sentence) =>
+        assignee === null
+          ? `${actor} unassigned ${key}`
+          : `${actor} assigned ${key} to ${assignee}`,
       commented: ({ actor, key }: Sentence) => `${actor} commented on ${key}`,
       mentioned: ({ actor, key }: Sentence) => `${actor} mentioned you in ${key}`,
       statusChanged: ({ actor, key, status }: Sentence) => `${actor} moved ${key} to “${status}”`,
@@ -38,6 +44,10 @@ const WORDS = {
     events: {
       created: ({ actor, key }: Sentence) => `${actor} a créé ${key}`,
       assigned: ({ actor, key }: Sentence) => `${actor} vous a assigné ${key}`,
+      assigneeChanged: ({ actor, key, assignee }: Sentence) =>
+        assignee === null
+          ? `${actor} a retiré l’assignation de ${key}`
+          : `${actor} a assigné ${key} à ${assignee}`,
       commented: ({ actor, key }: Sentence) => `${actor} a commenté ${key}`,
       mentioned: ({ actor, key }: Sentence) => `${actor} vous a mentionné dans ${key}`,
       statusChanged: ({ actor, key, status }: Sentence) =>
@@ -53,6 +63,8 @@ interface Sentence {
   actor: string;
   key: string;
   status: string;
+  /** Whom the issue went to, by name; `null` for no one. */
+  assignee: string | null;
 }
 
 /**
@@ -69,6 +81,7 @@ export function notificationMail(
     actor: mail.actor ?? words.deletedUser,
     key: mail.key,
     status: mail.status ?? '',
+    assignee: mail.assignee ? (mail.assignee.name ?? words.deletedUser) : null,
   });
   return composeMail({
     subject: `[${mail.key}] ${mail.title}`,

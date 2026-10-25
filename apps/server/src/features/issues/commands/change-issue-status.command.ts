@@ -70,7 +70,7 @@ export const changeIssueStatus = defineCommand({
  * The moves the project's workflow allows from `statusId`: its own copy, else the instance's.
  * Shared lock: a workflow being saved meanwhile is read once saved, never half-way.
  */
-async function movesOf(
+export async function movesOf(
   tx: Transaction,
   projectId: string,
   statusId: string,

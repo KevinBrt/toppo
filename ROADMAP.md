@@ -129,8 +129,8 @@ _Done when an issue is found in under 3 seconds._
 _Done when a team works its issues as it did in Mantis: found despite a typo, followed, changed several at once, duplicates closed._
 
 - [x] Search that forgives typos and finds issues sooner (migrations 0039 and 0040, `npm run perf:issues`: 40 to 51 ms with a typo on 100,000 issues, 44 ms for a member's two words instead of 149): in the palette and the list, a word no issue has is matched to the closest words issues have (one typo in 4 or 5 letters, two beyond), in titles and descriptions; references written loosely (`WEB42`, `WEB 42`, a number alone in every project); the palette checks access once per project rather than per match.
-- [ ] Following an issue: the reporter, the assignee and those who comment follow it until they stop; anyone who sees it may follow it. Followers are told of comments, status changes and assignments.
-- [ ] Actions on several issues of the list: a box per row and one for the page; status, priority, category, assignee, labels added or removed, deletion. Each issue takes the change if it may, with its activity and notifications; those that may not are named, with why.
+- [x] Following an issue (migration 0041): the reporter, the assignee and those who comment follow it until they stop; anyone who sees it may follow it, from a button on its page that counts who follows it. Followers are told of comments, status changes and assignments (a new email kind), the assignee it leaves too.
+- [x] Actions on several issues of the list: a box per row and one for the page, a bar at the bottom of the screen; status, priority, category, assignee, labels added or removed, deletion, each confirmed before it applies. Each issue takes the change if it may, with its activity and notifications; those that may not are named, with why, and stay ticked.
 - [ ] Duplicates: an issue marked as a duplicate of another one the person sees, any project, and moved at once to a closing status they choose; each shows the other, and the duplicate's reporter follows the original.
 
 ## Step 6: release 0.1

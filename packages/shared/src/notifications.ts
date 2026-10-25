@@ -1,15 +1,28 @@
 import { z } from 'zod';
 import { userRefSchema } from './members/users.ts';
 
-/** Why someone is told: given the issue, named in a comment, or involved in the issue. */
-export const NOTIFICATION_REASONS = ['assigned', 'mentioned', 'participating', 'newIssue'] as const;
+/**
+ * Why someone is told: given the issue, named in a comment, involved in the issue, following it
+ * by choice, or told of every new issue by their role.
+ */
+export const NOTIFICATION_REASONS = [
+  'assigned',
+  'mentioned',
+  'participating',
+  'following',
+  'newIssue',
+] as const;
 
 export type NotificationReason = (typeof NOTIFICATION_REASONS)[number];
 
-/** What a notification tells, as the bell shows it. */
+/**
+ * What a notification tells, as the bell shows it: an issue created, given to the reader, given
+ * to someone else (or no one), commented, naming the reader, moved to another status.
+ */
 export const NOTIFICATION_EVENTS = [
   'created',
   'assigned',
+  'assigneeChanged',
   'commented',
   'mentioned',
   'statusChanged',
@@ -25,6 +38,8 @@ export const notificationSchema = z.object({
   event: z.enum(NOTIFICATION_EVENTS),
   /** For a status change, the status the issue went to; `null` otherwise. */
   status: z.string().nullable(),
+  /** For a change of assignee, whom the issue went to; `null` for no one, or another event. */
+  assignee: userRefSchema.nullable(),
   actor: userRefSchema,
   issue: z.object({ key: z.string(), title: z.string() }),
   /** UTC ISO 8601, or `null` while unread. */

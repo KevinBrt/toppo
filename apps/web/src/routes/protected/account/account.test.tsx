@@ -155,9 +155,10 @@ describe('notification emails', () => {
     for (const name of [
       'New issues',
       'Issues given to me',
-      'Comments on the issues I take part in',
+      'Assignments of the issues I follow',
+      'Comments on the issues I follow',
       'Mentions',
-      'Status changes on my issues',
+      'Status changes of the issues I follow',
     ]) {
       await expect.element(kind(name)).toBeChecked();
     }
@@ -166,20 +167,21 @@ describe('notification emails', () => {
         screen.getByText('Email is not set up on this instance yet: nothing is sent for now.'),
       )
       .toBeVisible();
-    await kind('Status changes on my issues').click();
+    await kind('Status changes of the issues I follow').click();
 
-    await expect.element(kind('Status changes on my issues')).not.toBeChecked();
+    await expect.element(kind('Status changes of the issues I follow')).not.toBeChecked();
     await expect.element(kind('Mentions')).toBeChecked();
     expect(fake.state.user?.emailedEvents).toStrictEqual([
       'created',
       'assigned',
+      'assigneeChanged',
       'commented',
       'mentioned',
     ]);
     expect(fake.requests).toContainEqual({
       method: 'PUT',
       path: '/api/v1/me/email-notifications',
-      body: { emailed: ['created', 'assigned', 'commented', 'mentioned'] },
+      body: { emailed: ['created', 'assigned', 'assigneeChanged', 'commented', 'mentioned'] },
     });
   });
 

@@ -2,12 +2,19 @@ import {
   assignedIssuesResponseSchema,
   assigneesResponseSchema,
   assignIssueRequestSchema,
+  bulkAssigneeRequestSchema,
+  bulkDeleteRequestSchema,
+  bulkFieldsRequestSchema,
+  bulkIssuesResponseSchema,
+  bulkLabelsRequestSchema,
+  bulkStatusRequestSchema,
   changeIssueStatusRequestSchema,
   createIssueRequestSchema,
   createIssueResponseSchema,
   issueActivitiesQuerySchema,
   issueActivitiesResponseSchema,
   issueFieldsResponseSchema,
+  issueFollowingRequestSchema,
   issueKeyParamsSchema,
   issueLabelsRequestSchema,
   issuePropertyParamsSchema,
@@ -26,9 +33,15 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { ZodTypeProvider } from '../../platform/http/zod.ts';
 import { assignIssue } from './commands/assign-issue.command.ts';
+import { bulkAssignIssues } from './commands/bulk/assign-issues.command.ts';
+import { bulkChangeStatus } from './commands/bulk/change-issues-status.command.ts';
+import { bulkDeleteIssues } from './commands/bulk/delete-issues.command.ts';
+import { bulkLabelIssues } from './commands/bulk/label-issues.command.ts';
+import { bulkUpdateIssues } from './commands/bulk/update-issues.command.ts';
 import { changeIssueStatus } from './commands/change-issue-status.command.ts';
 import { createIssue } from './commands/create-issue.command.ts';
 import { deleteIssue } from './commands/delete-issue.command.ts';
+import { followIssue } from './commands/follow-issue.command.ts';
 import { setIssueLabels } from './commands/set-issue-labels.command.ts';
 import { setIssueProperty } from './commands/set-issue-property.command.ts';
 import { updateIssue } from './commands/update-issue.command.ts';
@@ -100,6 +113,77 @@ export function registerIssueRoutes(app: FastifyInstance): void {
           ...request.body,
         }),
       ),
+  );
+
+  // Actions on several issues of a project: each issue takes the change if it may.
+  routes.post(
+    '/api/v1/projects/:projectKey/issues/bulk/status',
+    {
+      config: { access: bulkChangeStatus.access },
+      schema: {
+        params: projectIssuesParamsSchema,
+        body: bulkStatusRequestSchema,
+        response: { 200: bulkIssuesResponseSchema },
+      },
+    },
+    (request) =>
+      bulkChangeStatus.execute(request.executionContext, { ...request.params, ...request.body }),
+  );
+
+  routes.post(
+    '/api/v1/projects/:projectKey/issues/bulk/fields',
+    {
+      config: { access: bulkUpdateIssues.access },
+      schema: {
+        params: projectIssuesParamsSchema,
+        body: bulkFieldsRequestSchema,
+        response: { 200: bulkIssuesResponseSchema },
+      },
+    },
+    (request) =>
+      bulkUpdateIssues.execute(request.executionContext, { ...request.params, ...request.body }),
+  );
+
+  routes.post(
+    '/api/v1/projects/:projectKey/issues/bulk/assignee',
+    {
+      config: { access: bulkAssignIssues.access },
+      schema: {
+        params: projectIssuesParamsSchema,
+        body: bulkAssigneeRequestSchema,
+        response: { 200: bulkIssuesResponseSchema },
+      },
+    },
+    (request) =>
+      bulkAssignIssues.execute(request.executionContext, { ...request.params, ...request.body }),
+  );
+
+  routes.post(
+    '/api/v1/projects/:projectKey/issues/bulk/labels',
+    {
+      config: { access: bulkLabelIssues.access },
+      schema: {
+        params: projectIssuesParamsSchema,
+        body: bulkLabelsRequestSchema,
+        response: { 200: bulkIssuesResponseSchema },
+      },
+    },
+    (request) =>
+      bulkLabelIssues.execute(request.executionContext, { ...request.params, ...request.body }),
+  );
+
+  routes.post(
+    '/api/v1/projects/:projectKey/issues/bulk/delete',
+    {
+      config: { access: bulkDeleteIssues.access },
+      schema: {
+        params: projectIssuesParamsSchema,
+        body: bulkDeleteRequestSchema,
+        response: { 200: bulkIssuesResponseSchema },
+      },
+    },
+    (request) =>
+      bulkDeleteIssues.execute(request.executionContext, { ...request.params, ...request.body }),
   );
 
   routes.get(
@@ -192,6 +276,25 @@ function registerIssueKeyRoutes(app: FastifyInstance): void {
     async (request, reply) =>
       reply.status(204).send(
         await setIssueProperty.execute(request.executionContext, {
+          ...request.params,
+          ...request.body,
+        }),
+      ),
+  );
+
+  routes.put(
+    '/api/v1/issues/:issueKey/following',
+    {
+      config: { access: followIssue.access },
+      schema: {
+        params: issueKeyParamsSchema,
+        body: issueFollowingRequestSchema,
+        response: NO_CONTENT,
+      },
+    },
+    async (request, reply) =>
+      reply.status(204).send(
+        await followIssue.execute(request.executionContext, {
           ...request.params,
           ...request.body,
         }),

@@ -9,6 +9,7 @@ import { Account } from '../api/account.api.ts';
 const EVENT_LABELS = {
   created: 'account.emailEvents.created',
   assigned: 'account.emailEvents.assigned',
+  assigneeChanged: 'account.emailEvents.assigneeChanged',
   commented: 'account.emailEvents.commented',
   mentioned: 'account.emailEvents.mentioned',
   statusChanged: 'account.emailEvents.statusChanged',

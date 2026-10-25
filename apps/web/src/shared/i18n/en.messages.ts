@@ -25,16 +25,17 @@ export const en = {
     signingOut: 'Signing out…',
     profile: 'Profile',
     notifications: 'Notifications',
-    notificationsDescription: 'How Toppo tells you what happens on the issues you take part in.',
+    notificationsDescription: 'How Toppo tells you what happens on the issues you follow.',
     emailNotificationsTitle: 'By email',
     emailNotificationsHelp:
       'Five minutes after each notification, unless you have read it in Toppo by then.',
     emailEvents: {
       created: 'New issues',
       assigned: 'Issues given to me',
-      commented: 'Comments on the issues I take part in',
+      assigneeChanged: 'Assignments of the issues I follow',
+      commented: 'Comments on the issues I follow',
       mentioned: 'Mentions',
-      statusChanged: 'Status changes on my issues',
+      statusChanged: 'Status changes of the issues I follow',
     },
     emailEventsCreatedHelp: 'If your role tells you of them.',
     emailNotSetUp: 'Email is not set up on this instance yet: nothing is sent for now.',
@@ -115,6 +116,12 @@ export const en = {
     editTitle: 'Edit the title',
     editRequest: 'Edit',
     noDescription: 'No description.',
+    follow: 'Follow',
+    unfollow: 'Unfollow',
+    followerCount: {
+      one: '{count} person follows this issue',
+      other: '{count} people follow this issue',
+    },
     more: 'More actions',
     delete: 'Delete the issue',
     deleteTitle: 'Delete {key}?',
@@ -243,6 +250,69 @@ export const en = {
         invalidName: 'Its name cannot be used.',
         incomplete: 'The file did not arrive whole. Try again.',
         notFound: 'This file no longer exists. Reload the page.',
+      },
+    },
+    bulk: {
+      select: 'Select {key}',
+      selectPage: 'Select every issue of the page',
+      region: 'Selected issues',
+      selected: { one: '{count} selected', other: '{count} selected' },
+      statusHeading: { one: 'Move {count} issue to', other: 'Move {count} issues to' },
+      priorityHeading: {
+        one: 'Set the priority of {count} issue',
+        other: 'Set the priority of {count} issues',
+      },
+      categoryHeading: {
+        one: 'Set the category of {count} issue',
+        other: 'Set the category of {count} issues',
+      },
+      addHeading: { one: 'Add to {count} issue', other: 'Add to {count} issues' },
+      removeHeading: { one: 'Remove from {count} issue', other: 'Remove from {count} issues' },
+      confirm: {
+        status: {
+          one: 'Move {count} issue to “{name}”?',
+          other: 'Move {count} issues to “{name}”?',
+        },
+        priority: {
+          one: 'Give {count} issue the priority “{name}”?',
+          other: 'Give {count} issues the priority “{name}”?',
+        },
+        category: {
+          one: 'Give {count} issue the category “{name}”?',
+          other: 'Give {count} issues the category “{name}”?',
+        },
+        assign: {
+          one: 'Assign {count} issue to {name}?',
+          other: 'Assign {count} issues to {name}?',
+        },
+        unassign: { one: 'Unassign {count} issue?', other: 'Unassign {count} issues?' },
+        addLabel: {
+          one: 'Add the label “{name}” to {count} issue?',
+          other: 'Add the label “{name}” to {count} issues?',
+        },
+        removeLabel: {
+          one: 'Remove the label “{name}” from {count} issue?',
+          other: 'Remove the label “{name}” from {count} issues?',
+        },
+      },
+      confirmDescription:
+        'Each issue that may take the change takes it, and those following it are told. Those that may not are named after.',
+      apply: 'Apply',
+      addNamed: 'Add {name}',
+      removeNamed: 'Remove {name}',
+      assignTitle: { one: 'Assign {count} issue', other: 'Assign {count} issues' },
+      delete: 'Delete',
+      deleteTitle: { one: 'Delete {count} issue?', other: 'Delete {count} issues?' },
+      deleteDescription:
+        'The issues and their history are deleted for good. Their numbers are never given again.',
+      clear: 'Clear the selection',
+      changed: { one: '{count} issue changed.', other: '{count} issues changed.' },
+      deleted: { one: '{count} issue deleted.', other: '{count} issues deleted.' },
+      unchanged: 'Nothing to change: the selected issues already were so.',
+      refused: {
+        STATUS_NOT_ALLOWED:
+          'Not moved, as the workflow does not allow it from their status: {keys}.',
+        ISSUE_NOT_FOUND: 'Not found, deleted meanwhile or out of your sight: {keys}.',
       },
     },
     list: {
@@ -522,7 +592,7 @@ export const en = {
     seeAll: 'See all',
     empty: 'No notifications yet.',
     emptyDescription:
-      'You are told here when an issue is given to you, when someone comments on or moves one you are involved in, and when someone mentions you.',
+      'You are told here when an issue is given to you, when someone comments on, moves or assigns one you follow, and when someone mentions you.',
     loading: 'Loading notifications…',
     shown: { one: '{count} notification shown', other: '{count} notifications shown' },
     events: {
@@ -531,7 +601,9 @@ export const en = {
       commented: '{name} commented on {key}',
       mentioned: '{name} mentioned you in {key}',
       statusChanged: '{name} moved {key} to “{status}”',
+      assigneeChanged: '{name} assigned {key} to {assignee}',
     },
+    unassigned: '{name} unassigned {key}',
   },
   projectProperties: {
     title: 'Issue properties',

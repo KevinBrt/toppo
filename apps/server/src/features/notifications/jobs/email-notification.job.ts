@@ -8,7 +8,7 @@ import { whoSeesIssue } from '../../../platform/auth/project-access.ts';
 import type { Services, Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { defineJob, enqueue } from '../../../platform/jobs/jobs.ts';
 import { notificationMail } from '../utils/notification-mail.util.ts';
-import { eventOf } from '../utils/notification-rows.util.ts';
+import { eventOf, peopleNamed } from '../utils/notification-rows.util.ts';
 
 const { activities, comments, issues, notifications, projects, users } = schema;
 const recipients = alias(users, 'recipients');
@@ -64,7 +64,8 @@ export const emailNotificationJob = defineJob({
       log.info({ notificationId }, 'Notification no longer to email');
       return;
     }
-    const { event, status } = told;
+    const { event, status, assigneeId } = told;
+    const assignee = assigneeId ? (await peopleNamed(tx, [assigneeId])).get(assigneeId) : null;
     const key = formatIssueKey({
       projectKey: projectKeySchema.parse(row.issue.projectKey),
       number: row.issue.number,
@@ -77,6 +78,7 @@ export const emailNotificationJob = defineJob({
         key,
         title: row.issue.title,
         status,
+        assignee: assignee ? { name: assignee.name } : null,
         quote:
           row.type === 'issue.created'
             ? row.issue.description

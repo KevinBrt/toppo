@@ -80,7 +80,7 @@ export const users = pgTable(
     // Mirrors NOTIFICATION_EVENTS (`@toppo/shared`).
     check(
       'users_email_muted_events_check',
-      sql`${table.emailMutedEvents} <@ array['created', 'assigned', 'commented', 'mentioned', 'statusChanged']::text[]`,
+      sql`${table.emailMutedEvents} <@ array['created', 'assigned', 'assigneeChanged', 'commented', 'mentioned', 'statusChanged']::text[]`,
     ),
   ],
 );

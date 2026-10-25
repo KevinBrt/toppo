@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { recipientsOf } from './recipients.ts';
+import { followersOf, recipientsOf } from './recipients.ts';
 
-const people = { reporterId: 'rita', assigneeId: 'grace', commenterIds: ['alan', 'rita', 'ada'] };
+const people = {
+  reporterId: 'rita',
+  assigneeId: 'grace',
+  commenterIds: ['alan', 'rita', 'ada'],
+  followerIds: [],
+  unfollowerIds: [],
+};
+
+describe('followersOf', () => {
+  it('is those who take part, unless they stopped, and those who chose to follow, each once', () => {
+    expect(followersOf(people)).toStrictEqual(['rita', 'grace', 'alan', 'ada']);
+    expect(
+      followersOf({ ...people, followerIds: ['linus', 'alan'], unfollowerIds: ['rita'] }),
+    ).toStrictEqual(['grace', 'alan', 'ada', 'linus']);
+    expect(followersOf({ ...people, assigneeId: null, commenterIds: [] })).toStrictEqual(['rita']);
+  });
+});
 
 describe('recipientsOf', () => {
   it('tells of a new issue its assignee, then those whose role asks for it, never its reporter', () => {
@@ -29,32 +45,74 @@ describe('recipientsOf', () => {
     ).toBe(0);
   });
 
-  it('tells the person an issue is given to, unless they took it themselves', () => {
+  it('tells the person an issue is given to, then its followers and the assignee it had', () => {
     expect(
-      recipientsOf({ type: 'issue.assigneeChanged', actorId: 'ada', assigneeId: 'grace' }, people),
-    ).toStrictEqual(new Map([['grace', 'assigned']]));
-    expect(
-      recipientsOf({ type: 'issue.assigneeChanged', actorId: 'grace', assigneeId: 'grace' }, people)
-        .size,
-    ).toBe(0);
-    expect(
-      recipientsOf({ type: 'issue.assigneeChanged', actorId: 'ada', assigneeId: null }, people)
-        .size,
-    ).toBe(0);
+      recipientsOf(
+        {
+          type: 'issue.assigneeChanged',
+          actorId: 'ada',
+          assigneeId: 'grace',
+          previousAssigneeId: 'linus',
+        },
+        { ...people, followerIds: ['mary'] },
+      ),
+    ).toStrictEqual(
+      new Map([
+        ['grace', 'assigned'],
+        ['rita', 'participating'],
+        ['alan', 'participating'],
+        ['linus', 'participating'],
+        ['mary', 'following'],
+      ]),
+    );
   });
 
-  it('tells everyone involved of a new comment, those it names first, never its author', () => {
+  it('tells of an assignment as it left the issue, whoever has it by the time people are told', () => {
+    expect(
+      recipientsOf(
+        {
+          type: 'issue.assigneeChanged',
+          actorId: 'ada',
+          assigneeId: null,
+          previousAssigneeId: 'linus',
+        },
+        { ...people, assigneeId: 'mary' },
+      ),
+    ).toStrictEqual(
+      new Map([
+        ['rita', 'participating'],
+        ['alan', 'participating'],
+        ['linus', 'participating'],
+      ]),
+    );
+  });
+
+  it('tells nobody who stopped following of an assignment, unless it is theirs', () => {
+    expect(
+      recipientsOf(
+        {
+          type: 'issue.assigneeChanged',
+          actorId: 'ada',
+          assigneeId: 'grace',
+          previousAssigneeId: 'linus',
+        },
+        { ...people, unfollowerIds: ['grace', 'linus', 'rita', 'alan'] },
+      ),
+    ).toStrictEqual(new Map([['grace', 'assigned']]));
+  });
+
+  it('tells followers of a new comment, those it names first, never its author', () => {
     expect(
       recipientsOf(
         { type: 'issue.commented', actorId: 'ada', mentioned: ['grace', 'linus'] },
-        people,
+        { ...people, followerIds: ['mary'], unfollowerIds: ['alan'] },
       ),
     ).toStrictEqual(
       new Map([
         ['grace', 'mentioned'],
         ['linus', 'mentioned'],
         ['rita', 'participating'],
-        ['alan', 'participating'],
+        ['mary', 'following'],
       ]),
     );
   });
@@ -65,17 +123,18 @@ describe('recipientsOf', () => {
     ).toStrictEqual(new Map([['linus', 'mentioned']]));
   });
 
-  it('tells the reporter and the assignee of a status change', () => {
+  it('tells followers of a status change', () => {
     expect(recipientsOf({ type: 'issue.statusChanged', actorId: 'alan' }, people)).toStrictEqual(
       new Map([
         ['rita', 'participating'],
         ['grace', 'participating'],
+        ['ada', 'participating'],
       ]),
     );
     expect(
       recipientsOf(
         { type: 'issue.statusChanged', actorId: 'rita' },
-        { ...people, assigneeId: null },
+        { ...people, assigneeId: null, commenterIds: [] },
       ).size,
     ).toBe(0);
   });
