@@ -37,6 +37,13 @@
   --color-ring: #0f766e;
 
   /* Sidebar */
+  /* The logo's greens: the mark only, nothing else draws with them. */
+  --color-logo-ticket: #239c77;
+  --color-logo-fold: #157a5a;
+  --color-logo-line: #d6f1e2;
+  --color-logo-badge: #96dfb8;
+  --color-logo-check: #04352b;
+
   --color-sidebar: #0b1012;
   --color-sidebar-foreground: #e6e8eb;
   --color-sidebar-muted: #8b949e;

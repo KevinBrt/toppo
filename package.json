@@ -33,6 +33,8 @@
     "check:conventions": "node scripts/src/check-conventions.ts",
     "check:dependencies": "node scripts/src/check-dependencies.ts",
     "perf:issues": "npm run build --workspace=@toppo/server && node scripts/src/perf/explain-issues.ts",
+    "docs:screenshots": "npm run build && npm run screenshots --workspace=@toppo/e2e",
+    "db:snapshot": "npm run build --workspace=@toppo/server && node scripts/src/upgrades/capture-snapshot.ts",
     "check": "npm run lint && npm run check:conventions && npm run check:dependencies && npm run typecheck && npm run test && npm run build"
   },
   "devDependencies": {

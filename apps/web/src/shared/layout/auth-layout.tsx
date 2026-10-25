@@ -22,7 +22,7 @@ export function AuthLayout({
     <main className="flex min-h-dvh flex-col items-center px-4 pt-[max(2.5rem,env(safe-area-inset-top))] pb-10 sm:justify-center sm:py-12">
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center justify-center gap-2.5">
-          <Logo className="size-9" />
+          <Logo className="h-9" />
           <span className="text-lg font-semibold tracking-tight">{t('app.name')}</span>
         </div>
         <div className="rounded-xl border border-border bg-surface p-5 shadow-sm sm:p-8">

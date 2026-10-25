@@ -13,7 +13,7 @@ Each step ends with a working demo, green CI and updated docs. Anything touching
 
 ## Next up
 
-1. Step 6, the 0.1 release.
+1. Step 6, the 0.1 release: migration tests, then the documentation. The security review and the release itself come after.
 
 ## Step 1: roles, permissions and users
 
@@ -134,9 +134,8 @@ _Done when a team works its issues as it did in Mantis: found despite a typo, fo
 
 ## Step 6: release 0.1
 
-- [ ] Import from Mantis and Redmine (CSV first).
-- [ ] Migration tests: upgrade a database created by the previous version.
-- [ ] Documentation: installation, upgrade, backup and restore, reverse proxy; screenshots.
+- [x] Migration tests: a snapshot of a database each version leaves, filled through its API (`npm run db:snapshot`), restored and upgraded by the tests: no row lost, stored JSON still read, the server still serving it. The last three versions are kept (`pre-0.1` until 0.1.0).
+- [x] Documentation: [self-hosting](docs/self-hosting.md) (requirements, email, Caddy and nginx, backups and a tested restore, upgrade policy and rollback, troubleshooting), a README that shows the product, screenshots rebuilt by `npm run docs:screenshots`, and the new logo.
 - [ ] Security review: threat model, CSP and headers, dependency audit, container scan.
 - [ ] Merge the release-please pull request: version 0.1.0 and the `latest` image.
 - [ ] Announcement on r/selfhosted.
@@ -146,7 +145,7 @@ _Done when a team works its issues as it did in Mantis: found despite a typo, fo
 - [ ] Plugin system: `@toppo/plugin-sdk` (MIT), manifest and `apiVersion`, loader, hooks fed by `activities` through the job queue, plugin HTTP routes, settings forms generated from Zod, declarative UI contributions.
 - [ ] Official plugins: webhooks, then GitHub.
 - [ ] OIDC, SAML and LDAP, free (Better Auth plugins, added to the endpoint allowlist).
-- [ ] Jira import; inbound email.
+- [ ] Imports from Mantis, Redmine and Jira (CSV first); inbound email.
 - [ ] Kanban board, as a plugin or in core (to decide).
 
 ## Open questions

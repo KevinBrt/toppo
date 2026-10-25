@@ -6,24 +6,26 @@
  * Run `npm run perf:issues` (it builds the server first) with the test server up
  * (`npm run db:up`). `--reuse` keeps the database of an earlier run instead of seeding again.
  */
-import { type ChildProcess, execFileSync, spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { setTimeout as sleep } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+import {
+  apiOf,
+  invitationToken,
+  PASSWORD,
+  psql as psqlIn,
+  ROLE_IDS,
+  startServer as start,
+  stopServer,
+  TEST_DB_CONTAINER,
+} from '../harness/built-server.ts';
 
-/** The `test-db` service of docker/compose.dev.yml. */
-const CONTAINER = 'toppo-dev-test-db-1';
 const DATABASE_URL = 'postgres://toppo:toppo@127.0.0.1:54330/toppo_perf';
 const DATABASE = 'toppo_perf';
 const PORT = 3200;
-const BASE = `http://127.0.0.1:${PORT}`;
 const SETUP_CODE = 'PERF-CHEC-KRUN';
-const PASSWORD = 'correct horse battery staple';
-/** DEFAULT_ROLE_IDS.team (@toppo/core). */
-const TEAM_ROLE = '01a1569b-9801-747e-91c9-d058653f2a8e';
-const SERVER = fileURLToPath(new URL('../../../apps/server/dist/main.js', import.meta.url));
 const SEED = fileURLToPath(new URL('./seed-issues.sql', import.meta.url));
 const OUTPUT = join(tmpdir(), 'toppo-perf');
 
@@ -35,104 +37,15 @@ const EXPLAIN_ALL = `
   alter database ${DATABASE} set auto_explain.log_buffers = on;
 `;
 
-function psql(sql: string, database = DATABASE): string {
-  return execFileSync(
-    'docker',
-    [
-      'exec',
-      '-i',
-      CONTAINER,
-      'psql',
-      '-U',
-      'toppo',
-      '-d',
-      database,
-      '-v',
-      'ON_ERROR_STOP=1',
-      '-qAt',
-    ],
-    { input: sql, maxBuffer: 64 * 1024 * 1024 },
-  ).toString();
-}
-
-async function startServer(): Promise<ChildProcess> {
-  const server = spawn('node', [SERVER], {
-    env: {
-      ...process.env,
-      TOPPO_DATABASE_URL: DATABASE_URL,
-      TOPPO_HOST: '127.0.0.1',
-      TOPPO_PORT: String(PORT),
-      TOPPO_URL: BASE,
-      TOPPO_LOG_LEVEL: 'error',
-      TOPPO_DATA_DIR: join(OUTPUT, 'data'),
-      TOPPO_SETUP_CODE: SETUP_CODE,
-    },
-    stdio: ['ignore', 'inherit', 'inherit'],
+const psql = (sql: string, database = DATABASE) => psqlIn(sql, database);
+const startServer = () =>
+  start({
+    databaseUrl: DATABASE_URL,
+    port: PORT,
+    dataDir: join(OUTPUT, 'data'),
+    setupCode: SETUP_CODE,
   });
-  for (let attempt = 0; attempt < 100; attempt += 1) {
-    const healthy = await fetch(`${BASE}/health`).then(
-      (response) => response.ok,
-      () => false,
-    );
-    if (healthy) {
-      return server;
-    }
-    await sleep(200);
-  }
-  throw new Error('The server did not start');
-}
-
-async function stopServer(server: ChildProcess): Promise<void> {
-  const exited = new Promise((resolve) => server.once('exit', resolve));
-  server.kill();
-  await exited;
-}
-
-async function call(
-  method: 'GET' | 'POST',
-  path: string,
-  { cookie, body }: { cookie?: string; body?: object } = {},
-): Promise<Response> {
-  const response = await fetch(`${BASE}${path}`, {
-    method,
-    headers: {
-      origin: BASE,
-      ...(cookie ? { cookie } : {}),
-      ...(body ? { 'content-type': 'application/json' } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  if (!response.ok) {
-    throw new Error(`${method} ${path}: ${response.status} ${await response.text()}`);
-  }
-  return response;
-}
-
-async function signIn(email: string): Promise<string> {
-  const response = await call('POST', '/api/auth/sign-in/email', {
-    body: { email, password: PASSWORD },
-  });
-  return response.headers
-    .getSetCookie()
-    .map((cookie) => cookie.split(';')[0])
-    .join('; ');
-}
-
-/** The token of the one invitation link `POST /api/v1/invitations` answered. */
-function invitationToken(answer: unknown): string {
-  const invitations =
-    typeof answer === 'object' && answer !== null && 'invitations' in answer
-      ? answer.invitations
-      : null;
-  const [first] = Array.isArray(invitations) ? invitations : [];
-  const link: unknown =
-    typeof first === 'object' && first !== null && 'link' in first ? first.link : null;
-  const token = typeof link === 'string' ? link.split('#')[1] : undefined;
-  if (!token) {
-    throw new Error('No invitation link');
-  }
-  return token;
-}
+const { call, signIn } = apiOf(PORT);
 
 /** A fresh database: migrated by the server, set up by Ada, with Grace invited, then seeded. */
 async function seed(): Promise<void> {
@@ -148,7 +61,7 @@ async function seed(): Promise<void> {
   const admin = await signIn('ada@example.com');
   const invited = await call('POST', '/api/v1/invitations', {
     cookie: admin,
-    body: { emails: ['grace@example.com'], roleId: TEAM_ROLE },
+    body: { emails: ['grace@example.com'], roleId: ROLE_IDS.team },
   });
   await call('POST', '/api/v1/invitations/accept', {
     body: {
@@ -296,7 +209,7 @@ for (const [label, cookie, path] of replayed) {
 }
 psql(`select 'MARK end'`);
 await stopServer(server);
-const logs = spawnSync('docker', ['logs', '--since', since, CONTAINER], {
+const logs = spawnSync('docker', ['logs', '--since', since, TEST_DB_CONTAINER], {
   maxBuffer: 256 * 1024 * 1024,
 });
 const log = Buffer.concat([logs.stdout, logs.stderr]).toString();

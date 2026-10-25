@@ -7,6 +7,7 @@
   "type": "module",
   "scripts": {
     "test:e2e": "node prepare-database.ts && playwright test",
+    "screenshots": "node screenshots/prepare-database.ts && playwright test -c screenshots/playwright.config.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {

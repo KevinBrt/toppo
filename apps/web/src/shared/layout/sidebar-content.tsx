@@ -23,7 +23,7 @@ export function SidebarContent({
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex h-16 shrink-0 items-center gap-2.5 px-5">
-        <Logo className="size-7" />
+        <Logo className="h-7" />
         <span className="text-[15px] font-semibold tracking-tight">{t('app.name')}</span>
       </div>
 

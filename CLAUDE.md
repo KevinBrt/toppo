@@ -17,6 +17,8 @@ Toppo is an open-source (AGPL-3.0), self-hosted issue tracker. The code is publi
 | `npm run check:dependencies` | Package boundaries, exact versions, lockfile, licenses                           |
 | `npm run db:up` / `db:down`  | Start or stop the dev database and the in-memory test server                     |
 | `npm run perf:issues`        | Query plans of the issue list and search on 100,000 issues (docs/performance.md) |
+| `npm run db:snapshot`        | At each release, `-- <version>`: the database it leaves, for the upgrade tests   |
+| `npm run docs:screenshots`   | Rebuilds the README's screenshots (`docs/images/`) from a filled instance        |
 
 Run one workspace: `npm test --workspace=@toppo/core`, or `npx vitest run src/foo.test.ts` inside it. Node 24 (`.nvmrc`) and Docker are required.
 
