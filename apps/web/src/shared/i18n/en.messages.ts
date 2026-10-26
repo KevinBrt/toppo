@@ -910,6 +910,8 @@ export const en = {
     invitedBy: 'Invited by {name}',
     cannotChangeOwnRole: 'Another administrator must change your role.',
     systemRoleReserved: 'Only administrators can do this for an administrator.',
+    allProjectsReserved:
+      'Only someone who reaches every project can give or take that access, and not to themselves.',
   },
   invitations: {
     title: 'Invite members',
@@ -1012,7 +1014,11 @@ export const en = {
       },
       settingsManage: {
         label: 'Instance settings',
-        description: 'Email, global workflows and fields.',
+        description: 'Global workflows and fields.',
+      },
+      mailManage: {
+        label: 'Email settings',
+        description: 'The mail server every email leaves through. Administrators only.',
       },
       rolesManage: {
         label: 'Manage roles',

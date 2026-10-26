@@ -20,6 +20,7 @@ import { parseEmails } from '../../utils/invitation-emails.util.ts';
 
 const KNOWN_ERRORS = {
   INVALID_ROLE: 'members.invalidRole',
+  ALL_PROJECTS_RESERVED: 'members.allProjectsReserved',
   SYSTEM_ROLE_RESERVED: 'members.systemRoleReserved',
   INVALID_PROJECT: 'invitations.invalidProject',
 } as const;

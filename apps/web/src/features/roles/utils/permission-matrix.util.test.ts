@@ -37,6 +37,7 @@ describe('MATRIX_SECTIONS', () => {
           'project.create',
           'project.delete',
           'instance.settings.manage',
+          'instance.mail.manage',
           'instance.roles.manage',
         ],
       },

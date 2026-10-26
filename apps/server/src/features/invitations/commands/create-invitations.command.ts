@@ -2,7 +2,7 @@ import { canActOnRole, invitationExpiry } from '@toppo/core';
 import { schema, uuidv7 } from '@toppo/db';
 import { type CreateInvitationsResponse, createInvitationsRequestSchema } from '@toppo/shared';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { reachableBy } from '../../../platform/auth/project-access.ts';
+import { reachableBy, reachesEveryProject } from '../../../platform/auth/project-access.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { emailInvitations } from '../jobs/email-invitation.job.ts';
@@ -45,6 +45,13 @@ export const createInvitations = defineCommand({
       throw new HttpError(403, 'SYSTEM_ROLE_RESERVED', 'Only administrators handle that role');
     }
     // Only projects the inviter reaches: inviting never reveals, nor opens, one they do not know.
+    if (allProjects && !(await reachesEveryProject(tx, actor.id))) {
+      throw new HttpError(
+        403,
+        'ALL_PROJECTS_RESERVED',
+        'Only someone who reaches every project may change this access',
+      );
+    }
     const keys = allProjects ? [] : [...new Set(projectKeys)];
     const chosen =
       keys.length === 0

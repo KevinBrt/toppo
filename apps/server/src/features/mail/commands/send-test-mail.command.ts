@@ -26,7 +26,7 @@ const REFUSALS: Readonly<Record<MailFailure, [status: number, code: string]>> = 
  */
 export const sendTestMail = defineCommand({
   name: 'mail.sendTest',
-  access: { permission: 'instance.settings.manage' },
+  access: { permission: 'instance.mail.manage' },
   input: z.object({}),
   async handler({ tx, actor, services, log }): Promise<void> {
     const [me] = await tx

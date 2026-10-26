@@ -22,11 +22,15 @@ function executionContext(actor: Actor): ExecutionContext {
   };
 }
 
-async function insertActor(instanceRoleId: string, permissions: Actor['permissions']) {
+async function insertActor(
+  instanceRoleId: string,
+  permissions: Actor['permissions'],
+  allProjects = false,
+) {
   const id = uuidv7();
   await context.database.db
     .insert(schema.users)
-    .values({ id, name: `User ${id}`, email: `${id}@example.com`, instanceRoleId });
+    .values({ id, name: `User ${id}`, email: `${id}@example.com`, instanceRoleId, allProjects });
   return { id, name: `User ${id}`, email: `${id}@example.com`, permissions };
 }
 
@@ -72,5 +76,28 @@ describe('invitations to the system role', () => {
     await expect(
       revokeInvitation.execute(executionContext(administrator), { invitationId }),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe('invitations to every project', () => {
+  it('are sent only by someone who reaches every project', async () => {
+    const invite = (actor: Actor, email: string) =>
+      createInvitations.execute(executionContext(actor), {
+        emails: [email],
+        roleId: DEFAULT_ROLE_IDS.team,
+        allProjects: true,
+      });
+    const widerManager = await insertActor(DEFAULT_ROLE_IDS.team, ['instance.users.manage'], true);
+
+    await expect(invite(manager, 'wide@example.com')).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'ALL_PROJECTS_RESERVED',
+    });
+    await expect(invite(widerManager, 'wide@example.com')).resolves.toMatchObject({
+      alreadyMembers: [],
+    });
+    await expect(invite(administrator, 'wider@example.com')).resolves.toMatchObject({
+      alreadyMembers: [],
+    });
   });
 });

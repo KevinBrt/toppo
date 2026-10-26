@@ -60,9 +60,14 @@ const envSchema = z.object({
     .string()
     .min(SECRET_MIN_LENGTH, `must be at least ${SECRET_MIN_LENGTH} characters`)
     .optional(),
+  // Counted as the setup screen compares it, ignoring case and anything but letters and digits:
+  // `----------------` or a non-Latin phrase would otherwise leave a code of nothing to guess.
   TOPPO_SETUP_CODE: z
     .string()
-    .min(SETUP_CODE_MIN_LENGTH, `must be at least ${SETUP_CODE_MIN_LENGTH} characters`)
+    .refine(
+      (code) => code.toUpperCase().replace(/[^A-Z0-9]/g, '').length >= SETUP_CODE_MIN_LENGTH,
+      `must hold at least ${SETUP_CODE_MIN_LENGTH} letters (A-Z) or digits`,
+    )
     .optional(),
   TOPPO_UPDATE_CHECK: z.stringbool().default(true),
 });

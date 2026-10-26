@@ -69,6 +69,19 @@ export function reachableBy(actorId: string): SQL {
   )`;
 }
 
+/**
+ * Whether `actorId` reaches every project, present and future: through the system role or their
+ * own access to every project. Only they may open every project to someone else.
+ */
+export async function reachesEveryProject(db: Db, actorId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .innerJoin(roles, eq(roles.id, users.instanceRoleId))
+    .where(and(eq(users.id, actorId), or(eq(roles.grantsAll, true), eq(users.allProjects, true))));
+  return row !== undefined;
+}
+
 /** The project permissions that make someone a manager of a project: its screens are theirs. */
 const MANAGING: readonly ProjectPermission[] = [
   'project.settings.manage',

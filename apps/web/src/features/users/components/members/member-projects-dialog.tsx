@@ -10,6 +10,7 @@ import { UsersQueries } from '../../queries/users.queries.ts';
 const KNOWN_ERRORS = {
   PROJECT_NOT_FOUND: 'projects.notFound',
   PROJECT_ARCHIVED: 'projects.archivedNotice',
+  ALL_PROJECTS_RESERVED: 'members.allProjectsReserved',
   SYSTEM_ROLE_RESERVED: 'members.systemRoleReserved',
   USER_NOT_FOUND: 'members.userNotFound',
 } as const;

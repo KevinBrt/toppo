@@ -109,9 +109,18 @@ describe('loadConfig', () => {
 
     expect(issues).toStrictEqual([
       'TOPPO_SECRET: must be at least 32 characters',
-      'TOPPO_SETUP_CODE: must be at least 12 characters',
+      'TOPPO_SETUP_CODE: must hold at least 12 letters (A-Z) or digits',
     ]);
   });
+
+  it.each(['------------', 'abcd -- efgh -- ij', 'код-настройки-сервера'])(
+    'refuses the setup code %j, too short once dashes, spaces and other scripts are dropped',
+    (code) => {
+      expect(issuesOf(() => loadConfig({ ...minimalEnv, TOPPO_SETUP_CODE: code }))).toStrictEqual([
+        'TOPPO_SETUP_CODE: must hold at least 12 letters (A-Z) or digits',
+      ]);
+    },
+  );
 
   it.each(['0', '1025', '2.5', '20MB'])('refuses an attachment size limit of %s', (size) => {
     expect(

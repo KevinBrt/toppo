@@ -7,11 +7,12 @@ const { mailSettings } = schema;
 
 /**
  * Saves how the instance sends email. The password is sealed with the instance's key; left out,
- * the one saved stays. Without a user name, the server takes mail without signing in.
+ * the one saved stays, for the same account on the same server only: never sent anywhere else.
+ * Without a user name, the server takes mail without signing in.
  */
 export const saveMailSettings = defineCommand({
   name: 'mail.saveSettings',
-  access: { permission: 'instance.settings.manage' },
+  access: { permission: 'instance.mail.manage' },
   input: mailSettingsRequestSchema,
   async handler({ tx, actor, services, log }, { username, password, ...settings }): Promise<void> {
     const signsIn = username !== undefined && username !== '';
@@ -20,10 +21,21 @@ export const saveMailSettings = defineCommand({
       passwordSealed = services.secrets.seal(password);
     } else if (signsIn) {
       const [saved] = await tx
-        .select({ passwordSealed: mailSettings.passwordSealed })
+        .select({
+          host: mailSettings.host,
+          port: mailSettings.port,
+          security: mailSettings.security,
+          username: mailSettings.username,
+          passwordSealed: mailSettings.passwordSealed,
+        })
         .from(mailSettings)
         .for('update');
-      if (!saved?.passwordSealed) {
+      const sameAccount =
+        saved?.host === settings.host &&
+        saved.port === settings.port &&
+        saved.security === settings.security &&
+        saved.username === username;
+      if (!(sameAccount && saved.passwordSealed)) {
         throw new HttpError(400, 'MAIL_PASSWORD_REQUIRED', 'Enter the password of this account');
       }
       passwordSealed = saved.passwordSealed;

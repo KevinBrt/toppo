@@ -8,7 +8,7 @@ const { mailSettings } = schema;
 /** How the instance sends email, without its password: only whether one is saved. */
 export const getMailSettings = defineQuery({
   name: 'mail.getSettings',
-  access: { permission: 'instance.settings.manage' },
+  access: { permission: 'instance.mail.manage' },
   input: z.object({}),
   async handler({ db }): Promise<MailSettingsResponse> {
     const [row] = await db

@@ -41,6 +41,7 @@ export interface NavSection {
 /** Each of these opens a part of the settings: instance settings, members, roles. */
 export const SETTINGS_PERMISSIONS: readonly Permission[] = [
   'instance.settings.manage',
+  'instance.mail.manage',
   'instance.users.manage',
   'instance.roles.manage',
 ];
@@ -114,7 +115,7 @@ export const SETTINGS_NAV: readonly NavSection[] = [
         to: '/settings/email',
         labelKey: 'mail.title',
         icon: MailIcon,
-        requiresAnyOf: ['instance.settings.manage'],
+        requiresAnyOf: ['instance.mail.manage'],
       },
     ],
   },

@@ -25,7 +25,7 @@ function EmailScreen() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
   const { data: user } = useQuery(SessionQueries.currentUser);
-  const allowed = Boolean(user && can(user.permissions, 'instance.settings.manage'));
+  const allowed = Boolean(user && can(user.permissions, 'instance.mail.manage'));
   const settings = useQuery({ ...MailQueries.settings, enabled: allowed });
   // Once email is turned off, the form starts over, empty.
   const [round, setRound] = useState(0);

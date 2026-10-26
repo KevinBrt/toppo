@@ -35,6 +35,9 @@ export const PERMISSIONS = {
   // Takes a project's issues and their history with it, for good.
   'project.delete': { scope: 'instance', section: 'organisation' },
   'instance.settings.manage': { scope: 'instance', section: 'organisation' },
+  // The mail server carries every password-reset and invitation link, administrators' included:
+  // whoever chooses it can take any account, so only administrators may.
+  'instance.mail.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
   // Whoever edits roles can give themselves anything: only administrators may.
   'instance.roles.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
 } as const satisfies Record<string, PermissionDefinition>;

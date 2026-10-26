@@ -41,8 +41,9 @@ describe('permission catalog', () => {
     expect(order).toStrictEqual([...order].sort((left, right) => left - right));
   });
 
-  it('lets no role but the system one manage roles', () => {
+  it('lets no role but the system one manage roles or the email server', () => {
     expect(ALL_PERMISSIONS.filter((permission) => !canBeGranted(permission))).toStrictEqual([
+      'instance.mail.manage',
       'instance.roles.manage',
     ]);
   });
@@ -98,6 +99,7 @@ describe('default roles', () => {
     'project.create': [true, false, false],
     'project.delete': [true, false, false],
     'instance.settings.manage': [true, false, false],
+    'instance.mail.manage': [true, false, false],
     'instance.roles.manage': [true, false, false],
   };
 

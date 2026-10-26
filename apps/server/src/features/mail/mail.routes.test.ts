@@ -1,5 +1,5 @@
 import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { schema, uuidv7 } from '@toppo/db';
 import {
   apiErrorSchema,
   type MailSettingsRequest,
@@ -168,9 +168,44 @@ describe('the mail settings', () => {
     }
   });
 
-  it('are for those who manage the instance', async () => {
-    expect((await call('GET', '/api/v1/settings/email', teamCookie)).statusCode).toBe(403);
-    expect((await call('POST', '/api/v1/settings/email/test', teamCookie)).statusCode).toBe(403);
+  it('keep a password left out for the same account on the same server only', async () => {
+    await save(settings({ ...CREDENTIALS, port: guarded.port }));
+
+    for (const elsewhere of [
+      settings({ username: CREDENTIALS.username, port: open.port }),
+      settings({ username: CREDENTIALS.username, port: guarded.port, host: 'localhost' }),
+      settings({ username: CREDENTIALS.username, port: guarded.port, security: 'starttls' }),
+      settings({ username: 'someone.else@example.com', port: guarded.port }),
+    ]) {
+      const refused = await call('PUT', '/api/v1/settings/email', adminCookie, elsewhere);
+      expect(refused.statusCode).toBe(400);
+      expect(errorCode(refused)).toBe('MAIL_PASSWORD_REQUIRED');
+    }
+    expect(await saved()).toMatchObject({ port: guarded.port, passwordSet: true });
+  });
+
+  it('are for administrators only, not for those who manage the other settings', async () => {
+    const roleId = uuidv7();
+    await context.database.db
+      .insert(schema.roles)
+      .values({ id: roleId, name: 'Settings', permissions: ['instance.settings.manage'] });
+    await createTestUser(context.database, {
+      name: 'Mary Settings',
+      email: 'mary@example.com',
+      password: PASSWORD,
+      instanceRoleId: roleId,
+    });
+    const settingsCookie = await signIn('mary@example.com');
+
+    for (const [method, url, body] of [
+      ['GET', '/api/v1/settings/email', undefined],
+      ['PUT', '/api/v1/settings/email', settings()],
+      ['DELETE', '/api/v1/settings/email', undefined],
+      ['POST', '/api/v1/settings/email/test', undefined],
+    ] as const) {
+      expect((await call(method, url, settingsCookie, body)).statusCode).toBe(403);
+      expect((await call(method, url, teamCookie, body)).statusCode).toBe(403);
+    }
   });
 });
 

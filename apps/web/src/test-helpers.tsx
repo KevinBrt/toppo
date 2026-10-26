@@ -702,11 +702,11 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       asHolder(state, 'instance.roles.manage') ?? savePermissions(state, body),
     'POST /api/v1/invitations': (body) => asUserManager(state) ?? invite(state, body),
     'GET /api/v1/settings/email': () =>
-      asHolder(state, 'instance.settings.manage') ?? json({ settings: state.mailSettings }),
+      asHolder(state, 'instance.mail.manage') ?? json({ settings: state.mailSettings }),
     'PUT /api/v1/settings/email': (body) =>
-      asHolder(state, 'instance.settings.manage') ?? saveMailSettings(state, body),
+      asHolder(state, 'instance.mail.manage') ?? saveMailSettings(state, body),
     'DELETE /api/v1/settings/email': () => {
-      const refusal = asHolder(state, 'instance.settings.manage');
+      const refusal = asHolder(state, 'instance.mail.manage');
       if (!refusal) {
         state.mailSettings = null;
       }
@@ -714,12 +714,11 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
     },
     'POST /api/v1/settings/email/test': () => {
       if (!state.mailSettings) {
-        return asHolder(state, 'instance.settings.manage') ?? apiError(409, 'MAIL_NOT_CONFIGURED');
+        return asHolder(state, 'instance.mail.manage') ?? apiError(409, 'MAIL_NOT_CONFIGURED');
       }
       const refusal = state.mailTestRefusal;
       return (
-        asHolder(state, 'instance.settings.manage') ??
-        (refusal ? apiError(422, refusal) : NO_CONTENT())
+        asHolder(state, 'instance.mail.manage') ?? (refusal ? apiError(422, refusal) : NO_CONTENT())
       );
     },
     'PUT /api/v1/me/email-notifications': (body) => {
@@ -907,7 +906,13 @@ function saveMailSettings(state: FakeServerState, body: Record<string, unknown>)
   }
   const { username, password, ...settings } = parsed.data;
   const signsIn = Boolean(username);
-  if (signsIn && password === undefined && !state.mailSettings?.passwordSet) {
+  const saved = state.mailSettings;
+  const sameAccount =
+    saved?.host === settings.host &&
+    saved.port === settings.port &&
+    saved.security === settings.security &&
+    saved.username === username;
+  if (signsIn && password === undefined && !(sameAccount && saved.passwordSet)) {
     return apiError(400, 'MAIL_PASSWORD_REQUIRED');
   }
   state.mailSettings = { ...settings, username: username || null, passwordSet: signsIn };

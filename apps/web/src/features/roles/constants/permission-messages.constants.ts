@@ -59,6 +59,10 @@ export const PERMISSION_MESSAGES: Readonly<Record<SwitchPermission, PermissionMe
     label: 'roles.permissions.settingsManage.label',
     description: 'roles.permissions.settingsManage.description',
   },
+  'instance.mail.manage': {
+    label: 'roles.permissions.mailManage.label',
+    description: 'roles.permissions.mailManage.description',
+  },
   'instance.roles.manage': {
     label: 'roles.permissions.rolesManage.label',
     description: 'roles.permissions.rolesManage.description',

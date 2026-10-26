@@ -940,6 +940,8 @@ export const fr: Messages = {
     invitedBy: 'Invité par {name}',
     cannotChangeOwnRole: 'Un autre administrateur doit changer votre rôle.',
     systemRoleReserved: 'Seuls les administrateurs peuvent le faire pour un administrateur.',
+    allProjectsReserved:
+      'Seule une personne qui accède à tous les projets peut donner ou retirer cet accès, et pas à elle-même.',
   },
   invitations: {
     title: 'Inviter des membres',
@@ -1050,7 +1052,11 @@ export const fr: Messages = {
       },
       settingsManage: {
         label: 'Paramètres de l’instance',
-        description: 'E-mail, workflows et champs globaux.',
+        description: 'Workflows et champs globaux.',
+      },
+      mailManage: {
+        label: 'Paramètres e-mail',
+        description: 'Le serveur par lequel partent tous les e-mails. Administrateurs uniquement.',
       },
       rolesManage: {
         label: 'Gérer les rôles',

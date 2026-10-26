@@ -2,6 +2,7 @@ import { canActOnRole } from '@toppo/core';
 import { schema } from '@toppo/db';
 import { userIdParamsSchema, userProjectAccessRequestSchema } from '@toppo/shared';
 import { and, eq, isNull } from 'drizzle-orm';
+import { reachesEveryProject } from '../../../../platform/auth/project-access.ts';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../../platform/http/http-error.ts';
 
@@ -26,6 +27,15 @@ export const setUserProjectAccess = defineCommand({
     }
     if (!canActOnRole(actor.permissions, user)) {
       throw new HttpError(403, 'SYSTEM_ROLE_RESERVED', 'Only administrators handle that role');
+    }
+    // Opening every project would reach the ones the actor does not: only those who reach them
+    // all may give or take that access, and never to themselves.
+    if (userId === actor.id || !(await reachesEveryProject(tx, actor.id))) {
+      throw new HttpError(
+        403,
+        'ALL_PROJECTS_RESERVED',
+        'Only someone who reaches every project may change this access',
+      );
     }
     await tx.update(users).set({ allProjects }).where(eq(users.id, userId));
     log.info({ userId, allProjects, by: actor.id }, 'Project access changed');
