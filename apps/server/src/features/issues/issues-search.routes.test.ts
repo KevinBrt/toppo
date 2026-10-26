@@ -1,6 +1,7 @@
 import { DEFAULT_ROLE_IDS } from '@toppo/core';
 import { schema, uuidv7 } from '@toppo/db';
 import { apiErrorSchema, ISSUE_SEARCH_LIMIT, issueSearchResponseSchema } from '@toppo/shared';
+import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -158,13 +159,48 @@ describe('the words a typo is corrected to', () => {
       (await db.select({ word: schema.issueWords.word }).from(schema.issueWords)).map(
         ({ word }) => word,
       );
-    await db.insert(schema.issueWords).values({ id: uuidv7(), word: 'zeppelin' });
+    const [web] = await db
+      .select({ id: schema.projects.id })
+      .from(schema.projects)
+      .where(eq(schema.projects.key, 'WEB'));
+    await db
+      .insert(schema.issueWords)
+      .values({ id: uuidv7(), projectId: web?.id ?? '', word: 'zeppelin' });
 
     const kept = await db.transaction((tx) => rebuildWords(tx));
 
     expect(await words()).not.toContain('zeppelin');
     expect(await words()).toContain('crash');
     expect(kept).toBe((await words()).length);
+  });
+});
+
+describe('correcting a typo', () => {
+  /** The titles of the issues `search` finds. */
+  async function titlesFound(search: string, cookie: string): Promise<string[]> {
+    const response = await call(
+      'GET',
+      `/api/v1/issues/search?${new URLSearchParams({ search })}`,
+      cookie,
+    );
+    expect(response.statusCode).toBe(200);
+    return issueSearchResponseSchema.parse(response.json()).rows.map(({ title }) => title);
+  }
+
+  it('reads only the projects one reads every issue of, so it tells nothing of the others', async () => {
+    await report('WEB', { title: 'Decoy', description: 'marmalada' }, teamCookie);
+    expect(await titlesFound('marmalade', teamCookie)).toStrictEqual(['Decoy']);
+
+    // A word out of reach that starts with the one typed neither stops nor changes the correction.
+    await report('API', { title: 'Confidential', description: 'marmalade' });
+    expect(await titlesFound('marmalade', teamCookie)).toStrictEqual(['Decoy']);
+    expect(await titlesFound('marmalada', adminCookie)).toStrictEqual(['Decoy']);
+  });
+
+  it('is left out for those who read their own issues only', async () => {
+    expect(await found('crash', requesterCookie)).toStrictEqual(['WEB-2']);
+    expect(await found('crasj', requesterCookie)).toStrictEqual([]);
+    expect(await found('crasj', teamCookie)).toStrictEqual(['WEB-1', 'WEB-2']);
   });
 });
 

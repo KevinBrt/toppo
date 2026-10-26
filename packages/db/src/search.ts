@@ -90,21 +90,32 @@ export function wordsRank(
 }
 
 /**
- * The words issues have closest to each word of `term` that none has nor starts with, by the
- * word typed: one letter off in four or five, two beyond (`similar_issue_words()`, migration
- * 0040). Words issues have, short words and words without a close one are left out.
+ * The words issues of `projectIds` have closest to each word of `term` that none of theirs has
+ * nor starts with, by the word typed: one letter off in four or five, two beyond
+ * (`similar_issue_words()`, migration 0044). Only projects whose every issue the searcher reads:
+ * the words of others would tell what issues out of reach say. Words issues have, short words and
+ * words without a close one are left out.
  */
-export async function similarWords(db: Pick<Db, 'execute'>, term: string): Promise<SimilarWords> {
+export async function similarWords(
+  db: Pick<Db, 'execute'>,
+  term: string,
+  projectIds: readonly string[],
+): Promise<SimilarWords> {
   const words = wordsOf(term).filter((word) => word.length >= CORRECTED_WORD_MIN_LENGTH);
-  if (words.length === 0) {
+  if (words.length === 0 || projectIds.length === 0) {
     return new Map();
   }
+  const projects = sql.join(
+    projectIds.map((projectId) => sql`${projectId}`),
+    sql`, `,
+  );
   const typed = sql.join(
     words.map((word) => sql`${word}`),
     sql`, `,
   );
   const rows = await db.execute<{ typed: string; similar: string[] }>(sql`
-    select typed, array(select similar_issue_words(fold_text(typed))) as similar
+    select typed,
+      array(select similar_issue_words(fold_text(typed), array[${projects}]::uuid[])) as similar
     from unnest(array[${typed}]::text[]) as typed
   `);
   return new Map(

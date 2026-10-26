@@ -20,6 +20,7 @@ export const removeProjectMember = defineCommand({
   async handler({ tx, actor, project, log }, { userId }): Promise<void> {
     const [member] = await tx
       .select({
+        allProjects: users.allProjects,
         ownRole: { grantsAll: roles.grantsAll, permissions: roles.permissions },
         projectRole: { grantsAll: projectRoles.grantsAll, permissions: projectRoles.permissions },
       })
@@ -32,7 +33,12 @@ export const removeProjectMember = defineCommand({
     if (!member) {
       throw new HttpError(404, 'MEMBER_NOT_FOUND', 'This person is not a member of the project');
     }
-    if (!canActOnProjectMember(project.permissions, member.projectRole ?? member.ownRole)) {
+    // Someone given every project still reaches it, with their own role from then on: like going
+    // back to it, that role must be within the actor's too.
+    const beyond =
+      !canActOnProjectMember(project.permissions, member.projectRole ?? member.ownRole) ||
+      (member.allProjects && !canActOnProjectMember(project.permissions, member.ownRole));
+    if (beyond) {
       throw new HttpError(
         403,
         'ROLE_BEYOND_YOURS',

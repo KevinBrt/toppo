@@ -14,7 +14,7 @@ import {
   projectResponseSchema,
   projectsResponseSchema,
 } from '@toppo/shared';
-import { count, eq, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -597,5 +597,67 @@ describe('a project’s access', () => {
 
     expect(response.statusCode).toBe(409);
     expect(errorCode(response)).toBe('ROLE_IN_USE');
+  });
+});
+
+describe('members who reach every project', () => {
+  let linId: string;
+  let vicId: string;
+
+  async function rowOf(projectKey: string, userId: string) {
+    const [row] = await context.database.db
+      .select({ roleId: schema.projectMembers.roleId })
+      .from(schema.projectMembers)
+      .where(
+        and(
+          eq(schema.projectMembers.projectId, await projectIdOf(projectKey)),
+          eq(schema.projectMembers.userId, userId),
+        ),
+      );
+    return row;
+  }
+
+  beforeAll(async () => {
+    const person = (name: string, email: string) =>
+      createTestUser(context.database, {
+        name,
+        email,
+        password: PASSWORD,
+        instanceRoleId: DEFAULT_ROLE_IDS.team,
+      });
+    linId = await person('Lin Every', 'lin@example.com');
+    vicId = await person('Vic Every', 'vic@example.com');
+    await createProject('EVR');
+    await join('EVR', managerId, managerRoleId);
+    // Restricted in the project first, then given every project: the row stays.
+    await join('EVR', vicId, managerRoleId);
+    await context.database.db
+      .update(schema.users)
+      .set({ allProjects: true })
+      .where(inArray(schema.users.id, [linId, vicId]));
+  });
+
+  it('get no role of the project from a manager holding less than their own', async () => {
+    const added = await call('POST', '/api/v1/projects/EVR/members', managerCookie, {
+      userIds: [linId],
+      roleId: managerRoleId,
+    });
+
+    expect(added.statusCode).toBe(403);
+    expect(errorCode(added)).toBe('ROLE_BEYOND_YOURS');
+    expect(await rowOf('EVR', linId)).toBeUndefined();
+    await join('EVR', linId, managerRoleId);
+    expect(await rowOf('EVR', linId)).toStrictEqual({ roleId: managerRoleId });
+  });
+
+  it('keep the role of the project unless the manager holds their own', async () => {
+    const removed = await call('DELETE', `/api/v1/projects/EVR/members/${vicId}`, managerCookie);
+
+    expect(removed.statusCode).toBe(403);
+    expect(errorCode(removed)).toBe('ROLE_BEYOND_YOURS');
+    expect(await rowOf('EVR', vicId)).toStrictEqual({ roleId: managerRoleId });
+    const byAdmin = await call('DELETE', `/api/v1/projects/EVR/members/${vicId}`, adminCookie);
+    expect(byAdmin.statusCode).toBe(204);
+    expect(await rowOf('EVR', vicId)).toBeUndefined();
   });
 });

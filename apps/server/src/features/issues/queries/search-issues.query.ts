@@ -56,7 +56,13 @@ export const searchIssues = defineQuery({
         : undefined,
     );
     const named = namedIn(search, [...every, ...ownOnly]);
-    const similar = await similarWords(db, search);
+    // Typos are corrected from the projects whose every issue is read only: the words of others
+    // would tell what issues out of reach say.
+    const similar = await similarWords(
+      db,
+      search,
+      every.map(({ id }) => id),
+    );
     // The best few first, found and ranked from the issues alone; then their fields, for those
     // few only. PostgreSQL cannot tell how many issues words typed in part match, and joining the
     // fields before ranking them would do it for thousands.

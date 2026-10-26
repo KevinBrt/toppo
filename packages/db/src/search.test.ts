@@ -3,7 +3,7 @@ import { createTestDatabase } from '@toppo/testing';
 import { desc, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from './database.ts';
-import { issueWords, users } from './schema/index.ts';
+import { issueWords, projects, users } from './schema/index.ts';
 import { containsText, escapeLike, matchesWords, similarWords, wordsRank } from './search.ts';
 import { uuidv7 } from './uuid.ts';
 
@@ -117,17 +117,27 @@ describe('matchesWords', () => {
 });
 
 describe('similarWords', () => {
+  const [billing, support, secret] = [uuidv7(), uuidv7(), uuidv7()];
+
   beforeAll(async () => {
-    await database.db.insert(issueWords).values(
-      ['facture', 'paiement', 'payment', 'export', 'erreur'].map((word) => ({
-        id: uuidv7(),
-        word,
-      })),
-    );
+    await database.db.insert(projects).values([
+      { id: billing, key: 'BIL', name: 'Billing' },
+      { id: support, key: 'SUP', name: 'Support' },
+      { id: secret, key: 'SEC', name: 'Secret' },
+    ]);
+    const words = (projectId: string, list: readonly string[]) =>
+      list.map((word) => ({ id: uuidv7(), projectId, word }));
+    await database.db
+      .insert(issueWords)
+      .values([
+        ...words(billing, ['facture', 'paiement', 'export']),
+        ...words(support, ['payment', 'erreur', 'paiement']),
+        ...words(secret, ['marmalade', 'paimentrecu']),
+      ]);
   });
 
   it('corrects the words no issue has to the closest ones issues have', async () => {
-    expect(await similarWords(database.db, 'Facutre paiment')).toStrictEqual(
+    expect(await similarWords(database.db, 'Facutre paiment', [billing, support])).toStrictEqual(
       new Map([
         ['Facutre', ['facture']],
         ['paiment', ['paiement', 'payment']],
@@ -136,8 +146,23 @@ describe('similarWords', () => {
   });
 
   it('leaves the words issues have, start, or are too short to correct', async () => {
-    expect(await similarWords(database.db, 'export fact erur zzzzzz')).toStrictEqual(new Map());
-    expect(await similarWords(database.db, ' %& ')).toStrictEqual(new Map());
+    expect(
+      await similarWords(database.db, 'export fact erur zzzzzz', [billing, support]),
+    ).toStrictEqual(new Map());
+    expect(await similarWords(database.db, ' %& ', [billing])).toStrictEqual(new Map());
+  });
+
+  it('reads only the words of the projects given, so that others tell nothing', async () => {
+    // Corrected to no word of another project, and as if theirs were not there: a secret word
+    // starting with `paiment` does not stop the correction.
+    expect(await similarWords(database.db, 'marmalada', [billing])).toStrictEqual(new Map());
+    expect(await similarWords(database.db, 'paiment', [billing])).toStrictEqual(
+      new Map([['paiment', ['paiement']]]),
+    );
+    expect(await similarWords(database.db, 'marmalada', [secret])).toStrictEqual(
+      new Map([['marmalada', ['marmalade']]]),
+    );
+    expect(await similarWords(database.db, 'Facutre', [])).toStrictEqual(new Map());
   });
 
   it('searches a word with those it stands for', async () => {

@@ -155,21 +155,27 @@ export const issues = pgTable(
 );
 
 /**
- * The words issues are written with, folded as they are searched (`search_vector`): what a word
- * typed with a typo is matched to, the closest first (`similar_issue_words()`, migration 0040).
- * Words of letters and digits only, four at least: shorter ones are never corrected. Added as
- * issues are written, rebuilt each night: a word may outlive its last issue until then.
+ * The words issues are written with, folded as they are searched (`search_vector`), project by
+ * project: what a word typed with a typo is matched to, the closest first, among the projects
+ * whose issues the searcher reads (`similar_issue_words()`, migration 0044), so that a correction
+ * never tells what an issue out of reach says. Words of letters and digits only, four at least:
+ * shorter ones are never corrected. Added as issues are written, rebuilt each night: a word may
+ * outlive its last issue until then.
  */
 export const issueWords = pgTable(
   'issue_words',
   {
     id: id(),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
     word: text('word').notNull(),
     ...timestamps,
   },
   (table) => [
     check('issue_words_word_plain', sql`${table.word} ~ '^[[:alnum:]]{4,}$'`),
-    uniqueIndex('issue_words_word_unique').on(table.word),
+    // Also the index of the foreign key.
+    uniqueIndex('issue_words_project_word_unique').on(table.projectId, table.word),
     // Finds the words close to a typed one, and those it starts.
     index('issue_words_word_trigram_idx').using('gin', sql`${table.word} gin_trgm_ops`),
   ],

@@ -119,7 +119,13 @@ export const listIssues = defineQuery({
       ...filtersOf(query, actor.id),
       ...(await propertyFiltersOf(db, project.id, query.property, actor.id)),
       query.search
-        ? searched(query.search, project.key, await similarWords(db, query.search))
+        ? searched(
+            query.search,
+            project.key,
+            // Only those who read every issue get typos corrected: the words of the others'
+            // issues would tell what they say.
+            await similarWords(db, query.search, visibility === 'all' ? [project.id] : []),
+          )
         : undefined,
     );
     // Where each issue's status stands in the workflow the project follows.

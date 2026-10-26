@@ -28,6 +28,12 @@ async function migrate(url: string, migrationsFolder: string): Promise<void> {
 
 const snapshots = await readSnapshots(SNAPSHOTS);
 
+/**
+ * Words kept for correcting typos, made from the issues and rebuilt each night: an upgrade may
+ * drop those no issue has any more (migration 0044), never the others.
+ */
+const REBUILT_FROM_ISSUES = 'issue_words';
+
 /** Whether a stored activity's payload still reads as its type says. */
 const readsAsItsType = ({ type, payload }: { type: string; payload: unknown }) =>
   type in ISSUE_ACTIVITY_PAYLOADS &&
@@ -49,6 +55,9 @@ describe.each(snapshots)('a database of $name, upgraded', (snapshot) => {
   it('keeps every row it had', async () => {
     const lost: string[] = [];
     for (const [table, rows] of Object.entries(snapshot.tables)) {
+      if (table === REBUILT_FROM_ISSUES) {
+        continue;
+      }
       const ids = rows.flatMap(({ id }) =>
         typeof id === 'string' || typeof id === 'number' ? [String(id)] : [],
       );
@@ -63,6 +72,27 @@ describe.each(snapshots)('a database of $name, upgraded', (snapshot) => {
     }
 
     expect(lost).toStrictEqual([]);
+  });
+
+  it('keeps the words typos are corrected to that issues still have', async () => {
+    const rows = snapshot.tables[REBUILT_FROM_ISSUES] ?? [];
+    const ids = rows.flatMap(({ id }) => (typeof id === 'string' ? [id] : []));
+    const written = await database.db.execute<{ id: string }>(sql`
+      select id from issue_words
+      where word in (select word from ts_stat('select search_vector from issues'))
+    `);
+    const stillWritten = await database.db.execute<{ word: string }>(sql`
+      select word from ts_stat('select search_vector from issues')
+      where word = any(${sql.param(rows.map(({ word }) => String(word)))})
+    `);
+
+    expect(ids).toHaveLength(rows.length);
+    expect([...written].map(({ id }) => id).toSorted()).toStrictEqual(
+      rows
+        .filter(({ word }) => [...stillWritten].some((kept) => kept.word === word))
+        .map(({ id }) => String(id))
+        .toSorted(),
+    );
   });
 
   it('still reads what it stored', async () => {

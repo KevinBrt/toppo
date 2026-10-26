@@ -101,3 +101,41 @@ describe('invitations to every project', () => {
     });
   });
 });
+
+describe('renewing an invitation', () => {
+  it('is for those who reach every project it opens, since its link gives them', async () => {
+    const { db } = context.database;
+    const [web, hr] = [uuidv7(), uuidv7()];
+    await db.insert(schema.projects).values([
+      { id: web, key: 'RNW', name: 'Website' },
+      { id: hr, key: 'RNH', name: 'Human resources' },
+    ]);
+    await db.insert(schema.projectMembers).values({ projectId: web, userId: manager.id });
+    const sent = async (access: { projectKeys?: string[]; allProjects?: boolean }) => {
+      const { invitations } = await createInvitations.execute(executionContext(administrator), {
+        emails: [`${uuidv7()}@example.com`],
+        roleId: DEFAULT_ROLE_IDS.team,
+        ...access,
+      });
+      return invitations[0]?.id ?? '';
+    };
+    const renew = async (access: { projectKeys?: string[]; allProjects?: boolean }) =>
+      renewInvitation.execute(executionContext(manager), { invitationId: await sent(access) });
+
+    await expect(renew({ projectKeys: ['RNH'] })).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'INVITATION_BEYOND_REACH',
+    });
+    await expect(renew({ projectKeys: ['RNW', 'RNH'] })).rejects.toMatchObject({
+      code: 'INVITATION_BEYOND_REACH',
+    });
+    await expect(renew({ allProjects: true })).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'ALL_PROJECTS_RESERVED',
+    });
+    await expect(renew({ projectKeys: ['RNW'] })).resolves.toMatchObject({
+      link: expect.stringContaining('#'),
+    });
+    await expect(renew({})).resolves.toMatchObject({ link: expect.stringContaining('#') });
+  });
+});

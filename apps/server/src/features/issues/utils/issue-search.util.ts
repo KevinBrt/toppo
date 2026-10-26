@@ -43,43 +43,49 @@ export function textRank(search: string, similar: SimilarWords): SQL<number> {
 }
 
 /**
- * Adds the words of an issue's title and description to those searches are corrected to, once
- * the issue is written: in its transaction, so that a typo finds it at once.
+ * Adds the words of an issue's title and description to those searches in its project are
+ * corrected to, once the issue is written: in its transaction, so that a typo finds it at once.
  */
 export async function rememberWords(tx: Transaction, issueId: string): Promise<void> {
-  const found = await tx.execute<{ word: string }>(sql`
-    select distinct written.word
+  const found = await tx.execute<{ projectId: string; word: string }>(sql`
+    select distinct ${issues.projectId} as "projectId", written.word
     from ${issues}, unnest(${issues.searchVector}) as written(word, positions, weights)
     where ${eq(issues.id, issueId)} and written.word ~ ${KEPT_WORD}
   `);
-  await addWords(
-    tx,
-    [...found].map(({ word }) => word),
-  );
+  await addWords(tx, [...found]);
 }
 
 /**
- * Makes the words searches are corrected to those of the issues as they are, a word no issue
- * has any more gone. Answers how many words issues have.
+ * Makes the words searches are corrected to those of the issues as they are, project by project,
+ * a word no issue of a project has any more gone from it. Answers how many words they have.
  */
 export async function rebuildWords(tx: Transaction): Promise<number> {
-  const written = sql`select word from ts_stat('select search_vector from issues')`;
+  const written = sql`
+    select distinct ${issues.projectId} as project_id, written.word
+    from ${issues}, unnest(${issues.searchVector}) as written(word, positions, weights)
+    where written.word ~ ${KEPT_WORD}
+  `;
   await tx.execute(sql`
-    delete from ${issueWords} where ${issueWords.word} not in (${written})
+    delete from ${issueWords}
+    where (${issueWords.projectId}, ${issueWords.word}) not in (select project_id, word from (${written}) as kept)
   `);
-  const found = await tx.execute<{ word: string }>(sql`
-    select word from (${written}) as written where word ~ ${KEPT_WORD}
+  const found = await tx.execute<{ projectId: string; word: string }>(sql`
+    select project_id as "projectId", word from (${written}) as kept
   `);
-  const words = [...found].map(({ word }) => word);
-  await addWords(tx, words);
-  return words.length;
+  await addWords(tx, [...found]);
+  return found.length;
 }
 
-async function addWords(tx: Transaction, words: readonly string[]): Promise<void> {
+interface ProjectWord {
+  projectId: string;
+  word: string;
+}
+
+async function addWords(tx: Transaction, words: readonly ProjectWord[]): Promise<void> {
   for (let start = 0; start < words.length; start += BATCH) {
     await tx
       .insert(issueWords)
-      .values(words.slice(start, start + BATCH).map((word) => ({ id: uuidv7(), word })))
-      .onConflictDoNothing({ target: issueWords.word });
+      .values(words.slice(start, start + BATCH).map((word) => ({ id: uuidv7(), ...word })))
+      .onConflictDoNothing({ target: [issueWords.projectId, issueWords.word] });
   }
 }

@@ -914,6 +914,8 @@ export const en = {
       'Only someone who reaches every project can give or take that access, and not to themselves.',
   },
   invitations: {
+    beyondReach:
+      'This invitation opens projects you do not reach: someone who reaches them must renew it.',
     title: 'Invite members',
     description: 'Each person gets a personal link, valid for {days} days, to choose a password.',
     emails: 'Email addresses',

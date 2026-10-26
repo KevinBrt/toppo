@@ -24,6 +24,8 @@ const KNOWN_ERRORS = {
   USER_NOT_FOUND: 'members.userNotFound',
   INVALID_ROLE: 'members.invalidRole',
   INVITATION_NOT_FOUND: 'invitations.notFound',
+  INVITATION_BEYOND_REACH: 'invitations.beyondReach',
+  ALL_PROJECTS_RESERVED: 'members.allProjectsReserved',
 } as const;
 
 function send(change: UserChange): Promise<void> {

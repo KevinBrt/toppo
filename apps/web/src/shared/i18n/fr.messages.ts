@@ -944,6 +944,8 @@ export const fr: Messages = {
       'Seule une personne qui accède à tous les projets peut donner ou retirer cet accès, et pas à elle-même.',
   },
   invitations: {
+    beyondReach:
+      'Cette invitation ouvre des projets auxquels vous n’accédez pas : une personne qui y accède doit la renouveler.',
     title: 'Inviter des membres',
     description:
       'Chaque personne reçoit un lien personnel, valable {days} jours, pour choisir son mot de passe.',
