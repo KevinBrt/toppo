@@ -62,6 +62,8 @@ export const completeSetup = defineCommand({
       // The administrator typed this address themselves; there is nobody to verify it with yet.
       emailVerified: true,
       instanceRoleId: DEFAULT_ROLE_IDS.administrator,
+      // The language the wizard was used in: the interface speaks the account's from now on.
+      locale: input.locale,
     });
     await tx.insert(accounts).values({
       accountId: userId,

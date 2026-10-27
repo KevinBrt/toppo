@@ -71,6 +71,14 @@ describe('completeSetup', () => {
     );
   });
 
+  it('gives the administrator’s account that language, which the interface then speaks', async () => {
+    const [admin] = await context.database.db
+      .select({ locale: schema.users.locale })
+      .from(schema.users);
+
+    expect(admin?.locale).toBe('fr');
+  });
+
   it('stores the hash produced by the password service, never the password', async () => {
     const [account] = await context.database.db.select().from(schema.accounts);
 
