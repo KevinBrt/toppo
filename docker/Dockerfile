@@ -38,7 +38,11 @@ WORKDIR /src
 ENV CI=true
 COPY .npmrc ./
 COPY --from=prune /out/server/json/ ./
-RUN npm ci --omit=dev \
+# Without optional and peer packages either: Better Auth names vitest, drizzle-kit… as optional
+# peers, which npm keeps (`devOptional`) since the monorepo has them for development, shipping
+# build tools and their vulnerabilities. The server needs none: its optional packages are build
+# tools' binaries, and the test helpers take vitest as a peer.
+RUN npm ci --omit=dev --omit=optional --omit=peer \
  # Workspace packages are bundled into the server; their symlinks would dangle.
  && rm -rf node_modules/@toppo \
  # npm may keep some server dependencies next to the server instead of hoisting them.

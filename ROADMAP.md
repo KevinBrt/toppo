@@ -6,7 +6,7 @@ Each step ends with a working demo, green CI and updated docs. Anything touching
 
 ## Done
 
-Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, daily work) and most of step 6: the migration tests, the self-hosting documentation, the version and the language on the account, and a security review of the source (25 findings fixed, 2026-10-26 and 27). What each step decided is in the decisions of [ARCHITECTURE.md](ARCHITECTURE.md#decisions), how in the git history.
+Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, daily work) and most of step 6: the migration tests, the self-hosting documentation, the version and the language on the account, a security review of the source (25 findings fixed, 2026-10-26 and 27), and a scan of the Docker image (2026-10-27: no critical or high vulnerability left once the build tools Better Auth's optional peers dragged in were left out, 293 MB down to 212 MB; the rest is in Debian's base, without a fix yet). What each step decided is in the decisions of [ARCHITECTURE.md](ARCHITECTURE.md#decisions), how in the git history.
 
 ## Now
 
@@ -15,7 +15,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
 
 ## Step 6: release 1.0
 
-- [ ] Scan the Docker image for known vulnerabilities, and fix or document what it finds.
+- [ ] Scan the image in CI (Trivy) on every publication and weekly: fail on a critical or high vulnerability that has a fix.
 - [ ] Merge the release-please pull request, left open until then: version 1.0.0 and the `latest` image.
 - [ ] Announcement on r/selfhosted.
 
@@ -37,7 +37,7 @@ Known compromises to revisit, not blocking:
 
 - Drizzle ORM 1.0 is still a release candidate: upgrade when it is stable (new migration format).
 - The npm override pinning the esbuild of `drizzle-kit`'s loader can go once drizzle-kit drops `@esbuild-kit`.
-- The Docker image weighs about 280 MB, largely Better Auth adapters Toppo does not use (MongoDB, Prisma, Kysely): try the `better-auth/minimal` entry point.
+- The Docker image weighs about 210 MB, largely Better Auth adapters Toppo does not use (MongoDB, Prisma, Kysely): try the `better-auth/minimal` entry point.
 - OpenAPI description of `/api/v1`, generated from the Zod schemas (`z.toJSONSchema`), is not published yet.
 - Dark theme: possible later by redefining the tokens in `packages/ui/src/theme.css`.
 - Statuses on phones: the “Closes the issue” column has no visible header (its boxes are labelled for screen readers only).
