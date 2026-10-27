@@ -29,16 +29,16 @@ npm run dev                      # database + API on :3000 + web app on :5173
 
 ## What CI checks
 
-| Check                          | Fails when                                                                                                                                                     |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Biome, Prettier                | Lint errors or unformatted files                                                                                                                               |
-| `check:conventions`            | Role-name checks, raw SQL, HTML sinks, hard-coded UI text, raw colors, `dark:`, TODO without issue…                                                            |
-| `check:dependencies`           | A package crosses an architecture boundary, a version is not exact, the lockfile pulls from elsewhere than npmjs.org, a shipped license is not AGPL-compatible |
-| `npm audit`, dependency review | A known vulnerability is introduced                                                                                                                            |
-| Typecheck                      | Any TypeScript error (strictest settings)                                                                                                                      |
-| Tests                          | A failing test or coverage below thresholds, on PostgreSQL 16 and 18                                                                                           |
-| End-to-end                     | A broken journey, an accessibility violation, a console or CSP error, on desktop and phone, against the Docker image                                           |
-| CodeQL, Scorecard              | Security findings                                                                                                                                              |
+| Check                          | Fails when                                                                                                                                                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Biome, Prettier                | Lint errors or unformatted files                                                                                                                                                                                               |
+| `check:conventions`            | Role-name checks, raw SQL, HTML sinks, hard-coded UI text, raw colors, `dark:`, TODO without issue…                                                                                                                            |
+| `check:dependencies`           | A package crosses an architecture boundary, a version is not exact, the lockfile pulls from elsewhere than npmjs.org, or another tarball than the package and version an entry names, a shipped license is not AGPL-compatible |
+| `npm audit`, dependency review | A known vulnerability is introduced                                                                                                                                                                                            |
+| Typecheck                      | Any TypeScript error (strictest settings)                                                                                                                                                                                      |
+| Tests                          | A failing test or coverage below thresholds, on PostgreSQL 16 and 18                                                                                                                                                           |
+| End-to-end                     | A broken journey, an accessibility violation, a console or CSP error, on desktop and phone, against the Docker image                                                                                                           |
+| CodeQL, Scorecard              | Security findings                                                                                                                                                                                                              |
 
 ## Releasing
 

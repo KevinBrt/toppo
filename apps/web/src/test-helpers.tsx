@@ -1197,12 +1197,14 @@ function listProjects(state: FakeServerState, search: URLSearchParams): Response
           name,
           description,
           color,
-          members: {
-            count: listed.length,
-            shown: listed
-              .slice(0, PROJECT_MEMBERS_PREVIEW)
-              .map((user) => ({ userId: user.id, name: user.name })),
-          },
+          members: managed
+            ? {
+                count: listed.length,
+                shown: listed
+                  .slice(0, PROJECT_MEMBERS_PREVIEW)
+                  .map((user) => ({ userId: user.id, name: user.name })),
+              }
+            : null,
           issues: managed ? issueStatsOf(state, key) : null,
         };
       }),

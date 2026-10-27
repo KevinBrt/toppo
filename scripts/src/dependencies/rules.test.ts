@@ -128,6 +128,38 @@ describe('checkLockfile', () => {
     expect(problems).toHaveLength(2);
   });
 
+  it('refuses a tarball other than the package and version an entry names', () => {
+    const problems = checkLockfile({
+      lockfileVersion: 3,
+      packages: {
+        'node_modules/fastify': {
+          ...entry,
+          version: '5.12.7',
+          resolved: 'https://registry.npmjs.org/not-fastify/-/not-fastify-1.0.0.tgz',
+        },
+        'node_modules/@scope/b': {
+          ...entry,
+          resolved: 'https://registry.npmjs.org/@scope/b/-/b-2.0.0.tgz',
+        },
+        'node_modules/c': {
+          ...entry,
+          name: 'evil',
+          resolved: 'https://registry.npmjs.org/c/-/c-1.0.0.tgz',
+        },
+        'node_modules/a/node_modules/@scope/d': {
+          ...entry,
+          resolved: 'https://registry.npmjs.org/@scope/d/-/d-1.0.0.tgz',
+        },
+      },
+    });
+
+    expect(problems).toStrictEqual([
+      'node_modules/fastify: must resolve to https://registry.npmjs.org/fastify/-/fastify-5.12.7.tgz, got https://registry.npmjs.org/not-fastify/-/not-fastify-1.0.0.tgz',
+      'node_modules/@scope/b: must resolve to https://registry.npmjs.org/@scope/b/-/b-1.0.0.tgz, got https://registry.npmjs.org/@scope/b/-/b-2.0.0.tgz',
+      'node_modules/c: installs evil under another name: aliases are not allowed',
+    ]);
+  });
+
   it('requires integrity hashes', () => {
     const { integrity: _ignored, ...withoutIntegrity } = entry;
     expect(
@@ -140,8 +172,17 @@ describe('checkLockfile', () => {
       checkLockfile({
         lockfileVersion: 3,
         packages: {
-          'node_modules/gpl-tool': { ...entry, license: 'GPL-3.0-only', dev: true },
-          'node_modules/gpl-lib': { ...entry, license: 'GPL-3.0-only' },
+          'node_modules/gpl-tool': {
+            ...entry,
+            resolved: 'https://registry.npmjs.org/gpl-tool/-/gpl-tool-1.0.0.tgz',
+            license: 'GPL-3.0-only',
+            dev: true,
+          },
+          'node_modules/gpl-lib': {
+            ...entry,
+            resolved: 'https://registry.npmjs.org/gpl-lib/-/gpl-lib-1.0.0.tgz',
+            license: 'GPL-3.0-only',
+          },
         },
       }),
     ).toStrictEqual(['node_modules/gpl-lib: license GPL-3.0-only is not allowed in shipped code']);

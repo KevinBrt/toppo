@@ -1,6 +1,7 @@
 /**
  * Guards the dependency tree: architecture boundaries between workspaces, exact versions,
- * a lockfile that only pulls signed packages from npmjs.org, and AGPL-compatible licenses.
+ * a lockfile that only pulls from npmjs.org the very package and version each entry names, and
+ * AGPL-compatible licenses.
  */
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';

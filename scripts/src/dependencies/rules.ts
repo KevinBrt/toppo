@@ -110,6 +110,8 @@ export function checkExactVersions(manifests: readonly WorkspaceManifest[]): str
 }
 
 export interface LockfileEntry {
+  /** Set when the package installed is not the one the path names: an npm alias. */
+  name?: string;
   version?: string;
   resolved?: string;
   integrity?: string;
@@ -132,8 +134,13 @@ export function checkLockfile(lockfile: Lockfile): string[] {
     if (path === '' || entry.link || !path.includes('node_modules/')) {
       continue;
     }
-    if (!entry.resolved?.startsWith(TRUSTED_REGISTRY)) {
-      problems.push(`${path}: must resolve from ${TRUSTED_REGISTRY}, got ${entry.resolved}`);
+    // The tarball of the very package and version the entry names, which reviews, `npm audit`
+    // and dependency review read: never another one swapped in under the same name.
+    const expected = registryTarball(packageNameOf(path), entry.version);
+    if (entry.name !== undefined) {
+      problems.push(`${path}: installs ${entry.name} under another name: aliases are not allowed`);
+    } else if (entry.resolved !== expected) {
+      problems.push(`${path}: must resolve to ${expected}, got ${entry.resolved}`);
     }
     if (!entry.integrity?.startsWith('sha512-')) {
       problems.push(`${path}: missing sha512 integrity`);
@@ -143,6 +150,18 @@ export function checkLockfile(lockfile: Lockfile): string[] {
     }
   }
   return problems;
+}
+
+/** The package a lockfile path installs: `node_modules/a/node_modules/@scope/b` is `@scope/b`. */
+function packageNameOf(path: string): string {
+  const marker = 'node_modules/';
+  return path.slice(path.lastIndexOf(marker) + marker.length);
+}
+
+/** Where npmjs.org serves a version of a package: `@scope/b` 1.0.0 is `@scope/b/-/b-1.0.0.tgz`. */
+function registryTarball(name: string, version: string | undefined): string {
+  const basename = name.slice(name.lastIndexOf('/') + 1);
+  return `${TRUSTED_REGISTRY}${name}/-/${basename}-${version}.tgz`;
 }
 
 /** Accepts SPDX expressions such as `(MIT OR Apache-2.0)`: OR needs one allowed term, AND needs all. */

@@ -26,6 +26,8 @@ export interface TestAppOptions {
   webRoot?: string;
   /** Attached files; by default, an empty storage of its own in the temporary directory. */
   files?: FileStorage;
+  /** Behind one reverse proxy, as `TOPPO_TRUST_PROXY=true` says; reached directly by default. */
+  trustProxy?: boolean;
 }
 
 /** Largest attachment in tests unless a test chooses otherwise: small, to test the limit cheaply. */
@@ -48,10 +50,11 @@ export async function buildTestApp({
   publicUrl = 'http://localhost:3000',
   webRoot = join(tmpdir(), 'toppo-no-web-root'),
   files,
+  trustProxy = false,
 }: TestAppOptions = {}): Promise<FastifyInstance> {
   const url = new URL(publicUrl);
   return await buildApp({
-    config: { publicUrl: url, logLevel: 'silent', trustProxy: false, updateCheck: false },
+    config: { publicUrl: url, logLevel: 'silent', trustProxy, updateCheck: false },
     database: { db: database.db, ping: ping ?? (() => Promise.resolve()) },
     auth: createAuth({ db: database.db, secret: TEST_SECRET, publicUrl: url }),
     secret: TEST_SECRET,

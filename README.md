@@ -39,9 +39,9 @@ Mantis and Redmine still run many teams because they are simple and free, but th
 You need a server with Docker and Docker Compose; Toppo runs on amd64 and arm64, a Raspberry Pi included.
 
 ```sh
-mkdir toppo && cd toppo
+mkdir -m 700 toppo && cd toppo
 curl -fsSLO https://raw.githubusercontent.com/KevinBrt/toppo/main/docker/docker-compose.yml
-echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" > .env
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" > .env && chmod 600 .env
 docker compose up -d
 docker compose logs toppo | grep "setup code"
 ```

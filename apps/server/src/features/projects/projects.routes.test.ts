@@ -253,12 +253,22 @@ describe('creating and listing projects', () => {
 
     const response = await call('GET', '/api/v1/projects?scope=managed', managerCookie);
     const [web] = projectsResponseSchema.parse(response.json()).rows;
-    expect(web?.members.count).toBe(3);
-    expect(web?.members.shown.map(({ name }) => name)).toStrictEqual([
+    expect(web?.members?.count).toBe(3);
+    expect(web?.members?.shown.map(({ name }) => name)).toStrictEqual([
       'Ada Lovelace',
       'Barbara Liskov',
       'Grace Hopper',
     ]);
+  });
+
+  it('keep who works on a project for those who manage it', async () => {
+    const response = await call('GET', '/api/v1/projects', memberCookie);
+    const { rows } = projectsResponseSchema.parse(response.json());
+
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.map(({ members, issues }) => ({ members, issues }))).toStrictEqual(
+      rows.map(() => ({ members: null, issues: null })),
+    );
   });
 
   it('tells the web app whether one manages a project', async () => {

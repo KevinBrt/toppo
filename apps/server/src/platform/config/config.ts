@@ -13,7 +13,10 @@ export interface Config {
   port: number;
   databaseUrl: string;
   logLevel: LogLevel;
-  /** Trust `X-Forwarded-*` headers. Enable only when Toppo is reachable solely through a reverse proxy. */
+  /**
+   * Toppo is reached through one reverse proxy, whose `X-Forwarded-*` headers it reads: the client
+   * is the address that proxy added. Enable only when Toppo is reachable solely through it.
+   */
   trustProxy: boolean;
   /** Persistent files: generated secret key, attachments. */
   dataDir: string;

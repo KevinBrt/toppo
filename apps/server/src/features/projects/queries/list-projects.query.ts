@@ -18,7 +18,7 @@ const URGENT = Math.max(...PRIORITY_LEVELS);
 
 /**
  * One page of the projects the caller reaches, or only those they manage, with the counts of the
- * active and archived tabs and a glimpse of each project's members.
+ * active and archived tabs and, for those they manage, a glimpse of each project's members.
  */
 export const listProjects = defineQuery({
   name: 'project.list',
@@ -53,16 +53,19 @@ export const listProjects = defineQuery({
       .from(projects)
       .where(visible);
     const ids = rows.map(({ id }) => id);
-    const members = await membersOf(db, ids);
-    // Counts of issues are for those who manage the projects: not for every member who reaches one.
-    const stats = scope === 'managed' ? await issueStatsOf(db, ids) : null;
+    // Members and counts of issues are for those who manage the projects: not for every member who
+    // reaches one, who may see their own issues only.
+    const [members, stats] =
+      scope === 'managed'
+        ? await Promise.all([membersOf(db, ids), issueStatsOf(db, ids)])
+        : [null, null];
 
     const active = counts?.active ?? 0;
     const archived = counts?.archived ?? 0;
     return {
       rows: rows.map((row) => ({
         ...row,
-        members: members.get(row.id) ?? NO_MEMBERS,
+        members: members ? (members.get(row.id) ?? NO_MEMBERS) : null,
         issues: stats ? (stats.get(row.id) ?? NO_ISSUES) : null,
       })),
       matching: state === 'archived' ? archived : active,
@@ -73,7 +76,7 @@ export const listProjects = defineQuery({
   },
 });
 
-type MembersPreview = ProjectSummary['members'];
+type MembersPreview = NonNullable<ProjectSummary['members']>;
 type IssueStats = NonNullable<ProjectSummary['issues']>;
 
 const NO_ISSUES: IssueStats = { open: 0, urgent: 0, lastActivityAt: null };

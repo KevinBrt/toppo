@@ -1,7 +1,7 @@
 # Toppo: self-hosted issue tracker.
 #
 #   1. Create a .env file next to this one:
-#        echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" > .env
+#        echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" > .env && chmod 600 .env
 #   2. Start:
 #        docker compose up -d
 #   3. Open http://localhost:3000

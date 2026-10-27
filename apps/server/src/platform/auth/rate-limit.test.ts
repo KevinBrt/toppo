@@ -45,3 +45,35 @@ describe('sign-in rate limit', () => {
     expect(statuses.at(-1)).toBe(429);
   });
 });
+
+describe('behind a reverse proxy', () => {
+  let proxied: FastifyInstance;
+
+  beforeAll(async () => {
+    proxied = await buildTestApp({ database: context.database, trustProxy: true });
+    return () => proxied.close();
+  });
+
+  /** A sign-in through a proxy that appends the real client to what the client sent. */
+  const signInThrough = (forged: string, client: string) =>
+    proxied.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      remoteAddress: '127.0.0.1',
+      headers: { origin: 'http://localhost:3000', 'x-forwarded-for': `${forged}, ${client}` },
+      body: { email: EMAIL, password: 'not the password, really' },
+    });
+
+  it('counts the client the proxy saw, whatever address the client claims', async () => {
+    const statuses: number[] = [];
+    for (let attempt = 0; attempt <= ATTEMPTS_PER_MINUTE; attempt++) {
+      statuses.push((await signInThrough(`203.0.113.${attempt}`, '192.0.2.10')).statusCode);
+    }
+
+    expect(statuses.slice(0, ATTEMPTS_PER_MINUTE)).toStrictEqual(
+      Array(ATTEMPTS_PER_MINUTE).fill(401),
+    );
+    expect(statuses.at(-1)).toBe(429);
+    expect((await signInThrough('192.0.2.10', '192.0.2.11')).statusCode).toBe(401);
+  });
+});

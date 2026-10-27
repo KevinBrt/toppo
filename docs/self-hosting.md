@@ -11,13 +11,13 @@ Toppo ships as one Docker image (`ghcr.io/kevinbrt/toppo`, amd64 and arm64) that
 ## Install
 
 ```sh
-mkdir toppo && cd toppo
+mkdir -m 700 toppo && cd toppo
 curl -fsSLO https://raw.githubusercontent.com/KevinBrt/toppo/main/docker/docker-compose.yml
-echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" > .env
+echo "POSTGRES_PASSWORD=$(openssl rand -hex 32)" > .env && chmod 600 .env
 docker compose up -d
 ```
 
-`docker compose ps` shows both services as `healthy` once ready. Toppo answers on port 3000.
+`docker compose ps` shows both services as `healthy` once ready. Toppo answers on port 3000. The folder and `.env` are yours alone: `.env` holds the database password, and later the settings you add.
 
 Before going further, add to `.env` the address people will open, and the version to run (see the [releases](https://github.com/KevinBrt/toppo/releases)):
 
@@ -63,7 +63,7 @@ Settings are environment variables, set in `.env` next to `docker-compose.yml`. 
 
 1. Set `TOPPO_URL=https://toppo.example.com`. Toppo then sends HSTS and upgrades insecure requests.
 2. Publish Toppo's port on the server itself only, so that the proxy is the only way in: `HTTP_PORT=127.0.0.1:3000`.
-3. Then set `TOPPO_TRUST_PROXY=true`, so that Toppo reads the client's address from the proxy's headers (sign-in rate limits rely on it). Never set it while Toppo's port is reachable directly: anyone could then claim any address.
+3. Then set `TOPPO_TRUST_PROXY=true`, so that Toppo reads the client's address from the proxy's headers (sign-in rate limits rely on it). Never set it while Toppo's port is reachable directly: anyone could then claim any address. Toppo trusts the one proxy that connects to it: the client is the last address of `X-Forwarded-For`, the one that proxy added, whatever the client wrote before it. With a second proxy or a CDN in front, have the one next to Toppo replace the header with the address it trusts rather than append to it.
 4. Point the proxy at port 3000. Health checks: `GET /health` returns 200 when Toppo and its database are up, 503 otherwise.
 
 The proxy must let attachments through: up to 20 MB by default (`TOPPO_ATTACHMENT_MAX_SIZE_MB`).
@@ -114,22 +114,24 @@ Remove the `db` service from `docker-compose.yml` and set `TOPPO_DATABASE_URL`, 
 Two things to save, together: the database, and the `/data` volume, which holds the attached files and the secret key. Without the secret key, Toppo starts with a new one: everyone is signed out, and the mail password must be entered again in **Settings › Email**.
 
 ```sh
+umask 077
 docker compose exec -T db pg_dump -U toppo -Fc toppo > toppo-$(date +%F).dump
 docker run --rm -v toppo_toppo-data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/toppo-data-$(date +%F).tgz -C /data .
+  sh -c 'umask 077 && tar czf /backup/toppo-data-$(date +%F).tgz -C /data .'
 ```
 
-Both commands run while Toppo is up. To back up every night, put them in a script next to `docker-compose.yml`, run it from cron, and copy the files to another machine: a backup on the same disk does not survive the disk.
+Both commands run while Toppo is up. Keep the backups as private as the server: the dump holds every issue and the sessions, the archive the secret key that signs them; `umask 077` makes both readable by you alone. To back up every night, put them in a script next to `docker-compose.yml`, run it from cron, and copy the files to another machine: a backup on the same disk does not survive the disk.
 
 ```sh
 #!/bin/sh
 # backup.sh: the database and the volume of today, the last 14 days kept.
 set -e
+umask 077
 cd "$(dirname "$0")"
-mkdir -p backups
+mkdir -p -m 700 backups
 docker compose exec -T db pg_dump -U toppo -Fc toppo > backups/toppo-$(date +%F).dump
 docker run --rm -v toppo_toppo-data:/data -v "$PWD/backups":/backup alpine \
-  tar czf /backup/toppo-data-$(date +%F).tgz -C /data .
+  sh -c 'umask 077 && tar czf /backup/toppo-data-$(date +%F).tgz -C /data .'
 find backups -name 'toppo-*' -mtime +14 -delete
 ```
 

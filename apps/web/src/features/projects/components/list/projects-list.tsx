@@ -193,7 +193,7 @@ function ProjectRow({ project }: { project: ProjectSummary }) {
         </span>
       </td>
       <td className="hidden px-2 py-3 md:table-cell">
-        <MembersStack members={project.members} />
+        {project.members ? <MembersStack members={project.members} /> : null}
       </td>
       {project.issues ? <IssueCells issues={project.issues} /> : null}
       <td className="py-3 pr-4">
@@ -236,7 +236,7 @@ function IssueCells({ issues }: { issues: NonNullable<ProjectSummary['issues']> 
 }
 
 /** The first members' initials and how many more there are; read out as a count. */
-function MembersStack({ members }: { members: ProjectSummary['members'] }) {
+function MembersStack({ members }: { members: NonNullable<ProjectSummary['members']> }) {
   const { t, locale } = useI18n();
 
   if (members.count === 0) {

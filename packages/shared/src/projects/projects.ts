@@ -93,12 +93,18 @@ export const projectSummarySchema = z.object({
   name: z.string(),
   description: z.string(),
   color: projectColorSchema,
-  /** The people added to the project, not those who reach every project. */
-  members: z.object({
-    count: z.number().int(),
-    /** The first few, by name. */
-    shown: z.array(z.object({ userId: z.uuid(), name: z.string() })),
-  }),
+  /**
+   * The people added to the project, not those who reach every project: only on the projects
+   * screen (`scope=managed`), for those who manage it; `null` elsewhere, so that who works on a
+   * project stays private from those who see their own issues only.
+   */
+  members: z
+    .object({
+      count: z.number().int(),
+      /** The first few, by name. */
+      shown: z.array(z.object({ userId: z.uuid(), name: z.string() })),
+    })
+    .nullable(),
   /**
    * Its open issues, urgent ones among them, and when it last changed: only on the projects screen
    * (`scope=managed`), where those who manage the project see them; `null` elsewhere.

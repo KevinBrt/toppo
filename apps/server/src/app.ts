@@ -108,6 +108,15 @@ export function createJobs({ files }: Pick<AppDependencies, 'files'>): RunnableJ
   ];
 }
 
+/**
+ * Behind a reverse proxy, the client is the address the proxy itself added: the last of
+ * `X-Forwarded-For`. Only the proxy that connects to Toppo is trusted (hop 0), never what the
+ * client wrote before it, which a proxy that appends (nginx's `$proxy_add_x_forwarded_for`) keeps.
+ */
+function trustTheProxyOnly(_address: string, hop: number): boolean {
+  return hop === 0;
+}
+
 /** Builds the Fastify application without listening, so tests can drive it with `inject()`. */
 export async function buildApp({
   config,
@@ -123,7 +132,7 @@ export async function buildApp({
       level: config.logLevel,
       redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
     },
-    trustProxy: config.trustProxy,
+    trustProxy: config.trustProxy ? trustTheProxyOnly : false,
     bodyLimit: BODY_LIMIT_BYTES,
     requestTimeout: REQUEST_TIMEOUT_MS,
     // Never trust a client-provided request id: it ends up in logs.
