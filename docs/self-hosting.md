@@ -23,7 +23,7 @@ Before going further, add to `.env` the address people will open, and the versio
 
 ```sh
 TOPPO_URL=https://toppo.example.com
-IMAGE_TAG=0.1.0
+IMAGE_TAG=1.0.0
 ```
 
 `TOPPO_URL` is used in every link Toppo sends: invitations, password resets, notifications. `IMAGE_TAG` defaults to `latest`, which follows releases: pin a version in production and upgrade on purpose. Apply a change of `.env` with `docker compose up -d`.
@@ -169,7 +169,7 @@ docker compose up -d
 
 Migrations run automatically at startup, all in one transaction: if one fails, Toppo refuses to start and the database is left as it was. Its logs say why.
 
-- **How far**: Toppo upgrades directly from any of the three versions before it. From further behind, upgrade through versions in between, three at most at a time (0.1 → 0.4 → 0.7).
+- **How far**: Toppo upgrades directly from any of the three versions before it. From further behind, upgrade through versions in between, three at most at a time (1.0 → 0.4 → 0.7).
 - **Going back**: migrations only go forward. To return to the previous version, restore the backup taken before the upgrade, with the previous `IMAGE_TAG`.
 - **PostgreSQL**: the compose file pins a major version of PostgreSQL. Moving to the next one (when the compose file does) needs a dump and a restore: back up as above, stop everything, remove the `toppo_toppo-db` volume, start the new `db` alone and [restore](#restore) into it.
 

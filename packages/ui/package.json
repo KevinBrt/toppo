@@ -23,7 +23,7 @@
     "@radix-ui/react-dropdown-menu": "2.2.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "lucide-react": "1.60.0",
+    "lucide-react": "1.62.0",
     "tailwind-merge": "3.7.0"
   },
   "peerDependencies": {
@@ -40,7 +40,7 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.3",
-    "vite": "8.3.4",
+    "vite": "8.3.5",
     "vitest": "5.0.5",
     "vitest-browser-react": "2.3.0"
   }

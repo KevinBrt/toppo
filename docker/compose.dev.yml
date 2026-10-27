@@ -4,7 +4,7 @@ name: toppo-dev
 
 services:
   db:
-    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
     environment:
       POSTGRES_USER: toppo
       POSTGRES_PASSWORD: toppo
@@ -23,7 +23,7 @@ services:
   # Tests only (integration and end-to-end): in memory and without fsync, so that each test file
   # creating and dropping its own database stays fast. Nothing in it outlives the container.
   test-db:
-    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    image: postgres:18-alpine@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
     environment:
       POSTGRES_USER: toppo
       POSTGRES_PASSWORD: toppo

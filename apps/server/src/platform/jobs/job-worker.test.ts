@@ -101,9 +101,10 @@ describe('running jobs', () => {
 
   it('runs the jobs due, the oldest first, and leaves the others waiting', async () => {
     const { db } = context.database;
-    await enqueue(db, greet, { name: 'later' }, { runAt: new Date(Date.now() + 60_000) });
-    await enqueue(db, greet, { name: 'first' }, { runAt: new Date(Date.now() - 2000) });
-    await enqueue(db, greet, { name: 'second' }, { runAt: new Date(Date.now() - 1000) });
+    // Minutes apart: the database's clock may differ from the server's by a second or so.
+    await enqueue(db, greet, { name: 'later' }, { runAt: new Date(Date.now() + 10 * 60_000) });
+    await enqueue(db, greet, { name: 'first' }, { runAt: new Date(Date.now() - 10 * 60_000) });
+    await enqueue(db, greet, { name: 'second' }, { runAt: new Date(Date.now() - 5 * 60_000) });
 
     while (await runNextJob(worker())) {
       // Until none is due.

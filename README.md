@@ -13,7 +13,7 @@
   <img src="docs/images/issues.png" alt="The issue list of a project: twelve open issues with their priority, status, labels and assignee.">
 </p>
 
-> **Status: pre-release.** Toppo is finishing its first version, 0.1. Try it now; wait for 0.1 before you trust it with your team's work. Progress is tracked in the [roadmap](ROADMAP.md).
+> **Status: pre-release.** Toppo is finishing its first version, 1.0. Try it now; wait for 1.0 before you trust it with your team's work. Progress is tracked in the [roadmap](ROADMAP.md).
 
 ## What Toppo does
 
@@ -56,7 +56,7 @@ Open <http://localhost:3000>, enter the setup code from the logs and create the 
 
 ## What comes next
 
-After 0.1: a plugin system with an MIT-licensed SDK, and official plugins for webhooks and GitHub; single sign-on (OIDC, SAML, LDAP) at no cost; imports from Mantis, Redmine and Jira. Details in the [roadmap](ROADMAP.md).
+After 1.0: a plugin system with an MIT-licensed SDK, and official plugins for webhooks and GitHub; single sign-on (OIDC, SAML, LDAP) at no cost; imports from Mantis, Redmine and Jira. Details in the [roadmap](ROADMAP.md).
 
 ## Develop
 
@@ -73,4 +73,4 @@ npm run dev     # database + API on :3000 + web app on :5173
 
 ## License
 
-Toppo is licensed under the [GNU Affero General Public License v3.0](LICENSE): you can use, modify and host it freely; if you offer a modified version to others over a network, you share its source. The plugin SDK (`@toppo/plugin-sdk`, coming after 0.1) will be MIT-licensed, so plugins can use any license.
+Toppo is licensed under the [GNU Affero General Public License v3.0](LICENSE): you can use, modify and host it freely; if you offer a modified version to others over a network, you share its source. The plugin SDK (`@toppo/plugin-sdk`, coming after 1.0) will be MIT-licensed, so plugins can use any license.

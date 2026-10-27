@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures.ts';
 
 // HTTP behavior does not depend on the device: run once.
+// biome-ignore lint/correctness/usePlaywrightValidDescribeCallback: Playwright takes the details (tags) before the callback.
 test.describe('HTTP contract', { tag: '@desktop-only' }, () => {
   test('/health reports a healthy instance', async ({ request }) => {
     const response = await request.get('/health');

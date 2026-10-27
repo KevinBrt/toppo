@@ -15,6 +15,9 @@ export default mergeConfig(
     // loading at that moment never starts (seen on a cold cache, as in CI).
     optimizeDeps: { include: ['get-nonce', 'react-dom/client'] },
     test: {
+      // Below the dynamic ports (49152 and up), where Windows reserves blocks at random for Hyper-V
+      // and WSL: Vitest's default, 63315, sometimes falls in one and the browser never starts.
+      api: { port: 41315 },
       include: ['src/**/*.test.{ts,tsx}'],
       setupFiles: ['src/test-setup.ts'],
       browser: {

@@ -1,6 +1,6 @@
 # Roadmap
 
-What comes next, up to the 0.1 release and right after. The principles and the reasoning live in [ARCHITECTURE.md](ARCHITECTURE.md); this file is the working plan. Tick items as they land, and move what is done out of it.
+What comes next, up to the 1.0 release and right after. The principles and the reasoning live in [ARCHITECTURE.md](ARCHITECTURE.md); this file is the working plan. Tick items as they land, and move what is done out of it.
 
 Each step ends with a working demo, green CI and updated docs. Anything touching the database schema or the plugin contract is reviewed by hand before it is merged.
 
@@ -13,13 +13,13 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
 - [ ] Protect `main` once contributors arrive: require the CI checks (quality, tests, end-to-end) before merging.
 - [ ] Check that the `ghcr.io/kevinbrt/toppo` package is public once the first `edge` image is published (GitHub → Packages → Package settings).
 
-## Step 6: release 0.1
+## Step 6: release 1.0
 
 - [ ] Scan the Docker image for known vulnerabilities, and fix or document what it finds.
-- [ ] Merge the release-please pull request, left open until then: version 0.1.0 and the `latest` image.
+- [ ] Merge the release-please pull request, left open until then: version 1.0.0 and the `latest` image.
 - [ ] Announcement on r/selfhosted.
 
-## After 0.1
+## After 1.0
 
 - [ ] Plugin system: `@toppo/plugin-sdk` (MIT), manifest and `apiVersion`, loader, hooks fed by `activities` through the job queue, plugin HTTP routes, settings forms generated from Zod, declarative UI contributions. A security review of its own before it ships: third-party code will run inside Toppo.
 - [ ] Official plugins: webhooks, then GitHub.

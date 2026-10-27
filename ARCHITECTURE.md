@@ -10,15 +10,15 @@ Read these before any decision.
 
 1. **One edition, everything included.** No user or guest limit, no paid SSO, no feature reserved for a closed version.
 2. **One-command install.** `docker compose up` starts Toppo and its PostgreSQL.
-3. **Plugin-first.** The core stays small; integrations (GitHub, Slack, webhooks…) are plugins, official ones included. The plugin system lands right after v0.1.
+3. **Plugin-first.** The core stays small; integrations (GitHub, Slack, webhooks…) are plugins, official ones included. The plugin system lands right after v1.0.
 4. **Fast and beautiful.** Fluid UI, keyboard shortcuts, command palette, responsive down to phones.
 5. **Maintainable by one person.** Few dependencies, strict conventions, tests at every step.
 6. **Secure by default.** Strict CSP, least privilege everywhere, every input validated, every route authorized.
 7. **Configurable, not hard-coded.** Workflows, properties, categories, priorities, labels and roles are data an admin edits, with sensible defaults.
 
-## v0.1 scope
+## v1.0 scope
 
-v0.1 lets a team replace Mantis day to day, nothing more.
+v1.0 lets a team replace Mantis day to day, nothing more.
 
 **In scope**
 
@@ -36,7 +36,7 @@ v0.1 lets a team replace Mantis day to day, nothing more.
 **Out of scope (later, often as plugins)**
 
 - Kanban board, sprints, estimates, time tracking, Gantt, wiki.
-- Plugin system and webhooks, then OIDC, SAML, LDAP: right after 0.1, free.
+- Plugin system and webhooks, then OIDC, SAML, LDAP: right after 1.0, free.
 - Inbound email (create an issue by writing to an address).
 - Real-time collaboration, native mobile apps, AI.
 - Dark theme (the UI ships a single light theme; tokens make a second theme possible later).
@@ -79,8 +79,8 @@ toppo/
 │   ├── shared/        # Zod schemas and types shared by front, back and plugins
 │   ├── ui/            # design tokens and accessible components
 │   ├── testing/       # test database setup, data factories
-│   └── plugin-sdk/    # public plugin API, after v0.1 (npm: @toppo/plugin-sdk, MIT)
-├── plugins/           # official plugins (webhooks, github), after v0.1
+│   └── plugin-sdk/    # public plugin API, after v1.0 (npm: @toppo/plugin-sdk, MIT)
+├── plugins/           # official plugins (webhooks, github), after v1.0
 ├── e2e/               # Playwright tests, run against a build or the Docker image
 ├── scripts/           # repository guards run in CI (conventions, dependencies)
 ├── docker/            # Dockerfile, docker-compose.yml for users, compose.dev.yml
@@ -93,7 +93,7 @@ Dependency rule: `core` depends on nothing but `shared`. Server, front end and p
 
 ## Core data model
 
-One Toppo instance = one organization; projects live inside it. No multiple workspaces in v0.1. Every table has `id` (UUID v7), `created_at` and `updated_at`.
+One Toppo instance = one organization; projects live inside it. No multiple workspaces in v1.0. Every table has `id` (UUID v7), `created_at` and `updated_at`.
 
 > **Status:** `users`, `sessions`, `accounts`, `verifications`, `rate_limits`, `rate_limit_counters`, `instance_settings`, `invitations`, `invitation_projects`, `roles`, `projects`, `project_members`, `statuses`, `workflows`, `workflow_statuses`, `workflow_transitions`, `priorities`, `issue_categories`, `issues`, `comments`, `attachments`, `labels`, `issue_labels`, `activities`, `jobs`, `notifications`, `mail_settings`, `properties`, `property_options`, `project_properties`, `issue_words` and `issue_followers` exist (migrations `0000` to `0043`). The others are a proposal, reviewed before their own migration: the schema is the hardest part to undo.
 
@@ -129,7 +129,7 @@ One Toppo instance = one organization; projects live inside it. No multiple work
 | `notifications`                 | user_id, activity_id, reason, read_at                                                                                                          | One per person told of an activity, at most once (unique user and activity), written by the `activity.recorded` job: the people concerned (`recipientsOf` in `@toppo/core`) who are active and still see the issue, never who acted. `reason`: `assigned`, `mentioned`, `participating`, `following` or `newIssue`. Listed only while the issue is still seen; gone with the activity or the person; read ones pruned after 90 days                                                                                                                                                        |
 | `issue_followers`               | issue_id, user_id, following                                                                                                                   | One person's choice about an issue (unique issue and user): `true` to follow it without taking part, `false` to stop following it though taking part. Its reporter, assignee and commenters follow it with no row (`followersOf` in `@toppo/core`); a choice lasts until changed, commenting again does not undo it. Gone with the issue or the person                                                                                                                                                                                                                                     |
 | `jobs`                          | type, payload, priority, run_at, attempts, max_attempts, status (pending, failed), last_error, unique_key                                      | Background work, claimed with `FOR UPDATE SKIP LOCKED` by any server's worker, the highest priority first (a password reset, then an invitation), then the oldest, run in its own transaction, retried with backoff; deleted once done, a recurring one rescheduled. At most one pending job per `unique_key`                                                                                                                                                                                                                                                                              |
-| `plugins`                       | plugin_id, version, enabled, settings (JSONB)                                                                                                  | After v0.1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `plugins`                       | plugin_id, version, enabled, settings (JSONB)                                                                                                  | After v1.0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 Key point: **every issue change writes an `activities` row in the same transaction.** It is the single source for history, notifications, webhooks and plugins. Rows written together read back in order: ids are UUID v7 with a counter within the millisecond.
 
@@ -216,9 +216,9 @@ Organisation permissions apply to the whole instance, the others inside projects
 - CI fails if code compares a role name (`check:conventions`).
 - Plugins will declare their own permissions in the same catalog.
 
-## Plugin system (after v0.1)
+## Plugin system (after v1.0)
 
-Plugins arrive right after v0.1, but the core prepares for them now: every change goes through `activities` and the job queue, and no integration is hard-coded. The contract below is the target.
+Plugins arrive right after v1.0, but the core prepares for them now: every change goes through `activities` and the job queue, and no integration is hard-coded. The contract below is the target.
 
 A plugin is an npm package (or a folder in `plugins/`) exporting `definePlugin()` and declaring what it may do. It is Toppo's public contract: designed by hand, never generated.
 
@@ -317,7 +317,7 @@ No merge without green tests: a task is done only when its tests exist and pass 
 - Coverage thresholds: `core` and `shared` 90 %, `server` 85 %, enforced in CI.
 - Every fixed bug comes with the test that reproduces it.
 
-## Roadmap to 0.1
+## Roadmap to 1.0
 
 Six steps, in order; each ends with a working demo and green tests.
 
@@ -329,9 +329,9 @@ Six steps, in order; each ends with a working demo and green tests.
 - [x] **3. Views**: list with sort and grouping, filters, search, command palette. _Done when an issue is found in under 3 seconds._
 - [x] **4. Collaboration**: comments, attachments, labels, properties (shown in the list, asked at creation, required or not, filtering the list), in-app and email notifications.
 - [x] **5. Daily work**: search that forgives typos, following an issue, actions on several issues, duplicates.
-- [ ] **6. Release 0.1**: migration tests, installation docs, screenshots, security review, announcement on r/selfhosted.
+- [ ] **6. Release 1.0**: migration tests, installation docs, screenshots, security review, announcement on r/selfhosted.
 
-Right after 0.1: plugin system (SDK v1, loader, official webhooks and GitHub plugins), then free OIDC/SAML/LDAP, imports from Mantis, Redmine and Jira, inbound email.
+Right after 1.0: plugin system (SDK v1, loader, official webhooks and GitHub plugins), then free OIDC/SAML/LDAP, imports from Mantis, Redmine and Jira, inbound email.
 
 The detailed task list of each step, the open questions and the watch list live in [ROADMAP.md](ROADMAP.md).
 

@@ -1,5 +1,5 @@
 {
-  "name": "pre-0.1",
+  "name": "pre-1.0",
   "migration": "0042_issue_duplicates",
   "tables": {
     "accounts": [

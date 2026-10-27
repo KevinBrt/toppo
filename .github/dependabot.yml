@@ -26,6 +26,11 @@ updates:
       day: monday
     commit-message:
       prefix: ci
+    groups:
+      # One pull request for all: the parts of an action (codeql-action's init, analyze and
+      # upload-sarif) fail when they run at different versions.
+      actions:
+        patterns: ["*"]
 
   - package-ecosystem: docker
     directory: /docker
