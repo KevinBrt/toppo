@@ -13,8 +13,6 @@
   <img src="docs/images/issues.png" alt="The issue list of a project: twelve open issues with their priority, status, labels and assignee.">
 </p>
 
-> **Status: pre-release.** Toppo is finishing its first version, 1.0. Try it now; wait for 1.0 before you trust it with your team's work. Progress is tracked in the [roadmap](ROADMAP.md).
-
 ## What Toppo does
 
 - **Issues the way your team works.** Statuses and the moves allowed between them, categories, priorities, labels, and properties of seven types (lists, multi-selects, text, numbers, dates, people, checkboxes). Set once for the instance, adapted per project.
