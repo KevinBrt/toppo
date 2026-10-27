@@ -316,6 +316,13 @@
       "when": 1793055421046,
       "tag": "0044_issue_words_by_project",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1793112039933,
+      "tag": "0045_rate_limit_counters",
+      "breakpoints": true
     }
   ]
 }

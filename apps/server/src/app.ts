@@ -36,7 +36,7 @@ import { registerExecutionContext } from './platform/cqrs/execution-context.ts';
 import { registerHealthRoute } from './platform/health/health-route.ts';
 import { registerErrorHandler } from './platform/http/error-handler.ts';
 import { registerOriginCheck } from './platform/http/origin-check.ts';
-import { registerRateLimit } from './platform/http/rate-limit.ts';
+import { pruneRateLimitsJob, registerRateLimit } from './platform/http/rate-limit.ts';
 import { enforceRouteContracts } from './platform/http/route-contracts.ts';
 import { registerSecurityHeaders } from './platform/http/security-headers.ts';
 import { registerWebApp } from './platform/http/web-app.ts';
@@ -104,6 +104,7 @@ export function createJobs({ files }: Pick<AppDependencies, 'files'>): RunnableJ
     emailNotificationJob,
     rebuildIssueWordsJob,
     checkForUpdatesJob,
+    pruneRateLimitsJob,
   ];
 }
 

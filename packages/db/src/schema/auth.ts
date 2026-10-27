@@ -17,7 +17,8 @@ import { roles } from './roles.ts';
 
 /*
  * Tables required by Better Auth (users, sessions, accounts, verifications, rate limits).
- * Column names follow Better Auth's model fields; extra Toppo columns are marked as such.
+ * Column names follow Better Auth's model fields; extra Toppo columns are marked as such. Toppo's
+ * own rate-limit counters come last, in a table of their own.
  */
 
 export const users = pgTable(
@@ -151,4 +152,26 @@ export const rateLimits = pgTable(
     lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
   },
   (table) => [uniqueIndex('rate_limits_key_unique').on(table.key)],
+);
+
+/**
+ * Toppo's rate-limit counters, per route and client, shared by every server process. Apart from
+ * Better Auth's `rate_limits`, which it prunes of every row older than its own longest window
+ * (a minute): Toppo's windows last up to a quarter of an hour. Expired ones are deleted hourly.
+ */
+export const rateLimitCounters = pgTable(
+  'rate_limit_counters',
+  {
+    id: id(),
+    key: text('key').notNull(),
+    count: integer('count').notNull(),
+    /** When the current window ends, and the count starts again. */
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('rate_limit_counters_key_unique').on(table.key),
+    index('rate_limit_counters_expires_at_idx').on(table.expiresAt),
+    check('rate_limit_counters_count_positive', sql`${table.count} > 0`),
+  ],
 );

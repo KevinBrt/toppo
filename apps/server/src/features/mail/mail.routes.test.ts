@@ -112,7 +112,7 @@ afterAll(async () => {
 
 // Each test sends a few test emails: more than one client may in ten minutes.
 beforeEach(async () => {
-  await context.database.db.delete(schema.rateLimits);
+  await context.database.db.delete(schema.rateLimitCounters);
 });
 
 describe('the mail settings', () => {

@@ -106,6 +106,7 @@ afterAll(async () => {
 beforeEach(async () => {
   // Each test asks and signs in a few times: more than a client may in a few minutes.
   await context.database.db.delete(schema.rateLimits);
+  await context.database.db.delete(schema.rateLimitCounters);
   await setUpEmail();
 });
 

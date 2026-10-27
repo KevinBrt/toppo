@@ -27,7 +27,7 @@ const JOURNAL = fileURLToPath(
   new URL('../../../packages/db/migrations/meta/_journal.json', import.meta.url),
 );
 /** Who is signed in, and how often they tried: the state of the moment, not data to upgrade. */
-const LEFT_OUT = new Set(['sessions', 'verifications', 'rate_limits']);
+const LEFT_OUT = new Set(['sessions', 'verifications', 'rate_limits', 'rate_limit_counters']);
 
 const psql = (sql: string, database = DATABASE) => psqlIn(sql, database);
 const lines = (output: string) => output.split(/\r?\n/).filter((line) => line !== '');
