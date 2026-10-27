@@ -56,6 +56,8 @@ export function passwordResetMail(
  */
 export const passwordResetMailJob = defineJob({
   type: 'password-reset.email',
+  // Its link lasts an hour, and someone is waiting for it: before any other email.
+  priority: 2,
   payload: z.object({ userId: z.uuid(), sealedToken: z.string() }),
   async handler({ tx, services, log }, { userId, sealedToken }) {
     const token = services.secrets.open(sealedToken);

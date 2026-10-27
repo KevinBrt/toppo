@@ -6,6 +6,7 @@ import {
   mailSettingsResponseSchema,
 } from '@toppo/shared';
 import { startSmtpServer, type TestSmtpServer } from '@toppo/testing';
+import { sql } from 'drizzle-orm';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createSecretBox } from '../../platform/config/secret-box.ts';
@@ -16,6 +17,7 @@ import {
   setupTestDatabase,
   TEST_SETUP_CODE,
 } from '../../test-helpers.ts';
+import { TEST_MAIL_LOCK_KEY } from './commands/send-test-mail.command.ts';
 
 const context = setupTestDatabase();
 let app: FastifyInstance;
@@ -260,6 +262,19 @@ describe('the test email', () => {
     const unreadable = await sendTest();
     expect(unreadable.statusCode).toBe(409);
     expect(errorCode(unreadable)).toBe('MAIL_PASSWORD_UNREADABLE');
+  });
+
+  it('is sent one at a time, never holding several connections at once', async () => {
+    await save(settings());
+    let refused: LightMyRequestResponse | undefined;
+    await context.database.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(${TEST_MAIL_LOCK_KEY})`);
+      refused = await sendTest();
+    });
+
+    expect(refused?.statusCode).toBe(409);
+    expect(refused ? errorCode(refused) : null).toBe('MAIL_TEST_RUNNING');
+    expect((await sendTest()).statusCode).toBe(204);
   });
 
   it('says when email is not set up', async () => {

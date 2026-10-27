@@ -14,6 +14,8 @@ const { invitations, users } = schema;
  */
 export const emailInvitationJob = defineJob({
   type: 'invitation.email',
+  // Someone is waiting for it, unlike a notification.
+  priority: 1,
   payload: z.object({ invitationId: z.uuid(), sealedToken: z.string() }),
   async handler({ tx, services, log }, { invitationId, sealedToken }) {
     const token = services.secrets.open(sealedToken);

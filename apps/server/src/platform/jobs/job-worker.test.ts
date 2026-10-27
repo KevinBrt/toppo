@@ -45,7 +45,18 @@ const hourly = defineJob({
   },
 });
 
-function worker(all: readonly RunnableJob[] = [greet, flaky, hourly]): WorkerContext {
+/** Someone waits for it: it goes before the greetings due. */
+const urgent = defineJob({
+  type: 'test.urgent',
+  payload: z.object({ name: z.string() }),
+  priority: 2,
+  handler(_scope, { name }) {
+    done.push(`urgent ${name}`);
+    return Promise.resolve();
+  },
+});
+
+function worker(all: readonly RunnableJob[] = [greet, flaky, hourly, urgent]): WorkerContext {
   return { db: context.database.db, jobs: all, log, services: testServices() };
 }
 
@@ -100,6 +111,20 @@ describe('running jobs', () => {
 
     expect(done).toStrictEqual(['hello first', 'hello second']);
     expect(await stored()).toMatchObject([{ type: 'test.greet', waits: true, attempts: 0 }]);
+  });
+
+  it('runs the most urgent of the jobs due first, then the oldest', async () => {
+    const { db } = context.database;
+    for (const name of ['one', 'two', 'three']) {
+      await enqueue(db, greet, { name }, { runAt: new Date(Date.now() - 60_000) });
+    }
+    await enqueue(db, urgent, { name: 'reset' });
+
+    while (await runNextJob(worker())) {
+      // Until none is due.
+    }
+
+    expect(done).toStrictEqual(['urgent reset', 'hello one', 'hello two', 'hello three']);
   });
 
   it('refuses a payload its job does not expect, before it is queued', async () => {

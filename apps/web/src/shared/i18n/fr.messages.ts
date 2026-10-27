@@ -615,6 +615,7 @@ export const fr: Messages = {
     errors: {
       passwordRequired: 'Saisissez le mot de passe de ce compte.',
       notConfigured: 'Enregistrez d’abord les réglages.',
+      testRunning: 'Un e-mail de test est déjà en cours d’envoi : attendez son résultat.',
       passwordUnreadable:
         'Le mot de passe enregistré ne peut plus être lu : la clé de l’instance a changé. Saisissez-le à nouveau.',
       authenticationFailed: 'Le serveur a refusé l’identifiant ou le mot de passe.',

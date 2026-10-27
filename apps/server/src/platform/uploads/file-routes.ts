@@ -60,11 +60,14 @@ export function registerFileRoutes(app: FastifyInstance, { files }: { files: Fil
         (request: FastifyRequest, body: IncomingMessage) =>
           files.receive(body, request.headers['content-length']),
       );
-      scope.addHook('onResponse', async (request) => {
+      const discard = async (request: FastifyRequest) => {
         if (request.body instanceof ReceivedFile) {
           await files.discard(request.body);
         }
-      });
+      };
+      // As soon as a request fails too: a client gone before the answer means no response ends.
+      scope.addHook('onError', discard);
+      scope.addHook('onResponse', discard);
       register(scope);
       done();
     });

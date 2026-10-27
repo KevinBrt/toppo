@@ -25,6 +25,8 @@ export interface RunnableJob {
   /** `resource.action`: `files.sweep`, `notification.email`. */
   readonly type: string;
   readonly maxAttempts: number;
+  /** Higher first among the jobs due: 0 by default. */
+  readonly priority: number;
   /** How long between two runs of a recurring job, in milliseconds; `null` for a job run once. */
   readonly every: number | null;
   /** Checks the stored payload, then does the work. */
@@ -40,6 +42,11 @@ interface JobDefinition<Payload extends z.ZodObject> {
   type: string;
   payload: Payload;
   maxAttempts?: number;
+  /**
+   * Higher first among the jobs due, 0 by default: an email someone waits for, such as a password
+   * reset, must not wait behind a flood of notifications.
+   */
+  priority?: number;
   /** Makes the job recurring: one job of its type, run again this many milliseconds later. */
   every?: number;
   handler(scope: JobScope, payload: z.output<Payload>): Promise<void>;
@@ -53,6 +60,7 @@ export function defineJob<Payload extends z.ZodObject>(
     type: definition.type,
     payload: definition.payload,
     maxAttempts: definition.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
+    priority: definition.priority ?? 0,
     every: definition.every ?? null,
     async run(scope, payload) {
       await definition.handler(scope, definition.payload.parse(payload));
@@ -83,6 +91,7 @@ export async function enqueue<Payload extends z.ZodObject>(
       type: job.type,
       payload: job.payload.parse(payload),
       maxAttempts: job.maxAttempts,
+      priority: job.priority,
       uniqueKey: uniqueKey ?? null,
       ...(runAt ? { runAt } : {}),
     })
@@ -97,7 +106,12 @@ export async function scheduleRecurringJobs(db: Db, all: readonly RunnableJob[])
   for (const job of all.filter(({ every }) => every !== null)) {
     await db
       .insert(jobs)
-      .values({ type: job.type, maxAttempts: job.maxAttempts, uniqueKey: job.type })
+      .values({
+        type: job.type,
+        maxAttempts: job.maxAttempts,
+        priority: job.priority,
+        uniqueKey: job.type,
+      })
       .onConflictDoNothing({ target: jobs.uniqueKey, where: sql`${jobs.status} = 'pending'` });
   }
 }

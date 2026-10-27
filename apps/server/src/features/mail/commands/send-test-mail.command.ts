@@ -1,6 +1,6 @@
 import { schema } from '@toppo/db';
 import { DEFAULT_LOCALE } from '@toppo/shared';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
@@ -8,6 +8,9 @@ import { MailError, type MailFailure } from '../../../platform/mail/mailer.ts';
 import { testMail } from '../utils/test-mail.util.ts';
 
 const { users } = schema;
+
+/** Arbitrary but fixed: one test email at a time, whoever asks. */
+export const TEST_MAIL_LOCK_KEY = 7_461_756_326;
 
 /** What the administrator is told, by code: the web app says it in their language. */
 const REFUSALS: Readonly<Record<MailFailure, [status: number, code: string]>> = {
@@ -29,6 +32,13 @@ export const sendTestMail = defineCommand({
   access: { permission: 'instance.mail.manage' },
   input: z.object({}),
   async handler({ tx, actor, services, log }): Promise<void> {
+    // Each test holds a connection to the database while the mail server answers: never several.
+    const [lock] = await tx.execute<{ taken: boolean }>(
+      sql`select pg_try_advisory_xact_lock(${TEST_MAIL_LOCK_KEY}) as taken`,
+    );
+    if (!lock?.taken) {
+      throw new HttpError(409, 'MAIL_TEST_RUNNING', 'A test email is already on its way');
+    }
     const [me] = await tx
       .select({ locale: users.locale })
       .from(users)

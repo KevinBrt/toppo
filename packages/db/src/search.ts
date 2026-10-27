@@ -9,6 +9,8 @@ const SEARCH_WORDS_MAX = 10;
 
 /** Shorter words are never corrected: too many others are one letter away. */
 const CORRECTED_WORD_MIN_LENGTH = 4;
+/** Longer, no word is corrected: none of that length is kept to correct it to (`issue_words`). */
+const CORRECTED_WORD_MAX_LENGTH = 32;
 
 /**
  * Words issues have, by a word of a search they stand for, its typo corrected
@@ -101,7 +103,9 @@ export async function similarWords(
   term: string,
   projectIds: readonly string[],
 ): Promise<SimilarWords> {
-  const words = wordsOf(term).filter((word) => word.length >= CORRECTED_WORD_MIN_LENGTH);
+  const words = wordsOf(term).filter(
+    (word) => word.length >= CORRECTED_WORD_MIN_LENGTH && word.length <= CORRECTED_WORD_MAX_LENGTH,
+  );
   if (words.length === 0 || projectIds.length === 0) {
     return new Map();
   }

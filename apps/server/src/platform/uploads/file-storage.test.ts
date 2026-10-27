@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { Readable } from 'node:stream';
+import { PassThrough, Readable } from 'node:stream';
 import { text } from 'node:stream/consumers';
 import { describe, expect, it } from 'vitest';
 import { createTestFileStorage } from '../../test-helpers.ts';
@@ -92,6 +92,23 @@ describe('receiving a file', () => {
       status: 507,
       code: 'STORAGE_FULL',
     });
+  });
+
+  it('counts the files still arriving against the room left, then frees it', async () => {
+    const files = await createTestFileStorage({
+      freeSpace: () => Promise.resolve(1024 * 1024 * 1024 + 150),
+    });
+    const slow = new PassThrough();
+    const arriving = files.receive(slow, '100');
+    slow.write('x'.repeat(50));
+
+    expect(await refusal(() => files.receive(bodyOf('x'.repeat(100)), '100'))).toStrictEqual({
+      status: 507,
+      code: 'STORAGE_FULL',
+    });
+    slow.end('x'.repeat(50));
+    expect((await arriving).size).toBe(100);
+    expect((await files.receive(bodyOf('x'.repeat(100)), '100')).size).toBe(100);
   });
 });
 

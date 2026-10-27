@@ -597,6 +597,7 @@ export const en = {
     errors: {
       passwordRequired: 'Enter the password of this account.',
       notConfigured: 'Save the settings first.',
+      testRunning: 'A test email is already on its way: wait for its result.',
       passwordUnreadable:
         'The password saved can no longer be read: the key of the instance changed. Enter it again.',
       authenticationFailed: 'The server refused the user name or the password.',

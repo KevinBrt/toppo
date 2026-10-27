@@ -27,7 +27,7 @@ export interface WorkerContext {
 type StoredJob = typeof jobs.$inferSelect;
 
 /**
- * Claims the next job due, runs it, and records how it went; answers whether there was one.
+ * Claims the next job due, the most urgent first, then the oldest, runs it, and records how it went; answers whether there was one.
  * Claiming counts the try and moves the job out of reach for a while, then commits: a job that
  * stops its server mid-way counts its tries too, and is given up like any other.
  */
@@ -43,7 +43,7 @@ export async function runNextJob(context: WorkerContext): Promise<boolean> {
         jobs.id,
         sql`(select ${jobs.id} from ${jobs}
           where ${jobs.status} = 'pending' and ${jobs.runAt} <= now()
-          order by ${jobs.runAt} limit 1 for update skip locked)`,
+          order by ${jobs.priority} desc, ${jobs.runAt} limit 1 for update skip locked)`,
       ),
     )
     .returning({ id: jobs.id });

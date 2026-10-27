@@ -10,8 +10,10 @@ import {
   createTestUser,
   setupTestDatabase,
   TEST_SETUP_CODE,
+  testServices,
 } from '../../test-helpers.ts';
-import { rebuildWords } from './utils/issue-search.util.ts';
+import { rebuildIssueWordsJob } from './jobs/rebuild-issue-words.job.ts';
+import { rebuildProjectWords } from './utils/issue-search.util.ts';
 
 const context = setupTestDatabase();
 let app: FastifyInstance;
@@ -153,25 +155,63 @@ describe('searching every project', () => {
 });
 
 describe('the words a typo is corrected to', () => {
-  it('are those of the issues as they are once rebuilt, a word no issue has any more gone', async () => {
-    const { db } = context.database;
-    const words = async () =>
-      (await db.select({ word: schema.issueWords.word }).from(schema.issueWords)).map(
-        ({ word }) => word,
-      );
-    const [web] = await db
+  const wordsOf = async (projectId: string) =>
+    (
+      await context.database.db
+        .select({ word: schema.issueWords.word })
+        .from(schema.issueWords)
+        .where(eq(schema.issueWords.projectId, projectId))
+    ).map(({ word }) => word);
+  const projectId = async (key: string) => {
+    const [project] = await context.database.db
       .select({ id: schema.projects.id })
       .from(schema.projects)
-      .where(eq(schema.projects.key, 'WEB'));
-    await db
+      .where(eq(schema.projects.key, key));
+    return project?.id ?? '';
+  };
+
+  it('are those of the issues as they are once rebuilt, a word no issue has any more gone', async () => {
+    const web = await projectId('WEB');
+    await context.database.db
       .insert(schema.issueWords)
-      .values({ id: uuidv7(), projectId: web?.id ?? '', word: 'zeppelin' });
+      .values({ id: uuidv7(), projectId: web, word: 'zeppelin' });
 
-    const kept = await db.transaction((tx) => rebuildWords(tx));
+    const kept = await context.database.db.transaction((tx) => rebuildProjectWords(tx, web));
 
-    expect(await words()).not.toContain('zeppelin');
-    expect(await words()).toContain('crash');
-    expect(kept).toBe((await words()).length);
+    expect(await wordsOf(web)).not.toContain('zeppelin');
+    expect(await wordsOf(web)).toContain('crash');
+    expect(kept).toBe((await wordsOf(web)).length);
+  });
+
+  it('are rebuilt each night project by project, each in a job of its own', async () => {
+    await context.database.db.delete(schema.jobs);
+
+    await context.database.db.transaction((tx) =>
+      rebuildIssueWordsJob.run({ tx, log: app.log, services: testServices() }, {}),
+    );
+
+    const queued = await context.database.db
+      .select({ type: schema.jobs.type, payload: schema.jobs.payload })
+      .from(schema.jobs);
+    expect(queued).toHaveLength((await context.database.db.select().from(schema.projects)).length);
+    expect(queued).toContainEqual({
+      type: 'search.rebuildProjectWords',
+      payload: { projectId: await projectId('API') },
+    });
+  });
+
+  it('keep neither words too long to be typed, nor more than a few hundred of one issue', async () => {
+    const api = await projectId('API');
+    const madeUp = Array.from({ length: 400 }, (_, index) => `madeup${index}`);
+    await report('API', {
+      title: 'Swollen',
+      description: [`a${'b'.repeat(300)}`, `c${'d'.repeat(32)}`, ...madeUp].join(' '),
+    });
+
+    const words = await wordsOf(api);
+    expect(words.some((word) => word.length > 32)).toBe(false);
+    expect(words.filter((word) => word.startsWith('madeup'))).toHaveLength(300 - 1);
+    expect((await found('swolen')).length).toBe(1);
   });
 });
 

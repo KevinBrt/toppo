@@ -42,6 +42,12 @@ export interface Mailer {
 /** A server that does not answer must not hold a job, or an administrator's test, for long. */
 const TIMEOUTS = { connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 30_000 };
 
+/**
+ * However the server answers, a message leaves within this time or not at all: one that answers a
+ * byte now and then would otherwise keep each of the timeouts above from ever running out.
+ */
+const SEND_DEADLINE_MS = 45_000;
+
 /** What the error codes of Nodemailer mean for the administrator. */
 const FAILURES: Readonly<Record<string, MailFailure>> = {
   EAUTH: 'authentication',
@@ -56,7 +62,7 @@ const FAILURES: Readonly<Record<string, MailFailure>> = {
   EMESSAGE: 'rejected',
 };
 
-export function createMailer(secrets: SecretBox): Mailer {
+export function createMailer(secrets: SecretBox, { deadlineMs = SEND_DEADLINE_MS } = {}): Mailer {
   return {
     async isConfigured(db) {
       const [row] = await db.select({ id: mailSettings.id }).from(mailSettings);
@@ -89,17 +95,28 @@ export function createMailer(secrets: SecretBox): Mailer {
         disableFileAccess: true,
         disableUrlAccess: true,
       });
+      let deadline: NodeJS.Timeout | undefined;
+      const tooLong = new Promise<never>((_resolve, reject) => {
+        deadline = setTimeout(() => {
+          transport.close();
+          reject(new MailError('connection', 'The mail server took too long to take the message'));
+        }, deadlineMs);
+      });
       try {
-        await transport.sendMail({
-          from: { name: settings.fromName, address: settings.fromAddress },
-          to: message.to,
-          subject: message.subject,
-          text: message.text,
-          html: message.html,
-        });
+        await Promise.race([
+          transport.sendMail({
+            from: { name: settings.fromName, address: settings.fromAddress },
+            to: message.to,
+            subject: message.subject,
+            text: message.text,
+            html: message.html,
+          }),
+          tooLong,
+        ]);
       } catch (error) {
         throw asMailError(error);
       } finally {
+        clearTimeout(deadline);
         transport.close();
       }
     },

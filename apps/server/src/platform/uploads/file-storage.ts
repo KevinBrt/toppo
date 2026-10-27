@@ -98,12 +98,20 @@ export async function createFileStorage({
     return join(root, storageKey.slice(0, 2), storageKey);
   };
 
+  // Bytes of the files on their way: the disk does not count them yet, the reserve must.
+  let arriving = 0;
+
   return {
     maxFileSize,
 
     async receive(body, declaredLength) {
       const length = await acceptedLength(declaredLength, maxFileSize, async (size) => {
-        return (await bytesFree()) - size >= reserve;
+        // Checked and counted at once, after the only wait: two uploads never both take the room.
+        const fits = (await bytesFree()) - arriving - size >= reserve;
+        if (fits) {
+          arriving += size;
+        }
+        return fits;
       });
       const path = join(incoming, randomBytes(16).toString('hex'));
       const inspection = inspect(length);
@@ -119,6 +127,8 @@ export async function createFileStorage({
           throw new HttpError(400, 'UPLOAD_INCOMPLETE', 'The file did not arrive whole');
         }
         throw error;
+      } finally {
+        arriving -= length;
       }
       const received = inspection.result();
       if (received.size !== length) {

@@ -7,4 +7,5 @@ export const MAIL_ERRORS = {
   MAIL_CONNECTION_FAILED: 'mail.errors.connectionFailed',
   MAIL_TLS_FAILED: 'mail.errors.tlsFailed',
   MAIL_REJECTED: 'mail.errors.rejected',
+  MAIL_TEST_RUNNING: 'mail.errors.testRunning',
 } as const;
