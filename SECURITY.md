@@ -20,7 +20,7 @@ Toppo is in early development. Until 1.0, only the latest release receives secur
 
 ## Scope
 
-In scope: the Toppo server, web app, Docker image and official plugins in this repository.
+In scope: the Toppo server, web app, Docker image and official plugins in this repository, and the installation, reverse proxy and backup instructions of its documentation.
 
 Out of scope: vulnerabilities in your own infrastructure (reverse proxy, TLS, host), third-party plugins, and findings that require an already compromised admin account or host.
 

@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { globSync, readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import {
   ALL_PERMISSIONS,
   canBeGranted,
@@ -63,6 +65,29 @@ const OPEN_API_ROUTES = [
 
 /** Better Auth limits these itself (`platform/auth/auth.ts`). */
 const DELEGATED_ROUTES = ['POST /api/auth/sign-in/email', 'POST /api/auth/sign-out'];
+
+/**
+ * Every route that sends email on its own, with the command that does (password resets go through
+ * Better Auth). Notifications are not here: they follow changes, to those who chose them.
+ */
+const EMAIL_ROUTES: Readonly<Record<string, string | null>> = {
+  'POST /api/auth/request-password-reset': null,
+  'POST /api/v1/settings/email/test': 'send-test-mail.command.ts',
+  'POST /api/v1/invitations': 'create-invitations.command.ts',
+  'POST /api/v1/invitations/:invitationId/renew': 'renew-invitation.command.ts',
+};
+
+/**
+ * Not rate limited, by decision (ARCHITECTURE.md, 2026-10-27): an instance may invite many people
+ * at once, and only those trusted to manage members can.
+ */
+const UNLIMITED_EMAIL_ROUTES = [
+  'POST /api/v1/invitations',
+  'POST /api/v1/invitations/:invitationId/renew',
+];
+
+/** What a command calls to send email, now or from a job. */
+const SENDS_EMAIL = /emailInvitations\(|mailer\.send\(|MailJob\b/;
 
 const ROUTES = await (async () => {
   const app = await buildTestApp();
@@ -204,6 +229,30 @@ it('rate limits every public route that writes', () => {
   ).map(({ method, url }) => `${method} ${url}`);
 
   expect(unlimited).toStrictEqual(DELEGATED_ROUTES);
+});
+
+it('knows every command that sends email', () => {
+  const sending = globSync('features/**/*.command.ts', { cwd: import.meta.dirname })
+    .filter((file) => SENDS_EMAIL.test(readFileSync(new URL(file, import.meta.url), 'utf8')))
+    .map((file) => basename(file));
+
+  // A new one: add its route to EMAIL_ROUTES, with a rate limit.
+  expect(sending.sort()).toStrictEqual(
+    Object.values(EMAIL_ROUTES)
+      .filter((command) => command !== null)
+      .sort(),
+  );
+});
+
+it('rate limits every route that sends email, invitations aside', () => {
+  const limits = Object.keys(EMAIL_ROUTES).map((route) => [
+    route,
+    ROUTES.find(({ method, url }) => `${method} ${url}` === route)?.rateLimited,
+  ]);
+
+  expect(limits).toStrictEqual(
+    Object.keys(EMAIL_ROUTES).map((route) => [route, !UNLIMITED_EMAIL_ROUTES.includes(route)]),
+  );
 });
 
 describe.each(INSTANCE_ROUTES)('$method $url', ({ method, url, permission }) => {

@@ -6,7 +6,7 @@ Thanks for helping! Toppo aims to stay maintainable by a small team, so contribu
 
 - For anything beyond a small fix, **open an issue first** to agree on the approach. Features that can live in a plugin usually should.
 - Read [ARCHITECTURE.md](ARCHITECTURE.md) (what and why) and [CLAUDE.md](CLAUDE.md) (the coding rules; they apply to humans too).
-- Security issues: do not open a public issue, see [SECURITY.md](SECURITY.md).
+- Security issues: do not open a public issue, see [SECURITY.md](SECURITY.md). Before touching access, invitations, rate limits, search or uploads, read the security rules of [CLAUDE.md](CLAUDE.md#security-rules-non-negotiable): each one comes from a flaw found and fixed.
 
 ## Set up
 

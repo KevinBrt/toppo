@@ -60,7 +60,14 @@ Enforced by `check:dependencies` (allowed graph in `scripts/src/dependencies/rul
 - **Configuration only through `apps/server/src/platform/config/config.ts`**: `process.env` is read nowhere else (Biome `noProcessEnv`). New variables are `TOPPO_*`, validated, defaulted safely and documented in `.env.example`.
 - **Randomness for tokens and ids comes from `node:crypto`**, never `Math.random()`.
 - **Uploads** (when they come): size limits, content type sniffed server-side, random storage keys, served with `Content-Disposition: attachment` and `nosniff`.
-- **Rate-limit authentication and any endpoint that sends email.**
+- **Rate-limit authentication and any endpoint that sends email**, through `config.rateLimit` (Toppo's own `rate_limit_counters`, keyed on `request.ip` as Fastify resolves it behind one trusted proxy; never read a forwarding header yourself). `route-permissions.test.ts` lists the routes that send email and finds the commands that do: invitations are the one exception, by decision.
+- **Never grant beyond your reach.** An operation that gives access (a role, a project, every project, an invitation, and its renewal or resending) checks that the actor holds or reaches all of it, compares both the current and the resulting effective role, and never applies to the actor themselves. Test it with a custom role holding the permission, not only with an administrator.
+- **What reaches beyond the instance belongs to the system role** (`systemOnly` in the catalog): the mail server, outgoing URLs, anything that carries reset or invitation links.
+- **Derived data follows the visibility of its source.** Counts, previews, suggestions, search corrections and caches are scoped by project and permission like the rows they come from: a list read by everyone tells what people may not read.
+- **Secrets are validated as they are compared** (after normalization), never as typed.
+- **Bound what a user can grow**: the length and count of what is stored or derived from their input, the work done per request or per job (one project per transaction, not the instance), and every call outside the process (a total deadline, never a transaction left open waiting on it). Emails someone waits for (password resets, invitations) get a job priority above notifications.
+- **A received file is discarded on every failure path**, not only once a response is sent.
+- **Markdown**: no new remark or rehype plugin, nor syntax, without checking its cost on hostile input (footnotes are off for that reason).
 - New dependency = new attack surface: see "Dependencies".
 
 ## Code style
@@ -86,7 +93,7 @@ Enforced by `check:dependencies` (allowed graph in `scripts/src/dependencies/rul
 
 - Coverage thresholds are enforced (core 90 %, server 85 %). Do not lower a threshold to make CI pass.
 - Test behavior through public APIs, not implementation details. Query the UI by role and accessible name, like a user.
-- A fixed bug comes with the test that reproduces it.
+- A fixed bug comes with the test that reproduces it; a security fix with a test that fails without it (run it both ways).
 - No `.only`, no `.skip` committed (Biome rejects them). No sleeps: wait for a condition.
 - Integration tests use the real database: `@toppo/testing` starts it if needed and `setupTestDatabase()` gives each test file its own. Never mock the database in server tests.
 - Web tests render the whole app with `renderApp()` against `fakeServer()` (`apps/web/src/test-helpers.tsx`); add the endpoints a feature calls to the fake server.
@@ -173,7 +180,7 @@ shared/<area>/                code used by several features: api/, i18n/, layout
 ## Dependencies
 
 - Prefer the platform and what we already have. A new dependency needs a reason in the PR: maintained, small, MIT/Apache/BSD/ISC-compatible (`check:dependencies` enforces licenses), and not replaceable by ~50 lines of our own.
-- Versions are exact (`.npmrc save-exact`), one version per package across the monorepo, lockfile from `registry.npmjs.org` only. Install scripts are disabled (`ignore-scripts`).
+- Versions are exact (`.npmrc save-exact`), one version per package across the monorepo, lockfile from `registry.npmjs.org` only, each entry bound to the tarball of the package and version it names (no aliases). Install scripts are disabled (`ignore-scripts`). A change of `package-lock.json` in a PR is reviewed like code.
 - GitHub Actions are pinned by commit SHA; Docker base images by digest.
 
 ## Git and pull requests
