@@ -772,6 +772,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
     );
     const method = init?.method ?? 'GET';
     const body = requestBody(init);
+    requestTime = new Date().toISOString();
     server.requests.push({ method, path: url.pathname + url.search, body });
     const handler = routes[`${method} ${url.pathname}`];
     const answer = handler
@@ -2258,6 +2259,12 @@ function searchIssues(state: FakeServerState, search: URLSearchParams): Response
   });
 }
 
+/**
+ * When the request being answered came: every change it makes shares it, as on the server, where
+ * they share their transaction's time; the history then shows them as one step.
+ */
+let requestTime = new Date().toISOString();
+
 function record(
   state: FakeServerState,
   key: string,
@@ -2267,7 +2274,7 @@ function record(
   history.push({
     id: `01a1569b-9900-7000-8000-0000000008${String(history.length).padStart(2, '0')}`,
     actor: userRef(state, state.user?.id ?? ''),
-    createdAt: new Date().toISOString(),
+    createdAt: requestTime,
     ...change,
   } as IssueActivity);
   state.activities.set(key, history);
