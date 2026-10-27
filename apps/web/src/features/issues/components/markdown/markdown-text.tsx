@@ -1,5 +1,27 @@
+import { memo } from 'react';
 import Markdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+/** What a remark plugin reaches of the parser: the syntax extensions micromark reads. */
+interface ParserData {
+  data(): { micromarkExtensions?: { disable?: { null?: string[] } }[] };
+}
+
+/**
+ * Turns footnotes (`[^1]`) off. Looking for one, the parser reads back over the whole paragraph at
+ * every `]`: a description of tens of thousands of them would freeze the tab of whoever opens it.
+ * No issue needs footnotes; `[^1]` stays as written.
+ */
+function remarkWithoutFootnotes(this: ParserData): undefined {
+  const data = this.data();
+  data.micromarkExtensions ??= [];
+  data.micromarkExtensions.push({
+    disable: { null: ['gfmFootnoteDefinition', 'gfmFootnoteCall', 'gfmPotentialFootnoteCall'] },
+  });
+  return undefined;
+}
+
+const REMARK_PLUGINS = [remarkGfm, remarkWithoutFootnotes];
 
 /**
  * How each element looks. Links open apart and tell search engines nothing; images are shown as
@@ -59,14 +81,15 @@ const COMPONENTS: Components = {
 
 /**
  * Markdown written by people, as React elements: never an HTML string. Raw HTML in it is
- * dropped, and links with unsafe protocols lose their target (`react-markdown` defaults).
+ * dropped, and links with unsafe protocols lose their target (`react-markdown` defaults). Parsed
+ * again only when the text changes, not each time the page around it renders.
  */
-export function MarkdownText({ children }: { children: string }) {
+export const MarkdownText = memo(function MarkdownText({ children }: { children: string }) {
   return (
     <div className="min-w-0 text-sm break-words text-foreground">
-      <Markdown remarkPlugins={[remarkGfm]} components={COMPONENTS} skipHtml>
+      <Markdown remarkPlugins={REMARK_PLUGINS} components={COMPONENTS} skipHtml>
         {children}
       </Markdown>
     </div>
   );
-}
+});

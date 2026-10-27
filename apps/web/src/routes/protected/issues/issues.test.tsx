@@ -275,6 +275,21 @@ describe('an issue’s page', () => {
     await expect.element(breadcrumb().getByText('WEB-1')).toBeVisible();
   });
 
+  it('shows at once a request written to freeze the page, footnotes as typed', async () => {
+    const fake = server();
+    fake.state.issues[0] = fakeIssue('WEB', 1, 'Broken link', {
+      description: `${']'.repeat(50_000)}
+
+See [^1] for more.`,
+    });
+    const opened = performance.now();
+    const { screen } = await renderApp({ path: '/issues/WEB-1' });
+
+    await expect.element(screen.getByText('See [^1] for more.')).toBeVisible();
+    // Parsing one footnote candidate per `]` took tens of seconds, the tab frozen meanwhile.
+    expect(performance.now() - opened).toBeLessThan(5_000);
+  });
+
   it('moves through the workflow, offering only the statuses allowed next', async () => {
     server();
     const { screen } = await renderApp({ path: '/issues/WEB-1' });
