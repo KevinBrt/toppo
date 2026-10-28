@@ -32,7 +32,7 @@ export const users = pgTable(
     /**
      * Toppo: the instance-level role, carrying global permissions. No default: whoever creates
      * the account (setup, invitation) chooses it, so deleting any role never breaks sign-ups.
-     * Only a deleted account may lose it, when its role is deleted.
+     * Only a deleted account may lose it, when its role is deleted; a plugin's user never has one.
      */
     instanceRoleId: uuid('instance_role_id').references(() => roles.id, { onDelete: 'set null' }),
     /**
@@ -54,6 +54,12 @@ export const users = pgTable(
       .$type<NotificationEvent[]>()
       .notNull()
       .default(sql`'{}'::text[]`),
+    /**
+     * Toppo: set for a plugin's own user, by its slug (`time-tracking`), through which the
+     * plugin writes: it never signs in, and lists of people leave it out. Kept when the plugin is
+     * uninstalled, and found again if it comes back: what it wrote keeps its author.
+     */
+    pluginSlug: text('plugin_slug'),
     /** Toppo: set while an administrator has deactivated the account. */
     deactivatedAt: timestamp('deactivated_at', { withTimezone: true }),
     /**
@@ -65,6 +71,14 @@ export const users = pgTable(
   },
   (table) => [
     uniqueIndex('users_email_unique').on(table.email),
+    uniqueIndex('users_plugin_slug_unique')
+      .on(table.pluginSlug)
+      .where(sql`${table.pluginSlug} is not null`),
+    // Mirrors PLUGIN_ID (`@toppo-tracker/plugin-sdk/protocol`).
+    check(
+      'users_plugin_slug_format',
+      sql`${table.pluginSlug} is null or ${table.pluginSlug} ~ '^[a-z][a-z0-9-]{1,38}[a-z0-9]$'`,
+    ),
     check('users_email_lowercase', sql`${table.email} = lower(${table.email})`),
     // A deleted account can never sign in again.
     check(
@@ -74,7 +88,12 @@ export const users = pgTable(
     // Deleting a role someone still holds fails here, whatever the code checked before.
     check(
       'users_role_unless_deleted',
-      sql`${table.instanceRoleId} is not null or ${table.deletedAt} is not null`,
+      sql`${table.instanceRoleId} is not null or ${table.deletedAt} is not null or ${table.pluginSlug} is not null`,
+    ),
+    // A plugin may do what its approval names, where it names it: nothing comes from a role.
+    check(
+      'users_plugin_holds_no_role',
+      sql`${table.pluginSlug} is null or (${table.instanceRoleId} is null and not ${table.allProjects})`,
     ),
     index('users_instance_role_id_idx').on(table.instanceRoleId),
     check('users_locale_check', sql`${table.locale} in ('en', 'fr')`),

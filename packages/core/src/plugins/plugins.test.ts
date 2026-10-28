@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asksForMore, isReservedPluginId, type PluginGrants } from './plugins.ts';
+import { asksForMore, isReservedPluginId, type PluginGrants, pluginUserOf } from './plugins.ts';
 
 describe('plugin ids', () => {
   it.each(['issue', 'comment', 'project', 'instance', 'toppo'])('reserves %s', (id) => {
@@ -8,6 +8,16 @@ describe('plugin ids', () => {
 
   it.each(['time-tracking', 'issues', 'reports'])('leaves %s to plugins', (id) => {
     expect(isReservedPluginId(id)).toBe(false);
+  });
+});
+
+describe("a plugin's own user", () => {
+  it('is named after its id, with an address that reaches no one', () => {
+    expect(pluginUserOf('time-tracking')).toStrictEqual({
+      name: 'Time tracking',
+      email: 'time-tracking@plugins.invalid',
+    });
+    expect(pluginUserOf('a1--b2').name).toBe('A1 b2');
   });
 });
 

@@ -52,7 +52,8 @@ export function passwordResetMail(
 /**
  * Emails the link to choose a new password, queued by Better Auth when someone asks for it. The
  * token is sealed in the job; the link puts it after `#`, so it never reaches a server log. An
- * account deactivated or deleted meanwhile gets nothing.
+ * account deactivated or deleted meanwhile gets nothing, nor does a plugin's own user, which
+ * never signs in.
  */
 export const passwordResetMailJob = defineJob({
   type: 'password-reset.email',
@@ -68,7 +69,14 @@ export const passwordResetMailJob = defineJob({
     const [user] = await tx
       .select({ name: users.name, email: users.email, locale: users.locale })
       .from(users)
-      .where(and(eq(users.id, userId), isNull(users.deactivatedAt), isNull(users.deletedAt)));
+      .where(
+        and(
+          eq(users.id, userId),
+          isNull(users.deactivatedAt),
+          isNull(users.deletedAt),
+          isNull(users.pluginSlug),
+        ),
+      );
     if (!(user && (await services.mailer.isConfigured(tx)))) {
       log.info({ userId }, 'Password reset no longer to email');
       return;

@@ -337,6 +337,13 @@
       "when": 1793196287166,
       "tag": "0047_plugins",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793199418428,
+      "tag": "0048_plugin_users",
+      "breakpoints": true
     }
   ]
 }

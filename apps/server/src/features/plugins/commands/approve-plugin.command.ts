@@ -4,12 +4,14 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { lockPlugin } from '../utils/plugin-rows.util.ts';
+import { ensurePluginUser } from '../utils/plugin-user.util.ts';
 
 const { pluginProjects, plugins, projects } = schema;
 
 /**
  * Approves what a plugin declares, as it is now, in the projects chosen (or all of them), and
- * enables it. Approving again changes its projects; an upgrade that asks for more is approved so.
+ * enables it, with a user of its own. Approving again changes its projects; an upgrade that asks
+ * for more is approved so.
  */
 export const approvePlugin = defineCommand({
   name: 'plugin.approve',
@@ -18,6 +20,7 @@ export const approvePlugin = defineCommand({
   async handler({ tx, actor, log }, { pluginSlug, projects: chosen }): Promise<void> {
     const plugin = await lockPlugin(tx, pluginSlug);
     const projectIds = chosen === 'all' ? [] : await projectIdsOf(tx, chosen);
+    await ensurePluginUser(tx, pluginSlug);
     await tx.delete(pluginProjects).where(eq(pluginProjects.pluginId, plugin.id));
     if (projectIds.length > 0) {
       await tx

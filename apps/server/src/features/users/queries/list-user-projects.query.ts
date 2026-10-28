@@ -24,7 +24,8 @@ export const listUserProjects = defineQuery({
     const [user] = await db
       .select({ allProjects: users.allProjects })
       .from(users)
-      .where(and(eq(users.id, userId), isNull(users.deletedAt)));
+      // A plugin's user reaches projects through its approval, not as a member.
+      .where(and(eq(users.id, userId), isNull(users.deletedAt), isNull(users.pluginSlug)));
     if (!user) {
       throw new HttpError(404, 'USER_NOT_FOUND', 'This user does not exist');
     }
