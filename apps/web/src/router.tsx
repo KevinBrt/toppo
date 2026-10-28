@@ -14,6 +14,7 @@ import { projectsIndexRoute } from './routes/protected/projects/index.route.tsx'
 import { projectRoute } from './routes/protected/projects/project.route.tsx';
 import { projectAccessRoute } from './routes/protected/projects/project-access.route.tsx';
 import { projectGeneralRoute } from './routes/protected/projects/project-general.route.tsx';
+import { projectPluginsRoute } from './routes/protected/projects/project-plugins.route.tsx';
 import { projectPropertiesRoute } from './routes/protected/projects/project-properties.route.tsx';
 import { projectStatusesRoute } from './routes/protected/projects/project-statuses.route.tsx';
 import { projectsRoute } from './routes/protected/projects/projects.route.tsx';
@@ -57,6 +58,7 @@ const routeTree = rootRoute.addChildren([
         projectAccessRoute,
         projectStatusesRoute,
         projectPropertiesRoute,
+        projectPluginsRoute,
       ]),
     ]),
     settingsRoute.addChildren([

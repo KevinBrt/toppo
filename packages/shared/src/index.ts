@@ -348,6 +348,8 @@ export {
   type PluginState,
   type PluginSummary,
   type PluginsResponse,
+  type ProjectPlugin,
+  type ProjectPluginsResponse,
   pluginActionParamsSchema,
   pluginActionRequestSchema,
   pluginActionResponseSchema,
@@ -359,6 +361,9 @@ export {
   pluginSlugSchema,
   pluginSummarySchema,
   pluginsResponseSchema,
+  projectPluginParamsSchema,
+  projectPluginSchema,
+  projectPluginsResponseSchema,
   type SavePluginSettingsRequest,
   savePluginSettingsRequestSchema,
 } from './plugins/plugins.ts';

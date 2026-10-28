@@ -442,6 +442,7 @@ const SET_UP: FakePlugin = {
     ],
     values: { reminderDays: 8 },
     refused: false,
+    refusedProjects: [],
   },
 };
 
@@ -565,6 +566,26 @@ describe('a plugin’s settings', () => {
         body: { values: expect.objectContaining({ rate: 2.5 }) },
       }),
     );
+  });
+
+  it('list the projects whose own settings an upgrade refuses, each linked to where it sets them', async () => {
+    const { screen } = await openPlugin(
+      {
+        ...TIME_TRACKING,
+        settings: { ...TIME_TRACKING.settings, refusedProjects: [{ key: 'WEB', name: 'Website' }] },
+      },
+      { projects: [fakeProject('WEB', 'Website')] },
+    );
+    const alert = screen.getByRole('alert');
+
+    await expect
+      .element(alert)
+      .toHaveTextContent(
+        'This version of the plugin refuses the settings of these projects: correct them in each, then approve it again.Website',
+      );
+    await expect
+      .element(alert.getByRole('link', { name: 'Website' }))
+      .toHaveAttribute('href', '/projects/WEB/plugins');
   });
 
   it('are not drawn for a plugin that has none', async () => {

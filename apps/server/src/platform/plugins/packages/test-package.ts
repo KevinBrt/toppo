@@ -11,6 +11,7 @@ export function testManifest(overrides: Partial<Manifest> = {}): Manifest {
     needs: ['issue.read', 'comment.create'],
     permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
     settings: { type: 'object', properties: {} },
+    projectSettings: { type: 'object', properties: {} },
     messages: {
       en: {
         plugin: { name: 'Time tracking', description: 'Time spent on each issue.' },

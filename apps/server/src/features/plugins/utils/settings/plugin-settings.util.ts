@@ -4,7 +4,7 @@ import {
   type PluginSettingValue,
   pluginSettingValueSchema,
 } from '@toppo-tracker/shared';
-import { messageAt, translated } from '../../../platform/plugins/plugin-words.ts';
+import { messageAt, translated } from '../../../../platform/plugins/plugin-words.ts';
 
 /** How the form draws a text: an address or an email as such, any other format as plain text. */
 const TEXT_FORMATS: ReadonlyMap<string, 'url' | 'email'> = new Map([
@@ -12,22 +12,30 @@ const TEXT_FORMATS: ReadonlyMap<string, 'url' | 'email'> = new Map([
   ['email', 'email'],
 ]);
 
-/** A plugin's settings as its form draws them, named in each language by its own messages. */
-export function settingFieldsOf(manifest: Manifest): PluginSettingField[] {
-  return Object.entries(manifest.settings.properties).map(([name, setting]) =>
-    fieldOf(manifest.messages, name, setting),
+/** Where a plugin's settings are set: the instance (`settings`), or each project. */
+export type SettingsScope = 'settings' | 'projectSettings';
+
+/**
+ * A plugin's settings, the instance's or a project's, as their form draws them, named in each
+ * language by its own messages.
+ */
+export function settingFieldsOf(manifest: Manifest, scope: SettingsScope): PluginSettingField[] {
+  return Object.entries(manifest[scope].properties).map(([name, setting]) =>
+    fieldOf(manifest.messages, `${scope}.${name}`, name, setting),
   );
 }
 
 function fieldOf(
   messages: Manifest['messages'],
+  /** Where its words are: `settings.hoursPerDay`. */
+  key: string,
   name: string,
   setting: Setting,
 ): PluginSettingField {
-  const help = `settings.${name}.help`;
+  const help = `${key}.help`;
   const words = {
     name,
-    label: translated(messages, `settings.${name}.label`, name),
+    label: translated(messages, `${key}.label`, name),
     help: messageAt(messages.en, help) === undefined ? null : translated(messages, help, ''),
   };
   if (setting.type === 'boolean') {
@@ -49,7 +57,7 @@ function fieldOf(
       kind: 'choice',
       options: setting.enum.map((value) => ({
         value,
-        label: translated(messages, `settings.${name}.options.${value}`, value),
+        label: translated(messages, `${key}.options.${value}`, value),
       })),
       default: setting.default ?? null,
     };
@@ -66,10 +74,11 @@ function fieldOf(
 /** The settings saved that the plugin still has: an upgrade may have dropped some. */
 export function savedValuesOf(
   manifest: Manifest,
+  scope: SettingsScope,
   saved: Record<string, unknown>,
 ): Record<string, PluginSettingValue> {
   return Object.fromEntries(
-    Object.keys(manifest.settings.properties).flatMap((name) => {
+    Object.keys(manifest[scope].properties).flatMap((name) => {
       const value = pluginSettingValueSchema.safeParse(
         Object.hasOwn(saved, name) ? saved[name] : undefined,
       );

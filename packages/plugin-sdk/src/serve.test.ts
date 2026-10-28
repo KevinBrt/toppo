@@ -32,6 +32,10 @@ const en = {
   plugin: { name: 'Time tracking', description: 'Time spent on each issue.' },
   permissions: { log: 'Log time' },
   settings: { maxMinutesPerDay: { label: 'Minutes a day, at most' } },
+  projectSettings: {
+    budgetDays: { label: 'Budget, in days' },
+    reportedEvery: { label: 'Reported every' },
+  },
   errors: { dailyLimit: 'At most {limit} minutes a day.' },
   comment: { closedAfter: 'Closed after {minutes} minutes.' },
 } as const;
@@ -47,12 +51,20 @@ function timeTracking() {
     needs: ['issue.read', 'comment.create'],
     permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
     settings: z.object({ maxMinutesPerDay: z.int().min(1).default(600) }),
+    projectSettings: z.object({
+      budgetDays: z.number().positive().optional(),
+      reportedEvery: z.enum(['week', 'month']).default('month'),
+    }),
     messages: {
       en,
       fr: {
         plugin: { name: 'Suivi du temps', description: 'Le temps passé sur chaque ticket.' },
         permissions: { log: 'Saisir du temps' },
         settings: { maxMinutesPerDay: { label: 'Minutes par jour, au plus' } },
+        projectSettings: {
+          budgetDays: { label: 'Budget, en jours' },
+          reportedEvery: { label: 'Rapport tous les' },
+        },
         errors: { dailyLimit: '{limit} minutes par jour au plus.' },
         comment: { closedAfter: 'Fermé après {minutes} minutes.' },
       },
@@ -82,6 +94,8 @@ function timeTracking() {
           return { count: 10n };
         case 'empty-comment':
           return await ctx.issues.comment(ISSUE, '   ');
+        case 'budget':
+          return await ctx.projects.settings(PROJECT);
         default:
           return await ctx.issues.get(ISSUE);
       }
@@ -154,21 +168,60 @@ describe('a plugin served to Toppo', () => {
     });
   });
 
-  it('checks settings an administrator typed, by its own schema, whatever is saved', async () => {
+  it('checks settings typed for the instance or a project, by its own schemas, whatever is saved', async () => {
     const { host, call } = fakeHost();
     const served = servePlugin(timeTracking(), host);
     // What is saved no longer fits: the check is of what was typed.
     const saved = context({ user: null, settings: { maxMinutesPerDay: 'many' } });
-    const check = async (typed: unknown) =>
-      JSON.parse(await served.run('settings', 'settings', JSON.stringify(typed), saved));
+    const check = async (scope: string, typed: unknown) =>
+      JSON.parse(await served.run('settings', scope, JSON.stringify(typed), saved));
 
-    expect(await check({ maxMinutesPerDay: 480 })).toStrictEqual({ ok: true, result: null });
-    expect(await check({})).toStrictEqual({ ok: true, result: null });
-    expect(await check({ maxMinutesPerDay: 0 })).toMatchObject({
+    expect(await check('instance', { maxMinutesPerDay: 480 })).toStrictEqual({
+      ok: true,
+      result: null,
+    });
+    expect(await check('instance', {})).toStrictEqual({ ok: true, result: null });
+    expect(await check('instance', { maxMinutesPerDay: 0 })).toMatchObject({
       ok: false,
       error: { code: 'VALIDATION_FAILED', issues: [{ path: 'maxMinutesPerDay' }] },
     });
+    expect(await check('project', { budgetDays: 12.5 })).toStrictEqual({ ok: true, result: null });
+    expect(await check('project', { budgetDays: -1 })).toMatchObject({
+      ok: false,
+      error: { code: 'VALIDATION_FAILED', issues: [{ path: 'budgetDays' }] },
+    });
+    expect(await check('somewhere', {})).toStrictEqual({
+      ok: false,
+      error: { code: 'UNKNOWN_SETTINGS' },
+    });
     expect(call).not.toHaveBeenCalled();
+  });
+
+  it('answers which projects’ settings it refuses, as an upgrade checks them', async () => {
+    const { host } = fakeHost();
+    const served = servePlugin(timeTracking(), host);
+    const check = async (saved: unknown) =>
+      JSON.parse(await served.run('settings', 'projects', JSON.stringify(saved), context()));
+
+    expect(
+      await check({ [PROJECT]: { budgetDays: 20 }, [ISSUE]: { reportedEvery: 'day' } }),
+    ).toStrictEqual({ ok: true, result: [ISSUE] });
+    expect(await check([])).toMatchObject({ ok: false, error: { code: 'VALIDATION_FAILED' } });
+  });
+
+  it('reads a project’s settings from Toppo, its defaults applied, or fails on those it refuses', async () => {
+    const answered = (settings: unknown) =>
+      act(fakeHost({ 'projects.settings': settings }).host, 'oddities.run', { what: 'budget' });
+
+    expect(await answered({ budgetDays: 20 })).toStrictEqual({
+      ok: true,
+      result: { budgetDays: 20, reportedEvery: 'month' },
+    });
+    expect(await answered({ budgetDays: 'many' })).toMatchObject({
+      ok: false,
+      error: { code: 'PLUGIN_ERROR' },
+      detail: `The settings of project ${PROJECT} do not fit this version`,
+    });
   });
 
   it('runs an action for its user, with its settings defaulted and its calls to Toppo', async () => {

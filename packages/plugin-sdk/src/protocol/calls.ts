@@ -14,8 +14,8 @@ const COMMENT_BODY_MAX_LENGTH = 20_000;
 
 /**
  * What a plugin may ask Toppo, through `__host.call(method, args)`: the core permission each
- * takes (which the plugin must list in its `needs`), its arguments, and Toppo's answer. Toppo
- * checks the arguments again, and the access of whoever the plugin acts for.
+ * takes (which the plugin must list in its `needs`; none to read what is its own), its arguments,
+ * and Toppo's answer. Toppo checks the arguments again, and the access of whoever it acts for.
  */
 export const HOST_CALLS = {
   'issues.get': {
@@ -33,6 +33,15 @@ export const HOST_CALLS = {
       once: z.string().min(1).max(200).optional(),
     }),
     result: z.object({ commentId: z.uuid() }),
+  },
+  'projects.settings': {
+    needs: null,
+    args: z.object({ projectId: z.uuid() }),
+    /**
+     * As the project saved them, the plugin's defaults applied by the SDK. Refused (`NOT_FOUND`)
+     * for a project the plugin, or whoever it acts for, does not reach.
+     */
+    result: z.record(z.string(), z.unknown()),
   },
 } as const;
 

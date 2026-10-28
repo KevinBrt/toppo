@@ -4,7 +4,7 @@ import { logTime } from './actions/log-time.action.ts';
 import { plugin } from './plugin.ts';
 
 describe('the time tracking plugin', () => {
-  it('declares what an administrator approves and sets: reading issues, a permission, a setting', () => {
+  it('declares what is approved and set: reading issues, a permission, its settings', () => {
     const { manifest } = createTestToppo(plugin);
 
     expect(manifest).toMatchObject({
@@ -14,6 +14,9 @@ describe('the time tracking plugin', () => {
       permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
       settings: {
         properties: { hoursPerDay: { type: 'number', minimum: 1, maximum: 24, default: 8 } },
+      },
+      projectSettings: {
+        properties: { budgetDays: { type: 'number', exclusiveMinimum: 0, maximum: 100_000 } },
       },
       events: [],
       actions: [{ name: 'timeEntry.log' }],
@@ -48,18 +51,28 @@ describe('the time tracking plugin', () => {
     ).rejects.toMatchObject({ code: 'INVALID_SETTINGS' });
   });
 
-  it('names itself, its permission and its setting in English and French', () => {
+  it.each([
+    ['takes no budget', {}, true],
+    ['takes part of a day', { budgetDays: 12.5 }, true],
+    ['refuses no day at all', { budgetDays: 0 }, false],
+  ])('%s, as a project’s budget', (_, budget, taken) => {
+    expect(plugin.projectSettings.safeParse(budget).success).toBe(taken);
+  });
+
+  it('names itself, its permission and its settings in English and French', () => {
     const { manifest } = createTestToppo(plugin);
 
     expect(manifest.messages.en).toMatchObject({
       plugin: { name: 'Time tracking' },
       permissions: { log: 'Log time' },
       settings: { hoursPerDay: { label: 'Hours in a working day' } },
+      projectSettings: { budgetDays: { label: 'Budget, in days' } },
     });
     expect(manifest.messages.fr).toMatchObject({
       plugin: { name: 'Suivi du temps' },
       permissions: { log: 'Saisir du temps' },
       settings: { hoursPerDay: { label: 'Heures dans une journée de travail' } },
+      projectSettings: { budgetDays: { label: 'Budget, en jours' } },
     });
   });
 });

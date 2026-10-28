@@ -4,6 +4,7 @@ import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { NeedLabel, ProjectPickerSlot } from '../../models/plugin-page.model.ts';
 import { isStopped } from '../../utils/plugin-state.util.ts';
 import { PluginSettingsForm } from '../settings/plugin-settings-form.tsx';
+import { RefusedProjectsAlert } from '../settings/refused-projects-alert.tsx';
 import { PluginDeclarations } from './plugin-declarations.tsx';
 import { PluginHeader } from './plugin-header.tsx';
 import { PluginManagement } from './plugin-management.tsx';
@@ -38,6 +39,9 @@ export function PluginDetails({
         <PluginStoppedAlert slug={plugin.slug} failures={plugin.failures} reason={failure.reason} />
       ) : null}
       {plugin.approval === null ? <Alert>{t('plugins.pendingHelp')}</Alert> : null}
+      {plugin.settings.refusedProjects.length > 0 ? (
+        <RefusedProjectsAlert projects={plugin.settings.refusedProjects} />
+      ) : null}
       <PluginDeclarations plugin={plugin} needLabel={needLabel} />
       {/* Set up before it runs; a new version starts the form over, from what it takes. */}
       {plugin.settings.fields.length > 0 ? (

@@ -15,6 +15,7 @@ const manifest: Manifest = {
   needs: ['issue.read'],
   permissions: { 'reports.read': { scope: 'project', label: 'permissions.reportsRead' } },
   settings: { type: 'object', properties: {} },
+  projectSettings: { type: 'object', properties: {} },
   messages: { en: { permissions: { reportsRead: 'See reports' } }, fr: {} },
   actions: [{ name: 'timeEntry.log', access: { issue: 'issueId' }, input: { type: 'object' } }],
   events: ['issue.created'],
@@ -149,6 +150,33 @@ describe('the settings Toppo draws', () => {
     ],
   ])('refuses %s', (_, shape) => {
     expect(manifestSchema.safeParse(withSettings(shape)).success).toBe(false);
+  });
+
+  it('takes settings for each project, labelled apart from the instance’s', () => {
+    const settings = { budgetDays: { label: 'Budget, in days' } };
+    const declared = {
+      ...manifest,
+      projectSettings: z.toJSONSchema(z.object({ budgetDays: z.number().positive().optional() }), {
+        io: 'input',
+        unrepresentable: 'any',
+      }),
+      messages: { en: { projectSettings: settings }, fr: { projectSettings: settings } },
+    };
+
+    expect(manifestSchema.parse(declared)).toStrictEqual(declared);
+    expect(
+      manifestSchema.safeParse({ ...declared, messages: { en: { settings }, fr: { settings } } })
+        .error?.issues[0]?.message,
+    ).toBe('projectSettings.budgetDays.label is missing: the form names each setting with it');
+  });
+
+  it('takes the manifest of a plugin uploaded before projects had settings, as having none', () => {
+    const { projectSettings: _none, ...before } = manifest;
+
+    expect(manifestSchema.parse(before).projectSettings).toStrictEqual({
+      type: 'object',
+      properties: {},
+    });
   });
 
   it('refuses a setting the plugin cannot run without, or one without a label, saying which', () => {

@@ -21,7 +21,7 @@ export const approvePlugin = defineCommand({
   input: approvePluginRequestSchema.extend({ pluginSlug: pluginSlugSchema }),
   async handler({ tx, actor, log }, { pluginSlug, projects: chosen }): Promise<void> {
     const plugin = await lockPlugin(tx, pluginSlug);
-    assertSettingsAccepted(plugin);
+    await assertSettingsAccepted(tx, plugin);
     const projectIds = chosen === 'all' ? [] : await projectIdsOf(tx, chosen);
     const [declared] = await tx
       .select({ manifest: plugins.manifest })

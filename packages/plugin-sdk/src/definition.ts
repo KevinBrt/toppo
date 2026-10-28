@@ -21,6 +21,7 @@ export interface PluginDefinition {
     messages: { en: Messages; fr: MessagesOf<Messages> };
   };
   settings: z.ZodType;
+  projectSettings: z.ZodType;
   actions: Map<
     string,
     {

@@ -15,4 +15,10 @@ export const PluginsQueries = {
       queryKey: ['plugins', 'detail', slug],
       queryFn: () => Plugins.get(slug),
     }),
+  /** The plugins at work in a project that take settings of it: at most 50, loaded whole. */
+  inProject: (projectKey: string) =>
+    queryOptions({
+      queryKey: ['plugins', 'project', projectKey],
+      queryFn: () => Plugins.inProject(projectKey),
+    }),
 };

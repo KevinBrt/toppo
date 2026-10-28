@@ -234,6 +234,15 @@ function assertGranted(
   }
 }
 
+/** The key of the project `projectId` (`WEB`), or `null` when there is none. */
+export async function projectKeyOf(db: Db, projectId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ key: projects.key })
+    .from(projects)
+    .where(eq(projects.id, projectId));
+  return row?.key ?? null;
+}
+
 /** The key of the issue `issueId` (`WEB-42`), or `null` when there is none. */
 export async function issueKeyOf(db: Db, issueId: string): Promise<string | null> {
   const [row] = await db

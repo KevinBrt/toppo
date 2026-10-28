@@ -46,7 +46,10 @@ export const settingSchema = z.union(
 
 export type Setting = z.infer<typeof settingSchema>;
 
-/** A plugin's settings: one object of settings, as `z.toJSONSchema` writes it. */
+/**
+ * A plugin's settings, those of the instance or those each project sets: one object of settings,
+ * as `z.toJSONSchema` writes it.
+ */
 export const settingsSchema = z.strictObject({
   $schema: z.string().max(200).optional(),
   type: z.literal('object'),
@@ -61,6 +64,12 @@ export const settingsSchema = z.strictObject({
 
 export type SettingsSchema = z.infer<typeof settingsSchema>;
 
+/** No settings: what a plugin that declares none answers. */
+export const NO_SETTINGS_SCHEMA: SettingsSchema = { type: 'object', properties: {} };
+
+/** Where a plugin's settings are set, by the key they go by in its manifest and messages. */
+const SCOPES = ['settings', 'projectSettings'] as const;
+
 /** The words at `path` in a plugin's messages, if there are some. */
 function wordsAt(messages: Messages, path: readonly string[]): string | undefined {
   let found: Messages | string | undefined = messages;
@@ -71,28 +80,33 @@ function wordsAt(messages: Messages, path: readonly string[]): string | undefine
 }
 
 /**
- * Refuses settings Toppo could not offer: one the plugin cannot run without, since it runs before
- * anyone sets it, and one without a label in each language, which its form shows.
+ * Refuses settings Toppo could not offer, the instance's or a project's: one the plugin cannot run
+ * without, since it runs before anyone sets it, and one without a label in each language, which
+ * its form shows (`settings.<name>.label`, `projectSettings.<name>.label`).
  */
 export function checkSettings(
-  manifest: { settings: SettingsSchema; messages: { en: Messages; fr: Messages } },
+  manifest: Readonly<Record<(typeof SCOPES)[number], SettingsSchema>> & {
+    messages: { en: Messages; fr: Messages };
+  },
   ctx: z.RefinementCtx,
 ): void {
-  for (const name of manifest.settings.required ?? []) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['settings', 'required'],
-      message: `The setting ${name} needs a default, or .optional(): the plugin runs before anyone sets it`,
-    });
-  }
-  for (const name of Object.keys(manifest.settings.properties)) {
-    for (const locale of ['en', 'fr'] as const) {
-      if (wordsAt(manifest.messages[locale], ['settings', name, 'label']) === undefined) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['messages', locale],
-          message: `settings.${name}.label is missing: the form names each setting with it`,
-        });
+  for (const scope of SCOPES) {
+    for (const name of manifest[scope].required ?? []) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [scope, 'required'],
+        message: `The setting ${name} needs a default, or .optional(): the plugin runs before anyone sets it`,
+      });
+    }
+    for (const name of Object.keys(manifest[scope].properties)) {
+      for (const locale of ['en', 'fr'] as const) {
+        if (wordsAt(manifest.messages[locale], [scope, name, 'label']) === undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['messages', locale],
+            message: `${scope}.${name}.label is missing: the form names each setting with it`,
+          });
+        }
       }
     }
   }

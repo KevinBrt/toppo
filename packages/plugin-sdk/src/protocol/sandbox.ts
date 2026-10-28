@@ -10,8 +10,9 @@ export const PLUGIN_GLOBAL = '__toppo';
 export const HOST_GLOBAL = '__host';
 
 /**
- * What Toppo asks a plugin to run: an action, an event, or a check of the settings an
- * administrator typed, before Toppo saves them.
+ * What Toppo asks a plugin to run: an action, an event, or a check of settings before Toppo saves
+ * them: `instance`, `project` (each answers what did not fit), or `projects` (those saved for each
+ * project, by its id, as an upgrade checks them: it answers the ids it refuses).
  */
 export type RunKind = 'action' | 'event' | 'settings';
 

@@ -46,12 +46,16 @@ async function dispatch(
       return HOST_CALLS[method].result.parse(
         await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
       );
+    case 'projects.settings':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
   }
 }
 
 /**
  * Answers the calls of a plugin's run: only those it may make (its `needs` hold the permission
- * each takes), their arguments checked, run in `context`, as the plugin itself. A refusal of
+ * each takes, if it takes one), their arguments checked, run in `context`, as the plugin itself. A refusal of
  * Toppo's reaches the plugin by its code (`ISSUE_NOT_FOUND`, `FORBIDDEN`…).
  */
 export function answerCalls(
@@ -64,7 +68,7 @@ export function answerCalls(
       throw new HostCallError('UNKNOWN_CALL', `Toppo answers no call named ${method}`);
     }
     const takes = HOST_CALLS[method].needs;
-    if (!needs.includes(takes)) {
+    if (takes !== null && !needs.includes(takes)) {
       throw new HostCallError(
         'FORBIDDEN',
         `${method} takes ${takes}, which the plugin does not need`,

@@ -458,6 +458,17 @@ export const en = {
     access: 'Access',
     statuses: 'Statuses',
     properties: 'Properties',
+    plugins: 'Plugins',
+  },
+  projectPlugins: {
+    title: 'Plugins',
+    description:
+      'What the plugins at work in this project take of it. A setting left empty takes its default.',
+    loading: 'Loading the plugins…',
+    emptyTitle: 'No plugin takes settings here',
+    emptyDescription: 'The plugins at work in this project ask nothing of it.',
+    refused:
+      'This version of the plugin refuses these settings: correct them, so that it can be approved again.',
   },
   projectSettings: {
     title: 'General',
@@ -1153,6 +1164,8 @@ export const en = {
     settingsRefused:
       'This version of the plugin refuses its settings: correct them, then approve it again.',
     settingRefused: 'The plugin refuses this value.',
+    projectSettingsRefused:
+      'This version of the plugin refuses the settings of these projects: correct them in each, then approve it again.',
     manageTitle: 'Manage',
     newVersionTitle: 'New version',
     newVersionDescription:

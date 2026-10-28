@@ -475,6 +475,17 @@ export const fr: Messages = {
     access: 'Accès',
     statuses: 'Statuts',
     properties: 'Propriétés',
+    plugins: 'Plugins',
+  },
+  projectPlugins: {
+    title: 'Plugins',
+    description:
+      'Ce que les plugins à l’œuvre dans ce projet lui demandent. Un paramètre laissé vide prend sa valeur par défaut.',
+    loading: 'Chargement des plugins…',
+    emptyTitle: 'Aucun plugin n’a de paramètres ici',
+    emptyDescription: 'Les plugins à l’œuvre dans ce projet ne lui demandent rien.',
+    refused:
+      'Cette version du plugin refuse ces paramètres : corrigez-les, pour qu’il puisse être approuvé à nouveau.',
   },
   projectSettings: {
     title: 'Général',
@@ -1196,6 +1207,8 @@ export const fr: Messages = {
     settingsRefused:
       'Cette version du plugin refuse ses paramètres : corrigez-les, puis approuvez-le à nouveau.',
     settingRefused: 'Le plugin refuse cette valeur.',
+    projectSettingsRefused:
+      'Cette version du plugin refuse les paramètres de ces projets : corrigez-les dans chacun, puis approuvez-le à nouveau.',
     manageTitle: 'Gérer',
     newVersionTitle: 'Nouvelle version',
     newVersionDescription:

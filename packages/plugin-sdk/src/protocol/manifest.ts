@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
 import { EVENT_TYPES } from './events.ts';
 import { PLUGIN_LOGO_FILES } from './package.ts';
-import { checkSettings, settingsSchema } from './settings.ts';
+import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './settings.ts';
 import { apiVersionSchema } from './version.ts';
 
 /** `time-tracking`: lowercase words joined by dashes, as its URLs and its permissions use it. */
@@ -94,6 +94,8 @@ export const manifestSchema = z
         message: `At most ${PLUGIN_LIMITS.permissions} permissions`,
       }),
     settings: settingsSchema,
+    /** What each project it acts in sets for itself; none for a plugin uploaded before them. */
+    projectSettings: settingsSchema.default(NO_SETTINGS_SCHEMA),
     messages: z.strictObject({ en: messagesSchema, fr: messagesSchema }),
     actions: z
       .array(z.strictObject({ name: nameSchema, access: accessSchema, input: jsonSchema }))

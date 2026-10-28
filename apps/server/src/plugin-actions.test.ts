@@ -41,6 +41,7 @@ const MANIFEST = testManifest({
     { name: 'reports.read', access: { permission: 'reports.read' }, input: {} },
     { name: 'time.refuse', access: 'authenticated', input: {} },
     { name: 'time.crash', access: 'authenticated', input: {} },
+    { name: 'project.settings', access: 'authenticated', input: {} },
   ],
   events: [],
 });
@@ -62,6 +63,12 @@ const RUN = `
     }
     case 'reports.read':
       return ok('read');
+    case 'project.settings':
+      return ok(
+        await __host
+          .call('projects.settings', JSON.stringify({ projectId: input.projectId }))
+          .then((settings) => JSON.parse(settings), (error) => ({ refused: error.message })),
+      );
     case 'time.refuse':
       return JSON.stringify({
         ok: false,
@@ -247,6 +254,29 @@ describe('a plugin action', () => {
 
     expect(vera.json()).toStrictEqual({ result: { refused: 'FORBIDDEN' } });
     expect(ada.json()).toMatchObject({ result: { commentId: expect.any(String) } });
+  });
+
+  it('reads a project’s settings in the projects both the person and the plugin reach', async () => {
+    const approved = await call('ada', 'POST', '/api/v1/plugins/time-tracking/approve', {
+      projects: 'all',
+    });
+    expect(approved.statusCode).toBe(204);
+    const projectIds = Object.fromEntries(
+      (
+        await context.database.db
+          .select({ key: schema.projects.key, id: schema.projects.id })
+          .from(schema.projects)
+      ).map(({ key, id }) => [key, id]),
+    );
+
+    // Grace works in WEB only; Ada reaches every project.
+    const ours = await act('grace', 'project.settings', { projectId: projectIds['WEB'] });
+    const theirs = await act('grace', 'project.settings', { projectId: projectIds['OPS'] });
+    const anyone = await act('ada', 'project.settings', { projectId: projectIds['OPS'] });
+
+    expect(ours.json()).toStrictEqual({ result: {} });
+    expect(theirs.json()).toStrictEqual({ result: { refused: 'PROJECT_NOT_FOUND' } });
+    expect(anyone.json()).toStrictEqual({ result: {} });
   });
 
   it('checks a permission of the whole instance against the person’s own role', async () => {

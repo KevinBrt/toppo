@@ -1,8 +1,8 @@
 import { schema, uuidv7 } from '@toppo-tracker/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
-import { testManifest } from '../../../platform/plugins/packages/test-package.ts';
-import { setupTestDatabase, testExecutionContext } from '../../../test-helpers.ts';
+import { testManifest } from '../../../../platform/plugins/packages/test-package.ts';
+import { setupTestDatabase, testExecutionContext } from '../../../../test-helpers.ts';
 import { storePluginSettings } from './store-plugin-settings.command.ts';
 
 const context = setupTestDatabase();
