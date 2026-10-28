@@ -14,11 +14,13 @@ export const plugin = definePlugin({
     en: {
       plugin: { name: 'Time tracking', description: 'Time spent on each issue.' },
       permissions: { log: 'Log time' },
+      settings: { maxMinutesPerDay: { label: 'Minutes a day, at most' } },
       closed: 'Closed.',
     },
     fr: {
       plugin: { name: 'Suivi du temps', description: 'Le temps passé sur chaque ticket.' },
       permissions: { log: 'Saisir du temps' },
+      settings: { maxMinutesPerDay: { label: 'Minutes par jour, au plus' } },
       closed: 'Fermé.',
     },
   },

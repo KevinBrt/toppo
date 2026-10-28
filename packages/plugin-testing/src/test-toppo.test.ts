@@ -17,11 +17,13 @@ function timeTracking(
     messages: {
       en: {
         permissions: { log: 'Log time' },
+        settings: { maxMinutesPerDay: { label: 'Minutes a day' } },
         errors: { dailyLimit: 'At most {limit}.' },
         closed: 'Closed.',
       },
       fr: {
         permissions: { log: 'Saisir' },
+        settings: { maxMinutesPerDay: { label: 'Minutes par jour' } },
         errors: { dailyLimit: '{limit} au plus.' },
         closed: 'Fermé.',
       },

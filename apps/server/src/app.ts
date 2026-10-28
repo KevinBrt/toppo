@@ -54,7 +54,10 @@ import { serializerCompiler, validatorCompiler } from './platform/http/zod.ts';
 import type { RunnableJob } from './platform/jobs/jobs.ts';
 import { createMailer } from './platform/mail/mailer.ts';
 import { type HostCalls, orNullIfNotFound } from './platform/plugins/host-calls.ts';
-import { createManifestReader } from './platform/plugins/packages/manifest-reader.ts';
+import {
+  createManifestReader,
+  createSettingsChecker,
+} from './platform/plugins/packages/manifest-reader.ts';
 import { registerPackageRoutes } from './platform/plugins/packages/package-routes.ts';
 import type { PackageStore } from './platform/plugins/packages/package-store.ts';
 import { packageSweepJob } from './platform/plugins/packages/package-sweeper.ts';
@@ -145,6 +148,7 @@ export function createServices({
     plugins: {
       packages: plugins.packages,
       readManifest: createManifestReader(plugins.workerUrl),
+      checkSettings: createSettingsChecker(plugins.workerUrl),
       runtime: plugins.runtime,
       calls: createHostCalls(),
     },

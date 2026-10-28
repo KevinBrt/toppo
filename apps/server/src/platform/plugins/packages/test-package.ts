@@ -10,7 +10,7 @@ export function testManifest(overrides: Partial<Manifest> = {}): Manifest {
     apiVersion: `^${API_VERSION}`,
     needs: ['issue.read', 'comment.create'],
     permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
-    settings: {},
+    settings: { type: 'object', properties: {} },
     messages: {
       en: {
         plugin: { name: 'Time tracking', description: 'Time spent on each issue.' },

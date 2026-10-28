@@ -56,4 +56,12 @@ export {
   type PluginGlobal,
   type RunKind,
 } from './sandbox.ts';
+export {
+  PLUGIN_SETTINGS_MAX,
+  SETTING_NAME,
+  type Setting,
+  type SettingsSchema,
+  settingSchema,
+  settingsSchema,
+} from './settings.ts';
 export { API_VERSION, apiVersionSchema, isApiCompatible } from './version.ts';

@@ -17,6 +17,14 @@ export const APPROVAL_ERRORS = {
   PLUGIN_NOT_FOUND: 'plugins.errors.notFound',
   PROJECT_NOT_FOUND: 'plugins.errors.projectNotFound',
   PLUGIN_USER_EMAIL_TAKEN: 'plugins.errors.userEmailTaken',
+  PLUGIN_SETTINGS_REFUSED: 'plugins.errors.settingsRefused',
+} as const;
+
+/** Why its settings were not saved. */
+export const SETTINGS_ERRORS = {
+  PLUGIN_NOT_FOUND: 'plugins.errors.notFound',
+  PLUGIN_SETTINGS_INVALID: 'plugins.errors.settingsInvalid',
+  PLUGIN_CHANGED: 'plugins.errors.pluginChanged',
 } as const;
 
 /** Why enabling, disabling or uninstalling a plugin was refused. */

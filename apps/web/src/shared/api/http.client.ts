@@ -5,12 +5,21 @@ import { z } from 'zod';
 export class ApiRequestError extends Error {
   readonly status: number;
   readonly code: string;
+  /** What the server refused, field by field, when it says. */
+  readonly details: readonly { path: string; message: string }[];
 
-  constructor(status: number, code: string, message: string, options?: ErrorOptions) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    options?: ErrorOptions,
+    details: readonly { path: string; message: string }[] = [],
+  ) {
     super(message, options);
     this.name = 'ApiRequestError';
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -72,7 +81,8 @@ function toApiRequestError(status: number, payload: unknown): ApiRequestError {
   }
   const toppo = apiErrorSchema.safeParse(payload);
   if (toppo.success) {
-    return new ApiRequestError(status, toppo.data.error.code, toppo.data.error.message);
+    const { code, message, details } = toppo.data.error;
+    return new ApiRequestError(status, code, message, undefined, details);
   }
   const betterAuth = betterAuthErrorSchema.safeParse(payload);
   if (betterAuth.success) {

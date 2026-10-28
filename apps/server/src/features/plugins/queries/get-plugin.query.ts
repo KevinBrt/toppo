@@ -10,6 +10,7 @@ import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { translated } from '../../../platform/plugins/plugin-words.ts';
 import { lastFailureOf } from '../models/plugin-failure.model.ts';
 import { identityOf, PLUGIN_IDENTITY, pluginNotFound } from '../utils/plugin-rows.util.ts';
+import { savedValuesOf, settingFieldsOf } from '../utils/plugin-settings.util.ts';
 
 const { pluginProjects, plugins, projects, users } = schema;
 
@@ -18,7 +19,7 @@ const approverName = sql<
   string | null
 >`case when ${users.deletedAt} is null then ${users.name} end`;
 
-/** A plugin, with what its code declares and where it was approved to act. */
+/** A plugin, with what its code declares, where it was approved to act, and its settings. */
 export const getPlugin = defineQuery({
   name: 'plugin.get',
   access: { permission: 'instance.plugins.manage' },
@@ -33,6 +34,8 @@ export const getPlugin = defineQuery({
         manifest: plugins.manifest,
         packageSha256: plugins.packageSha256,
         allProjects: plugins.allProjects,
+        settings: plugins.settings,
+        settingsRefused: plugins.settingsRefused,
         approvedAt: plugins.approvedAt,
         approvedById: users.id,
         approvedByName: approverName,
@@ -85,6 +88,11 @@ export const getPlugin = defineQuery({
             },
       failures: plugin.failures,
       lastFailure: lastFailureOf(plugin.lastError),
+      settings: {
+        fields: settingFieldsOf(manifest),
+        values: savedValuesOf(manifest, plugin.settings),
+        refused: plugin.settingsRefused,
+      },
       createdAt: plugin.createdAt.toISOString(),
       updatedAt: plugin.updatedAt.toISOString(),
     };

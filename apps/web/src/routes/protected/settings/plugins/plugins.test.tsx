@@ -366,6 +366,215 @@ describe('a plugin’s page', () => {
   });
 });
 
+/** A plugin with a setting of each kind, a reminder saved. */
+const SET_UP: FakePlugin = {
+  ...TIME_TRACKING,
+  settings: {
+    fields: [
+      {
+        name: 'reminderDays',
+        kind: 'number',
+        label: { en: 'Reminder, in days', fr: 'Rappel, en jours' },
+        help: {
+          en: 'Days without time logged before one.',
+          fr: 'Jours sans temps saisi avant un rappel.',
+        },
+        integer: true,
+        min: 1,
+        max: 1000,
+        default: null,
+      },
+      {
+        name: 'rate',
+        kind: 'number',
+        label: { en: 'Hourly rate', fr: 'Taux horaire' },
+        help: null,
+        integer: false,
+        min: null,
+        max: null,
+        default: 1.5,
+      },
+      {
+        name: 'team',
+        kind: 'text',
+        label: { en: 'Team', fr: 'Équipe' },
+        help: null,
+        format: 'text',
+        maxLength: 80,
+        default: 'Support',
+      },
+      {
+        name: 'webhookUrl',
+        kind: 'text',
+        label: { en: 'Webhook', fr: 'Webhook' },
+        help: null,
+        format: 'url',
+        maxLength: null,
+        default: null,
+      },
+      {
+        name: 'replyTo',
+        kind: 'text',
+        label: { en: 'Reply to', fr: 'Répondre à' },
+        help: null,
+        format: 'email',
+        maxLength: null,
+        default: null,
+      },
+      {
+        name: 'billable',
+        kind: 'boolean',
+        label: { en: 'Billable', fr: 'Facturable' },
+        help: null,
+        default: true,
+      },
+      {
+        name: 'period',
+        kind: 'choice',
+        label: { en: 'Period', fr: 'Période' },
+        help: null,
+        options: [
+          { value: 'week', label: { en: 'A week', fr: 'Une semaine' } },
+          { value: 'month', label: { en: 'A month', fr: 'Un mois' } },
+        ],
+        default: 'week',
+      },
+    ],
+    values: { reminderDays: 8 },
+    refused: false,
+  },
+};
+
+describe('a plugin’s settings', () => {
+  it('are drawn as their kinds ask, those saved filled in, and saved as typed', async () => {
+    const { server, screen } = await openPlugin(SET_UP);
+    const settings = screen.getByRole('region', { name: 'Settings' });
+    const maximum = settings.getByRole('textbox', { name: 'Reminder, in days' });
+    const team = settings.getByRole('textbox', { name: 'Team' });
+    const period = settings.getByRole('combobox', { name: 'Period' });
+
+    await expect.element(maximum).toHaveValue('8');
+    await expect
+      .element(maximum)
+      .toHaveAccessibleDescription('Days without time logged before one.');
+    await expect.element(team).toHaveValue('');
+    await expect.element(team).toHaveAccessibleDescription('Left empty: Support.');
+    await expect.element(settings.getByRole('switch', { name: 'Billable' })).toBeChecked();
+    await expect.element(period).toHaveValue('');
+    await expect
+      .element(period.getByRole('option', { name: 'Default (A week)' }))
+      .toBeInTheDocument();
+
+    await maximum.fill('12');
+    await team.fill('Billing');
+    await settings.getByRole('switch', { name: 'Billable' }).click();
+    await period.selectOptions('A month');
+    await settings.getByRole('button', { name: 'Save the settings' }).click();
+
+    await expect.element(settings.getByText('Settings saved.')).toBeVisible();
+    expect(server.requests).toContainEqual({
+      method: 'PUT',
+      path: '/api/v1/plugins/time-tracking/settings',
+      body: { values: { reminderDays: 12, team: 'Billing', billable: false, period: 'month' } },
+    });
+  });
+
+  it('check what they can before they are sent, then say what the plugin refused', async () => {
+    const { server, screen } = await openPlugin(SET_UP, { refusedSettings: ['webhookUrl'] });
+    const settings = screen.getByRole('region', { name: 'Settings' });
+    const save = settings.getByRole('button', { name: 'Save the settings' });
+
+    await settings.getByRole('textbox', { name: 'Reminder, in days' }).fill('2.5');
+    await settings.getByRole('textbox', { name: 'Hourly rate' }).fill('a lot');
+    await settings.getByRole('textbox', { name: 'Webhook' }).fill('hooks.example.com');
+    await settings.getByRole('textbox', { name: 'Reply to' }).fill('billing');
+    await save.click();
+
+    await expect.element(settings.getByText('Enter a whole number.')).toBeVisible();
+    await expect.element(settings.getByText('Enter a number.')).toBeVisible();
+    await expect
+      .element(settings.getByText('Enter a web address, such as https://example.com.'))
+      .toBeVisible();
+    await expect.element(settings.getByText('Enter a valid email address.')).toBeVisible();
+    await settings.getByRole('textbox', { name: 'Reminder, in days' }).fill('1001');
+    await save.click();
+    await expect.element(settings.getByText('Enter at most 1000.')).toBeVisible();
+    expect(server.requests.filter(({ method }) => method === 'PUT')).toStrictEqual([]);
+
+    await settings.getByRole('textbox', { name: 'Reminder, in days' }).fill('0');
+    await save.click();
+    await expect.element(settings.getByText('Enter at least 1.')).toBeVisible();
+    await settings.getByRole('textbox', { name: 'Reminder, in days' }).fill('12');
+    await settings.getByRole('textbox', { name: 'Hourly rate' }).clear();
+    await settings.getByRole('textbox', { name: 'Webhook' }).fill('https://hooks.example.com');
+    await settings.getByRole('textbox', { name: 'Reply to' }).fill('billing@example.com');
+    await save.click();
+
+    await expect
+      .element(settings.getByRole('alert'))
+      .toHaveTextContent('The plugin refuses some of these settings.');
+    await expect
+      .element(settings.getByRole('textbox', { name: 'Webhook' }))
+      .toHaveAccessibleDescription('The plugin refuses this value.');
+  });
+
+  it('say an upgrade refuses them, and let it be approved once they are corrected', async () => {
+    const { screen } = await openPlugin({
+      ...SET_UP,
+      settings: { ...SET_UP.settings, refused: true },
+    });
+    const settings = screen.getByRole('region', { name: 'Settings' });
+    const where = screen.getByRole('region', { name: 'Where it acts' });
+
+    await expect
+      .element(settings.getByRole('alert'))
+      .toHaveTextContent(
+        'This version of the plugin refuses its settings: correct them, then approve it again.',
+      );
+    await where.getByRole('radio', { name: 'All projects, present and future' }).click();
+    await where.getByRole('button', { name: 'Approve and enable' }).click();
+    await expect
+      .element(where.getByRole('alert'))
+      .toHaveTextContent('This version refuses the plugin’s settings: correct them first, above.');
+
+    await settings.getByRole('textbox', { name: 'Reminder, in days' }).fill('100');
+    await settings.getByRole('button', { name: 'Save the settings' }).click();
+    await expect.element(settings.getByRole('alert')).not.toBeInTheDocument();
+    await where.getByRole('button', { name: 'Approve and enable' }).click();
+
+    await expect.element(where.getByText('Plugin approved and enabled.')).toBeVisible();
+  });
+
+  it('speak French, a decimal written as French writes it', async () => {
+    const server = fakeServer({ user: { ...ADA, locale: 'fr' }, plugins: [SET_UP] });
+    const { screen } = await renderApp({
+      path: '/settings/plugins/time-tracking',
+      locale: 'fr',
+    });
+    const settings = screen.getByRole('region', { name: 'Paramètres' });
+    const rate = settings.getByRole('textbox', { name: 'Taux horaire' });
+
+    await expect.element(rate).toHaveAccessibleDescription('Laissé vide : 1,5.');
+    await rate.fill('2,5');
+    await settings.getByRole('button', { name: 'Enregistrer les paramètres' }).click();
+
+    await expect.element(settings.getByText('Paramètres enregistrés.')).toBeVisible();
+    expect(server.requests).toContainEqual(
+      expect.objectContaining({
+        method: 'PUT',
+        body: { values: expect.objectContaining({ rate: 2.5 }) },
+      }),
+    );
+  });
+
+  it('are not drawn for a plugin that has none', async () => {
+    const { screen } = await openPlugin(TIME_TRACKING);
+
+    await expect.element(screen.getByRole('region', { name: 'Where it acts' })).toBeVisible();
+    await expect.element(screen.getByRole('region', { name: 'Settings' })).not.toBeInTheDocument();
+  });
+});
+
 describe('the plugins screens', () => {
   it('speak French on a phone, without scrolling sideways', async () => {
     await page.viewport(375, 812);

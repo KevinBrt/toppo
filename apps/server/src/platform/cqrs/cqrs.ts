@@ -20,7 +20,7 @@ import { HttpError } from '../http/http-error.ts';
 import { RequestValidationError } from '../http/zod.ts';
 import type { Mailer } from '../mail/mailer.ts';
 import type { HostCalls } from '../plugins/host-calls.ts';
-import type { ManifestReader } from '../plugins/packages/manifest-reader.ts';
+import type { ManifestReader, SettingsChecker } from '../plugins/packages/manifest-reader.ts';
 import type { PackageStore } from '../plugins/packages/package-store.ts';
 import type { PluginRuntime } from '../plugins/runtime/plugin-runtime.ts';
 import type { ReleaseFeed } from '../updates/release-feed.ts';
@@ -51,6 +51,8 @@ export interface Services {
     packages: Pick<PackageStore, 'keep'>;
     /** Asks a server bundle, in a sandbox of its own, what it declares. */
     readManifest: ManifestReader;
+    /** Asks a server bundle, in a sandbox of its own, whether it takes settings saved before. */
+    checkSettings: SettingsChecker;
     /** The sandboxes of this server process, one per plugin that ran lately. */
     runtime: Pick<PluginRuntime, 'run'>;
     /** What a plugin may ask Toppo, answered by the features that own each thing. */

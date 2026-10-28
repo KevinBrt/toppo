@@ -31,6 +31,7 @@ const snapshot = {
 const en = {
   plugin: { name: 'Time tracking', description: 'Time spent on each issue.' },
   permissions: { log: 'Log time' },
+  settings: { maxMinutesPerDay: { label: 'Minutes a day, at most' } },
   errors: { dailyLimit: 'At most {limit} minutes a day.' },
   comment: { closedAfter: 'Closed after {minutes} minutes.' },
 } as const;
@@ -51,6 +52,7 @@ function timeTracking() {
       fr: {
         plugin: { name: 'Suivi du temps', description: 'Le temps passé sur chaque ticket.' },
         permissions: { log: 'Saisir du temps' },
+        settings: { maxMinutesPerDay: { label: 'Minutes par jour, au plus' } },
         errors: { dailyLimit: '{limit} minutes par jour au plus.' },
         comment: { closedAfter: 'Fermé après {minutes} minutes.' },
       },
@@ -150,6 +152,23 @@ describe('a plugin served to Toppo', () => {
       ],
       events: ['issue.statusChanged'],
     });
+  });
+
+  it('checks settings an administrator typed, by its own schema, whatever is saved', async () => {
+    const { host, call } = fakeHost();
+    const served = servePlugin(timeTracking(), host);
+    // What is saved no longer fits: the check is of what was typed.
+    const saved = context({ user: null, settings: { maxMinutesPerDay: 'many' } });
+    const check = async (typed: unknown) =>
+      JSON.parse(await served.run('settings', 'settings', JSON.stringify(typed), saved));
+
+    expect(await check({ maxMinutesPerDay: 480 })).toStrictEqual({ ok: true, result: null });
+    expect(await check({})).toStrictEqual({ ok: true, result: null });
+    expect(await check({ maxMinutesPerDay: 0 })).toMatchObject({
+      ok: false,
+      error: { code: 'VALIDATION_FAILED', issues: [{ path: 'maxMinutesPerDay' }] },
+    });
+    expect(call).not.toHaveBeenCalled();
   });
 
   it('runs an action for its user, with its settings defaulted and its calls to Toppo', async () => {

@@ -9,8 +9,11 @@ export const PLUGIN_GLOBAL = '__toppo';
 /** The global Toppo defines in the sandbox: the plugin's one way out. */
 export const HOST_GLOBAL = '__host';
 
-/** What Toppo asks a plugin to run. */
-export type RunKind = 'action' | 'event';
+/**
+ * What Toppo asks a plugin to run: an action, an event, or a check of the settings an
+ * administrator typed, before Toppo saves them.
+ */
+export type RunKind = 'action' | 'event' | 'settings';
 
 /** `__toppo`: what the plugin answers Toppo. */
 export interface PluginGlobal {

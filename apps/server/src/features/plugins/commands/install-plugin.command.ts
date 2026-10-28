@@ -1,10 +1,11 @@
 import { asksForMore } from '@toppo-tracker/core';
 import { schema } from '@toppo-tracker/db';
-import { type Manifest, manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
+import { type Manifest, manifestSchema, runAnswerSchema } from '@toppo-tracker/plugin-sdk/protocol';
 import { PLUGINS_MAX } from '@toppo-tracker/shared';
 import { count, eq, sql } from 'drizzle-orm';
+import type { FastifyBaseLogger } from 'fastify';
 import { z } from 'zod';
-import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
+import { defineCommand, type Services, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import {
   openPluginPackage,
@@ -21,9 +22,9 @@ export const PLUGIN_INSTALL_LOCK_KEY = 7_461_756_327;
 /**
  * Installs a plugin from its zip, or upgrades the one of the same id. Nothing of it runs but what
  * it declares, read in a sandbox of its own: a new plugin waits for an administrator's approval.
- * An upgrade takes the place of the approved version, unless it asks for more: then it waits for
- * a new approval, and runs no more meanwhile. The permissions it no longer declares leave every
- * role.
+ * An upgrade takes the place of the approved version, unless it asks for more or refuses the
+ * settings saved: then it waits for a new approval (and the settings corrected), and runs no more
+ * meanwhile. The permissions it no longer declares leave every role.
  */
 export const installPlugin = defineCommand({
   name: 'plugin.install',
@@ -46,6 +47,7 @@ export const installPlugin = defineCommand({
         version: plugins.version,
         manifest: plugins.manifest,
         approvedAt: plugins.approvedAt,
+        settings: plugins.settings,
       })
       .from(plugins)
       .where(eq(plugins.slug, manifest.id))
@@ -67,13 +69,17 @@ export const installPlugin = defineCommand({
       return { slug: manifest.id };
     }
     const approved = manifestSchema.safeParse(installed.manifest);
-    // An approval covers what was approved: an approved plugin that asks for more is asked again.
+    const settingsRefused = !(await takesSettings(services, opened.code, installed.settings, log));
+    // An approval covers what was approved: an approved plugin that asks for more is asked again,
+    // and one that refuses its settings once they are corrected.
     const waitsForApproval =
-      installed.approvedAt !== null && (!approved.success || asksForMore(approved.data, manifest));
+      installed.approvedAt !== null &&
+      (!approved.success || asksForMore(approved.data, manifest) || settingsRefused);
     await tx
       .update(plugins)
       .set({
         ...rowOf(manifest, opened, logo),
+        settingsRefused,
         ...(waitsForApproval ? { state: 'pending', approvedAt: null, approvedById: null } : {}),
       })
       .where(eq(plugins.id, installed.id));
@@ -82,10 +88,31 @@ export const installPlugin = defineCommand({
       manifest.id,
       Object.keys(manifest.permissions).map((name) => `${manifest.id}.${name}`),
     );
-    log.info({ ...plugin, from: installed.version, waitsForApproval }, 'Plugin upgraded');
+    log.info(
+      { ...plugin, from: installed.version, waitsForApproval, settingsRefused },
+      'Plugin upgraded',
+    );
     return { slug: manifest.id };
   },
 });
+
+/**
+ * Whether the code of an upgrade takes the settings saved for the version it replaces. Settings
+ * left empty need no check: each one has a default, or may be left out.
+ */
+async function takesSettings(
+  services: Services,
+  code: string,
+  settings: Record<string, unknown>,
+  log: FastifyBaseLogger,
+): Promise<boolean> {
+  if (Object.keys(settings).length === 0) {
+    return true;
+  }
+  const outcome = await services.plugins.checkSettings(code, settings, log);
+  const answer = runAnswerSchema.safeParse(outcome.ok ? outcome.value : null);
+  return answer.success && answer.data.ok;
+}
 
 async function assertRoomForOneMore(tx: Transaction): Promise<void> {
   const [installed] = await tx.select({ count: count() }).from(plugins);
