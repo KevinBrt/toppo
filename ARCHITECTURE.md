@@ -10,7 +10,7 @@ Read these before any decision.
 
 1. **One edition, everything included.** No user or guest limit, no paid SSO, no feature reserved for a closed version.
 2. **One-command install.** `docker compose up` starts Toppo and its PostgreSQL.
-3. **Plugin-first.** The core stays small; integrations (GitHub, Slack, webhooks…) are plugins, official ones included. The plugin system lands right after v1.0.
+3. **A complete core, extended by plugins.** The core covers what most teams need, complete from install: nobody assembles thirty plugins to get a full tracker, so the kanban board, webhooks and GitHub are built in. Plugins answer what is specific to a team or a tool. The plugin system lands right after v1.0.
 4. **Fast and beautiful.** Fluid UI, keyboard shortcuts, command palette, responsive down to phones.
 5. **Maintainable by one person.** Few dependencies, strict conventions, tests at every step.
 6. **Secure by default.** Strict CSP, least privilege everywhere, every input validated, every route authorized.
@@ -33,7 +33,7 @@ v1.0 lets a team replace Mantis day to day, nothing more.
 - Custom roles composed from permissions; Administrator, Team and Requester are editable defaults, named in the administrator's language at setup. Requesters (customers, other departments) submit and follow their own issues in the same interface, seeing only those; the team sees every issue.
 - Automated tests at every level, blocking in CI.
 
-**Out of scope (later, often as plugins)**
+**Out of scope (later)**
 
 - Kanban board, sprints, estimates, time tracking, Gantt, wiki.
 - Plugin system and webhooks, then OIDC, SAML, LDAP: right after 1.0, free.
@@ -80,7 +80,7 @@ toppo/
 │   ├── ui/            # design tokens and accessible components
 │   ├── testing/       # test database setup, data factories
 │   └── plugin-sdk/    # public plugin API, after v1.0 (npm: @toppo/plugin-sdk, MIT)
-├── plugins/           # official plugins (webhooks, github), after v1.0
+├── plugins/           # the reference plugin, after v1.0
 ├── e2e/               # Playwright tests, run against a build or the Docker image
 ├── scripts/           # repository guards run in CI (conventions, dependencies)
 ├── docker/            # Dockerfile, docker-compose.yml for users, compose.dev.yml
@@ -218,7 +218,7 @@ Organisation permissions apply to the whole instance, the others inside projects
 
 ## Plugin system (after v1.0)
 
-Plugins arrive right after v1.0, but the core prepares for them now: every change goes through `activities` and the job queue, and no integration is hard-coded. The contract below is the target.
+Plugins arrive right after v1.0, but the core prepares for them now: every change goes through `activities` and the job queue, and the core's integrations build on blocks plugins will share. The contract below is the target; [docs/plugins/design.md](docs/plugins/design.md) proposes its detailed design.
 
 A plugin is an npm package (or a folder in `plugins/`) exporting `definePlugin()` and declaring what it may do. It is Toppo's public contract: designed by hand, never generated.
 
@@ -229,7 +229,7 @@ The core writes the issue and its activity in one transaction; the job queue the
 **v1 extension points**
 
 1. **Event hooks**: `issue.created`, `issue.updated`, `issue.status_changed`, `issue.assigned`, `comment.created`. Fed by `activities`, asynchronous through the job queue: a slow plugin never blocks the UI.
-2. **HTTP routes** mounted under `/api/plugins/<id>/…`, for inbound webhooks (GitHub, Sentry…).
+2. **HTTP routes** mounted under `/api/plugins/<id>/…`, for inbound webhooks (GitLab, Sentry…).
 3. **Limited Toppo API**: read and update issues and comments, within the declared permissions.
 4. **Settings**: form generated from the Zod schema in the admin screen.
 5. **Declarative UI contributions**: actions in an issue menu, links and small sidebar panels, described as JSON. No arbitrary front-end code in v1, for security and stability.
@@ -254,7 +254,7 @@ export default definePlugin({
 - `apiVersion` is semver: Toppo refuses to load an incompatible plugin, with a clear message.
 - Nothing breaks in a minor version; any break = new major API version and a deprecation period.
 - In v1, plugins run in the server process and are installed by an admin (trusted). Isolation (worker threads) comes if the ecosystem grows.
-- Webhooks and the GitHub integration are written as plugins from day one: the best test of the SDK.
+- The core's own features do not go through the SDK: a reference plugin, kept in this repository and tested in CI, uses every part of it.
 
 ## Self-hosted installation
 
@@ -331,7 +331,7 @@ Six steps, in order; each ends with a working demo and green tests.
 - [x] **5. Daily work**: search that forgives typos, following an issue, actions on several issues, duplicates.
 - [ ] **6. Release 1.0**: migration tests, installation docs, screenshots, security review, announcement on r/selfhosted.
 
-Right after 1.0: plugin system (SDK v1, loader, official webhooks and GitHub plugins), then free OIDC/SAML/LDAP, imports from Mantis, Redmine and Jira, inbound email.
+Right after 1.0: plugin system (SDK v1, loader, a reference plugin), webhooks and the GitHub integration in the core, then free OIDC/SAML/LDAP, imports from Mantis, Redmine and Jira, inbound email, the kanban board.
 
 The detailed task list of each step, the open questions and the watch list live in [ROADMAP.md](ROADMAP.md).
 
@@ -422,6 +422,7 @@ The detailed task list of each step, the open questions and the watch list live 
 | 2026-10-27 | **Security review, the rest of what one reaches and how one is counted**: the list of projects shows their members to those who manage them only (`scope=managed`, like the counts of issues; `null` elsewhere), so that who works on a project stays private from those who see their own issues. `TOPPO_TRUST_PROXY=true` trusts the one proxy that connects to Toppo, never more: the client is the last address of `X-Forwarded-For`, the one that proxy added, since a proxy that appends (nginx's `$proxy_add_x_forwarded_for`) keeps whatever the client wrote before. `check:dependencies` binds each lockfile entry to the tarball of the package and version it names, and refuses aliases: a PR could otherwise swap a dependency's code under an unchanged name. The documented install and backups make `.env`, the install folder and the backups readable by their owner only (`chmod 600`, `mkdir -m 700`, `umask 077`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | 2026-10-27 | **Security review, what one member can do to everyone's instance** (migration 0046): jobs get a priority, so that a password reset or an invitation never waits behind a flood of notifications. Any email leaves within 45 seconds or fails, whatever a slow mail server does, and one test email runs at a time (409 `MAIL_TEST_RUNNING`), since it holds a connection to the database. The words typos are corrected to are 4 to 32 characters, 300 at most per issue (its title's first, then its most used), and rebuilt each night by one job per project, each in a transaction of its own (`search.rebuildProjectWords`). The free-space reserve counts the files still arriving, and a file refused is removed at once, even when its client has left.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | 2026-10-27 | **Markdown has no footnotes, and is parsed again only when it changes** (security review): looking for a footnote, the parser reads back over the whole paragraph at every `]`, so a description of 50,000 of them froze the tab of whoever opened the issue for seconds to tens of seconds. `[^1]` now stays as written; `MarkdownText` is memoized.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| 2026-10-28 | **Kanban, webhooks and GitHub belong to the core, not to plugins**, replacing "plugin-first": most teams use them, and a complete tracker must not take thirty plugins to assemble. Plugins answer what is specific to a team or a tool. The blocks these integrations build on (the outbound HTTP guard, signed webhooks, routes that check a signature) are shared with plugins, so that GitLab or Bitbucket can be plugins written with the same tools. With no official plugin left to prove the SDK, a reference plugin kept in the repository and tested in CI does.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Open questions
 

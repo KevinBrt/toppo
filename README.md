@@ -54,7 +54,7 @@ Open <http://localhost:3000>, enter the setup code from the logs and create the 
 
 ## What comes next
 
-After 1.0: a plugin system with an MIT-licensed SDK, and official plugins for webhooks and GitHub; single sign-on (OIDC, SAML, LDAP) at no cost; imports from Mantis, Redmine and Jira. Details in the [roadmap](ROADMAP.md).
+After 1.0: a kanban board, webhooks and a GitHub integration, built in; a plugin system with an MIT-licensed SDK for everything else; single sign-on (OIDC, SAML, LDAP) at no cost; imports from Mantis, Redmine and Jira. Details in the [roadmap](ROADMAP.md).
 
 ## Develop
 

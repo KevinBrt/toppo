@@ -21,11 +21,11 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
 
 ## After 1.0
 
-- [ ] Plugin system: `@toppo/plugin-sdk` (MIT), manifest and `apiVersion`, loader, hooks fed by `activities` through the job queue, plugin HTTP routes, settings forms generated from Zod, declarative UI contributions. A security review of its own before it ships: third-party code will run inside Toppo.
-- [ ] Official plugins: webhooks, then GitHub.
+- [ ] Plugin system, as designed in [docs/plugins/design.md](docs/plugins/design.md): `@toppo/plugin-sdk` and `@toppo/plugin-ui` (MIT), server code in a WebAssembly sandbox, entities, screens in sandboxed frames, a reference plugin kept in this repository. A security review of its own before it ships: third-party code will run inside Toppo.
+- [ ] Webhooks, then the GitHub integration, in the core, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature.
 - [ ] OIDC, SAML and LDAP, free (Better Auth plugins, added to the endpoint allowlist).
 - [ ] Imports from Mantis, Redmine and Jira (CSV first); inbound email.
-- [ ] Kanban board, as a plugin or in core (to decide).
+- [ ] Kanban board, in the core.
 
 ## Open questions
 
