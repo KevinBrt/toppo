@@ -45,7 +45,7 @@ Enforced by `check:dependencies` (allowed graph in `scripts/src/dependencies/rul
 - **Every issue change writes an `activities` row in the same transaction**, through `recordActivity(tx, …)` (checked), which also queues the job that tells people. History, notifications, webhooks and plugins all read from it. Side effects (email, webhooks) go through the PostgreSQL job queue, never inline in a request.
 - **No new service to host.** PostgreSQL is the only infrastructure (search, jobs, sessions). No Redis, no Elasticsearch, no external queue without an `ARCHITECTURE.md` decision.
 - **Configuration follows "global default, project override"** for workflows (a project copies the instance’s) and properties (a project adds, hides or adapts them one by one). Reuse these mechanisms; do not invent a per-feature variant. Categories, priorities and labels are single instance-wide lists, never overridden by a project.
-- **No integration hard-coded in core.** GitHub, Slack, webhooks… are plugins.
+- **A complete core, extended by plugins.** What most teams need is in the core (the kanban board, webhooks, GitHub); what is specific to a team or a tool is a plugin. A core integration builds on blocks plugins share (the outbound HTTP guard, signed webhooks, routes that check a signature), never on a shortcut only the core may take.
 
 ## Security rules (non-negotiable)
 
