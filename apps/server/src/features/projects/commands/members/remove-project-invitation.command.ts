@@ -36,7 +36,7 @@ export const removeProjectInvitation = defineCommand({
     if (!invited) {
       throw new HttpError(404, 'INVITATION_NOT_FOUND', 'No pending invitation gives this project');
     }
-    if (!canActOnProjectMember(project.permissions, invited.role)) {
+    if (!canActOnProjectMember(project.permissions, invited.role, actor.pluginPermissions)) {
       throw new HttpError(
         403,
         'ROLE_BEYOND_YOURS',

@@ -11,6 +11,7 @@ import {
   type PluginPackage,
 } from '../../../platform/plugins/packages/open-package.ts';
 import { declaredManifest } from '../utils/declared-manifest.util.ts';
+import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
 
 const { plugins } = schema;
 
@@ -21,7 +22,8 @@ export const PLUGIN_INSTALL_LOCK_KEY = 7_461_756_327;
  * Installs a plugin from its zip, or upgrades the one of the same id. Nothing of it runs but what
  * it declares, read in a sandbox of its own: a new plugin waits for an administrator's approval.
  * An upgrade takes the place of the approved version, unless it asks for more: then it waits for
- * a new approval, and runs no more meanwhile.
+ * a new approval, and runs no more meanwhile. The permissions it no longer declares leave every
+ * role.
  */
 export const installPlugin = defineCommand({
   name: 'plugin.install',
@@ -74,6 +76,11 @@ export const installPlugin = defineCommand({
         ...(waitsForApproval ? { state: 'pending', approvedAt: null, approvedById: null } : {}),
       })
       .where(eq(plugins.id, installed.id));
+    await forgetPluginPermissions(
+      tx,
+      manifest.id,
+      Object.keys(manifest.permissions).map((name) => `${manifest.id}.${name}`),
+    );
     log.info({ ...plugin, from: installed.version, waitsForApproval }, 'Plugin upgraded');
     return { slug: manifest.id };
   },

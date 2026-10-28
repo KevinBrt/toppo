@@ -282,6 +282,8 @@ export {
 } from './members/project-access.ts';
 export {
   createRoleResponseSchema,
+  type PluginPermissionSection,
+  pluginPermissionSectionSchema,
   ROLE_COLORS,
   ROLE_NAME_MAX_LENGTH,
   ROLES_MAX,

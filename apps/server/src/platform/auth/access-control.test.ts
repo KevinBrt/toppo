@@ -32,7 +32,7 @@ const TEAM_EMAIL = 'grace@example.com';
 
 const storedPermissionsOf = (roleId: string) =>
   DEFAULT_ROLES.find((role) => role.id === roleId)?.permissions ?? [];
-const ALL_INSTANCE_PERMISSIONS = instancePermissionsOf({ grantsAll: true, permissions: [] });
+const ALL_INSTANCE_PERMISSIONS = instancePermissionsOf({ grantsAll: true, permissions: [] }, []);
 
 async function signIn(email: string): Promise<string> {
   const response = await app.inject({

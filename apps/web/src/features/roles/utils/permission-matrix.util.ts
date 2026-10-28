@@ -1,5 +1,6 @@
 import {
   ALL_PERMISSIONS,
+  isPermission,
   PERMISSION_SECTIONS,
   PERMISSIONS,
   type Permission,
@@ -44,7 +45,10 @@ export interface RoleSettings {
 }
 
 export function settingsOfRole(role: RoleDetails): RoleSettings {
-  return { permissions: permissionsOfRole(role), notifyNewIssues: role.notifyNewIssues };
+  return {
+    permissions: permissionsOfRole(role, []).filter(isPermission),
+    notifyNewIssues: role.notifyNewIssues,
+  };
 }
 
 const VISIBILITY: Readonly<Record<IssueVisibility, readonly Permission[]>> = {

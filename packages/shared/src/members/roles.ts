@@ -45,9 +45,29 @@ export const roleDetailsSchema = roleBadgeSchema.extend({
 
 export type RoleDetails = z.infer<typeof roleDetailsSchema>;
 
-/** Body of `GET /api/v1/roles`: every role, in creation order. */
+/** A plugin installed, with the permissions it adds: a section of the matrix after Toppo's. */
+export const pluginPermissionSectionSchema = z.object({
+  slug: z.string(),
+  /** "Time tracking". */
+  name: z.string(),
+  permissions: z.array(
+    z.object({
+      /** As the catalog names it: `time-tracking.entries.log`. */
+      name: z.string(),
+      scope: z.enum(['instance', 'project']),
+      /** In the plugin's own words. */
+      label: z.object({ en: z.string(), fr: z.string() }),
+    }),
+  ),
+});
+
+export type PluginPermissionSection = z.infer<typeof pluginPermissionSectionSchema>;
+
+/** Body of `GET /api/v1/roles`: every role, in creation order, and the plugins' permissions. */
 export const rolesResponseSchema = z.object({
   roles: z.array(roleDetailsSchema),
+  /** By plugin id. */
+  plugins: z.array(pluginPermissionSectionSchema),
 });
 
 export type RolesResponse = z.infer<typeof rolesResponseSchema>;
@@ -64,7 +84,11 @@ export const createRoleResponseSchema = z.object({
   id: z.uuid(),
 });
 
-const permissionListSchema = z.array(z.string().max(100)).max(100);
+/**
+ * What a role may hold: Toppo's permissions, and up to 30 for each of up to 50 plugins, named
+ * after it (40 characters, a dot, then up to 60).
+ */
+const permissionListSchema = z.array(z.string().max(101)).max(1600);
 
 /** Body of `PUT /api/v1/roles/permissions`: the roles the matrix changed, saved together. */
 export const rolePermissionsRequestSchema = z.object({

@@ -28,6 +28,7 @@ async function invitationToken(
         name: 'Admin',
         email: 'admin@example.com',
         permissions: ['instance.users.manage', 'instance.roles.manage'],
+        pluginPermissions: [],
       },
     },
     { emails: [email], roleId: DEFAULT_ROLE_IDS.team, ...projectAccess },

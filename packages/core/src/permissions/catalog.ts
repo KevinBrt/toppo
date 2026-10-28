@@ -47,6 +47,15 @@ export const PERMISSIONS = {
 
 export type Permission = keyof typeof PERMISSIONS;
 
+/**
+ * A permission a plugin adds to the catalog while it is approved, prefixed with the plugin's id:
+ * `time-tracking.entries.log`. Roles store it as text, like Toppo's own.
+ */
+export interface PluginPermission {
+  name: string;
+  scope: PermissionScope;
+}
+
 /** A permission that applies in the whole instance, granted by the member's role. */
 export type InstancePermission = {
   [P in Permission]: (typeof PERMISSIONS)[P]['scope'] extends 'instance' ? P : never;

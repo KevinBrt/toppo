@@ -23,6 +23,7 @@ const ADA: Actor = {
   name: 'Ada',
   email: 'ada@example.com',
   permissions: ['project.create'],
+  pluginPermissions: [],
 };
 
 function executionContext(actor: Actor | null = null): ExecutionContext {
@@ -157,7 +158,13 @@ describe('operations about a project', () => {
         instanceRoleId: roleId,
         allProjects,
       });
-    return { id, name: 'Grace', email: `${id}@example.com`, permissions: [] };
+    return {
+      id,
+      name: 'Grace',
+      email: `${id}@example.com`,
+      permissions: [],
+      pluginPermissions: [],
+    };
   }
 
   async function insertProject(key: string, archived = false): Promise<string> {
