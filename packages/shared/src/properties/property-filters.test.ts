@@ -50,6 +50,24 @@ describe('the property filters of a list', () => {
     ]);
   });
 
+  it('split a range on its last two dots', () => {
+    expect(parsePropertyFilters(`${DUE}:1...5;${VERSION}:..-1;${DUE}:2026-11-01..`)).toStrictEqual([
+      { propertyId: DUE, from: '1.', to: '5' },
+      { propertyId: VERSION, from: null, to: '-1' },
+      { propertyId: DUE, from: '2026-11-01', to: null },
+    ]);
+  });
+
+  it('read a text full of dots in one pass, whoever wrote it', () => {
+    // Backtracking over every `..` before failing at the newline took seconds on this text.
+    const text = `${DUE}:${'..a'.repeat(50_000)}\n`;
+
+    const started = performance.now();
+    parsePropertyFilters(text);
+
+    expect(performance.now() - started).toBeLessThan(250);
+  });
+
   it('are a parameter of the list, left out when none is given', () => {
     expect(projectIssuesQuerySchema.parse({}).property).toBeUndefined();
     expect(projectIssuesQuerySchema.parse({ property: `${VERSION}:none` }).property).toStrictEqual([
