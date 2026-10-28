@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/KevinBrt/toppo/compare/v1.0.0...v1.0.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* **issues:** split a property filter's range in one pass, not with a … ([#18](https://github.com/KevinBrt/toppo/issues/18)) ([ed206be](https://github.com/KevinBrt/toppo/commit/ed206bea17d3467199b60216b84a099e3fd4abb8))
+
 ## 1.0.0 (2026-10-27)
 
 
