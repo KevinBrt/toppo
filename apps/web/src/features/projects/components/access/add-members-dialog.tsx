@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PROJECT_MEMBERS_PER_REQUEST_MAX } from '@toppo/shared';
+import { PROJECT_MEMBERS_PER_REQUEST_MAX } from '@toppo-tracker/shared';
 import {
   Alert,
   Button,
@@ -10,7 +10,7 @@ import {
   Field,
   Input,
   Select,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { UserPlusIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

@@ -1,4 +1,4 @@
-import type { IssueSort } from '@toppo/shared';
+import type { IssueSort } from '@toppo-tracker/shared';
 import type { PlainMessageKey } from '../../../shared/i18n/i18n.types.ts';
 
 /** The name of each sort: the header of the column it sorts. */

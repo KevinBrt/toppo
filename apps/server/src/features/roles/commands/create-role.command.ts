@@ -1,5 +1,5 @@
-import { schema, uuidv7 } from '@toppo/db';
-import { ROLES_MAX, roleRequestSchema } from '@toppo/shared';
+import { schema, uuidv7 } from '@toppo-tracker/db';
+import { ROLES_MAX, roleRequestSchema } from '@toppo-tracker/shared';
 import { count, sql } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

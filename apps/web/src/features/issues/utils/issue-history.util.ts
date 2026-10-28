@@ -1,4 +1,4 @@
-import type { IssueActivity, UserRef } from '@toppo/shared';
+import type { IssueActivity, UserRef } from '@toppo-tracker/shared';
 
 /** Changes one person made at once: shown as one sentence. */
 export interface HistoryEntry {

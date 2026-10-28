@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, useNavigate } from '@tanstack/react-router';
-import { can } from '@toppo/core';
-import type { ProjectAccessQuery } from '@toppo/shared';
-import { Alert } from '@toppo/ui';
+import { can } from '@toppo-tracker/core';
+import type { ProjectAccessQuery } from '@toppo-tracker/shared';
+import { Alert } from '@toppo-tracker/ui';
 import { useCallback } from 'react';
 import { z } from 'zod';
 import { AddMembersDialog } from '../../../features/projects/components/access/add-members-dialog.tsx';

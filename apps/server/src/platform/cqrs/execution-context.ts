@@ -1,4 +1,4 @@
-import type { Db } from '@toppo/db';
+import type { Db } from '@toppo-tracker/db';
 import type { FastifyInstance } from 'fastify';
 import type { ExecutionContext, Services } from './cqrs.ts';
 

@@ -1,6 +1,6 @@
-import { attachmentActionsOf } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { attachmentParamsSchema, type IssueActivityPayload } from '@toppo/shared';
+import { attachmentActionsOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { attachmentParamsSchema, type IssueActivityPayload } from '@toppo-tracker/shared';
 import { and, eq, sql } from 'drizzle-orm';
 import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';

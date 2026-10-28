@@ -5,7 +5,7 @@ import {
   schema,
   uuidv7,
   wordsRank,
-} from '@toppo/db';
+} from '@toppo-tracker/db';
 import { eq, or, type SQL, sql } from 'drizzle-orm';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 

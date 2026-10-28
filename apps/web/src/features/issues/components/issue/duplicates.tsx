@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
-import type { IssueResponse } from '@toppo/shared';
-import { Button } from '@toppo/ui';
+import type { IssueResponse } from '@toppo-tracker/shared';
+import { Button } from '@toppo-tracker/ui';
 import { ArrowRightIcon, CopyIcon } from 'lucide-react';
 import { useId } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

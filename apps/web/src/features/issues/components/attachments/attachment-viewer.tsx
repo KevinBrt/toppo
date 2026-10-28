@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { isImage } from '@toppo/core';
-import type { IssueAttachment } from '@toppo/shared';
-import { Alert, Button, buttonVariants, Dialog, DialogContent } from '@toppo/ui';
+import { isImage } from '@toppo-tracker/core';
+import type { IssueAttachment } from '@toppo-tracker/shared';
+import { Alert, Button, buttonVariants, Dialog, DialogContent } from '@toppo-tracker/ui';
 import { ChevronLeftIcon, ChevronRightIcon, DownloadIcon, ExternalLinkIcon } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

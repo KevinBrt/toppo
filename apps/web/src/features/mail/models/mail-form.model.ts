@@ -3,7 +3,7 @@ import {
   type MailSecurity,
   type MailSettings,
   type MailSettingsRequest,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 
 /** The mail settings as the form edits them: every field as typed. */
 export interface MailForm {

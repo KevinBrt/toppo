@@ -40,7 +40,7 @@ export type PropertyValue = z.output<(typeof PROPERTY_VALUE_SCHEMAS)[PropertyTyp
 
 /**
  * A value as a request gives it: its shape is checked against its property's type once the
- * property is known (`propertyValueOf` in `@toppo/core`).
+ * property is known (`propertyValueOf` in `@toppo-tracker/core`).
  */
 export const givenPropertyValueSchema = z.union([
   z.string(),

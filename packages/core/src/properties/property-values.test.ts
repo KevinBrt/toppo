@@ -1,4 +1,4 @@
-import { PROPERTY_TYPES } from '@toppo/shared';
+import { PROPERTY_TYPES } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import {
   creationValuesOf,

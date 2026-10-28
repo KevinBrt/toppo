@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { CATEGORIES_MAX, type CategoriesResponse } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { CATEGORIES_MAX, type CategoriesResponse } from '@toppo-tracker/shared';
 import { count } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

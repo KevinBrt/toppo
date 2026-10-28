@@ -1,5 +1,5 @@
-import { schema, uuidv7 } from '@toppo/db';
-import type { IssueActivityPayload, IssueActivityType } from '@toppo/shared';
+import { schema, uuidv7 } from '@toppo-tracker/db';
+import type { IssueActivityPayload, IssueActivityType } from '@toppo-tracker/shared';
 import { z } from 'zod';
 import type { Transaction } from '../cqrs/cqrs.ts';
 

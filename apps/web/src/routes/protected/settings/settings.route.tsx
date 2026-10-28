@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Outlet } from '@tanstack/react-router';
-import { canAny } from '@toppo/core';
+import { canAny } from '@toppo-tracker/core';
 import { SessionQueries } from '../../../features/session/queries/session.queries.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';
 import { AccessDenied } from '../../../shared/layout/access-denied.tsx';

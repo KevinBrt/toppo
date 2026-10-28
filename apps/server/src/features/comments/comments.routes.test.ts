@@ -1,5 +1,5 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
 import {
   addCommentResponseSchema,
   apiErrorSchema,
@@ -10,7 +10,7 @@ import {
   issueResponseSchema,
   MENTIONS_MAX,
   mentionableResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, eq, sql } from 'drizzle-orm';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';

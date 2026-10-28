@@ -1,5 +1,5 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { createTestDatabase } from '@toppo/testing';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { createTestDatabase } from '@toppo-tracker/testing';
 import { desc, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from './database.ts';

@@ -4,8 +4,8 @@ import {
   INVITATION_PROJECTS_MAX,
   INVITATIONS_PER_REQUEST_MAX,
   type RoleBadge,
-} from '@toppo/shared';
-import { Alert, Button, Field, Select, Textarea } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Alert, Button, Field, Select, Textarea } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

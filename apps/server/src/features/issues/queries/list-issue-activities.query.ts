@@ -1,5 +1,5 @@
-import { type AttachmentPlace, attachmentActionsOf, commentActionsOf } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
+import { type AttachmentPlace, attachmentActionsOf, commentActionsOf } from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
 import {
   type AttachmentAction,
   type AttachmentMediaType,
@@ -13,7 +13,7 @@ import {
   issueKeyParamsSchema,
   type LinkedIssue,
   type UserRef,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { linkedIssues } from '../utils/duplicates.util.ts';

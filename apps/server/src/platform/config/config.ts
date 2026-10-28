@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { ATTACHMENT_SIZE_CEILING } from '@toppo/shared';
+import { ATTACHMENT_SIZE_CEILING } from '@toppo-tracker/shared';
 import { z } from 'zod';
 
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;

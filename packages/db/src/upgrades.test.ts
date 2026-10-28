@@ -4,8 +4,8 @@ import {
   type IssueActivityType,
   PROPERTY_VALUE_SCHEMAS,
   type PropertyType,
-} from '@toppo/shared';
-import { readSnapshots, restoreSnapshot } from '@toppo/testing';
+} from '@toppo-tracker/shared';
+import { readSnapshots, restoreSnapshot } from '@toppo-tracker/testing';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { MIGRATIONS_FOLDER } from '../vitest.global-setup.ts';

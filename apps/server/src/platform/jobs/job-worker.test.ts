@@ -1,4 +1,4 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import { eq, sql } from 'drizzle-orm';
 import Fastify from 'fastify';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

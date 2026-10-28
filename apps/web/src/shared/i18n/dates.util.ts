@@ -1,4 +1,4 @@
-import type { Locale } from '@toppo/shared';
+import type { Locale } from '@toppo-tracker/shared';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

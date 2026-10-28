@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Link, Outlet } from '@tanstack/react-router';
-import { EmptyState } from '@toppo/ui';
+import { EmptyState } from '@toppo-tracker/ui';
 import { FolderXIcon } from 'lucide-react';
 import { ProjectIdentity } from '../../../features/projects/components/settings/project-identity.tsx';
 import { PROJECT_ADMIN_NAV } from '../../../features/projects/constants/project-admin.constants.ts';

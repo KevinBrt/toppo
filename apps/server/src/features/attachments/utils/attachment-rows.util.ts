@@ -1,6 +1,6 @@
-import type { AttachmentPlace } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
-import type { AttachmentAction, AttachmentMediaType, IssueAttachment } from '@toppo/shared';
+import type { AttachmentPlace } from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
+import type { AttachmentAction, AttachmentMediaType, IssueAttachment } from '@toppo-tracker/shared';
 import { and, eq } from 'drizzle-orm';
 import type { IssueContext } from '../../../platform/auth/project-access.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

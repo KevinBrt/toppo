@@ -1,7 +1,7 @@
 import type { UseQueryResult } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import type { IssueGrouping, IssueSort, IssueSummary, SortOrder } from '@toppo/shared';
-import { Alert, Badge, cn } from '@toppo/ui';
+import type { IssueGrouping, IssueSort, IssueSummary, SortOrder } from '@toppo-tracker/shared';
+import { Alert, Badge, cn } from '@toppo-tracker/ui';
 import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon } from 'lucide-react';
 import { type ReactNode, useSyncExternalStore } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

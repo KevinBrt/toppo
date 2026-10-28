@@ -1,4 +1,4 @@
-import type { SortableListMessages } from '@toppo/ui';
+import type { SortableListMessages } from '@toppo-tracker/ui';
 import type { Translate } from '../i18n/i18n.types.ts';
 
 /** What a sortable list says, in the reader's language. */

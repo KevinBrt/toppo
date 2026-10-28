@@ -1,4 +1,4 @@
-import { PRIORITY_LEVELS, SUPPORTED_LOCALES } from '@toppo/shared';
+import { PRIORITY_LEVELS, SUPPORTED_LOCALES } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_CATEGORIES,

@@ -14,7 +14,7 @@ const rangeEndSchema = z.string().regex(/^[0-9eE.+-]{1,25}$/);
  * A filter on a property, as a list asks for it: the values any of which an issue has (options,
  * people, `none`, `me`; `yes` or `no` for a box), or a range of numbers or days, open on one
  * side. What each type of property takes is checked once the property is known
- * (`propertyConditionOf` in `@toppo/core`).
+ * (`propertyConditionOf` in `@toppo-tracker/core`).
  */
 export const propertyFilterSchema = z.union([
   z.object({

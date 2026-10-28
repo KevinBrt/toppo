@@ -1,5 +1,5 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
-import type { MembersQuery } from '@toppo/shared';
+import type { MembersQuery } from '@toppo-tracker/shared';
 import { Invitations } from '../api/invitations.api.ts';
 import { Users } from '../api/users.api.ts';
 

@@ -1,5 +1,5 @@
-import type { InvitationLink } from '@toppo/shared';
-import { Alert, Button, Input } from '@toppo/ui';
+import type { InvitationLink } from '@toppo-tracker/shared';
+import { Alert, Button, Input } from '@toppo-tracker/ui';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { issueFollowingRequestSchema, issueKeyParamsSchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { issueFollowingRequestSchema, issueKeyParamsSchema } from '@toppo-tracker/shared';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 
 const { issueFollowers } = schema;

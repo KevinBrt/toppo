@@ -4,7 +4,7 @@ import {
   PROPERTY_OPTIONS_MAX,
   type ProjectPropertiesResponse,
   propertyAdaptationRequestSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import {
   Alert,
   Badge,
@@ -13,7 +13,7 @@ import {
   SidePanelClose,
   SidePanelContent,
   SortableList,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { type FormEvent, useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { sortableMessages } from '../../../../shared/forms/sortable-messages.util.ts';

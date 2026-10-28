@@ -1,11 +1,11 @@
-import { closingChanges, planWorkflow, type WorkflowPlan } from '@toppo/core';
-import { isUniqueViolation, schema, uuidv7 } from '@toppo/db';
+import { closingChanges, planWorkflow, type WorkflowPlan } from '@toppo-tracker/core';
+import { isUniqueViolation, schema, uuidv7 } from '@toppo-tracker/db';
 import {
   type IssueActivityPayload,
   type PaletteColor,
   type WorkflowRequest,
   workflowRequestSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';

@@ -1,6 +1,6 @@
-import { priorityLevelOf } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { PRIORITY_LEVELS, type PrioritiesResponse } from '@toppo/shared';
+import { priorityLevelOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { PRIORITY_LEVELS, type PrioritiesResponse } from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 

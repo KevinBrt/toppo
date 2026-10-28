@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Link, redirect, useRouter, useRouterState } from '@tanstack/react-router';
-import { Alert } from '@toppo/ui';
+import { Alert } from '@toppo-tracker/ui';
 import { z } from 'zod';
 import { LoginForm } from '../../features/session/components/login-form.tsx';
 import { loadSession, SessionQueries } from '../../features/session/queries/session.queries.ts';

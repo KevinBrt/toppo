@@ -402,7 +402,7 @@ The published packages live under the npm scope `@toppo-tracker` (the GitHub org
 
 - MIT, versioned by semver along `apiVersion`, published to npm with provenance by GitHub Actions once the contract is complete: data and screens included (steps 1 to 3). Until then they stay private.
 - `plugin-ui` is a facade: it bundles the components of `packages/ui` it chooses to expose, under an API kept stable. `packages/ui` stays private and free to change, as `core` stays private behind `plugin-sdk`.
-- Toppo's internal packages (`@toppo/core`, `@toppo/ui`…) are renamed `@toppo-tracker/…` when the SDK lands: one scope in the repository, and no internal name in a scope someone else owns. They stay private.
+- Toppo's internal packages (`@toppo-tracker/core`, `@toppo-tracker/ui`…) were renamed from `@toppo/…` before the SDK: one scope in the repository, and no internal name in a scope someone else owns. They stay private.
 
 **Official plugins** live in this repository, under `plugins/` (time tracking first), without privilege: they import only the published packages, by name; the same CLI builds them; an end-to-end test installs one through the interface, approval included. They ship in Toppo's image, installed but disabled: an administrator enables one from **Settings → Plugins** with the same approval as an uploaded zip. They follow Toppo's version; release-please can version one on its own when it needs to move faster.
 

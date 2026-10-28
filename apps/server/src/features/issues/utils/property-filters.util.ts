@@ -1,6 +1,6 @@
-import { type PropertyCondition, propertyConditionOf } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
-import type { PropertyFilter } from '@toppo/shared';
+import { type PropertyCondition, propertyConditionOf } from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
+import type { PropertyFilter } from '@toppo-tracker/shared';
 import { and, not, or, type SQL, sql } from 'drizzle-orm';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { propertyFields } from './issue-properties.util.ts';

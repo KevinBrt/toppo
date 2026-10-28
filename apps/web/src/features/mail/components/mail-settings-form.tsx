@@ -5,8 +5,8 @@ import {
   type MailSettings,
   type MailSettingsRequest,
   mailSettingsRequestSchema,
-} from '@toppo/shared';
-import { Alert, Button, Field, Input, PasswordInput, Select } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Alert, Button, Field, Input, PasswordInput, Select } from '@toppo-tracker/ui';
 import { SendIcon } from 'lucide-react';
 import { type FormEvent, type ReactNode, useState } from 'react';
 import { fieldErrors, requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';

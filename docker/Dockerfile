@@ -14,8 +14,8 @@ FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS prune
 WORKDIR /src
 RUN npm install --global --ignore-scripts turbo@2.11.9
 COPY . .
-RUN turbo prune @toppo/server @toppo/web --docker --out-dir /out/all \
- && turbo prune @toppo/server --docker --out-dir /out/server
+RUN turbo prune @toppo-tracker/server @toppo-tracker/web --docker --out-dir /out/all \
+ && turbo prune @toppo-tracker/server --docker --out-dir /out/server
 
 # ---------------------------------------------------------------------------------------------
 # Build JavaScript once, on the build machine's architecture: the output is platform-independent.
@@ -28,7 +28,7 @@ RUN npm ci
 COPY --from=prune /out/all/full/ ./
 # Root files that `turbo prune` does not carry over.
 COPY tsconfig.base.json ./
-RUN npx turbo run build --filter=@toppo/server --filter=@toppo/web \
+RUN npx turbo run build --filter=@toppo-tracker/server --filter=@toppo-tracker/web \
  && mkdir -p /data-skeleton
 
 # ---------------------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ COPY --from=prune /out/server/json/ ./
 # tools' binaries, and the test helpers take vitest as a peer.
 RUN npm ci --omit=dev --omit=optional --omit=peer \
  # Workspace packages are bundled into the server; their symlinks would dangle.
- && rm -rf node_modules/@toppo \
+ && rm -rf node_modules/@toppo-tracker \
  # npm may keep some server dependencies next to the server instead of hoisting them.
  && mkdir -p apps/server/node_modules
 

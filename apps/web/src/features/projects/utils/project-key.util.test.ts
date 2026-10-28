@@ -1,4 +1,4 @@
-import { PROJECT_KEY_PATTERN } from '@toppo/shared';
+import { PROJECT_KEY_PATTERN } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import { suggestProjectKey } from './project-key.util.ts';
 

@@ -1,5 +1,5 @@
 import { createRoute, redirect } from '@tanstack/react-router';
-import { EmptyState } from '@toppo/ui';
+import { EmptyState } from '@toppo-tracker/ui';
 import { SlidersHorizontalIcon } from 'lucide-react';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';
 import { SETTINGS_NAV } from '../../../shared/layout/navigation.constants.ts';

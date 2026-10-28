@@ -1,4 +1,4 @@
-import { SUPPORTED_LOCALES } from '@toppo/shared';
+import { SUPPORTED_LOCALES } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import {
   ALL_PERMISSIONS,

@@ -1,10 +1,10 @@
-import { type IssueChange, priorityLevelOf } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { type IssueChange, priorityLevelOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   type BulkIssuesResponse,
   bulkFieldsRequestSchema,
   projectIssuesParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { inArray } from 'drizzle-orm';
 import { recordActivities } from '../../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../../platform/cqrs/cqrs.ts';

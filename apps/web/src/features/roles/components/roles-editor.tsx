@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { RoleDetails } from '@toppo/shared';
-import { Alert } from '@toppo/ui';
+import type { RoleDetails } from '@toppo-tracker/shared';
+import { Alert } from '@toppo-tracker/ui';
 import { useEffect, useState } from 'react';
 import { ApiRequestError } from '../../../shared/api/http.client.ts';
 import { requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';

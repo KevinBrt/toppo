@@ -1,6 +1,6 @@
-import { canActOnProjectMember } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { projectMemberParamsSchema } from '@toppo/shared';
+import { canActOnProjectMember } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { projectMemberParamsSchema } from '@toppo-tracker/shared';
 import { and, eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';

@@ -1,6 +1,6 @@
-import { propertyChangeOf, withOptionsMoved, withoutOptions } from '@toppo/core';
-import { schema } from '@toppo/db';
-import type { PropertyType, PropertyValue } from '@toppo/shared';
+import { propertyChangeOf, withOptionsMoved, withoutOptions } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import type { PropertyType, PropertyValue } from '@toppo-tracker/shared';
 import { and, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';

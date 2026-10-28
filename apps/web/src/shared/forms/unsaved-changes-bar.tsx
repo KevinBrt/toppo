@@ -1,4 +1,4 @@
-import { Button } from '@toppo/ui';
+import { Button } from '@toppo-tracker/ui';
 import { useI18n } from '../i18n/i18n-provider.tsx';
 import { pluralForm } from '../i18n/plural.util.ts';
 

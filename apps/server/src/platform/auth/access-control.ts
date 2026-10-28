@@ -1,5 +1,5 @@
-import { can, type InstancePermission, type Permission } from '@toppo/core';
-import type { Db } from '@toppo/db';
+import { can, type InstancePermission, type Permission } from '@toppo-tracker/core';
+import type { Db } from '@toppo-tracker/db';
 import type { FastifyInstance } from 'fastify';
 import { HttpError } from '../http/http-error.ts';
 import { type Actor, resolveActor } from './actor.ts';

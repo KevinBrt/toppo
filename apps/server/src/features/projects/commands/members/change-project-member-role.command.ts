@@ -1,6 +1,9 @@
-import { canActOnProjectMember, canGiveProjectRole, type RoleGrants } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { changeProjectMemberRoleRequestSchema, projectMemberParamsSchema } from '@toppo/shared';
+import { canActOnProjectMember, canGiveProjectRole, type RoleGrants } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import {
+  changeProjectMemberRoleRequestSchema,
+  projectMemberParamsSchema,
+} from '@toppo-tracker/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { defineCommand, type Transaction } from '../../../../platform/cqrs/cqrs.ts';

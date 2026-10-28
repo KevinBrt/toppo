@@ -2,8 +2,8 @@ import {
   type IssuePropertyField,
   type IssuePropertyValue,
   PROPERTY_TEXT_MAX_LENGTH,
-} from '@toppo/shared';
-import { Badge, Switch } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Badge, Switch } from '@toppo-tracker/ui';
 import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { ChoicesField } from '../fields/choices-field.tsx';

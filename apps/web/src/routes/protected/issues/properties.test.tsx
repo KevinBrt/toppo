@@ -1,5 +1,5 @@
-import { DEFAULT_CATEGORIES, DEFAULT_PRIORITIES } from '@toppo/core';
-import type { ProjectFields } from '@toppo/shared';
+import { DEFAULT_CATEGORIES, DEFAULT_PRIORITIES } from '@toppo-tracker/core';
+import type { ProjectFields } from '@toppo-tracker/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import {

@@ -5,9 +5,9 @@ import {
   issueActionsOf,
   issueChanges,
   priorityLevelOf,
-} from '@toppo/core';
-import { schema } from '@toppo/db';
-import { issueKeyParamsSchema, updateIssueFieldsSchema } from '@toppo/shared';
+} from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { issueKeyParamsSchema, updateIssueFieldsSchema } from '@toppo-tracker/shared';
 import { eq, inArray } from 'drizzle-orm';
 import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';

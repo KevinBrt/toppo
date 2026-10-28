@@ -1,7 +1,11 @@
 import { fileURLToPath } from 'node:url';
-import { createDatabase, type Database } from '@toppo/db';
-import { issueResponseSchema, issuesResponseSchema, projectsResponseSchema } from '@toppo/shared';
-import { readSnapshots, restoreSnapshot } from '@toppo/testing';
+import { createDatabase, type Database } from '@toppo-tracker/db';
+import {
+  issueResponseSchema,
+  issuesResponseSchema,
+  projectsResponseSchema,
+} from '@toppo-tracker/shared';
+import { readSnapshots, restoreSnapshot } from '@toppo-tracker/testing';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildTestApp, cookieHeader } from './test-helpers.ts';

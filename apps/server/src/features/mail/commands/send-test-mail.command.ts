@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { DEFAULT_LOCALE } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { DEFAULT_LOCALE } from '@toppo-tracker/shared';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';

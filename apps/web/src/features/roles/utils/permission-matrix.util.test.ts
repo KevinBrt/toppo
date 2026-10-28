@@ -1,4 +1,4 @@
-import { ALL_PERMISSIONS, type Permission } from '@toppo/core';
+import { ALL_PERMISSIONS, type Permission } from '@toppo-tracker/core';
 import { describe, expect, it } from 'vitest';
 import {
   changesToSave,

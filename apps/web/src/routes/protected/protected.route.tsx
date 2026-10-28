@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, redirect, useRouter } from '@tanstack/react-router';
-import { can } from '@toppo/core';
+import { can } from '@toppo-tracker/core';
 import { PlusIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CommandPalette } from '../../features/issues/components/palette/command-palette.tsx';

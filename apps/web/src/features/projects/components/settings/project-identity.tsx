@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { ProjectResponse } from '@toppo/shared';
+import type { ProjectResponse } from '@toppo-tracker/shared';
 import { ChevronLeftIcon } from 'lucide-react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { ProjectMark } from '../project-mark.tsx';

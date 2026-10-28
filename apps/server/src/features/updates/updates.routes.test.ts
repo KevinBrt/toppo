@@ -1,6 +1,6 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { instanceVersionResponseSchema, TOPPO_VERSION } from '@toppo/shared';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { instanceVersionResponseSchema, TOPPO_VERSION } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { createJobs } from '../../app.ts';

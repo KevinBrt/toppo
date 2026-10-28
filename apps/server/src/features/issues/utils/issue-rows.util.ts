@@ -1,12 +1,12 @@
-import { formatIssueKey, priorityLevelOf } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { formatIssueKey, priorityLevelOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   type IssuePropertyValue,
   type IssueSummary,
   type LabelRef,
   projectKeySchema,
   type UserRef,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 
 const { issueLabels, issues, labels, projectProperties, properties, propertyOptions, users } =

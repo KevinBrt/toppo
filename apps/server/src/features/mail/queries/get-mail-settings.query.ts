@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import type { MailSettingsResponse } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import type { MailSettingsResponse } from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 

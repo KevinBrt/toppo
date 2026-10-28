@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { Locale, RoleDetails } from '@toppo/shared';
-import { Alert, Button, Dialog, DialogClose, DialogContent } from '@toppo/ui';
+import type { Locale, RoleDetails } from '@toppo-tracker/shared';
+import { Alert, Button, Dialog, DialogClose, DialogContent } from '@toppo-tracker/ui';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import type { Translate } from '../../../../shared/i18n/i18n.types.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

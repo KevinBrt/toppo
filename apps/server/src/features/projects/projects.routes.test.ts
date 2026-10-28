@@ -3,8 +3,8 @@ import {
   DEFAULT_PRIORITIES,
   DEFAULT_ROLE_IDS,
   DEFAULT_STATUSES,
-} from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
+} from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
 import {
   apiErrorSchema,
   assignableRolesResponseSchema,
@@ -13,7 +13,7 @@ import {
   projectCandidatesResponseSchema,
   projectResponseSchema,
   projectsResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';

@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { readNotificationsRequestSchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { readNotificationsRequestSchema } from '@toppo-tracker/shared';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 

@@ -1,4 +1,4 @@
-import type { IssueAction } from '@toppo/shared';
+import type { IssueAction } from '@toppo-tracker/shared';
 
 /** The fields of an issue changed in place, as opposed to its status and assignee. */
 export interface IssueFields {

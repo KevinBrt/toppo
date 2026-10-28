@@ -1,4 +1,4 @@
-import { Button } from '@toppo/ui';
+import { Button } from '@toppo-tracker/ui';
 import { BellIcon, BellOffIcon } from 'lucide-react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 

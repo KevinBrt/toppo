@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@toppo/ui/theme.css";
+@import "@toppo-tracker/ui/theme.css";
 
 /* Tailwind only scans this app by default; the design system lives in another workspace. */
 @source "../../../packages/ui/src";

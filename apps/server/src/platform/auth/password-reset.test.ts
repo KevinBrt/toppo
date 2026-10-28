@@ -1,11 +1,11 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   apiErrorSchema,
   meResponseSchema,
   passwordResetAvailabilityResponseSchema,
-} from '@toppo/shared';
-import { startSmtpServer, type TestSmtpServer } from '@toppo/testing';
+} from '@toppo-tracker/shared';
+import { startSmtpServer, type TestSmtpServer } from '@toppo-tracker/testing';
 import { eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';

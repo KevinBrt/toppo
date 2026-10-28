@@ -4,7 +4,7 @@ import {
   PALETTE_COLORS,
   PROPERTY_TYPES,
   type PropertyValue,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -115,7 +115,7 @@ export const issues = pgTable(
     /**
      * The value of each property it has, by property id, as its type stores it
      * (`PROPERTY_VALUE_SCHEMAS`): an option's id for a list, an array of them for a multi-select…
-     * Checked by the commands against the properties (`@toppo/core`); one without a value is left
+     * Checked by the commands against the properties (`@toppo-tracker/core`); one without a value is left
      * out.
      */
     properties: jsonb('properties').$type<Record<string, PropertyValue>>().notNull().default({}),
@@ -134,7 +134,7 @@ export const issues = pgTable(
     unique('issues_project_number_unique').on(table.projectId, table.number),
     check('issues_number_positive', sql`${table.number} >= 1`),
     check('issues_title_not_blank', sql`btrim(${table.title}) <> ''`),
-    // Mirror ISSUE_TITLE_MAX_LENGTH and ISSUE_DESCRIPTION_MAX_LENGTH (`@toppo/shared`).
+    // Mirror ISSUE_TITLE_MAX_LENGTH and ISSUE_DESCRIPTION_MAX_LENGTH (`@toppo-tracker/shared`).
     check('issues_title_length', sql`char_length(${table.title}) <= 200`),
     check('issues_description_length', sql`char_length(${table.description}) <= 50000`),
     check('issues_not_duplicate_of_itself', sql`${table.duplicateOfId} <> ${table.id}`),
@@ -201,9 +201,9 @@ export const properties = pgTable(
   },
   (table) => [
     check('properties_name_not_blank', sql`btrim(${table.name}) <> ''`),
-    // Mirrors PROPERTY_NAME_MAX_LENGTH (`@toppo/shared`).
+    // Mirrors PROPERTY_NAME_MAX_LENGTH (`@toppo-tracker/shared`).
     check('properties_name_length', sql`char_length(${table.name}) <= 40`),
-    // Mirrors PROPERTY_TYPES (`@toppo/shared`).
+    // Mirrors PROPERTY_TYPES (`@toppo-tracker/shared`).
     check(
       'properties_type_check',
       sql`${table.type} in ('list', 'multiSelect', 'text', 'number', 'date', 'user', 'checkbox')`,
@@ -246,7 +246,7 @@ export const propertyOptions = pgTable(
   },
   (table) => [
     check('property_options_name_not_blank', sql`btrim(${table.name}) <> ''`),
-    // Mirrors PROPERTY_NAME_MAX_LENGTH (`@toppo/shared`).
+    // Mirrors PROPERTY_NAME_MAX_LENGTH (`@toppo-tracker/shared`).
     check('property_options_name_length', sql`char_length(${table.name}) <= 40`),
     check(
       'property_options_color_check',
@@ -301,7 +301,7 @@ export const labels = pgTable(
   },
   (table) => [
     check('labels_name_not_blank', sql`btrim(${table.name}) <> ''`),
-    // Mirrors LABEL_NAME_MAX_LENGTH (`@toppo/shared`).
+    // Mirrors LABEL_NAME_MAX_LENGTH (`@toppo-tracker/shared`).
     check('labels_name_length', sql`char_length(${table.name}) <= 40`),
     check(
       'labels_color_check',
@@ -410,7 +410,7 @@ export const comments = pgTable(
   },
   (table) => [
     check('comments_body_not_blank', sql`btrim(${table.body}) <> ''`),
-    // Mirrors COMMENT_BODY_MAX_LENGTH (`@toppo/shared`).
+    // Mirrors COMMENT_BODY_MAX_LENGTH (`@toppo-tracker/shared`).
     check('comments_body_length', sql`char_length(${table.body}) <= 20000`),
     // Lets an attachment name its comment and that comment's issue together.
     unique('comments_id_issue_unique').on(table.id, table.issueId),
@@ -455,7 +455,7 @@ export const attachments = pgTable(
     unique('attachments_storage_key_unique').on(table.storageKey),
     check('attachments_file_name_not_blank', sql`btrim(${table.fileName}) <> ''`),
     // Mirror ATTACHMENT_NAME_MAX_LENGTH, ATTACHMENT_MEDIA_TYPES and ATTACHMENT_SIZE_CEILING
-    // (`@toppo/shared`).
+    // (`@toppo-tracker/shared`).
     check('attachments_file_name_length', sql`char_length(${table.fileName}) <= 255`),
     check(
       'attachments_media_type_check',
@@ -492,7 +492,7 @@ export const notifications = pgTable(
   },
   (table) => [
     unique('notifications_user_activity_unique').on(table.userId, table.activityId),
-    // Mirrors NOTIFICATION_REASONS (`@toppo/shared`).
+    // Mirrors NOTIFICATION_REASONS (`@toppo-tracker/shared`).
     check(
       'notifications_reason_check',
       sql`${table.reason} in ('assigned', 'mentioned', 'participating', 'following', 'newIssue')`,

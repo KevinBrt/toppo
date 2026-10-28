@@ -1,4 +1,4 @@
-import type { CategoryDraft } from '@toppo/shared';
+import type { CategoryDraft } from '@toppo-tracker/shared';
 import { type OptionsPlan, planOptions } from './options-plan.ts';
 
 /** What saving a list of categories does to the stored ones. */

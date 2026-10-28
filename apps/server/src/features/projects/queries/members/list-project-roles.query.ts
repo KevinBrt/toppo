@@ -1,6 +1,10 @@
-import { canGiveProjectRole } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { type AssignableRolesResponse, projectKeyParamsSchema, ROLES_MAX } from '@toppo/shared';
+import { canGiveProjectRole } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import {
+  type AssignableRolesResponse,
+  projectKeyParamsSchema,
+  ROLES_MAX,
+} from '@toppo-tracker/shared';
 import { defineQuery } from '../../../../platform/cqrs/cqrs.ts';
 
 const { roles } = schema;

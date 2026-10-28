@@ -1,4 +1,4 @@
-import type { NotificationReason } from '@toppo/shared';
+import type { NotificationReason } from '@toppo-tracker/shared';
 
 /** The people involved in an issue, as notifications read them. */
 export interface IssuePeople {

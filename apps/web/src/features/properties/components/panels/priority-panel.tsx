@@ -4,7 +4,7 @@ import {
   type PrioritiesRequest,
   type PriorityRow,
   prioritiesRequestSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import {
   Alert,
   Button,
@@ -15,7 +15,7 @@ import {
   SidePanel,
   SidePanelClose,
   SidePanelContent,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { type FormEvent, useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

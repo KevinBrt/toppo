@@ -2,8 +2,8 @@ import {
   ISSUE_DESCRIPTION_MAX_LENGTH,
   type IssueResponse,
   issueDescriptionSchema,
-} from '@toppo/shared';
-import { Button, Field } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Button, Field } from '@toppo-tracker/ui';
 import { PencilIcon } from 'lucide-react';
 import { useId, useState } from 'react';
 import { formatDateTime } from '../../../../shared/i18n/dates.util.ts';

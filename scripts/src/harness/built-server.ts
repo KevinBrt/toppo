@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 export const TEST_DB_CONTAINER = 'toppo-dev-test-db-1';
 /** Every account the scripts create signs in with it. */
 export const PASSWORD = 'correct horse battery staple';
-/** DEFAULT_ROLE_IDS (@toppo/core): the scripts depend on no workspace. */
+/** DEFAULT_ROLE_IDS (@toppo-tracker/core): the scripts depend on no workspace. */
 export const ROLE_IDS = {
   team: '01a1569b-9801-747e-91c9-d058653f2a8e',
   requester: '01a1569b-9802-7f0a-b82f-656d1e2109c6',

@@ -1,4 +1,9 @@
-import { type CurrentUser, emailSchema, type Locale, type SetupRequest } from '@toppo/shared';
+import {
+  type CurrentUser,
+  emailSchema,
+  type Locale,
+  type SetupRequest,
+} from '@toppo-tracker/shared';
 import { z } from 'zod';
 
 export interface SessionState {

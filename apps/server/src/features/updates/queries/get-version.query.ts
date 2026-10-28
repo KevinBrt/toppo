@@ -1,6 +1,6 @@
-import { can, isNewerVersion } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { type InstanceVersionResponse, TOPPO_VERSION } from '@toppo/shared';
+import { can, isNewerVersion } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { type InstanceVersionResponse, TOPPO_VERSION } from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 

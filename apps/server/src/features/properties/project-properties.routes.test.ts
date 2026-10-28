@@ -7,7 +7,7 @@ import {
   issueResponseSchema,
   projectPropertiesResponseSchema,
   propertiesResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {

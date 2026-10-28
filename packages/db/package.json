@@ -1,5 +1,5 @@
 {
-  "name": "@toppo/db",
+  "name": "@toppo-tracker/db",
   "version": "0.0.0",
   "private": true,
   "description": "PostgreSQL access for Toppo: connection, schema and migrations.",
@@ -14,13 +14,13 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@toppo/core": "0.0.0",
-    "@toppo/shared": "0.0.0",
+    "@toppo-tracker/core": "0.0.0",
+    "@toppo-tracker/shared": "0.0.0",
     "drizzle-orm": "0.45.4",
     "postgres": "3.4.9"
   },
   "devDependencies": {
-    "@toppo/testing": "0.0.0",
+    "@toppo-tracker/testing": "0.0.0",
     "@types/node": "24.19.2",
     "@vitest/coverage-v8": "5.0.5",
     "drizzle-kit": "0.31.11",

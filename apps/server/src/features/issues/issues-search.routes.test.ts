@@ -1,6 +1,10 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
-import { apiErrorSchema, ISSUE_SEARCH_LIMIT, issueSearchResponseSchema } from '@toppo/shared';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
+import {
+  apiErrorSchema,
+  ISSUE_SEARCH_LIMIT,
+  issueSearchResponseSchema,
+} from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';

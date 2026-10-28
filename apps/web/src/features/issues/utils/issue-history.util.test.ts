@@ -1,4 +1,4 @@
-import type { IssueActivity } from '@toppo/shared';
+import type { IssueActivity } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import { groupHistory } from './issue-history.util.ts';
 

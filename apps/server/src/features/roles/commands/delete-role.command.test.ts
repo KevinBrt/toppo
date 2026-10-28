@@ -1,5 +1,5 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { lockInstanceAccounts } from '../../../platform/auth/administrators.ts';

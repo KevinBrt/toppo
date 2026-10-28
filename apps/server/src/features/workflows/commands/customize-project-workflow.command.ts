@@ -1,5 +1,5 @@
-import { isUniqueViolation, schema, uuidv7 } from '@toppo/db';
-import { projectKeyParamsSchema } from '@toppo/shared';
+import { isUniqueViolation, schema, uuidv7 } from '@toppo-tracker/db';
+import { projectKeyParamsSchema } from '@toppo-tracker/shared';
 import { eq, isNull } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

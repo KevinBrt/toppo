@@ -1,5 +1,5 @@
 import { Link, useMatches } from '@tanstack/react-router';
-import { Button } from '@toppo/ui';
+import { Button } from '@toppo-tracker/ui';
 import { MenuIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useI18n } from '../i18n/i18n-provider.tsx';

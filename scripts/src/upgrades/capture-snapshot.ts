@@ -6,7 +6,8 @@
  * run the migrations that came after on it.
  *
  * Run `npm run db:snapshot -- <name>` (it builds the server first) with the test server up
- * (`npm run db:up`), at each release, named after the version: `npm run db:snapshot -- 0.1.0`.
+ * (`npm run db:up`), at each release that adds a migration, named after the version:
+ * `npm run db:snapshot -- 1.1.0`.
  */
 import { execSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -34,7 +35,7 @@ const lines = (output: string) => output.split(/\r?\n/).filter((line) => line !=
 
 const name = process.argv[2] ?? '';
 if (!/^[a-z0-9][a-z0-9.-]*$/.test(name)) {
-  throw new Error('Name the snapshot after its version: npm run db:snapshot -- 0.1.0');
+  throw new Error('Name the snapshot after its version: npm run db:snapshot -- 1.1.0');
 }
 
 /** Until the jobs due are done: the notifications of what was just done arrive. */

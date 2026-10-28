@@ -1,4 +1,4 @@
-import { PALETTE_COLORS, type PaletteColor } from '@toppo/shared';
+import { PALETTE_COLORS, type PaletteColor } from '@toppo-tracker/shared';
 import {
   cn,
   DropdownMenu,
@@ -7,7 +7,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
   swatchClassName,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 
 /** An option's color: its dot, opening the palette to choose another. */

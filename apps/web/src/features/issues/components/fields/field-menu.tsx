@@ -4,7 +4,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { ChevronDownIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 

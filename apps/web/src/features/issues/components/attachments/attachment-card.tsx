@@ -1,4 +1,4 @@
-import { cn } from '@toppo/ui';
+import { cn } from '@toppo-tracker/ui';
 import { DownloadIcon, LoaderCircleIcon, XIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

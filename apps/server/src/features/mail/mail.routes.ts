@@ -1,4 +1,4 @@
-import { mailSettingsRequestSchema, mailSettingsResponseSchema } from '@toppo/shared';
+import { mailSettingsRequestSchema, mailSettingsResponseSchema } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { RateLimit } from '../../platform/http/rate-limit.ts';

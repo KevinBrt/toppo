@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { Button } from '@toppo/ui';
+import { Button } from '@toppo-tracker/ui';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';
 import { ProjectWorkflow } from '../api/project-workflow.api.ts';
 

@@ -1,6 +1,6 @@
-import { isInvitationExpired } from '@toppo/core';
-import type { PendingInvitation } from '@toppo/shared';
-import { Avatar, Badge, cn } from '@toppo/ui';
+import { isInvitationExpired } from '@toppo-tracker/core';
+import type { PendingInvitation } from '@toppo-tracker/shared';
+import { Avatar, Badge, cn } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { InvitationActions } from './invitation-actions.tsx';
 

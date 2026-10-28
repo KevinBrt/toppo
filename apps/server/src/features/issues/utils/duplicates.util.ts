@@ -1,11 +1,11 @@
-import { formatIssueKey, parseIssueKey } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
+import { formatIssueKey, parseIssueKey } from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
 import {
   DUPLICATES_SHOWN,
   type IssueResponse,
   type LinkedIssue,
   projectKeySchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, count, desc, eq, or, type SQL, sql } from 'drizzle-orm';
 import { grantedIn, issuesSeenBy } from '../../../platform/auth/project-access.ts';
 

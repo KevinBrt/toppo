@@ -14,7 +14,7 @@ import { SCREENSHOTS_FOLDER, SCREENSHOTS_SETUP_CODE } from './playwright.config.
  */
 
 const PASSWORD = 'correct horse battery staple';
-/** DEFAULT_ROLE_IDS.team (@toppo/core). */
+/** DEFAULT_ROLE_IDS.team (@toppo-tracker/core). */
 const TEAM_ROLE = '01a1569b-9801-747e-91c9-d058653f2a8e';
 
 interface Named {

@@ -1,4 +1,4 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import {

@@ -1,5 +1,5 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
-import type { ProjectAccessQuery, ProjectsQuery } from '@toppo/shared';
+import type { ProjectAccessQuery, ProjectsQuery } from '@toppo-tracker/shared';
 import { ProjectAccess } from '../api/project-access.api.ts';
 import { Projects } from '../api/projects.api.ts';
 

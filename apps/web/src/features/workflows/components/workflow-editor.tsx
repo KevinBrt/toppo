@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import type { WorkflowRequest } from '@toppo/shared';
-import { Alert } from '@toppo/ui';
+import type { WorkflowRequest } from '@toppo-tracker/shared';
+import { Alert } from '@toppo-tracker/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';
 import { UnsavedChangesBar } from '../../../shared/forms/unsaved-changes-bar.tsx';

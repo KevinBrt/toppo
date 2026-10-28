@@ -1,4 +1,8 @@
-import { type WorkflowRequest, type WorkflowResponse, workflowResponseSchema } from '@toppo/shared';
+import {
+  type WorkflowRequest,
+  type WorkflowResponse,
+  workflowResponseSchema,
+} from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
 

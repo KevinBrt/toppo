@@ -1,4 +1,4 @@
-import type { IssueResponse } from '@toppo/shared';
+import type { IssueResponse } from '@toppo-tracker/shared';
 import type { IssueEdit } from '../models/issue-edit.model.ts';
 
 /** The issue as it will be once `edit` is saved: shown at once, rolled back if refused. */

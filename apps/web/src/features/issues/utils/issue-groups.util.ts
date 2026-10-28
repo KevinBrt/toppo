@@ -1,4 +1,4 @@
-import type { IssueGrouping, IssueSummary } from '@toppo/shared';
+import type { IssueGrouping, IssueSummary } from '@toppo-tracker/shared';
 import type { IssueSection } from '../models/issue-list.model.ts';
 
 /** The group an issue belongs to: its status, its priority or its assignee (null for no one). */

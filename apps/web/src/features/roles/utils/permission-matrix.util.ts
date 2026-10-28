@@ -6,8 +6,8 @@ import {
   type PermissionScope,
   type PermissionSection,
   permissionsOfRole,
-} from '@toppo/core';
-import type { RoleDetails, RolePermissionsRequest } from '@toppo/shared';
+} from '@toppo-tracker/core';
+import type { RoleDetails, RolePermissionsRequest } from '@toppo-tracker/shared';
 
 /** How many issues of a project a role lets its members see. */
 export const ISSUE_VISIBILITIES = ['none', 'own', 'all'] as const;

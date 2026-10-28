@@ -7,15 +7,19 @@ import {
   DEFAULT_STATUSES,
   DEFAULT_TRANSITIONS,
   DEFAULT_WORKFLOW_ID,
-} from '@toppo/core';
+} from '@toppo-tracker/core';
 import {
   ATTACHMENT_MEDIA_TYPES,
   ATTACHMENT_NAME_MAX_LENGTH,
   ATTACHMENT_SIZE_CEILING,
   LABEL_NAME_MAX_LENGTH,
   PALETTE_COLORS,
-} from '@toppo/shared';
-import { createEmptyTestDatabase, createTestDatabase, type TestDatabase } from '@toppo/testing';
+} from '@toppo-tracker/shared';
+import {
+  createEmptyTestDatabase,
+  createTestDatabase,
+  type TestDatabase,
+} from '@toppo-tracker/testing';
 import { eq, or, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { MIGRATIONS_FOLDER } from '../vitest.global-setup.ts';
@@ -110,7 +114,7 @@ describe('initial data and constraints', () => {
     await database.close();
   });
 
-  it('seeds exactly the default roles of @toppo/core', async () => {
+  it('seeds exactly the default roles of @toppo-tracker/core', async () => {
     const seeded = await database.db
       .select({
         id: roles.id,
@@ -392,7 +396,7 @@ describe('projects and issues', () => {
     return issue?.id ?? '';
   }
 
-  it('seeds the default workflow, priorities and categories of @toppo/core', async () => {
+  it('seeds the default workflow, priorities and categories of @toppo-tracker/core', async () => {
     const { db } = database;
     const workflowRows = await db
       .select({ id: workflows.id, projectId: workflows.projectId })
@@ -698,7 +702,7 @@ describe('projects and issues', () => {
     await expect(attach(otherIssueId, { commentId })).rejects.toThrow();
   });
 
-  it('accepts the types of @toppo/shared only, of a sane size and name, under a random key', async () => {
+  it('accepts the types of @toppo-tracker/shared only, of a sane size and name, under a random key', async () => {
     const issueId = await createIssue(await createProject(), 1);
     for (const mediaType of ATTACHMENT_MEDIA_TYPES) {
       await attach(issueId, { mediaType });

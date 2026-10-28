@@ -1,12 +1,12 @@
-import { type OptionsPlan, planOptions } from '@toppo/core';
-import { isUniqueViolation, schema, uuidv7 } from '@toppo/db';
+import { type OptionsPlan, planOptions } from '@toppo-tracker/core';
+import { isUniqueViolation, schema, uuidv7 } from '@toppo-tracker/db';
 import {
   hasOptions,
   type PaletteColor,
   PROPERTIES_MAX,
   type PropertyOptionDraft,
   type PropertyType,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, asc, count, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

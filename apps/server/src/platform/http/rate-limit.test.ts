@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { apiErrorSchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { apiErrorSchema } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';

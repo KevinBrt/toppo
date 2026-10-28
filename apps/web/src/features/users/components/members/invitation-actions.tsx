@@ -1,11 +1,11 @@
-import type { PendingInvitation } from '@toppo/shared';
+import type { PendingInvitation } from '@toppo-tracker/shared';
 import {
   Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { EllipsisVerticalIcon, LinkIcon, XCircleIcon } from 'lucide-react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 

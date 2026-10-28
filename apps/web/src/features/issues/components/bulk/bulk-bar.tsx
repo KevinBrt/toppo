@@ -1,4 +1,4 @@
-import type { IssueFieldsResponse } from '@toppo/shared';
+import type { IssueFieldsResponse } from '@toppo-tracker/shared';
 import {
   Button,
   cn,
@@ -8,7 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { ChevronDownIcon, Trash2Icon, UserIcon, XIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

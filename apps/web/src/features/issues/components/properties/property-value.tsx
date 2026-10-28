@@ -1,5 +1,5 @@
-import type { IssuePropertyValue, Locale } from '@toppo/shared';
-import { Badge } from '@toppo/ui';
+import type { IssuePropertyValue, Locale } from '@toppo-tracker/shared';
+import { Badge } from '@toppo-tracker/ui';
 import { formatDay } from '../../../../shared/i18n/dates.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { formatNumber } from '../../../../shared/i18n/numbers.util.ts';

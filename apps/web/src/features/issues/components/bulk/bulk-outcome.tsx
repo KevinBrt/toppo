@@ -1,5 +1,5 @@
-import { BULK_REFUSALS, type BulkIssuesResponse } from '@toppo/shared';
-import { Alert } from '@toppo/ui';
+import { BULK_REFUSALS, type BulkIssuesResponse } from '@toppo-tracker/shared';
+import { Alert } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
 import type { BulkChange } from '../../models/bulk-change.model.ts';

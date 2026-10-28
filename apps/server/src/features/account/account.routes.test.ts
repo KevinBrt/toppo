@@ -1,4 +1,4 @@
-import { apiErrorSchema, meResponseSchema, NOTIFICATION_EVENTS } from '@toppo/shared';
+import { apiErrorSchema, meResponseSchema, NOTIFICATION_EVENTS } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {

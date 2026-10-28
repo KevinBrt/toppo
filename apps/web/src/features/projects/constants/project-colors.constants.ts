@@ -1,4 +1,4 @@
-import type { PaletteColor } from '@toppo/shared';
+import type { PaletteColor } from '@toppo-tracker/shared';
 
 /** The colors a project can take, in the order its settings offer them. */
 export const PROJECT_COLORS = [

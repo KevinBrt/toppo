@@ -7,9 +7,9 @@ import {
   type ProjectPermission,
   parseIssueKey,
   projectPermissionsOf,
-} from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
-import { projectKeySchema } from '@toppo/shared';
+} from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
+import { projectKeySchema } from '@toppo-tracker/shared';
 import { and, eq, inArray, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { HttpError } from '../http/http-error.ts';
@@ -96,7 +96,7 @@ export function managedBy(actorId: string): SQL {
 /**
  * The projects where `actorId` holds at least one of `permissions`, as a condition on `projects`:
  * the system role holds them all; anyone else through the role they have there
- * (`projectPermissionsOf` in `@toppo/core`, in SQL).
+ * (`projectPermissionsOf` in `@toppo-tracker/core`, in SQL).
  */
 export function grantedIn(actorId: string, permissions: readonly ProjectPermission[]): SQL {
   // In a raw template Drizzle names an alias without its table: the joins spell both out.
@@ -179,7 +179,7 @@ export async function resolveProject(
 /**
  * The users who see the issue `issueId`, as a condition on `users`: their account active, they
  * reach its project and read every issue there or, having reported it, their own (`canSeeIssue`
- * in `@toppo/core`, in SQL). To tell people of a change, or to let a comment name them.
+ * in `@toppo-tracker/core`, in SQL). To tell people of a change, or to let a comment name them.
  */
 export function seeingIssue(issueId: string): SQL {
   const reads = permissionsArray(['issue.read']);

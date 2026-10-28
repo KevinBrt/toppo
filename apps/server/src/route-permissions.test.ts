@@ -8,9 +8,9 @@ import {
   isProjectPermission,
   type Permission,
   type ProjectPermission,
-} from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
-import { apiErrorSchema } from '@toppo/shared';
+} from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
+import { apiErrorSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance, HTTPMethods, LightMyRequestResponse } from 'fastify';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';

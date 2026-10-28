@@ -1,4 +1,4 @@
-import { cn } from '@toppo/ui';
+import { cn } from '@toppo-tracker/ui';
 
 /**
  * A box ticking an issue, or every issue of a page: above the link its row opens, with room for

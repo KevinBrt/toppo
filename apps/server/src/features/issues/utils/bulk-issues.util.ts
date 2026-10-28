@@ -1,6 +1,6 @@
-import { issueVisibilityOf, parseIssueKey } from '@toppo/core';
-import { schema } from '@toppo/db';
-import type { BulkIssuesResponse, BulkRefusal } from '@toppo/shared';
+import { issueVisibilityOf, parseIssueKey } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import type { BulkIssuesResponse, BulkRefusal } from '@toppo-tracker/shared';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { Actor } from '../../../platform/auth/actor.ts';
 import type { ProjectContext } from '../../../platform/auth/project-access.ts';

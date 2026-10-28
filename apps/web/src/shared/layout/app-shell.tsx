@@ -1,5 +1,5 @@
 import { Outlet } from '@tanstack/react-router';
-import { Sheet, SheetContent } from '@toppo/ui';
+import { Sheet, SheetContent } from '@toppo-tracker/ui';
 import { type ReactNode, useState } from 'react';
 import { useI18n } from '../i18n/i18n-provider.tsx';
 import type { NavAudience } from './navigation.constants.ts';

@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { isInvitationExpired } from '@toppo/core';
+import { isInvitationExpired } from '@toppo-tracker/core';
 import type {
   ProjectAccessQuery,
   ProjectAccessResponse,
   ProjectAccessRow,
   RoleBadge,
-} from '@toppo/shared';
-import { Alert, Avatar, Badge, BadgeSelect, Button, Input } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Alert, Avatar, Badge, BadgeSelect, Button, Input } from '@toppo-tracker/ui';
 import { SearchIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

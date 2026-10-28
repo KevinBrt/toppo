@@ -1,5 +1,5 @@
-import type { UserSummary } from '@toppo/shared';
-import { Button, Dialog, DialogClose, DialogContent } from '@toppo/ui';
+import type { UserSummary } from '@toppo-tracker/shared';
+import { Button, Dialog, DialogClose, DialogContent } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 
 /** Asks before erasing a member: it cannot be undone, unlike a deactivation. */

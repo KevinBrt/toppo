@@ -1,4 +1,4 @@
-import { EmptyState } from '@toppo/ui';
+import { EmptyState } from '@toppo-tracker/ui';
 import { LockIcon } from 'lucide-react';
 import { useI18n } from '../i18n/i18n-provider.tsx';
 

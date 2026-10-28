@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Alert, Button, EmptyState } from '@toppo/ui';
+import { Alert, Button, EmptyState } from '@toppo-tracker/ui';
 import { BellIcon, CheckCheckIcon } from 'lucide-react';
 import { requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';

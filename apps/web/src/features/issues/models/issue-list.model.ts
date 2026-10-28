@@ -1,4 +1,4 @@
-import { ISSUE_GROUPINGS, ISSUE_SORTS, SORT_ORDERS } from '@toppo/shared';
+import { ISSUE_GROUPINGS, ISSUE_SORTS, SORT_ORDERS } from '@toppo-tracker/shared';
 import { z } from 'zod';
 
 /** A list of ids joined by commas, as the address keeps it: read item by item later. */

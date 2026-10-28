@@ -1,4 +1,4 @@
-import type { IssueResponse } from '@toppo/shared';
+import type { IssueResponse } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import { applyEdit } from './issue-edit.util.ts';
 
