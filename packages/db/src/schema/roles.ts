@@ -1,4 +1,3 @@
-import type { Permission } from '@toppo-tracker/core';
 import { ROLE_COLORS } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import { boolean, check, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
@@ -17,11 +16,8 @@ export const roles = pgTable(
     /** The system role: every permission, now and to come; it cannot be edited or deleted. */
     grantsAll: boolean('grants_all').notNull().default(false),
     color: text('color', { enum: ROLE_COLORS }).notNull().default('gray'),
-    permissions: text('permissions')
-      .array()
-      .$type<Permission[]>()
-      .notNull()
-      .default(sql`'{}'::text[]`),
+    /** By catalog name: Toppo's (`issue.read`) and plugins' (`time-tracking.entries.log`). */
+    permissions: text('permissions').array().$type<string[]>().notNull().default(sql`'{}'::text[]`),
     /** Its members are told of every new issue they may see: a setting, not a permission. */
     notifyNewIssues: boolean('notify_new_issues').notNull().default(false),
     ...timestamps,

@@ -108,7 +108,7 @@ describe('default roles', () => {
   it.each(ALL_PERMISSIONS)('grant %s as documented', (permission) => {
     const granted = (['administrator', 'team', 'requester'] as const).map((kind) => {
       const role = DEFAULT_ROLES.find((candidate) => candidate.kind === kind);
-      return role ? permissionsOfRole(role).includes(permission) : undefined;
+      return role ? permissionsOfRole(role, []).includes(permission) : undefined;
     });
     expect(granted).toStrictEqual(MATRIX[permission]);
   });

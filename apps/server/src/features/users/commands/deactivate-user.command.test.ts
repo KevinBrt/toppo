@@ -27,6 +27,7 @@ const userManager = (id: string): Actor => ({
   name: 'Manager',
   email: 'manager@example.com',
   permissions: ['instance.users.manage'],
+  pluginPermissions: [],
 });
 
 /** Holds every permission without being a member, as a plugin or a job might. */
@@ -35,6 +36,7 @@ const SYSTEM_CALLER: Actor = {
   name: 'System',
   email: 'system@example.com',
   permissions: ['instance.users.manage', 'instance.roles.manage'],
+  pluginPermissions: [],
 };
 
 async function insertUser(instanceRoleId: string): Promise<string> {

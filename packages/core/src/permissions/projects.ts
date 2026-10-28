@@ -1,5 +1,5 @@
-import { isProjectPermission, type ProjectPermission } from './catalog.ts';
-import { can, permissionsOfRole, type RoleGrants } from './grants.ts';
+import type { PluginPermission } from './catalog.ts';
+import { permissionsOfRole, type RoleGrants, scopeOf } from './grants.ts';
 
 /** What decides whether, and how, a member works in a project. */
 export interface ProjectAccess {
@@ -33,14 +33,25 @@ export function roleInProject<Role extends { grantsAll: boolean }>(
 /**
  * What a member may do inside a project, or `null` when they cannot reach it. The role the
  * project gives them replaces their own there, and grants project permissions only: what applies
- * to the whole instance comes from their own role alone. The system role keeps everything.
+ * to the whole instance comes from their own role alone. The system role keeps everything. The
+ * permissions of the plugins approved (`plugins`) count as Toppo's own.
  */
-export function projectPermissionsOf(access: ProjectAccess): ProjectPermission[] | null {
+export function projectPermissionsOf(
+  access: ProjectAccess,
+  plugins: readonly PluginPermission[],
+): string[] | null {
   if (!canReachProject(access)) {
     return null;
   }
-  return permissionsOfRole(roleInProject(access.role, access.membership?.role)).filter(
-    isProjectPermission,
+  return projectPermissionsOfRole(roleInProject(access.role, access.membership?.role), plugins);
+}
+
+function projectPermissionsOfRole(
+  role: RoleGrants,
+  plugins: readonly PluginPermission[],
+): string[] {
+  return permissionsOfRole(role, plugins).filter(
+    (permission) => scopeOf(permission, plugins) === 'project',
   );
 }
 
@@ -50,12 +61,13 @@ export function projectPermissionsOf(access: ProjectAccess): ProjectPermission[]
  * project's members gives no way to more rights.
  */
 export function canActOnProjectMember(
-  permissions: readonly ProjectPermission[],
+  permissions: readonly string[],
   role: RoleGrants,
+  plugins: readonly PluginPermission[],
 ): boolean {
-  return permissionsOfRole(role)
-    .filter(isProjectPermission)
-    .every((permission) => can(permissions, permission));
+  return projectPermissionsOfRole(role, plugins).every((permission) =>
+    permissions.includes(permission),
+  );
 }
 
 /**
@@ -63,8 +75,9 @@ export function canActOnProjectMember(
  * which applies to the whole instance, and never more than they hold.
  */
 export function canGiveProjectRole(
-  permissions: readonly ProjectPermission[],
+  permissions: readonly string[],
   role: RoleGrants,
+  plugins: readonly PluginPermission[],
 ): boolean {
-  return !role.grantsAll && canActOnProjectMember(permissions, role);
+  return !role.grantsAll && canActOnProjectMember(permissions, role, plugins);
 }

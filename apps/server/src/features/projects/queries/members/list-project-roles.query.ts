@@ -14,7 +14,7 @@ export const listProjectRoles = defineQuery({
   name: 'project.listRoles',
   access: { project: 'projectKey', permission: 'project.members.manage' },
   input: projectKeyParamsSchema,
-  async handler({ db, project }): Promise<AssignableRolesResponse> {
+  async handler({ db, actor, project }): Promise<AssignableRolesResponse> {
     const rows = await db
       .select({
         id: roles.id,
@@ -28,7 +28,7 @@ export const listProjectRoles = defineQuery({
       .limit(ROLES_MAX);
     return {
       roles: rows
-        .filter((role) => canGiveProjectRole(project.permissions, role))
+        .filter((role) => canGiveProjectRole(project.permissions, role, actor.pluginPermissions))
         .map(({ id, name, color }) => ({ id, name, color })),
     };
   },

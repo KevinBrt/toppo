@@ -124,7 +124,7 @@ export function testExecutionContext(
 ): ExecutionContext {
   return {
     db: database.db,
-    actor: { name: 'Test actor', email: 'actor@example.com', ...actor },
+    actor: { name: 'Test actor', email: 'actor@example.com', pluginPermissions: [], ...actor },
     log: Fastify({ logger: false }).log,
     services: testServices(),
   };

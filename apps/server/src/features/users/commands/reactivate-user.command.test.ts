@@ -14,6 +14,7 @@ const USER_MANAGER: Actor = {
   name: 'Manager',
   email: 'manager@example.com',
   permissions: ['instance.users.manage'],
+  pluginPermissions: [],
 };
 
 function executionContext(actor: Actor): ExecutionContext {

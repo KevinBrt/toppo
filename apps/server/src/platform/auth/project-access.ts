@@ -25,7 +25,8 @@ export interface ProjectContext {
   key: string;
   /** Read-only while archived. */
   archived: boolean;
-  permissions: readonly ProjectPermission[];
+  /** In the project: Toppo's permissions, then those of plugins, by catalog name. */
+  permissions: readonly string[];
 }
 
 /** The issue an operation is about, one the actor sees. */
@@ -160,11 +161,14 @@ export async function resolveProject(
     .leftJoin(projectRoles, eq(projectRoles.id, projectMembers.roleId))
     .where(eq(projects.key, key));
   const permissions = row
-    ? projectPermissionsOf({
-        role: row.ownRole,
-        allProjects: row.allProjects,
-        membership: row.membershipId === null ? null : { role: row.projectRole },
-      })
+    ? projectPermissionsOf(
+        {
+          role: row.ownRole,
+          allProjects: row.allProjects,
+          membership: row.membershipId === null ? null : { role: row.projectRole },
+        },
+        actor.pluginPermissions,
+      )
     : null;
   if (!(row && permissions)) {
     throw notFound();

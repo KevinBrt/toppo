@@ -96,6 +96,7 @@ export {
   type PermissionDefinition,
   type PermissionScope,
   type PermissionSection,
+  type PluginPermission,
   type ProjectPermission,
 } from './permissions/catalog.ts';
 export {
@@ -113,6 +114,7 @@ export {
   permissionsOfRole,
   type RoleGrants,
   rolePermissionsFrom,
+  scopeOf,
 } from './permissions/grants.ts';
 export {
   canActOnProjectMember,

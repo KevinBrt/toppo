@@ -37,7 +37,7 @@ async function insertActor(
   permissions: Actor['permissions'] = ['instance.users.manage'],
 ): Promise<Actor> {
   const id = await insertUser(instanceRoleId, allProjects);
-  return { id, name: `User ${id}`, email: `${id}@example.com`, permissions };
+  return { id, name: `User ${id}`, email: `${id}@example.com`, permissions, pluginPermissions: [] };
 }
 
 async function allProjectsOf(userId: string): Promise<boolean | undefined> {

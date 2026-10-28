@@ -53,13 +53,19 @@ export const changeProjectMemberRole = defineCommand({
         'The system role has every permission in every project',
       );
     }
-    if (!canActOnProjectMember(project.permissions, member.projectRole ?? member.ownRole)) {
+    if (
+      !canActOnProjectMember(
+        project.permissions,
+        member.projectRole ?? member.ownRole,
+        actor.pluginPermissions,
+      )
+    ) {
       throw beyondYours();
     }
     const role = roleId === null ? null : await givenRole(tx, roleId);
     const allowed = role
-      ? canGiveProjectRole(project.permissions, role)
-      : canActOnProjectMember(project.permissions, member.ownRole);
+      ? canGiveProjectRole(project.permissions, role, actor.pluginPermissions)
+      : canActOnProjectMember(project.permissions, member.ownRole, actor.pluginPermissions);
     if (!allowed) {
       throw beyondYours();
     }

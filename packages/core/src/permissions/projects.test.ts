@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_PERMISSIONS, isProjectPermission } from './catalog.ts';
+import { ALL_PERMISSIONS, isProjectPermission, type PluginPermission } from './catalog.ts';
 import {
   canActOnProjectMember,
   canGiveProjectRole,
@@ -32,11 +32,11 @@ describe('canReachProject', () => {
 
 describe('projectPermissionsOf', () => {
   it('answers null for a project out of reach', () => {
-    expect(projectPermissionsOf(access())).toBeNull();
+    expect(projectPermissionsOf(access(), [])).toBeNull();
   });
 
   it('applies the member’s own role, without what concerns the whole instance', () => {
-    expect(projectPermissionsOf(access({ allProjects: true }))).toStrictEqual([
+    expect(projectPermissionsOf(access({ allProjects: true }), [])).toStrictEqual([
       'issue.read',
       'issue.create',
       'comment.create',
@@ -44,14 +44,14 @@ describe('projectPermissionsOf', () => {
   });
 
   it('applies the role the project gives instead, project permissions only', () => {
-    expect(projectPermissionsOf(access({ membership: { role: READ_ONLY } }))).toStrictEqual([
+    expect(projectPermissionsOf(access({ membership: { role: READ_ONLY } }), [])).toStrictEqual([
       'issue.read',
     ]);
   });
 
   it('keeps every project permission for the system role, whatever the project gives', () => {
     expect(
-      projectPermissionsOf(access({ role: SYSTEM_ROLE, membership: { role: READ_ONLY } })),
+      projectPermissionsOf(access({ role: SYSTEM_ROLE, membership: { role: READ_ONLY } }), []),
     ).toStrictEqual(ALL_PERMISSIONS.filter(isProjectPermission));
   });
 });
@@ -68,21 +68,47 @@ describe('managing a project’s members', () => {
   const manager = ['issue.read', 'issue.create', 'project.members.manage'] as const;
 
   it('allows roles within what the manager holds there, whatever they grant instance-wide', () => {
-    expect(canGiveProjectRole(manager, role('issue.read'))).toBe(true);
-    expect(canGiveProjectRole(manager, role('issue.read', 'instance.users.manage'))).toBe(true);
-    expect(canGiveProjectRole(manager, role())).toBe(true);
+    expect(canGiveProjectRole(manager, role('issue.read'), [])).toBe(true);
+    expect(canGiveProjectRole(manager, role('issue.read', 'instance.users.manage'), [])).toBe(true);
+    expect(canGiveProjectRole(manager, role(), [])).toBe(true);
   });
 
   it('refuses a role granting more than the manager holds there', () => {
-    expect(canGiveProjectRole(manager, role('issue.read', 'issue.delete'))).toBe(false);
-    expect(canActOnProjectMember(manager, role('issue.delete'))).toBe(false);
+    expect(canGiveProjectRole(manager, role('issue.read', 'issue.delete'), [])).toBe(false);
+    expect(canActOnProjectMember(manager, role('issue.delete'), [])).toBe(false);
   });
 
   it('never gives the system role in a project, nor lets a lesser manager touch its holders', () => {
     const everything = ALL_PERMISSIONS.filter(isProjectPermission);
 
-    expect(canGiveProjectRole(everything, SYSTEM_ROLE)).toBe(false);
-    expect(canActOnProjectMember(everything, SYSTEM_ROLE)).toBe(true);
-    expect(canActOnProjectMember(manager, SYSTEM_ROLE)).toBe(false);
+    expect(canGiveProjectRole(everything, SYSTEM_ROLE, [])).toBe(false);
+    expect(canActOnProjectMember(everything, SYSTEM_ROLE, [])).toBe(true);
+    expect(canActOnProjectMember(manager, SYSTEM_ROLE, [])).toBe(false);
+  });
+});
+
+describe('a plugin’s permissions in a project', () => {
+  const PLUGINS: readonly PluginPermission[] = [
+    { name: 'time-tracking.entries.log', scope: 'project' },
+    { name: 'time-tracking.reports.read', scope: 'instance' },
+  ];
+  const LOGGER = role('issue.read', 'time-tracking.entries.log', 'time-tracking.reports.read');
+
+  it('count as Toppo’s own while the plugin is approved, those of the project only', () => {
+    expect(
+      projectPermissionsOf(access({ role: LOGGER, allProjects: true }), PLUGINS),
+    ).toStrictEqual(['issue.read', 'time-tracking.entries.log']);
+    expect(projectPermissionsOf(access({ role: LOGGER, allProjects: true }), [])).toStrictEqual([
+      'issue.read',
+    ]);
+  });
+
+  it('are given by a manager only who holds them there', () => {
+    const manager = ['issue.read', 'project.members.manage'];
+
+    expect(canGiveProjectRole(manager, LOGGER, PLUGINS)).toBe(false);
+    expect(canGiveProjectRole([...manager, 'time-tracking.entries.log'], LOGGER, PLUGINS)).toBe(
+      true,
+    );
   });
 });

@@ -47,6 +47,7 @@ beforeAll(async () => {
     name: 'Admin',
     email: 'admin@example.com',
     permissions: ['instance.users.manage', 'instance.roles.manage'],
+    pluginPermissions: [],
   };
 });
 

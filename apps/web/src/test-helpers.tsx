@@ -27,6 +27,7 @@ import {
   instancePermissionsOf,
   invitationExpiry,
   isNewerVersion,
+  isProjectPermission,
   issueActionsOf,
   issueChanges,
   issueVisibilityOf,
@@ -121,7 +122,7 @@ import { I18nProvider } from './shared/i18n/i18n-provider.tsx';
 
 const instancePermissionsOfRole = (roleId: string) => {
   const role = DEFAULT_ROLES.find((candidate) => candidate.id === roleId);
-  return role ? instancePermissionsOf(role) : [];
+  return role ? instancePermissionsOf(role, []) : [];
 };
 
 /** The administrator who set the instance up. */
@@ -168,7 +169,7 @@ function defaultRoles(): FakeRole[] {
     name,
     color,
     grantsAll,
-    permissions: permissionsOfRole({ grantsAll, permissions }),
+    permissions: permissionsOfRole({ grantsAll, permissions }, []),
     notifyNewIssues,
   }));
 }
@@ -1027,6 +1028,7 @@ function listRoles(state: FakeServerState): Response {
         .length,
       projectCount: 0,
     })),
+    plugins: [],
   });
 }
 
@@ -1071,7 +1073,7 @@ function savePermissions(state: FakeServerState, body: Record<string, unknown>):
   for (const { roleId, to, notifyNewIssues } of parsed.data.changes) {
     const role = state.roles.find((candidate) => candidate.id === roleId);
     if (role && !role.grantsAll) {
-      role.permissions = rolePermissionsFrom(to).permissions;
+      role.permissions = rolePermissionsFrom(to, []).permissions;
     }
     if (role && notifyNewIssues) {
       role.notifyNewIssues = notifyNewIssues.to;
@@ -1093,7 +1095,7 @@ function permissionsRefusal(
   if (role.grantsAll && !sameSet(from, to)) {
     return apiError(403, 'SYSTEM_ROLE_LOCKED');
   }
-  if (!role.grantsAll && rolePermissionsFrom(to).refused.length > 0) {
+  if (!role.grantsAll && rolePermissionsFrom(to, []).refused.length > 0) {
     return apiError(400, 'INVALID_PERMISSIONS');
   }
   const changed = notifyNewIssues !== undefined && notifyNewIssues.from !== role.notifyNewIssues;
@@ -1157,11 +1159,16 @@ function projectPermissionsFor(
     permissions: [],
   };
   const membership = project.members.find(({ userId }) => userId === user.id);
-  return projectPermissionsOf({
-    role: own,
-    allProjects: state.allProjects.has(user.id),
-    membership: membership ? { role: roleOf(membership.roleId ?? undefined) ?? null } : null,
-  });
+  // No plugin in the fake server: Toppo's own permissions only.
+  const permissions = projectPermissionsOf(
+    {
+      role: own,
+      allProjects: state.allProjects.has(user.id),
+      membership: membership ? { role: roleOf(membership.roleId ?? undefined) ?? null } : null,
+    },
+    [],
+  );
+  return permissions?.filter(isProjectPermission) ?? null;
 }
 
 /** Whether the signed-in user manages `project`'s settings or access. */
@@ -1374,7 +1381,7 @@ function projectRequest(
         json({
           roles: badgesOf(state).filter((badge) => {
             const role = state.roles.find(({ id }) => id === badge.id);
-            return role !== undefined && canGiveProjectRole(permissions, role);
+            return role !== undefined && canGiveProjectRole(permissions, role, []);
           }),
         }),
       );
@@ -1492,7 +1499,7 @@ function changeProjectMembers(
 ): Response {
   const roleId = (fields['roleId'] as string | null | undefined) ?? null;
   const role = state.roles.find(({ id }) => id === roleId);
-  if (method !== 'DELETE' && role && !canGiveProjectRole(permissions, role)) {
+  if (method !== 'DELETE' && role && !canGiveProjectRole(permissions, role, [])) {
     return apiError(403, 'ROLE_BEYOND_YOURS');
   }
   if (method === 'POST') {
@@ -1532,7 +1539,7 @@ function memberRefusal(
     return apiError(409, 'SYSTEM_ROLE_HOLDER');
   }
   const current = roleOf(member.roleId ?? ownRole?.id);
-  return current && !canActOnProjectMember(permissions, current)
+  return current && !canActOnProjectMember(permissions, current, [])
     ? apiError(403, 'ROLE_BEYOND_YOURS')
     : undefined;
 }
