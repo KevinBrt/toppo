@@ -73,8 +73,11 @@ export const ISSUE_ACTIVITY_PAYLOADS = {
   // So is a file: removed, its name leaves no trace. One of a comment shows with the comment.
   'issue.attachmentAdded': z.object({ attachmentId: z.uuid() }),
   'issue.attachmentRemoved': z.object({ attachmentId: z.uuid() }),
-  /** Recorded without an issue, which is gone: its key says which it was. */
-  'issue.deleted': z.object({ key: z.string() }),
+  /**
+   * Recorded without an issue, which is gone: its key says which it was, and its id, since
+   * plugins hear of deletions, to know which of theirs.
+   */
+  'issue.deleted': z.object({ key: z.string(), issueId: z.uuid().optional() }),
 } as const;
 
 export type IssueActivityType = keyof typeof ISSUE_ACTIVITY_PAYLOADS;

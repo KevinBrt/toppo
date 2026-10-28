@@ -17,6 +17,18 @@ export interface Actor {
   permissions: readonly string[];
   /** The permissions plugins add to the catalog, as the request found them. */
   pluginPermissions: readonly PluginPermission[];
+  /** Set when a plugin acts as itself, under its own user: what its approval opens to it. */
+  plugin?: PluginReach;
+}
+
+/** Where a plugin acting as itself may act, and what it may do there: its approval, no more. */
+export interface PluginReach {
+  slug: string;
+  /** The core permissions it was approved to use, in its projects. */
+  needs: readonly string[];
+  allProjects: boolean;
+  /** The projects it acts in, when not all of them. */
+  projectIds: readonly string[];
 }
 
 /**

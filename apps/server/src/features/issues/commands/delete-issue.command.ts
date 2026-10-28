@@ -24,7 +24,7 @@ export const deleteIssue = defineCommand({
         projectId: project.id,
         issueId: null,
         actorId: actor.id,
-        ...activity('issue.deleted', { key: project.issue.key }),
+        ...activity('issue.deleted', { key: project.issue.key, issueId: project.issue.id }),
       },
       { notify: false },
     );

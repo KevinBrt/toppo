@@ -16,6 +16,11 @@ const DEFAULT_MAX_ATTEMPTS = 5;
  */
 export interface JobScope {
   tx: Transaction;
+  /**
+   * The database itself, for what must commit whatever becomes of the job: what a plugin writes
+   * as it runs, which must not hold its issue locked until the job ends.
+   */
+  db: Db;
   log: FastifyBaseLogger;
   services: Services;
 }

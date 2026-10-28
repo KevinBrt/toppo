@@ -7,7 +7,7 @@ import { createTestDatabase } from '@toppo-tracker/testing';
 import { sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll } from 'vitest';
-import { buildApp } from './app.ts';
+import { buildApp, createHostCalls } from './app.ts';
 import type { Actor } from './platform/auth/actor.ts';
 import { createAuth } from './platform/auth/auth.ts';
 import { createSecretBox } from './platform/config/secret-box.ts';
@@ -18,6 +18,7 @@ import {
   createPackageStore,
   type PackageStore,
 } from './platform/plugins/packages/package-store.ts';
+import { createPluginRuntime } from './platform/plugins/runtime/plugin-runtime.ts';
 import { createFileStorage, type FileStorage } from './platform/uploads/file-storage.ts';
 
 export const TEST_SECRET = 'test-secret-that-is-long-enough-to-be-accepted';
@@ -42,6 +43,16 @@ export const TEST_SANDBOX_WORKER = new URL(
   './platform/plugins/sandbox/sandbox-worker.ts',
   import.meta.url,
 );
+
+/** What runs plugins in tests: their zips in `packages`, an empty store of its own by default. */
+export async function testPlugins(packages?: PackageStore) {
+  const store = packages ?? (await createTestPackageStore());
+  return {
+    packages: store,
+    workerUrl: TEST_SANDBOX_WORKER,
+    runtime: createPluginRuntime({ packages: store, workerUrl: TEST_SANDBOX_WORKER }),
+  };
+}
 
 /** An empty store of plugins' zips, of its own, in the temporary directory. */
 export function createTestPackageStore(): Promise<PackageStore> {
@@ -79,10 +90,7 @@ export async function buildTestApp({
     secret: TEST_SECRET,
     setupCode: TEST_SETUP_CODE,
     files: files ?? (await createTestFileStorage()),
-    plugins: {
-      packages: packages ?? (await createTestPackageStore()),
-      workerUrl: TEST_SANDBOX_WORKER,
-    },
+    plugins: await testPlugins(packages),
     webRoot,
   });
 }
@@ -112,6 +120,8 @@ export function testServices(overrides: Partial<Services> = {}): Services {
     plugins: {
       packages: { keep: () => Promise.reject(new Error('No package store in this test')) },
       readManifest: createManifestReader(TEST_SANDBOX_WORKER),
+      runtime: { run: () => Promise.reject(new Error('No plugin runs in this test')) },
+      calls: createHostCalls(),
     },
     ...overrides,
   };

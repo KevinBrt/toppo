@@ -78,7 +78,10 @@ async function runLocked(tx: Transaction, job: StoredJob, context: WorkerContext
   try {
     // A savepoint: the job's own writes go if it fails, and its failure is still recorded here.
     await tx.transaction((savepoint) =>
-      definition.run({ tx: savepoint, log, services: context.services }, job.payload),
+      definition.run(
+        { tx: savepoint, db: context.db, log, services: context.services },
+        job.payload,
+      ),
     );
   } catch (error) {
     await failed(tx, job, definition, error, log);

@@ -1,9 +1,7 @@
 import type { FastifyBaseLogger } from 'fastify';
+import { PLUGIN_MEMORY_MB } from '../runtime/plugin-runtime.ts';
 import { createPluginSandbox, HostCallError } from '../sandbox/plugin-sandbox.ts';
 import type { SandboxOutcome } from '../sandbox/sandbox-protocol.ts';
-
-/** What every plugin gets until it may declare more (docs/plugins/design.md). */
-const MEMORY_MB = 128;
 
 /**
  * Runs a server bundle to ask what it declares; the answer is checked by the caller. What the
@@ -25,7 +23,7 @@ export function createManifestReader(
   return async (code, log) => {
     const sandbox = createPluginSandbox({
       code,
-      memoryMb: MEMORY_MB,
+      memoryMb: PLUGIN_MEMORY_MB,
       workerUrl,
       log,
       onCall: () =>

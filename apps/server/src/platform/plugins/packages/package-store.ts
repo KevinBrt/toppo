@@ -1,5 +1,5 @@
-import { randomBytes } from 'node:crypto';
-import { mkdir, readdir, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { createHash, randomBytes } from 'node:crypto';
+import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 /** `time-tracking`: a plugin's folder. Mirrors PLUGIN_ID (`@toppo-tracker/plugin-sdk/protocol`). */
@@ -24,6 +24,8 @@ export interface KeptPackage {
 export interface PackageStore {
   /** Writes a package, unless it is there already: same name, same content. */
   keep(kept: KeptPackage, zip: Uint8Array): Promise<void>;
+  /** Reads a package kept, refusing one that is no longer what was installed. */
+  read(kept: KeptPackage): Promise<Uint8Array>;
   /**
    * Removes the packages `kept` does not name (those of an older version, of an uninstalled
    * plugin, of a transaction rolled back), once an hour old. Folders stay: removing one could race
@@ -41,17 +43,30 @@ export async function createPackageStore({ root }: { root: string }): Promise<Pa
     }
     return join(root, slug);
   };
+  const pathOf = ({ slug, sha256 }: KeptPackage) => {
+    if (!/^[0-9a-f]{64}$/.test(sha256)) {
+      throw new Error('Invalid package hash');
+    }
+    return join(folderOf(slug), `${sha256}.zip`);
+  };
 
   return {
-    async keep({ slug, sha256 }, zip) {
-      if (!/^[0-9a-f]{64}$/.test(sha256)) {
-        throw new Error('Invalid package hash');
-      }
-      const folder = folderOf(slug);
+    async keep(kept, zip) {
+      const path = pathOf(kept);
+      const folder = folderOf(kept.slug);
       await mkdir(folder, { recursive: true, mode: 0o700 });
       const writing = join(folder, `.${randomBytes(16).toString('hex')}.writing`);
       await writeFile(writing, zip, { flag: 'wx', mode: 0o600 });
-      await rename(writing, join(folder, `${sha256}.zip`));
+      await rename(writing, path);
+    },
+
+    async read(kept) {
+      const zip = await readFile(pathOf(kept));
+      // A file changed on the disk since the administrator approved it never runs.
+      if (createHash('sha256').update(zip).digest('hex') !== kept.sha256) {
+        throw new Error(`The package of ${kept.slug} is not the one installed`);
+      }
+      return zip;
     },
 
     async sweep(kept) {
