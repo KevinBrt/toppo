@@ -89,3 +89,25 @@ export const approvePluginRequestSchema = z.object({
 });
 
 export type ApprovePluginRequest = z.infer<typeof approvePluginRequestSchema>;
+
+/** `timeEntry.log`: a resource, a dot, an action. Mirrors the SDK's names. */
+const actionNameSchema = z
+  .string()
+  .max(60)
+  .regex(/^[a-z][A-Za-z0-9]*(\.[a-z][A-Za-z0-9]*)+$/);
+
+export const pluginActionParamsSchema = z.object({
+  pluginSlug: pluginSlugSchema,
+  action: actionNameSchema,
+});
+
+/** What an action's input may weigh, as JSON: what a screen sends, not files. */
+export const PLUGIN_ACTION_INPUT_MAX_BYTES = 64 * 1024;
+
+/** Body of `POST /api/v1/plugins/:pluginSlug/actions/:action`: the plugin checks it. */
+export const pluginActionRequestSchema = z.record(z.string(), z.unknown());
+
+/** Its answer: what the action answered, as the plugin's screens expect it. */
+export const pluginActionResponseSchema = z.object({ result: z.unknown() });
+
+export type PluginActionResponse = z.infer<typeof pluginActionResponseSchema>;

@@ -13,6 +13,16 @@ export const apiErrorSchema = z.object({
         }),
       )
       .optional(),
+    /**
+     * Why a plugin refused (`PLUGIN_REFUSED`), in its own words: one of its message keys, and the
+     * values its message takes. Its screens translate it with its messages.
+     */
+    plugin: z
+      .object({
+        code: z.string(),
+        params: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+      })
+      .optional(),
   }),
 });
 
