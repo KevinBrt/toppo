@@ -44,10 +44,10 @@ npm run dev                      # database + API on :3000 + web app on :5173
 
 release-please opens the release pull request from the Conventional Commits. Before merging it:
 
-1. With the test server up (`npm run db:up`), run `npm run db:snapshot -- <version>`: it writes `packages/db/snapshots/<version>.json`, the database this version leaves, which the upgrade tests restore and migrate from then on.
-2. Keep the snapshots of the last three versions only: Toppo upgrades directly from these, and through them from older ones.
+1. If the release adds a migration (one newer than the `migration` of the last file in `packages/db/snapshots/`), take its snapshot: with the test server up (`npm run db:up`), run `npm run db:snapshot -- <version>`. It writes `packages/db/snapshots/<version>.json`, the database this version leaves, which the upgrade tests restore and migrate from then on. A release without a migration leaves the same database as the last snapshot: it takes none.
+2. Keep the last three snapshots only: Toppo upgrades directly from these, and through them from older ones.
 3. If screens changed, refresh the README's screenshots: `npm run docs:screenshots`.
-4. Commit the snapshot (and the screenshots) with the release. A released migration is never edited afterwards.
+4. Commit the snapshot (and the screenshots) in a pull request merged just before the release's: release-please rewrites its own branch whenever `main` moves. A released migration is never edited afterwards.
 
 ## Dependencies
 

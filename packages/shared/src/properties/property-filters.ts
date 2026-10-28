@@ -37,8 +37,18 @@ export const propertyFilterSchema = z.union([
 
 export type PropertyFilter = z.infer<typeof propertyFilterSchema>;
 
-/** Splits a range on its two dots: `2..5`, `2026-11-01..`, `..10`. */
-const RANGE = /^(.*)\.\.(.*)$/;
+/**
+ * The two ends of a range, split on its last two dots: `2..5`, `2026-11-01..`, `..10`. Found with
+ * `lastIndexOf`, in one pass: a regular expression backtracks over every `..` of a text anyone may
+ * send, in a time that grows with the square of its length.
+ */
+function rangeOf(spec: string): { from: string | null; to: string | null } | null {
+  const dots = spec.lastIndexOf('..');
+  if (dots === -1) {
+    return null;
+  }
+  return { from: spec.slice(0, dots) || null, to: spec.slice(dots + 2) || null };
+}
 
 /**
  * The filters a text names, as they come, for `propertyFilterSchema` to check: `<id>:<a>,<b>`
@@ -52,9 +62,9 @@ export function parsePropertyFilters(text: string): unknown[] {
       const colon = part.indexOf(':');
       const propertyId = colon === -1 ? part : part.slice(0, colon);
       const spec = colon === -1 ? '' : part.slice(colon + 1);
-      const range = RANGE.exec(spec);
+      const range = rangeOf(spec);
       if (range) {
-        return { propertyId, from: range[1] || null, to: range[2] || null };
+        return { propertyId, ...range };
       }
       return { propertyId, values: spec.split(',').filter((value) => value !== '') };
     });
