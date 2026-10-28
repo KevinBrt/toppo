@@ -23,6 +23,7 @@ import { emailPluginDisabledJob } from './features/plugins/jobs/email-plugin-dis
 import { fanOutEventsJob } from './features/plugins/jobs/fan-out-events.job.ts';
 import { sweepOnceKeysJob } from './features/plugins/jobs/sweep-once-keys.job.ts';
 import { registerPluginRoutes } from './features/plugins/plugins.routes.ts';
+import { readOwnProjectSettings } from './features/plugins/queries/read-own-project-settings.query.ts';
 import { registerPriorityRoutes } from './features/priorities/priorities.routes.ts';
 import { registerProjectRoutes } from './features/projects/projects.routes.ts';
 import { registerPropertyRoutes } from './features/properties/properties.routes.ts';
@@ -120,6 +121,8 @@ export function createHostCalls(): HostCalls {
       });
       return { commentId: created.id };
     },
+    'projects.settings': (context, { projectId }) =>
+      readOwnProjectSettings.execute(context, { projectId }),
   };
 }
 

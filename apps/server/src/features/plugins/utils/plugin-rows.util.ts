@@ -1,11 +1,11 @@
 import { schema } from '@toppo-tracker/db';
 import { manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, type SQL, sql } from 'drizzle-orm';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { pluginDescriptionOf, pluginNameOf } from '../../../platform/plugins/plugin-words.ts';
 
-const { plugins } = schema;
+const { pluginProjectSettings, pluginProjects, plugins } = schema;
 
 export function pluginNotFound(): HttpError {
   return new HttpError(404, 'PLUGIN_NOT_FOUND', 'No plugin is installed by this name');
@@ -32,15 +32,33 @@ export async function lockPlugin(
   return plugin;
 }
 
-/** Refuses to start a plugin whose code refuses its settings: each of its runs would fail. */
-export function assertSettingsAccepted(plugin: { settingsRefused: boolean }): void {
-  if (plugin.settingsRefused) {
+/**
+ * Refuses to start a plugin whose code refuses its settings, the instance's or a project's: its
+ * runs would fail.
+ */
+export async function assertSettingsAccepted(
+  tx: Transaction,
+  plugin: { id: string; settingsRefused: boolean },
+): Promise<void> {
+  const [project] = await tx
+    .select({ id: pluginProjectSettings.id })
+    .from(pluginProjectSettings)
+    .where(
+      and(eq(pluginProjectSettings.pluginId, plugin.id), eq(pluginProjectSettings.refused, true)),
+    )
+    .limit(1);
+  if (plugin.settingsRefused || project) {
     throw new HttpError(
       409,
       'PLUGIN_SETTINGS_REFUSED',
       'This version of the plugin refuses its settings: correct them first',
     );
   }
+}
+
+/** The plugins that act in the project `projectId`: approved there, or in every project. */
+export function actsInProject(projectId: string): SQL {
+  return sql`(${plugins.allProjects} or exists (select 1 from ${pluginProjects} where ${pluginProjects.pluginId} = ${plugins.id} and ${pluginProjects.projectId} = ${projectId}))`;
 }
 
 /**

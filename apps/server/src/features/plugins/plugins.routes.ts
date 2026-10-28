@@ -9,6 +9,9 @@ import {
   pluginDetailsResponseSchema,
   pluginSlugParamsSchema,
   pluginsResponseSchema,
+  projectKeyParamsSchema,
+  projectPluginParamsSchema,
+  projectPluginsResponseSchema,
   savePluginSettingsRequestSchema,
 } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
@@ -21,11 +24,13 @@ import { disablePlugin } from './commands/disable-plugin.command.ts';
 import { enablePlugin } from './commands/enable-plugin.command.ts';
 import { installPlugin } from './commands/install-plugin.command.ts';
 import { runPluginAction } from './commands/run-plugin-action.command.ts';
-import { savePluginSettings } from './commands/save-plugin-settings.command.ts';
+import { savePluginSettings } from './commands/settings/save-plugin-settings.command.ts';
+import { saveProjectPluginSettings } from './commands/settings/save-project-plugin-settings.command.ts';
 import { uninstallPlugin } from './commands/uninstall-plugin.command.ts';
 import { getPlugin } from './queries/get-plugin.query.ts';
 import { getPluginLogo } from './queries/get-plugin-logo.query.ts';
 import { listPlugins } from './queries/list-plugins.query.ts';
+import { listProjectPlugins } from './queries/list-project-plugins.query.ts';
 
 /** Commands answer `204 No Content`: the client refetches what it shows. */
 const NO_CONTENT = { 204: z.void() };
@@ -161,6 +166,8 @@ export function registerPluginRoutes(app: FastifyInstance): void {
       }),
   );
 
+  registerProjectRoutes(app);
+
   app.packageRoutes((scope) => {
     scope.withTypeProvider<ZodTypeProvider>().post(
       '/api/v1/plugins',
@@ -174,4 +181,42 @@ export function registerPluginRoutes(app: FastifyInstance): void {
           .send(await installPlugin.execute(request.executionContext, { zip: request.body })),
     );
   });
+}
+
+/**
+ * The plugins at work in a project, as its settings show them: what the project sets for itself
+ * of each. Those who manage the project's settings.
+ */
+function registerProjectRoutes(app: FastifyInstance): void {
+  const routes = app.withTypeProvider<ZodTypeProvider>();
+
+  routes.get(
+    '/api/v1/projects/:projectKey/plugins',
+    {
+      config: { access: listProjectPlugins.access },
+      schema: { params: projectKeyParamsSchema, response: { 200: projectPluginsResponseSchema } },
+    },
+    (request) => listProjectPlugins.execute(request.executionContext, request.params),
+  );
+
+  routes.put(
+    '/api/v1/projects/:projectKey/plugins/:pluginSlug/settings',
+    {
+      config: { access: saveProjectPluginSettings.access },
+      // The settings, and the object around them.
+      bodyLimit: PLUGIN_SETTINGS_MAX_BYTES + 1024,
+      schema: {
+        params: projectPluginParamsSchema,
+        body: savePluginSettingsRequestSchema,
+        response: NO_CONTENT,
+      },
+    },
+    async (request, reply) =>
+      reply.status(204).send(
+        await saveProjectPluginSettings.execute(request.executionContext, {
+          ...request.params,
+          ...request.body,
+        }),
+      ),
+  );
 }

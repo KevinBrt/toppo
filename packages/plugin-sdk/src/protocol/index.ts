@@ -57,6 +57,7 @@ export {
   type RunKind,
 } from './sandbox.ts';
 export {
+  NO_SETTINGS_SCHEMA,
   PLUGIN_SETTINGS_MAX,
   SETTING_NAME,
   type Setting,

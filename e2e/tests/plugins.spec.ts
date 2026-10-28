@@ -98,6 +98,21 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   await page.reload();
   await expect(day).toHaveValue('7');
 
+  // Each project it acts in sets its own budget, in its settings.
+  await page.goto(`/projects/${key}`);
+  await page
+    .getByRole('navigation', { name: 'Project sections' })
+    .getByRole('link', { name: 'Plugins' })
+    .click();
+  const ours = page.getByRole('region', { name: 'Time tracking' });
+  const budget = ours.getByRole('textbox', { name: 'Budget, in days' });
+  await budget.fill('22,5');
+  await ours.getByRole('button', { name: 'Save the settings' }).click();
+  await expect(ours.getByText('Settings saved.')).toBeVisible();
+  await expectAccessible(page);
+  await page.reload();
+  await expect(budget).toHaveValue('22.5');
+
   // It runs, in its sandbox, for whoever asks, in the projects it was approved in only.
   const logged = await page.request.post(LOG_TIME, {
     headers: { origin },

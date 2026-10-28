@@ -2,8 +2,8 @@ import { schema } from '@toppo-tracker/db';
 import { pluginSettingValuesSchema, pluginSlugSchema } from '@toppo-tracker/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
-import { HttpError } from '../../../platform/http/http-error.ts';
+import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';
+import { HttpError } from '../../../../platform/http/http-error.ts';
 
 const { plugins } = schema;
 

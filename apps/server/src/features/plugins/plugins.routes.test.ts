@@ -11,6 +11,7 @@ import {
   PLUGINS_MAX,
   pluginDetailsResponseSchema,
   pluginsResponseSchema,
+  projectPluginsResponseSchema,
 } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
@@ -454,6 +455,7 @@ describe('a plugin’s settings', () => {
       ],
       values: {},
       refused: false,
+      refusedProjects: [],
     });
 
     // While it waits for its approval: it is set up before it runs.
@@ -544,6 +546,139 @@ describe('a plugin’s settings', () => {
     expect((await saveSettings({ reminderDays: 8 }, teamCookie)).statusCode).toBe(403);
     const missing = await call('PUT', '/api/v1/plugins/nothing-here/settings', { values: {} });
     expect(missing.statusCode).toBe(404);
+  });
+});
+
+/** A plugin each project gives a budget in days. */
+function withBudget(): Manifest {
+  const { messages } = testManifest();
+  const budget = { budgetDays: { label: 'Budget, in days' } };
+  return testManifest({
+    projectSettings: {
+      type: 'object',
+      properties: { budgetDays: { type: 'number', exclusiveMinimum: 0 } },
+    },
+    messages: {
+      en: { ...messages.en, projectSettings: budget },
+      fr: { ...messages.fr, projectSettings: { budgetDays: { label: 'Budget, en jours' } } },
+    },
+  });
+}
+
+/** Checks a project's settings as the SDK would, with its own schema: a budget up to `max` days. */
+function checksBudget(max: number): string {
+  return `const typed = JSON.parse(payload);
+    const fits = ({ budgetDays }) => budgetDays === undefined || (budgetDays > 0 && budgetDays <= ${max});
+    if (kind === 'settings' && name === 'project' && !fits(typed)) {
+      return JSON.stringify({ ok: false, error: { code: 'VALIDATION_FAILED',
+        issues: [{ path: 'budgetDays', message: 'Too big: expected at most ${max}' }] } });
+    }
+    if (kind === 'settings' && name === 'projects') {
+      return JSON.stringify({ ok: true,
+        result: Object.keys(typed).filter((projectId) => !fits(typed[projectId])) });
+    }
+    return JSON.stringify({ ok: true, result: null });`;
+}
+
+function projectPlugins(projectKey: string, cookie = adminCookie) {
+  return call('GET', `/api/v1/projects/${projectKey}/plugins`, undefined, cookie);
+}
+
+function saveBudget(projectKey: string, values: Record<string, unknown>) {
+  return call('PUT', `/api/v1/projects/${projectKey}/plugins/time-tracking/settings`, { values });
+}
+
+describe('what a project sets for itself of a plugin', () => {
+  it('is set in the projects the plugin acts in, and only there', async () => {
+    await install(testPackage({ manifest: withBudget(), run: checksBudget(1000) }));
+    await approve(['WEB']);
+
+    const listed = await projectPlugins('WEB');
+    expect(listed.statusCode).toBe(200);
+    expect(projectPluginsResponseSchema.parse(listed.json())).toStrictEqual({
+      plugins: [
+        {
+          slug: 'time-tracking',
+          name: { en: 'Time tracking', fr: 'Suivi du temps' },
+          logoUrl: null,
+          fields: [
+            {
+              name: 'budgetDays',
+              kind: 'number',
+              label: { en: 'Budget, in days', fr: 'Budget, en jours' },
+              help: null,
+              integer: false,
+              min: null,
+              max: null,
+              default: null,
+            },
+          ],
+          values: {},
+          refused: false,
+        },
+      ],
+    });
+    expect((await saveBudget('WEB', { budgetDays: 20 })).statusCode).toBe(204);
+    expect(projectPluginsResponseSchema.parse((await projectPlugins('WEB')).json())).toMatchObject({
+      plugins: [{ values: { budgetDays: 20 } }],
+    });
+    expect(projectPluginsResponseSchema.parse((await projectPlugins('OPS')).json())).toStrictEqual({
+      plugins: [],
+    });
+    const elsewhere = await saveBudget('OPS', { budgetDays: 20 });
+    expect(elsewhere.statusCode).toBe(404);
+    expect(errorCode(elsewhere)).toBe('PLUGIN_NOT_FOUND');
+  });
+
+  it('is refused, field by field, when the plugin’s code refuses it or does not have it', async () => {
+    await install(testPackage({ manifest: withBudget(), run: checksBudget(1000) }));
+    await approve('all');
+
+    const refused = await saveBudget('OPS', { budgetDays: 5000 });
+    const unknown = await saveBudget('OPS', { hoursPerDay: 7 });
+
+    expect(apiErrorSchema.parse(refused.json()).error).toMatchObject({
+      code: 'PLUGIN_SETTINGS_INVALID',
+      details: [{ path: 'budgetDays', message: 'Too big: expected at most 1000' }],
+    });
+    expect(apiErrorSchema.parse(unknown.json()).error).toMatchObject({
+      code: 'PLUGIN_SETTINGS_INVALID',
+      details: [{ path: 'hoursPerDay' }],
+    });
+  });
+
+  it('keeps the plugin waiting when an upgrade refuses it, until it is corrected', async () => {
+    await install(testPackage({ manifest: withBudget(), run: checksBudget(1000) }));
+    await approve('all');
+    expect((await saveBudget('WEB', { budgetDays: 500 })).statusCode).toBe(204);
+    expect((await saveBudget('OPS', { budgetDays: 50 })).statusCode).toBe(204);
+
+    await install(
+      testPackage({ version: '1.3.0', manifest: withBudget(), run: checksBudget(100) }),
+    );
+
+    expect(await details()).toMatchObject({
+      state: 'pending',
+      settings: { refused: false, refusedProjects: [{ key: 'WEB', name: 'Website' }] },
+    });
+    expect(projectPluginsResponseSchema.parse((await projectPlugins('WEB')).json())).toMatchObject({
+      plugins: [{ values: { budgetDays: 500 }, refused: true }],
+    });
+    const approval = await call('POST', '/api/v1/plugins/time-tracking/approve', {
+      projects: 'all',
+    });
+    expect(errorCode(approval)).toBe('PLUGIN_SETTINGS_REFUSED');
+    expect((await saveBudget('WEB', { budgetDays: 80 })).statusCode).toBe(204);
+    expect((await details()).settings.refusedProjects).toStrictEqual([]);
+    await approve('all');
+    expect((await details()).state).toBe('enabled');
+  });
+
+  it('stays hidden from those who do not reach the project, as the project does', async () => {
+    await install(testPackage({ manifest: withBudget(), run: checksBudget(1000) }));
+    await approve('all');
+
+    expect((await projectPlugins('WEB', teamCookie)).statusCode).toBe(404);
   });
 });
 

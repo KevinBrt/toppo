@@ -91,6 +91,7 @@ import {
   type PendingInvitation,
   type PluginDetailsResponse,
   type PluginPermissionSection,
+  type PluginSettingValues,
   type PluginSummary,
   PROJECT_ACCESS_PAGE_SIZE,
   PROJECT_MEMBERS_PREVIEW,
@@ -98,6 +99,7 @@ import {
   type PriorityLevel,
   type ProjectAccessRow,
   type ProjectFields,
+  type ProjectPlugin,
   type PropertyOptionRef,
   type PropertyValue,
   passwordResetRequestSchema,
@@ -201,6 +203,8 @@ export interface FakeServerState {
   pluginPackage: FakePlugin | FakePackageRefusal | null;
   /** Settings the plugins' code refuses, whatever their value: none unless a test sets some. */
   refusedSettings: string[];
+  /** The plugins at work in each project that take settings of it, by project key: none. */
+  projectPlugins: Record<string, ProjectPlugin[]>;
   invitations: PendingInvitation[];
   /** The links the fake server made, by token, and what opening them shows. */
   invitationLinks: Map<string, InvitationLinkState>;
@@ -528,7 +532,7 @@ export function fakePlugin(
     approval: null,
     failures: 0,
     lastFailure: null,
-    settings: { fields: [], values: {}, refused: false },
+    settings: { fields: [], values: {}, refused: false, refusedProjects: [] },
     ...overrides,
   };
 }
@@ -556,6 +560,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       plugins: [],
       pluginPackage: null,
       refusedSettings: [],
+      projectPlugins: {},
       invitations: [],
       invitationLinks: new Map(),
       projects: [],
@@ -1341,7 +1346,7 @@ function createProject(state: FakeServerState, body: Record<string, unknown>): R
 }
 
 const PROJECT_PATH =
-  /^\/api\/v1\/projects\/([^/]+)(?:\/(archive|unarchive|access|members|invitations|candidates|roles|issues|issue-fields|assignees|workflow|properties|fields))?(?:\/([^/]+))?(?:\/(adaptation|status|fields|assignee|labels|delete))?$/;
+  /^\/api\/v1\/projects\/([^/]+)(?:\/(archive|unarchive|access|members|invitations|candidates|roles|issues|issue-fields|assignees|workflow|properties|fields|plugins))?(?:\/([^/]+))?(?:\/(adaptation|status|fields|assignee|labels|delete|settings))?$/;
 
 /** `/api/v1/projects/:key` and what hangs off it, with the server's rules. */
 function projectRequest(
@@ -1437,6 +1442,11 @@ function projectRequest(
     case 'PUT fields':
       return unless('project.settings.manage', () =>
         projectPropertyRequest(state, project, method, part, target, sub, body),
+      );
+    case 'GET plugins':
+    case 'PUT plugins':
+      return unless('project.settings.manage', () =>
+        projectPluginRequest(state, project, method, target, sub, body),
       );
     case 'GET issue-fields':
       return json(issueFields(state, project.key));
@@ -3470,6 +3480,17 @@ function saveFakePluginSettings(
   plugin: FakePlugin,
   body: unknown,
 ): Response {
+  return checkFakeSettings(state, body, (values) =>
+    savePlugin(state, { ...plugin, settings: { ...plugin.settings, values, refused: false } }),
+  );
+}
+
+/** Settings sent, kept by `keep` unless the plugin's code refuses one of them, as the test says. */
+function checkFakeSettings(
+  state: FakeServerState,
+  body: unknown,
+  keep: (values: PluginSettingValues) => void,
+): Response {
   const parsed = savePluginSettingsRequestSchema.safeParse(body);
   if (!parsed.success) {
     return apiError(400, 'VALIDATION_FAILED');
@@ -3480,8 +3501,35 @@ function saveFakePluginSettings(
     const details = refused.map((path) => ({ path, message: 'Refused by the plugin' }));
     return json({ error: { code: 'PLUGIN_SETTINGS_INVALID', message: 'Refused', details } }, 400);
   }
-  savePlugin(state, { ...plugin, settings: { ...plugin.settings, values, refused: false } });
+  keep(values);
   return NO_CONTENT();
+}
+
+/**
+ * `GET /api/v1/projects/:key/plugins` and `PUT …/plugins/:slug/settings`: what a project sets for
+ * itself of the plugins at work in it; settings refused since an upgrade are so corrected.
+ */
+function projectPluginRequest(
+  state: FakeServerState,
+  project: FakeProject,
+  method: string,
+  slug: string,
+  sub: string,
+  body: unknown,
+): Response {
+  const plugins = state.projectPlugins[project.key] ?? [];
+  if (method === 'GET' && slug === '') {
+    return json({ plugins });
+  }
+  const plugin = plugins.find((candidate) => candidate.slug === slug);
+  if (!(method === 'PUT' && sub === 'settings' && plugin)) {
+    return apiError(404, 'PLUGIN_NOT_FOUND');
+  }
+  return checkFakeSettings(state, body, (values) => {
+    state.projectPlugins[project.key] = plugins.map((candidate) =>
+      candidate === plugin ? { ...plugin, values, refused: false } : candidate,
+    );
+  });
 }
 
 /**

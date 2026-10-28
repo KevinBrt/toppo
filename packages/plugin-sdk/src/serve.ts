@@ -21,7 +21,7 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
 
   async function execute(kind: RunKind, name: string, payload: unknown, context: RunContext) {
     if (kind === 'settings') {
-      return checkSettings(definition, payload);
+      return checkSettings(definition, name, payload);
     }
     const settings = definition.settings.safeParse(context.settings);
     if (!settings.success) {
@@ -32,6 +32,7 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
       messages: definition.config.messages,
       locale: context.locale,
       settings: settings.data,
+      projectSettings: definition.projectSettings,
     });
     return kind === 'event'
       ? await runEvent(definition, ctx, name, payload)
@@ -69,9 +70,11 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
 function manifestOf({
   config,
   settings,
+  projectSettings,
   actions,
   events,
-}: PluginDefinition): Omit<Manifest, 'settings'> & { settings: Record<string, unknown> } {
+}: PluginDefinition): Omit<Manifest, 'settings' | 'projectSettings'> &
+  Record<'settings' | 'projectSettings', Record<string, unknown>> {
   return {
     id: config.id,
     name: config.name,
@@ -81,6 +84,7 @@ function manifestOf({
     needs: [...(config.needs ?? [])],
     permissions: config.permissions ?? {},
     settings: jsonSchemaOf(settings),
+    projectSettings: jsonSchemaOf(projectSettings),
     messages: config.messages,
     actions: [...actions].map(([name, action]) => ({
       name,
@@ -136,10 +140,32 @@ async function runAction(
   return { ok: true, result: result ?? null };
 }
 
-/** Whether settings an administrator typed fit the plugin's schema: Toppo saves them if so. */
-function checkSettings(definition: PluginDefinition, payload: unknown): RunAnswer {
-  const settings = definition.settings.safeParse(payload);
-  return settings.success ? { ok: true, result: null } : invalid(settings.error);
+/**
+ * Whether settings fit the plugin's schemas, before Toppo saves them: the instance's or a
+ * project's, what did not fit field by field; or those saved for each project, by its id, as an
+ * upgrade checks them: the ids of the projects whose settings it refuses.
+ */
+function checkSettings(definition: PluginDefinition, name: string, payload: unknown): RunAnswer {
+  switch (name) {
+    case 'instance':
+    case 'project': {
+      const schema = name === 'instance' ? definition.settings : definition.projectSettings;
+      const settings = schema.safeParse(payload);
+      return settings.success ? { ok: true, result: null } : invalid(settings.error);
+    }
+    case 'projects': {
+      const saved = z.record(z.string(), z.unknown()).safeParse(payload);
+      if (!saved.success) {
+        return invalid(saved.error);
+      }
+      const refused = Object.entries(saved.data).flatMap(([projectId, settings]) =>
+        definition.projectSettings.safeParse(settings).success ? [] : [projectId],
+      );
+      return { ok: true, result: refused };
+    }
+    default:
+      return failure('UNKNOWN_SETTINGS');
+  }
 }
 
 function isEventType(name: string): name is EventType {

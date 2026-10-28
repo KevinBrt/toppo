@@ -3,8 +3,10 @@ import {
   type PluginDetailsResponse,
   type PluginSettingValues,
   type PluginSummary,
+  type ProjectPlugin,
   pluginDetailsResponseSchema,
   pluginsResponseSchema,
+  projectPluginsResponseSchema,
 } from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
@@ -62,6 +64,27 @@ export const Plugins = {
       body: { values },
       schema: noContent,
     });
+  },
+
+  /** The plugins at work in a project that take settings of it, with what it set: loaded whole. */
+  async inProject(projectKey: string): Promise<ProjectPlugin[]> {
+    return (
+      await apiRequest(`/api/v1/projects/${encodeURIComponent(projectKey)}/plugins`, {
+        schema: projectPluginsResponseSchema,
+      })
+    ).plugins;
+  },
+
+  /** Saves what a project sets for itself of a plugin, once the plugin's own code accepted it. */
+  async saveProjectSettings(
+    projectKey: string,
+    slug: string,
+    values: PluginSettingValues,
+  ): Promise<void> {
+    await apiRequest(
+      `/api/v1/projects/${encodeURIComponent(projectKey)}/plugins/${encodeURIComponent(slug)}/settings`,
+      { method: 'PUT', body: { values }, schema: noContent },
+    );
   },
 
   /** Enables it again, as it was approved: its failures are counted from zero. */

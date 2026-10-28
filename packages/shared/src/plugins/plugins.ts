@@ -194,6 +194,8 @@ export const pluginDetailsResponseSchema = pluginSummarySchema.extend({
     values: z.record(z.string(), pluginSettingValueSchema),
     /** Its code refuses them since an upgrade: it waits for them to be corrected, then approved. */
     refused: z.boolean(),
+    /** The projects whose own settings it refuses since an upgrade, to be corrected likewise. */
+    refusedProjects: z.array(z.object({ key: z.string(), name: z.string() })),
   }),
 });
 
@@ -228,3 +230,30 @@ export const pluginActionRequestSchema = z.record(z.string(), z.unknown());
 export const pluginActionResponseSchema = z.object({ result: z.unknown() });
 
 export type PluginActionResponse = z.infer<typeof pluginActionResponseSchema>;
+
+/** A plugin at work in a project, with the settings the project sets for itself. */
+export const projectPluginSchema = z.object({
+  slug: z.string(),
+  name: translatedSchema,
+  /** `null` when it has none, or is not enabled: its logo is then for administrators only. */
+  logoUrl: z.string().nullable(),
+  fields: z.array(pluginSettingFieldSchema),
+  values: z.record(z.string(), pluginSettingValueSchema),
+  /** Its code refuses them since an upgrade: it waits for them to be corrected. */
+  refused: z.boolean(),
+});
+
+export type ProjectPlugin = z.infer<typeof projectPluginSchema>;
+
+/**
+ * Body of `GET /api/v1/projects/:projectKey/plugins`: the plugins at work in the project that
+ * take settings of it, by name.
+ */
+export const projectPluginsResponseSchema = z.object({ plugins: z.array(projectPluginSchema) });
+
+export type ProjectPluginsResponse = z.infer<typeof projectPluginsResponseSchema>;
+
+export const projectPluginParamsSchema = z.object({
+  projectKey: projectKeySchema,
+  pluginSlug: pluginSlugSchema,
+});

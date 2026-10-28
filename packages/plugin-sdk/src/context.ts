@@ -7,7 +7,11 @@ import type { Locale } from './protocol/run.ts';
 import type { HostGlobal } from './protocol/sandbox.ts';
 
 /** What every handler is given: the plugin's settings and words, and what it may ask Toppo. */
-export interface Context<S extends z.ZodType, M extends Messages> {
+export interface Context<
+  S extends z.ZodType,
+  M extends Messages,
+  PS extends z.ZodType = z.ZodType,
+> {
   /** As the administrator saved them, parsed with the plugin's schema: its defaults applied. */
   readonly settings: z.output<S>;
   /** The language of whoever the plugin acts for; the instance's for an event. */
@@ -29,10 +33,21 @@ export interface Context<S extends z.ZodType, M extends Messages> {
       options?: { once?: string },
     ): Promise<{ commentId: string }>;
   };
+  readonly projects: {
+    /**
+     * What a project it acts in set for itself, parsed with the plugin's schema: its defaults
+     * applied. Refused for a project it, or whoever it acts for, does not reach.
+     */
+    settings(projectId: string): Promise<z.output<PS>>;
+  };
 }
 
 /** What an action is given besides: who it runs for. */
-export interface ActionContext<S extends z.ZodType, M extends Messages> extends Context<S, M> {
+export interface ActionContext<
+  S extends z.ZodType,
+  M extends Messages,
+  PS extends z.ZodType = z.ZodType,
+> extends Context<S, M, PS> {
   readonly user: { readonly id: string };
 }
 
@@ -47,13 +62,19 @@ async function callToppo<T extends HostCallMethod>(
   return result.parse(JSON.parse(answer)) as z.output<(typeof HOST_CALLS)[T]['result']>;
 }
 
-export function createContext<S extends z.ZodType, M extends Messages>(options: {
+export function createContext<
+  S extends z.ZodType,
+  M extends Messages,
+  PS extends z.ZodType,
+>(options: {
   host: HostGlobal;
   messages: { readonly en: Messages; readonly fr: Messages };
   locale: Locale;
   settings: z.output<S>;
-}): Context<S, M> {
-  const { host, messages, locale, settings } = options;
+  /** The plugin's schema of a project's settings, which parses what Toppo answers. */
+  projectSettings: PS;
+}): Context<S, M, PS> {
+  const { host, messages, locale, settings, projectSettings } = options;
   return {
     settings,
     locale,
@@ -67,6 +88,17 @@ export function createContext<S extends z.ZodType, M extends Messages>(options: 
           'issues.comment',
           once === undefined ? { issueId, body } : { issueId, body, once },
         ),
+    },
+    projects: {
+      async settings(projectId) {
+        const saved = projectSettings.safeParse(
+          await callToppo(host, 'projects.settings', { projectId }),
+        );
+        if (!saved.success) {
+          throw new Error(`The settings of project ${projectId} do not fit this version`);
+        }
+        return saved.data;
+      },
     },
   };
 }

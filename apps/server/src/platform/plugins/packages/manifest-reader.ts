@@ -1,5 +1,7 @@
+import { runAnswerSchema } from '@toppo-tracker/plugin-sdk/protocol';
 import { DEFAULT_LOCALE } from '@toppo-tracker/shared';
 import type { FastifyBaseLogger } from 'fastify';
+import { z } from 'zod';
 import { PLUGIN_MEMORY_MB } from '../runtime/plugin-runtime.ts';
 import {
   createPluginSandbox,
@@ -20,15 +22,25 @@ export type ManifestReader = (
   log: FastifyBaseLogger,
 ) => Promise<SandboxOutcome<unknown>>;
 
-/**
- * Asks a server bundle whether it takes settings saved for another version of it: its answer, a
- * run's, is read by the caller.
- */
+/** Settings saved for the version an upgrade replaces: the instance's, and each project's. */
+export interface SavedSettings {
+  instance: Record<string, unknown>;
+  /** By project id. */
+  projects: Record<string, Record<string, unknown>>;
+}
+
+/** What an upgrade's code refuses of the settings saved before it. */
+export interface RefusedSettings {
+  instance: boolean;
+  projectIds: string[];
+}
+
+/** Asks a server bundle, an upgrade, which settings saved for the version it replaces it refuses. */
 export type SettingsChecker = (
   code: string,
-  settings: Record<string, unknown>,
+  saved: SavedSettings,
   log: FastifyBaseLogger,
-) => Promise<SandboxOutcome<unknown>>;
+) => Promise<RefusedSettings>;
 
 /**
  * Runs `use` in a sandbox of the bundle's own, stopped right after: a package is read before anyone
@@ -63,16 +75,40 @@ export function createManifestReader(
   return (code, log) => inLoneSandbox(code, workerUrl, log, (sandbox) => sandbox.manifest());
 }
 
-/** Asks a bundle, an upgrade, whether it takes the settings saved for the version it replaces. */
+/**
+ * Asks a bundle, an upgrade, which settings saved for the version it replaces it refuses: in one
+ * run for all the projects, whatever their number. A run that fails refuses what it checked.
+ */
 export function createSettingsChecker(workerUrl: URL): SettingsChecker {
-  return (code, settings, log) =>
-    inLoneSandbox(code, workerUrl, log, (sandbox) =>
-      sandbox.run({
-        kind: 'settings',
-        name: 'settings',
-        payload: settings,
-        context: { locale: DEFAULT_LOCALE, user: null, settings: {} },
-        deadlineMs: SETTINGS_CHECK_DEADLINE_MS,
-      }),
-    );
+  return (code, saved, log) =>
+    inLoneSandbox(code, workerUrl, log, async (sandbox) => {
+      const check = async (
+        name: 'instance' | 'projects',
+        payload: unknown,
+      ): Promise<{ taken: true; result: unknown } | { taken: false }> => {
+        const outcome = await sandbox.run({
+          kind: 'settings',
+          name,
+          payload,
+          context: { locale: DEFAULT_LOCALE, user: null, settings: {} },
+          deadlineMs: SETTINGS_CHECK_DEADLINE_MS,
+        });
+        const answer = runAnswerSchema.safeParse(outcome.ok ? outcome.value : null);
+        return answer.success && answer.data.ok
+          ? { taken: true, result: answer.data.result }
+          : { taken: false };
+      };
+      const instance =
+        Object.keys(saved.instance).length === 0 || (await check('instance', saved.instance)).taken;
+      const projectIds = Object.keys(saved.projects);
+      if (projectIds.length === 0) {
+        return { instance: !instance, projectIds: [] };
+      }
+      const projects = await check('projects', saved.projects);
+      const refused = projects.taken ? z.array(z.string()).safeParse(projects.result).data : null;
+      return {
+        instance: !instance,
+        projectIds: (refused ?? projectIds).filter((id) => projectIds.includes(id)),
+      };
+    });
 }

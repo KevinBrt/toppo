@@ -37,7 +37,9 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] a plugin's settings form, generated from the schema it declares;
     - [x] `plugins/time-tracking`, built and installed through the interface in an end-to-end test;
     - [ ] the plugin author's guide, and `CLAUDE.md`'s rules for plugin code.
-  - [ ] **2. Data**: entities and properties.
+  - [ ] **2. Data**:
+    - [x] what each project sets for itself of a plugin, in its Plugins tab;
+    - [ ] entities and properties.
   - [ ] **3. Interface**: plugins' screens in sandboxed frames, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page.
   - [ ] **4. Beyond the instance**: routes, `ctx.crypto`, outbound HTTP, recurring jobs.
   - [ ] Publish the packages to npm from GitHub Actions, once steps 1 to 3 are done.

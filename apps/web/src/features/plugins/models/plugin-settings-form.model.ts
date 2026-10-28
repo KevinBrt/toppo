@@ -1,4 +1,5 @@
 import {
+  type Locale,
   PLUGIN_SETTING_TEXT_MAX_LENGTH,
   type PluginSettingField,
   type PluginSettingValue,
@@ -16,14 +17,20 @@ type Read = { value: PluginSettingValue } | { error: string };
 export function settingsForm(
   fields: readonly PluginSettingField[],
   saved: Readonly<Record<string, PluginSettingValue>>,
+  locale: Locale,
 ): SettingsForm {
+  // A number as its reader writes it (22,5 in French), with nothing the form could not read back.
+  const number = new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 20 });
   return Object.fromEntries(
     fields.map((field) => {
       const value = Object.hasOwn(saved, field.name) ? saved[field.name] : undefined;
       if (field.kind === 'boolean') {
         return [field.name, typeof value === 'boolean' ? value : (field.default ?? false)];
       }
-      return [field.name, value === undefined || typeof value === 'boolean' ? '' : String(value)];
+      if (typeof value === 'number') {
+        return [field.name, number.format(value)];
+      }
+      return [field.name, typeof value === 'string' ? value : ''];
     }),
   );
 }

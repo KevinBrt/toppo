@@ -17,6 +17,10 @@ export const plugin = definePlugin({
     // Time is logged in minutes and counted in days, as projects' budgets are.
     hoursPerDay: z.number().min(1).max(24).default(8),
   }),
+  projectSettings: z.object({
+    // The whole project's, all issues together. A mark, not a limit: no time is refused.
+    budgetDays: z.number().positive().max(100_000).optional(),
+  }),
   messages: {
     en: {
       plugin: {
@@ -30,6 +34,12 @@ export const plugin = definePlugin({
           help: 'The time logged counts in days of this many hours, as projects’ budgets do.',
         },
       },
+      projectSettings: {
+        budgetDays: {
+          label: 'Budget, in days',
+          help: 'The working days this project may take, all issues together. No time is refused.',
+        },
+      },
     },
     fr: {
       plugin: {
@@ -41,6 +51,12 @@ export const plugin = definePlugin({
         hoursPerDay: {
           label: 'Heures dans une journée de travail',
           help: 'Le temps saisi se compte en journées de ce nombre d’heures, comme les budgets des projets.',
+        },
+      },
+      projectSettings: {
+        budgetDays: {
+          label: 'Budget, en jours',
+          help: 'Les journées de travail que ce projet peut prendre, tous tickets confondus. Aucun temps n’est refusé.',
         },
       },
     },

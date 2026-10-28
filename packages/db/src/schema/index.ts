@@ -26,6 +26,7 @@ export {
 } from './issues.ts';
 export { jobs } from './jobs.ts';
 export { pluginOnceKeys } from './plugins/plugin-once-keys.ts';
+export { pluginProjectSettings } from './plugins/plugin-project-settings.ts';
 export { pluginProjects, plugins } from './plugins/plugins.ts';
 export { projectMembers, projects } from './projects.ts';
 export { roles } from './roles.ts';

@@ -54,12 +54,18 @@ export type TestIssueInput = Partial<Omit<IssueDetails, 'id' | 'key'>>;
 /**
  * A fake Toppo for a plugin's tests, in memory, with Toppo's rules: the plugin may only make the
  * calls its `needs` allow; an action runs only for someone its `access` lets in (404 for an issue
- * they do not see); a comment with the same `once` is written once. The plugin runs in the test's
+ * they do not see); a comment with the same `once` is written once; a project's settings are read
+ * in a project the plugin reaches, and whoever it acts for too. The plugin runs in the test's
  * process, its answers through JSON as in the sandbox; `toppo plugin build` checks its bundle.
  */
 export function createTestToppo(
   plugin: object,
-  options: { settings?: unknown; locale?: Locale } = {},
+  options: {
+    settings?: unknown;
+    /** What projects set for themselves, by project id: the projects the plugin acts in. */
+    projectSettings?: Readonly<Record<string, unknown>>;
+    locale?: Locale;
+  } = {},
 ) {
   let lastId = 0;
   const nextId = () => `00000000-0000-4000-8000-${String(++lastId).padStart(12, '0')}`;
@@ -93,10 +99,33 @@ export function createTestToppo(
     const call = Object.hasOwn(HOST_CALLS, method)
       ? HOST_CALLS[method as HostCallMethod]
       : undefined;
-    if (!(call && manifest.needs.includes(call.needs))) {
+    if (!(call && (call.needs === null || manifest.needs.includes(call.needs)))) {
       return Promise.reject(new Error(call ? 'FORBIDDEN' : 'UNKNOWN_METHOD'));
     }
-    return method === 'issues.get' ? getIssue(args) : comment(args);
+    switch (method) {
+      case 'issues.get':
+        return getIssue(args);
+      case 'projects.settings':
+        return projectSettings(args);
+      default:
+        return comment(args);
+    }
+  }
+
+  /**
+   * What a project set for itself: in a project the plugin acts in, which whoever it acts for
+   * reaches by an issue they see.
+   */
+  function projectSettings(args: unknown): Promise<unknown> {
+    const { projectId } = HOST_CALLS['projects.settings'].args.parse(args);
+    const settings = options.projectSettings ?? {};
+    const reached =
+      Object.hasOwn(settings, projectId) &&
+      (runningFor === null ||
+        [...issues.values()].some(
+          (issue) => issue.projectId === projectId && runningFor?.sees(issue.id),
+        ));
+    return reached ? Promise.resolve(settings[projectId]) : Promise.reject(new Error('NOT_FOUND'));
   }
 
   function getIssue(args: unknown): Promise<IssueDetails | null> {

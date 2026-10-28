@@ -46,6 +46,7 @@ describe('the types of a plugin', () => {
       needs: ['issue.read', 'comment.create'],
       permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
       settings: z.object({ maxMinutesPerDay: z.int().default(600) }),
+      projectSettings: z.object({ budgetDays: z.number().optional() }),
     });
 
     plugin.defineAction({
@@ -87,6 +88,11 @@ describe('the types of a plugin', () => {
         change.added;
         // @ts-expect-error a comment without its words
         await ctx.issues.comment(issue.id);
+        const { budgetDays } = await ctx.projects.settings(issue.projectId);
+        // @ts-expect-error a project setting that may be left empty
+        budgetDays.toFixed();
+        // @ts-expect-error an instance setting is not a project's
+        (await ctx.projects.settings(issue.projectId)).maxMinutesPerDay;
       },
     });
     plugin.defineEventHandler({

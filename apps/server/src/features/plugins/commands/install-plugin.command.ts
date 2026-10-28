@@ -1,12 +1,13 @@
 import { asksForMore } from '@toppo-tracker/core';
 import { schema } from '@toppo-tracker/db';
-import { type Manifest, manifestSchema, runAnswerSchema } from '@toppo-tracker/plugin-sdk/protocol';
+import { type Manifest, manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
 import { PLUGINS_MAX } from '@toppo-tracker/shared';
-import { count, eq, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import { z } from 'zod';
 import { defineCommand, type Services, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import type { RefusedSettings } from '../../../platform/plugins/packages/manifest-reader.ts';
 import {
   openPluginPackage,
   type PluginPackage,
@@ -14,7 +15,7 @@ import {
 import { declaredLogo, declaredManifest } from '../utils/declared-manifest.util.ts';
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
 
-const { plugins } = schema;
+const { pluginProjectSettings, plugins } = schema;
 
 /** Arbitrary but fixed: one plugin installed at a time, whoever uploads it. */
 export const PLUGIN_INSTALL_LOCK_KEY = 7_461_756_327;
@@ -69,9 +70,10 @@ export const installPlugin = defineCommand({
       return { slug: manifest.id };
     }
     const approved = manifestSchema.safeParse(installed.manifest);
-    const settingsRefused = !(await takesSettings(services, opened.code, installed.settings, log));
+    const refused = await refusedSettings(tx, services, opened.code, installed, log);
+    const settingsRefused = refused.instance || refused.projectIds.length > 0;
     // An approval covers what was approved: an approved plugin that asks for more is asked again,
-    // and one that refuses its settings once they are corrected.
+    // and one that refuses settings saved, the instance's or a project's, once they are corrected.
     const waitsForApproval =
       installed.approvedAt !== null &&
       (!approved.success || asksForMore(approved.data, manifest) || settingsRefused);
@@ -79,10 +81,25 @@ export const installPlugin = defineCommand({
       .update(plugins)
       .set({
         ...rowOf(manifest, opened, logo),
-        settingsRefused,
+        settingsRefused: refused.instance,
         ...(waitsForApproval ? { state: 'pending', approvedAt: null, approvedById: null } : {}),
       })
       .where(eq(plugins.id, installed.id));
+    await tx
+      .update(pluginProjectSettings)
+      .set({ refused: false })
+      .where(eq(pluginProjectSettings.pluginId, installed.id));
+    if (refused.projectIds.length > 0) {
+      await tx
+        .update(pluginProjectSettings)
+        .set({ refused: true })
+        .where(
+          and(
+            eq(pluginProjectSettings.pluginId, installed.id),
+            inArray(pluginProjectSettings.projectId, refused.projectIds),
+          ),
+        );
+    }
     await forgetPluginPermissions(
       tx,
       manifest.id,
@@ -97,21 +114,34 @@ export const installPlugin = defineCommand({
 });
 
 /**
- * Whether the code of an upgrade takes the settings saved for the version it replaces. Settings
- * left empty need no check: each one has a default, or may be left out.
+ * What the code of an upgrade refuses of the settings saved for the version it replaces: the
+ * instance's, and those of the projects that set theirs. Settings left empty need no check: each
+ * one has a default, or may be left out.
  */
-async function takesSettings(
+async function refusedSettings(
+  tx: Transaction,
   services: Services,
   code: string,
-  settings: Record<string, unknown>,
+  installed: { id: string; settings: Record<string, unknown> },
   log: FastifyBaseLogger,
-): Promise<boolean> {
-  if (Object.keys(settings).length === 0) {
-    return true;
-  }
-  const outcome = await services.plugins.checkSettings(code, settings, log);
-  const answer = runAnswerSchema.safeParse(outcome.ok ? outcome.value : null);
-  return answer.success && answer.data.ok;
+): Promise<RefusedSettings> {
+  const projects = await tx
+    .select({
+      projectId: pluginProjectSettings.projectId,
+      settings: pluginProjectSettings.settings,
+    })
+    .from(pluginProjectSettings)
+    .where(eq(pluginProjectSettings.pluginId, installed.id));
+  return await services.plugins.checkSettings(
+    code,
+    {
+      instance: installed.settings,
+      projects: Object.fromEntries(
+        projects.map(({ projectId, settings }) => [projectId, settings]),
+      ),
+    },
+    log,
+  );
 }
 
 async function assertRoomForOneMore(tx: Transaction): Promise<void> {

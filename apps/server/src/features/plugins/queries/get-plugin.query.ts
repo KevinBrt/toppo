@@ -5,14 +5,14 @@ import {
   type PluginDetailsResponse,
   pluginSlugParamsSchema,
 } from '@toppo-tracker/shared';
-import { asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { translated } from '../../../platform/plugins/plugin-words.ts';
 import { lastFailureOf } from '../models/plugin-failure.model.ts';
 import { identityOf, PLUGIN_IDENTITY, pluginNotFound } from '../utils/plugin-rows.util.ts';
-import { savedValuesOf, settingFieldsOf } from '../utils/plugin-settings.util.ts';
+import { savedValuesOf, settingFieldsOf } from '../utils/settings/plugin-settings.util.ts';
 
-const { pluginProjects, plugins, projects, users } = schema;
+const { pluginProjectSettings, pluginProjects, plugins, projects, users } = schema;
 
 /** `null` once their account is deleted. */
 const approverName = sql<
@@ -57,6 +57,15 @@ export const getPlugin = defineQuery({
       .where(eq(pluginProjects.pluginId, plugin.id))
       .orderBy(asc(projects.key))
       .limit(PLUGIN_PROJECTS_MAX);
+    const refusedProjects = await db
+      .select({ key: projects.key, name: projects.name })
+      .from(pluginProjectSettings)
+      .innerJoin(projects, eq(projects.id, pluginProjectSettings.projectId))
+      .where(
+        and(eq(pluginProjectSettings.pluginId, plugin.id), eq(pluginProjectSettings.refused, true)),
+      )
+      .orderBy(asc(projects.key))
+      .limit(PLUGIN_PROJECTS_MAX);
     // Checked as it was installed: a manifest Toppo kept is one it accepted.
     const manifest = manifestSchema.parse(plugin.manifest);
     return {
@@ -89,9 +98,10 @@ export const getPlugin = defineQuery({
       failures: plugin.failures,
       lastFailure: lastFailureOf(plugin.lastError),
       settings: {
-        fields: settingFieldsOf(manifest),
-        values: savedValuesOf(manifest, plugin.settings),
+        fields: settingFieldsOf(manifest, 'settings'),
+        values: savedValuesOf(manifest, 'settings', plugin.settings),
         refused: plugin.settingsRefused,
+        refusedProjects,
       },
       createdAt: plugin.createdAt.toISOString(),
       updatedAt: plugin.updatedAt.toISOString(),

@@ -254,6 +254,43 @@ describe('a plugin hearing of events', () => {
     expect(await commentsOn(key)).toStrictEqual([]);
   });
 
+  it('reads what its projects set for themselves, and nothing of the others', async () => {
+    const { messages } = testManifest();
+    const budget = { budgetDays: { label: 'Budget' } };
+    const [ops] = await context.database.db
+      .select({ id: schema.projects.id })
+      .from(schema.projects)
+      .where(eq(schema.projects.key, 'OPS'));
+    await install(
+      listener({
+        projectSettings: { type: 'object', properties: { budgetDays: { type: 'number' } } },
+        messages: {
+          en: { ...messages.en, projectSettings: budget },
+          fr: { ...messages.fr, projectSettings: budget },
+        },
+      }),
+      `if (kind === 'settings') { return JSON.stringify({ ok: true, result: null }); }
+       const { issue, event } = JSON.parse(payload);
+       const read = (projectId) => __host.call('projects.settings', JSON.stringify({ projectId }))
+         .then((settings) => settings, (error) => error.message);
+       const body = (await read(issue.projectId)) + ' / ' + (await read('${ops?.id}'));
+       await __host.call('issues.comment', JSON.stringify({ issueId: issue.id, body, once: event.id }));
+       return JSON.stringify({ ok: true, result: null });`,
+    );
+    const saved = await call('PUT', '/api/v1/projects/WEB/plugins/time-tracking/settings', {
+      values: { budgetDays: 20 },
+    });
+    expect(saved.statusCode, saved.body).toBe(204);
+    const key = await report('WEB');
+
+    await move(key, 'inProgress');
+    await runJobs();
+
+    expect(await commentsOn(key)).toMatchObject([
+      { body: '{"budgetDays":20} / PROJECT_NOT_FOUND' },
+    ]);
+  });
+
   it('may ask only what its needs allow', async () => {
     // It may comment, not read: its refusal says so on the issue.
     await install(

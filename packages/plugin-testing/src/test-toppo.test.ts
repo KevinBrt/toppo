@@ -14,16 +14,19 @@ function timeTracking(
     needs,
     permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
     settings: z.object({ maxMinutesPerDay: z.int().min(1).default(600) }),
+    projectSettings: z.object({ budgetDays: z.number().positive().optional() }),
     messages: {
       en: {
         permissions: { log: 'Log time' },
         settings: { maxMinutesPerDay: { label: 'Minutes a day' } },
+        projectSettings: { budgetDays: { label: 'Budget, in days' } },
         errors: { dailyLimit: 'At most {limit}.' },
         closed: 'Closed.',
       },
       fr: {
         permissions: { log: 'Saisir' },
         settings: { maxMinutesPerDay: { label: 'Minutes par jour' } },
+        projectSettings: { budgetDays: { label: 'Budget, en jours' } },
         errors: { dailyLimit: '{limit} au plus.' },
         closed: 'Fermé.',
       },
@@ -58,10 +61,35 @@ function timeTracking(
       }
     },
   });
-  return { plugin, logTime, ask };
+  const budget = plugin.defineAction({
+    name: 'project.budget',
+    access: 'authenticated',
+    input: z.object({ projectId: z.uuid() }),
+    async handler(ctx, { projectId }) {
+      return (await ctx.projects.settings(projectId)).budgetDays ?? null;
+    },
+  });
+  return { plugin, logTime, ask, budget };
 }
 
+/** The project of the issues the kit makes. */
+const WEB = '00000000-0000-4000-8000-000000000100';
+
 describe('a fake Toppo for a plugin’s tests', () => {
+  it('reads what a project set for itself, for someone who reaches it by an issue', async () => {
+    const { plugin, budget } = timeTracking();
+    const toppo = createTestToppo(plugin, { projectSettings: { [WEB]: { budgetDays: 20 } } });
+    const issue = toppo.createIssue();
+
+    expect(await toppo.createUser({ sees: [issue] }).run(budget, { projectId: WEB })).toBe(20);
+    await expect(
+      toppo.createUser({ sees: [] }).run(budget, { projectId: WEB }),
+    ).rejects.toMatchObject({ code: 'PLUGIN_ERROR', detail: 'NOT_FOUND' });
+    await expect(
+      toppo.createUser().run(budget, { projectId: '00000000-0000-4000-8000-000000000999' }),
+    ).rejects.toMatchObject({ code: 'PLUGIN_ERROR', detail: 'NOT_FOUND' });
+  });
+
   it('runs an action for someone who reaches the issue and holds the permission', async () => {
     const { plugin, logTime } = timeTracking();
     const toppo = createTestToppo(plugin);
@@ -74,7 +102,7 @@ describe('a fake Toppo for a plugin’s tests', () => {
     });
     expect(toppo.manifest).toMatchObject({
       id: 'time-tracking',
-      actions: [{ name: 'timeEntry.log' }, { name: 'issue.peek' }],
+      actions: [{ name: 'timeEntry.log' }, { name: 'issue.peek' }, { name: 'project.budget' }],
     });
   });
 
