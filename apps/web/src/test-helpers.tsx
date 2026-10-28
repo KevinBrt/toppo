@@ -34,6 +34,7 @@ import {
   mediaTypeOf,
   meetsCondition,
   nextStatusesOf,
+  type PluginPermission,
   type ProjectPermission,
   type PropertyCondition,
   type PropertyProblem,
@@ -87,6 +88,7 @@ import {
   type Notification,
   type PaletteColor,
   type PendingInvitation,
+  type PluginPermissionSection,
   PROJECT_ACCESS_PAGE_SIZE,
   PROJECT_MEMBERS_PREVIEW,
   PROJECTS_PAGE_SIZE,
@@ -189,6 +191,8 @@ export interface FakeServerState {
   users: UserSummary[];
   /** The default roles unless a test sets others. */
   roles: FakeRole[];
+  /** The plugins installed, with the permissions they add: none unless a test adds some. */
+  plugins: PluginPermissionSection[];
   invitations: PendingInvitation[];
   /** The links the fake server made, by token, and what opening them shows. */
   invitationLinks: Map<string, InvitationLinkState>;
@@ -498,6 +502,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       user: null,
       users: [memberOf(ADA, ROLE_BADGES.administrator), memberOf(GRACE, ROLE_BADGES.team)],
       roles: defaultRoles(),
+      plugins: [],
       invitations: [],
       invitationLinks: new Map(),
       projects: [],
@@ -1028,9 +1033,15 @@ function listRoles(state: FakeServerState): Response {
         .length,
       projectCount: 0,
     })),
-    plugins: [],
+    plugins: state.plugins,
   });
 }
+
+/** The permissions the plugins of the fake server add to the catalog. */
+const pluginPermissionsOf = (state: FakeServerState) =>
+  state.plugins.flatMap(({ permissions }) =>
+    permissions.map(({ name, scope }) => ({ name, scope })),
+  );
 
 const sameName = (left: string, right: string) => left.toLowerCase() === right.toLowerCase();
 
@@ -1065,6 +1076,7 @@ function savePermissions(state: FakeServerState, body: Record<string, unknown>):
     const refusal = permissionsRefusal(
       state.roles.find((candidate) => candidate.id === change.roleId),
       change,
+      pluginPermissionsOf(state),
     );
     if (refusal) {
       return refusal;
@@ -1073,7 +1085,7 @@ function savePermissions(state: FakeServerState, body: Record<string, unknown>):
   for (const { roleId, to, notifyNewIssues } of parsed.data.changes) {
     const role = state.roles.find((candidate) => candidate.id === roleId);
     if (role && !role.grantsAll) {
-      role.permissions = rolePermissionsFrom(to, []).permissions;
+      role.permissions = rolePermissionsFrom(to, pluginPermissionsOf(state)).permissions;
     }
     if (role && notifyNewIssues) {
       role.notifyNewIssues = notifyNewIssues.to;
@@ -1086,6 +1098,7 @@ function savePermissions(state: FakeServerState, body: Record<string, unknown>):
 function permissionsRefusal(
   role: FakeRole | undefined,
   { from, to, notifyNewIssues }: RolePermissionsRequest['changes'][number],
+  plugins: readonly PluginPermission[],
 ): Response | null {
   const sameSet = (left: readonly string[], right: readonly string[]) =>
     [...left].sort().join() === [...right].sort().join();
@@ -1095,11 +1108,13 @@ function permissionsRefusal(
   if (role.grantsAll && !sameSet(from, to)) {
     return apiError(403, 'SYSTEM_ROLE_LOCKED');
   }
-  if (!role.grantsAll && rolePermissionsFrom(to, []).refused.length > 0) {
+  if (!role.grantsAll && rolePermissionsFrom(to, plugins).refused.length > 0) {
     return apiError(400, 'INVALID_PERMISSIONS');
   }
   const changed = notifyNewIssues !== undefined && notifyNewIssues.from !== role.notifyNewIssues;
-  return !sameSet(from, role.permissions) || changed ? apiError(409, 'ROLES_CHANGED') : null;
+  return !sameSet(from, permissionsOfRole(role, plugins)) || changed
+    ? apiError(409, 'ROLES_CHANGED')
+    : null;
 }
 
 /** `PATCH /api/v1/roles/:id` and `DELETE /api/v1/roles/:id`. */

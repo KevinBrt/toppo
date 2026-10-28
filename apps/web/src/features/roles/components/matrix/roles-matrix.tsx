@@ -1,12 +1,14 @@
 import type { RoleDetails } from '@toppo-tracker/shared';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
-import { MATRIX_SECTIONS, type RoleSettings } from '../../utils/permission-matrix.util.ts';
+import type { Matrix, RoleSettings } from '../../utils/permission-matrix.util.ts';
 import { PermissionControl } from './permission-control.tsx';
 import { RoleHeading } from './role-heading.tsx';
-import { RowLabel, rowKey } from './row-label.tsx';
+import { RowLabel, rowKey, sectionKey, sectionText } from './row-label.tsx';
 
 export interface MatrixProps {
   roles: readonly RoleDetails[];
+  /** Its sections, Toppo's then the plugins'. */
+  matrix: Matrix;
   /** What each role grants in the matrix, and whether it is told of new issues, saved or not. */
   settingsOf: (role: RoleDetails) => RoleSettings;
   onChange: (role: RoleDetails, settings: RoleSettings) => void;
@@ -16,7 +18,7 @@ export interface MatrixProps {
  * Every role side by side, permissions in rows grouped by section, for wide screens. The
  * permission column stays in place while many roles scroll sideways.
  */
-export function RolesMatrix({ roles, settingsOf, onChange }: MatrixProps) {
+export function RolesMatrix({ roles, matrix, settingsOf, onChange }: MatrixProps) {
   const { t } = useI18n();
 
   return (
@@ -38,9 +40,9 @@ export function RolesMatrix({ roles, settingsOf, onChange }: MatrixProps) {
             ))}
           </tr>
         </thead>
-        {MATRIX_SECTIONS.map(({ section, scope, rows }) => (
+        {matrix.sections.map((section) => (
           <tbody
-            key={section}
+            key={sectionKey(section)}
             className="divide-y divide-border border-b border-border last:border-b-0"
           >
             <tr className="bg-surface-muted">
@@ -51,14 +53,14 @@ export function RolesMatrix({ roles, settingsOf, onChange }: MatrixProps) {
               >
                 {/* Kept beside the permission column while the roles scroll. */}
                 <span className="sticky left-4">
-                  {t(`roles.sections.${section}`)}
+                  {sectionText(section, t).title}
                   <span className="ml-2 font-normal text-muted-foreground">
-                    {t(`roles.scope.${scope}`)}
+                    {sectionText(section, t).detail}
                   </span>
                 </span>
               </th>
             </tr>
-            {rows.map((row) => (
+            {section.rows.map((row) => (
               <tr key={rowKey(row)}>
                 <th
                   scope="row"
@@ -71,6 +73,7 @@ export function RolesMatrix({ roles, settingsOf, onChange }: MatrixProps) {
                     <PermissionControl
                       row={row}
                       role={role}
+                      matrix={matrix}
                       settings={settingsOf(role)}
                       onChange={(settings) => onChange(role, settings)}
                     />

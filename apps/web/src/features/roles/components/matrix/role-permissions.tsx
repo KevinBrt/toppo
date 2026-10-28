@@ -1,14 +1,13 @@
 import { cn } from '@toppo-tracker/ui';
 import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
-import { MATRIX_SECTIONS } from '../../utils/permission-matrix.util.ts';
 import { PermissionControl } from './permission-control.tsx';
 import { RoleHeading } from './role-heading.tsx';
 import type { MatrixProps } from './roles-matrix.tsx';
-import { RowLabel, rowKey } from './row-label.tsx';
+import { RowLabel, rowKey, sectionKey, sectionText } from './row-label.tsx';
 
 /** The matrix for small screens: one role at a time, chosen with tabs that scroll sideways. */
-export function RolePermissions({ roles, settingsOf, onChange }: MatrixProps) {
+export function RolePermissions({ roles, matrix, settingsOf, onChange }: MatrixProps) {
   const { t } = useI18n();
   const [chosenId, setChosenId] = useState<string>();
   const role = roles.find((candidate) => candidate.id === chosenId) ?? roles[0];
@@ -41,16 +40,19 @@ export function RolePermissions({ roles, settingsOf, onChange }: MatrixProps) {
       <div className="flex justify-center border-b border-border px-4 py-3">
         <RoleHeading role={role} />
       </div>
-      {MATRIX_SECTIONS.map(({ section, scope, rows }) => (
-        <section key={section} aria-labelledby={`role-section-${section}`}>
+      {matrix.sections.map((section) => (
+        <section key={sectionKey(section)} aria-labelledby={`role-section-${sectionKey(section)}`}>
           <div className="bg-surface-muted px-4 py-2">
-            <h2 id={`role-section-${section}`} className="text-xs font-semibold text-foreground">
-              {t(`roles.sections.${section}`)}
+            <h2
+              id={`role-section-${sectionKey(section)}`}
+              className="text-xs font-semibold text-foreground"
+            >
+              {sectionText(section, t).title}
             </h2>
-            <p className="text-xs text-muted-foreground">{t(`roles.scope.${scope}`)}</p>
+            <p className="text-xs text-muted-foreground">{sectionText(section, t).detail}</p>
           </div>
           <ul className="divide-y divide-border">
-            {rows.map((row) => (
+            {section.rows.map((row) => (
               <li key={rowKey(row)} className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <div className="min-w-0">
                   <RowLabel row={row} />
@@ -58,6 +60,7 @@ export function RolePermissions({ roles, settingsOf, onChange }: MatrixProps) {
                 <PermissionControl
                   row={row}
                   role={role}
+                  matrix={matrix}
                   settings={settingsOf(role)}
                   onChange={(settings) => onChange(role, settings)}
                 />

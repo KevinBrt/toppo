@@ -994,6 +994,7 @@ export const fr: Messages = {
     delete: 'Supprimer',
     controlFor: '{permission}, {role}',
     shownRole: 'Rôle affiché',
+    pluginSection: 'Permissions ajoutées par ce plugin.',
     scope: {
       instance: 'S’applique à toute l’instance.',
       project: 'S’applique dans chaque projet auquel le membre a accès.',

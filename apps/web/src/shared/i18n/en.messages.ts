@@ -963,6 +963,7 @@ export const en = {
     delete: 'Delete',
     controlFor: '{permission}, {role}',
     shownRole: 'Role shown',
+    pluginSection: 'Permissions this plugin adds.',
     scope: {
       instance: 'Applies to the whole instance.',
       project: 'Applies in each project the member has access to.',

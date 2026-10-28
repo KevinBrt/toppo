@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { RoleDetails } from '@toppo-tracker/shared';
 import { Alert } from '@toppo-tracker/ui';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ApiRequestError } from '../../../shared/api/http.client.ts';
 import { requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';
 import { UnsavedChangesBar } from '../../../shared/forms/unsaved-changes-bar.tsx';
@@ -11,6 +11,7 @@ import { RolesQueries } from '../queries/roles.queries.ts';
 import {
   changesToSave,
   countChanges,
+  matrixOf,
   type RoleDraft,
   type RoleSettings,
   settingsOfRole,
@@ -36,12 +37,13 @@ export function RolesEditor({ onPendingChange }: { onPendingChange?: (pending: b
   const roles = useQuery(RolesQueries.all);
   const [drafts, setDrafts] = useState<Record<string, RoleDraft>>({});
   const [outcome, setOutcome] = useState<{ saved: true } | { failure: unknown } | null>(null);
+  const matrix = useMemo(() => matrixOf(roles.data?.plugins ?? []), [roles.data?.plugins]);
 
   // A role deleted meanwhile has nothing left to save.
   const current = Object.fromEntries(
-    Object.entries(drafts).filter(([roleId]) => roles.data?.some(({ id }) => id === roleId)),
+    Object.entries(drafts).filter(([roleId]) => roles.data?.roles.some(({ id }) => id === roleId)),
   );
-  const pending = countChanges(current);
+  const pending = countChanges(current, matrix);
 
   useEffect(() => onPendingChange?.(pending > 0), [pending, onPendingChange]);
 
@@ -73,15 +75,15 @@ export function RolesEditor({ onPendingChange }: { onPendingChange?: (pending: b
     return <Alert tone="danger">{requestErrorMessage(roles.error, t)}</Alert>;
   }
 
-  const settingsOf = (role: RoleDetails) => current[role.id]?.to ?? settingsOfRole(role);
+  const settingsOf = (role: RoleDetails) => current[role.id]?.to ?? settingsOfRole(role, matrix);
   const change = (role: RoleDetails, settings: RoleSettings) => {
     setOutcome(null);
     setDrafts((previous) => ({
       ...previous,
-      [role.id]: { from: previous[role.id]?.from ?? settingsOfRole(role), to: settings },
+      [role.id]: { from: previous[role.id]?.from ?? settingsOfRole(role, matrix), to: settings },
     }));
   };
-  const matrix = { roles: roles.data, settingsOf, onChange: change };
+  const props = { roles: roles.data.roles, matrix, settingsOf, onChange: change };
 
   return (
     <div className="flex flex-col gap-4">
@@ -90,10 +92,10 @@ export function RolesEditor({ onPendingChange }: { onPendingChange?: (pending: b
       ) : null}
       {outcome && 'saved' in outcome ? <Alert>{t('roles.saved')}</Alert> : null}
       <div className="hidden md:block">
-        <RolesMatrix {...matrix} />
+        <RolesMatrix {...props} />
       </div>
       <div className="md:hidden">
-        <RolePermissions {...matrix} />
+        <RolePermissions {...props} />
       </div>
       {pending > 0 ? (
         <UnsavedChangesBar
