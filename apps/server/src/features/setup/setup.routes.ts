@@ -1,4 +1,8 @@
-import { setupRequestSchema, setupResponseSchema, setupStatusResponseSchema } from '@toppo/shared';
+import {
+  setupRequestSchema,
+  setupResponseSchema,
+  setupStatusResponseSchema,
+} from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from '../../platform/http/zod.ts';
 import { completeSetup } from './commands/complete-setup.command.ts';

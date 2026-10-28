@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Link, useNavigate } from '@tanstack/react-router';
-import { can, parseIssueKey } from '@toppo/core';
+import { can, parseIssueKey } from '@toppo-tracker/core';
 import { ProjectSwitcher } from '../../../features/projects/components/picker/project-switcher.tsx';
 import { ProjectsQueries } from '../../../features/projects/queries/projects.queries.ts';
 import { SessionQueries } from '../../../features/session/queries/session.queries.ts';

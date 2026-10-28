@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { BellIcon, CheckCheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';

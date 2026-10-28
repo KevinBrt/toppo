@@ -1,5 +1,13 @@
-import { PALETTE_COLORS, type PaletteColor, STATUS_NAME_MAX_LENGTH } from '@toppo/shared';
-import { Button, ColorPicker, Dialog, DialogClose, DialogContent, Field, Input } from '@toppo/ui';
+import { PALETTE_COLORS, type PaletteColor, STATUS_NAME_MAX_LENGTH } from '@toppo-tracker/shared';
+import {
+  Button,
+  ColorPicker,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  Field,
+  Input,
+} from '@toppo-tracker/ui';
 import { type FormEvent, useId, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { StatusDraft } from '../../models/workflow-draft.model.ts';

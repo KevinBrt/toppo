@@ -1,4 +1,4 @@
-import { emailSchema } from '@toppo/shared';
+import { emailSchema } from '@toppo-tracker/shared';
 
 /**
  * The addresses typed in the invitation box: one per line, or separated by commas, semicolons

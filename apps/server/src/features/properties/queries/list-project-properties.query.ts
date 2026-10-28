@@ -1,9 +1,9 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import {
   type ProjectPropertiesResponse,
   type PropertyRow,
   projectIssuesParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, asc, count, eq, inArray, isNull, or } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

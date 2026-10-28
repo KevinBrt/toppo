@@ -1,4 +1,4 @@
-import type { Db } from '@toppo/db';
+import type { Db } from '@toppo-tracker/db';
 import type { FastifyBaseLogger } from 'fastify';
 import type { z } from 'zod';
 import {

@@ -1,6 +1,6 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
-import { MEMBERS_PAGE_SIZE, type MemberRow } from '@toppo/shared';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
+import { MEMBERS_PAGE_SIZE, type MemberRow } from '@toppo-tracker/shared';
 import Fastify from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { ExecutionContext } from '../../../platform/cqrs/cqrs.ts';

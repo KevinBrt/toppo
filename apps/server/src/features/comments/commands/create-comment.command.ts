@@ -1,9 +1,9 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import {
   commentRequestSchema,
   type IssueActivityPayload,
   issueKeyParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { eq, sql } from 'drizzle-orm';
 import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';

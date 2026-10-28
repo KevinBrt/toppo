@@ -1,4 +1,4 @@
-import type { IssueSummary } from '@toppo/shared';
+import type { IssueSummary } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import { groupKeyOf, sectionsOf } from './issue-groups.util.ts';
 

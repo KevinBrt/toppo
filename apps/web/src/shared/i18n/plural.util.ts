@@ -1,4 +1,4 @@
-import type { Locale } from '@toppo/shared';
+import type { Locale } from '@toppo-tracker/shared';
 
 /**
  * The plural form of `count` in `locale`, among the two the catalogs carry: `t(\`members.count.${form}\`)`.

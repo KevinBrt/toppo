@@ -1,5 +1,5 @@
-import type { IssueActivity, LinkedIssue, Locale, PaletteColor } from '@toppo/shared';
-import { cn, StatusBadge } from '@toppo/ui';
+import type { IssueActivity, LinkedIssue, Locale, PaletteColor } from '@toppo-tracker/shared';
+import { cn, StatusBadge } from '@toppo-tracker/ui';
 import {
   ArrowRightIcon,
   ChevronDownIcon,

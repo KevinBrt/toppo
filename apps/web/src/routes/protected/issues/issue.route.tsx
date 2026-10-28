@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, useNavigate } from '@tanstack/react-router';
-import { EmptyState } from '@toppo/ui';
+import { EmptyState } from '@toppo-tracker/ui';
 import { FileXIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { IssueView } from '../../../features/issues/components/issue/issue-view.tsx';

@@ -1,4 +1,4 @@
-import type { AttachmentLimitsResponse } from '@toppo/shared';
+import type { AttachmentLimitsResponse } from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 

@@ -1,4 +1,4 @@
-import { apiErrorSchema } from '@toppo/shared';
+import { apiErrorSchema } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';

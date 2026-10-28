@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { PASSWORD_RESET_LIFETIME_MINUTES, passwordResetRequestSchema } from '@toppo/shared';
-import { Alert, Button, Field, Input } from '@toppo/ui';
+import { PASSWORD_RESET_LIFETIME_MINUTES, passwordResetRequestSchema } from '@toppo-tracker/shared';
+import { Alert, Button, Field, Input } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import { fieldErrors, requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';

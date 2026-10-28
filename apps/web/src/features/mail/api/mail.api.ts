@@ -2,7 +2,7 @@ import {
   type MailSettings,
   type MailSettingsRequest,
   mailSettingsResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
 

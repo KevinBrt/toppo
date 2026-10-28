@@ -1,7 +1,7 @@
 import { Markdown } from '@tiptap/markdown';
 import { type Editor, EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
-import type { FieldControlProps } from '@toppo/ui';
+import type { FieldControlProps } from '@toppo-tracker/ui';
 import { BoldIcon, CodeIcon, ItalicIcon, LinkIcon, ListIcon, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

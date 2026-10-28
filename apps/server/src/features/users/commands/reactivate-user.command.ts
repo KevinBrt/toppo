@@ -1,6 +1,6 @@
-import { canActOnRole } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { userIdParamsSchema } from '@toppo/shared';
+import { canActOnRole } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { userIdParamsSchema } from '@toppo-tracker/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

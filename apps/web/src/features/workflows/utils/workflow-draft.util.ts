@@ -1,4 +1,4 @@
-import type { WorkflowRequest, WorkflowResponse, WorkflowStatusRow } from '@toppo/shared';
+import type { WorkflowRequest, WorkflowResponse, WorkflowStatusRow } from '@toppo-tracker/shared';
 import type { MoveDraft, StatusDraft, WorkflowDraft } from '../models/workflow-draft.model.ts';
 
 let created = 0;

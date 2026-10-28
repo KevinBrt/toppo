@@ -1,4 +1,4 @@
-import type { AttachmentMediaType } from '@toppo/shared';
+import type { AttachmentMediaType } from '@toppo-tracker/shared';
 
 /** A file chosen to attach, not sent yet. */
 export interface FileDraft {

@@ -1,5 +1,5 @@
 import { createRoute, Link } from '@tanstack/react-router';
-import { buttonVariants, EmptyState } from '@toppo/ui';
+import { buttonVariants, EmptyState } from '@toppo-tracker/ui';
 import { CompassIcon } from 'lucide-react';
 import { useI18n } from '../../shared/i18n/i18n-provider.tsx';
 import { Page } from '../../shared/layout/page.tsx';

@@ -1,5 +1,5 @@
-import { DEFAULT_ROLE_IDS, DEFAULT_STATUSES } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { DEFAULT_ROLE_IDS, DEFAULT_STATUSES } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   addCommentResponseSchema,
   createIssueResponseSchema,
@@ -7,8 +7,8 @@ import {
   type NotificationEvent,
   notificationsResponseSchema,
   unreadNotificationsResponseSchema,
-} from '@toppo/shared';
-import { startSmtpServer, type TestSmtpServer } from '@toppo/testing';
+} from '@toppo-tracker/shared';
+import { startSmtpServer, type TestSmtpServer } from '@toppo-tracker/testing';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';

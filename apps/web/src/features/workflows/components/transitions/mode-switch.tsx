@@ -1,4 +1,4 @@
-import { WORKFLOW_MODES, type WorkflowMode } from '@toppo/shared';
+import { WORKFLOW_MODES, type WorkflowMode } from '@toppo-tracker/shared';
 import { useId } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 

@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { prepareTemplateDatabase, removeTestDatabases } from '@toppo/testing';
+import { prepareTemplateDatabase, removeTestDatabases } from '@toppo-tracker/testing';
 import type { TestProject } from 'vitest/node';
 import { createDatabase } from './src/database.ts';
 

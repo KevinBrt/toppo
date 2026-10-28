@@ -2,8 +2,8 @@ import { mkdtempSync, readdirSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   ATTACHMENTS_MAX,
   addAttachmentResponseSchema,
@@ -14,7 +14,7 @@ import {
   FILE_NAME_HEADER,
   issueActivitiesResponseSchema,
   issueAttachmentsResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { beforeAll, describe, expect, it, vi } from 'vitest';

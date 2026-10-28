@@ -1,5 +1,5 @@
-import { type InstancePermission, instancePermissionsOf } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
+import { type InstancePermission, instancePermissionsOf } from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Auth } from './auth.ts';

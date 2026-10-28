@@ -1,4 +1,4 @@
-import { PALETTE_COLORS } from '@toppo/shared';
+import { PALETTE_COLORS } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
@@ -45,7 +45,7 @@ export const projects = pgTable(
   },
   (table) => [
     uniqueIndex('projects_key_unique').on(table.key),
-    // Mirrors PROJECT_KEY_PATTERN (`@toppo/shared`).
+    // Mirrors PROJECT_KEY_PATTERN (`@toppo-tracker/shared`).
     check('projects_key_format', sql`${table.key} ~ '^[A-Z][A-Z0-9]{1,9}$'`),
     check('projects_name_not_blank', sql`btrim(${table.name}) <> ''`),
     check(

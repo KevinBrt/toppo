@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { type Locale, localeSchema, SUPPORTED_LOCALES } from '@toppo/shared';
-import { Alert, Select } from '@toppo/ui';
+import { type Locale, localeSchema, SUPPORTED_LOCALES } from '@toppo-tracker/shared';
+import { Alert, Select } from '@toppo-tracker/ui';
 import { useId } from 'react';
 import { requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';

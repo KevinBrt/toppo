@@ -6,9 +6,9 @@ import {
   DEFAULT_ROLE_NAMES,
   DEFAULT_ROLES,
   DEFAULT_STATUSES,
-} from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
-import { type Locale, type SetupResponse, setupRequestSchema } from '@toppo/shared';
+} from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
+import { type Locale, type SetupResponse, setupRequestSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

@@ -4,7 +4,7 @@ import {
   type ProjectFields,
   type PropertyType,
   type UserRef,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 
 /**
  * The option a field of the form holds: the one chosen, else its default, or none when the

@@ -1,4 +1,4 @@
-import { type Db, schema } from '@toppo/db';
+import { type Db, schema } from '@toppo-tracker/db';
 import { inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Transaction } from '../cqrs/cqrs.ts';

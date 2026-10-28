@@ -1,6 +1,6 @@
-import { type NotifiedChange, recipientsOf } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { ISSUE_ACTIVITY_PAYLOADS } from '@toppo/shared';
+import { type NotifiedChange, recipientsOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { ISSUE_ACTIVITY_PAYLOADS } from '@toppo-tracker/shared';
 import { and, eq, lte } from 'drizzle-orm';
 import { ACTIVITY_RECORDED } from '../../../platform/activities/record-activity.ts';
 import { whoSeesIssue } from '../../../platform/auth/project-access.ts';

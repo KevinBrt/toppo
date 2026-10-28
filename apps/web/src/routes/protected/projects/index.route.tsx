@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, useNavigate } from '@tanstack/react-router';
-import { can } from '@toppo/core';
-import type { ProjectsQuery } from '@toppo/shared';
+import { can } from '@toppo-tracker/core';
+import type { ProjectsQuery } from '@toppo-tracker/shared';
 import { useCallback } from 'react';
 import { z } from 'zod';
 import { NewProject } from '../../../features/projects/components/list/new-project.tsx';

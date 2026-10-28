@@ -1,4 +1,4 @@
-import type { IssueGrouping, IssueSummary } from '@toppo/shared';
+import type { IssueGrouping, IssueSummary } from '@toppo-tracker/shared';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
 import { PersonName } from '../fields/person-name.tsx';

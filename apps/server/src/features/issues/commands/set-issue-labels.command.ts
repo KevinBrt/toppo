@@ -1,6 +1,6 @@
-import { labelsChange } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { issueKeyParamsSchema, issueLabelsRequestSchema } from '@toppo/shared';
+import { labelsChange } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { issueKeyParamsSchema, issueLabelsRequestSchema } from '@toppo-tracker/shared';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';

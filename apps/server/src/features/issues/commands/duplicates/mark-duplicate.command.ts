@@ -1,6 +1,6 @@
-import { canMoveTo, closedAtFor } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { issueKeyParamsSchema, markDuplicateRequestSchema } from '@toppo/shared';
+import { canMoveTo, closedAtFor } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { issueKeyParamsSchema, markDuplicateRequestSchema } from '@toppo-tracker/shared';
 import { eq, inArray } from 'drizzle-orm';
 import { recordActivity } from '../../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';

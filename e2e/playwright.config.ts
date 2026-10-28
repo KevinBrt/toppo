@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
-import { testDatabaseUrl } from '@toppo/testing';
+import { testDatabaseUrl } from '@toppo-tracker/testing';
 
 const isCI = Boolean(process.env['CI']);
 

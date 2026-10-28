@@ -1,10 +1,10 @@
-import { attachmentActionsOf } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { attachmentActionsOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   ATTACHMENTS_MAX,
   type IssueAttachmentsResponse,
   issueKeyParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { toIssueAttachment } from '../utils/attachment-rows.util.ts';

@@ -1,5 +1,5 @@
-import type { UserRef } from '@toppo/shared';
-import { Avatar } from '@toppo/ui';
+import type { UserRef } from '@toppo-tracker/shared';
+import { Avatar } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 
 /** Someone an issue names, with their initials; a deleted account shows as such. */

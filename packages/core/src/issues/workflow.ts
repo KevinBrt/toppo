@@ -1,4 +1,4 @@
-import type { WorkflowMode } from '@toppo/shared';
+import type { WorkflowMode } from '@toppo-tracker/shared';
 
 /** A workflow, as far as choosing it goes: the instance's (`projectId` null) or a project's copy. */
 export interface WorkflowOwner {

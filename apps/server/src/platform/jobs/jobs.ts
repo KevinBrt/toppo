@@ -1,4 +1,4 @@
-import { type Db, schema } from '@toppo/db';
+import { type Db, schema } from '@toppo-tracker/db';
 import { sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import type { z } from 'zod';

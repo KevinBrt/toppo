@@ -1,5 +1,5 @@
-import type { InstanceAccounts } from '@toppo/core';
-import { schema } from '@toppo/db';
+import type { InstanceAccounts } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import { and, eq, isNull, or, sql } from 'drizzle-orm';
 import type { Transaction } from '../cqrs/cqrs.ts';
 

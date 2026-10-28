@@ -1,4 +1,4 @@
-import { PROJECT_KEY_MAX_LENGTH, PROJECT_KEY_MIN_LENGTH } from '@toppo/shared';
+import { PROJECT_KEY_MAX_LENGTH, PROJECT_KEY_MIN_LENGTH } from '@toppo-tracker/shared';
 
 /**
  * A key to suggest for a project's name: the initials of its words ("Portail clients" → `PC`),

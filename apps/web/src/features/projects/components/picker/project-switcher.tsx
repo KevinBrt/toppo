@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import type { PaletteColor } from '@toppo/shared';
+import type { PaletteColor } from '@toppo-tracker/shared';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   Input,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { ChevronDownIcon } from 'lucide-react';
 import { type KeyboardEvent, useEffect, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

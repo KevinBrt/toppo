@@ -3,7 +3,7 @@ import {
   passwordResetAvailabilityResponseSchema,
   passwordResetRequestSchema,
   resetPasswordRequestSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { APIError } from 'better-auth/api';
 import type { FastifyInstance, HTTPMethods } from 'fastify';
 import { z } from 'zod';

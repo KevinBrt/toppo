@@ -1,6 +1,6 @@
-import { canActOnProjectMember } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { projectInvitationParamsSchema } from '@toppo/shared';
+import { canActOnProjectMember } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { projectInvitationParamsSchema } from '@toppo-tracker/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../../platform/http/http-error.ts';

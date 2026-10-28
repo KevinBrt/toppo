@@ -1,6 +1,9 @@
-import { canActOnRole, invitationExpiry } from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
-import { type CreateInvitationsResponse, createInvitationsRequestSchema } from '@toppo/shared';
+import { canActOnRole, invitationExpiry } from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
+import {
+  type CreateInvitationsResponse,
+  createInvitationsRequestSchema,
+} from '@toppo-tracker/shared';
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { reachableBy, reachesEveryProject } from '../../../platform/auth/project-access.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';

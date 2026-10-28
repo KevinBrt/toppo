@@ -1,5 +1,5 @@
 import { createRoute, useNavigate } from '@tanstack/react-router';
-import { EmptyState } from '@toppo/ui';
+import { EmptyState } from '@toppo-tracker/ui';
 import { UserIcon } from 'lucide-react';
 import { z } from 'zod';
 import { AssignedIssuesList } from '../../../features/issues/components/list/assigned-issues-list.tsx';

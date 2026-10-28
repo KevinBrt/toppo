@@ -1,6 +1,6 @@
-import { canActOnRole } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { userProjectParamsSchema } from '@toppo/shared';
+import { canActOnRole } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { userProjectParamsSchema } from '@toppo-tracker/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { reachableBy } from '../../../../platform/auth/project-access.ts';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';

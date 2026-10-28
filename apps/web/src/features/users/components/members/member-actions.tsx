@@ -1,4 +1,4 @@
-import type { UserSummary } from '@toppo/shared';
+import type { UserSummary } from '@toppo-tracker/shared';
 import {
   Button,
   DropdownMenu,
@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import {
   EllipsisVerticalIcon,
   FolderKanbanIcon,

@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { LABELS_MAX, type LabelsResponse } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { LABELS_MAX, type LabelsResponse } from '@toppo-tracker/shared';
 import { asc, count, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

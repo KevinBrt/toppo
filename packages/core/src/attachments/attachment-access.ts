@@ -1,4 +1,4 @@
-import { ATTACHMENT_ACTIONS, type AttachmentAction } from '@toppo/shared';
+import { ATTACHMENT_ACTIONS, type AttachmentAction } from '@toppo-tracker/shared';
 import { commentActionsOf } from '../issues/comments.ts';
 import { issueActionsOf } from '../issues/issue-access.ts';
 import { can } from '../permissions/grants.ts';

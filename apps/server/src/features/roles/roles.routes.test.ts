@@ -1,12 +1,12 @@
-import { ALL_PERMISSIONS, DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
+import { ALL_PERMISSIONS, DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
 import {
   apiErrorSchema,
   createRoleResponseSchema,
   meResponseSchema,
   ROLES_MAX,
   rolesResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';

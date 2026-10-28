@@ -1,4 +1,4 @@
-import { Logo } from '@toppo/ui';
+import { Logo } from '@toppo-tracker/ui';
 import { type ReactNode, useEffect } from 'react';
 import { useI18n } from '../i18n/i18n-provider.tsx';
 

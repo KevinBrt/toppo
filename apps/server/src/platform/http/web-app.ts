@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import fastifyStatic from '@fastify/static';
-import { type ApiError, CSP_NONCE_PLACEHOLDER } from '@toppo/shared';
+import { type ApiError, CSP_NONCE_PLACEHOLDER } from '@toppo-tracker/shared';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { ZodTypeProvider } from './zod.ts';

@@ -1,4 +1,4 @@
-import { schema, uuidv7 } from '@toppo/db';
+import { schema, uuidv7 } from '@toppo-tracker/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import {

@@ -1,5 +1,5 @@
-import { formatIssueKey, parseIssueKey } from '@toppo/core';
-import type { IssueWithProject } from '@toppo/shared';
+import { formatIssueKey, parseIssueKey } from '@toppo-tracker/core';
+import type { IssueWithProject } from '@toppo-tracker/shared';
 import type { PaletteCommand, PaletteOption } from '../models/palette.model.ts';
 
 /** Lower case without accents, so that "parametres" finds "Paramètres". */

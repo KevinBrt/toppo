@@ -22,7 +22,7 @@ import {
   type ProjectIssuesQuery,
   type PropertyValue,
   type UpdateIssueRequest,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
 import type { BulkChange } from '../models/bulk-change.model.ts';

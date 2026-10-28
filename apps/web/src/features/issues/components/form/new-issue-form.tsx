@@ -4,8 +4,8 @@ import {
   type CreateIssueRequest,
   createIssueRequestSchema,
   ISSUE_TITLE_MAX_LENGTH,
-} from '@toppo/shared';
-import { Alert, Button, cn, Field, Input, Select, swatchClassName } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Alert, Button, cn, Field, Input, Select, swatchClassName } from '@toppo-tracker/ui';
 import { type FormEvent, useId, useState } from 'react';
 import { fieldErrors, requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

@@ -1,4 +1,4 @@
-import { TOPPO_VERSION } from '@toppo/shared';
+import { TOPPO_VERSION } from '@toppo-tracker/shared';
 import { describe, expect, it, vi } from 'vitest';
 import { createReleaseFeed } from './release-feed.ts';
 

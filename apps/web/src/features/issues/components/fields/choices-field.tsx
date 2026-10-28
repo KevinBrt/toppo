@@ -1,4 +1,4 @@
-import type { PaletteColor } from '@toppo/shared';
+import type { PaletteColor } from '@toppo-tracker/shared';
 import {
   Badge,
   DropdownMenu,
@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { ChevronDownIcon } from 'lucide-react';
 import { useState } from 'react';
 import { FIELD_TRIGGER_CLASS } from './field-menu.tsx';

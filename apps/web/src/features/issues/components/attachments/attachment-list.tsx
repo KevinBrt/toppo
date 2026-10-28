@@ -1,5 +1,5 @@
-import { isImage } from '@toppo/core';
-import type { IssueAttachment } from '@toppo/shared';
+import { isImage } from '@toppo-tracker/core';
+import type { IssueAttachment } from '@toppo-tracker/shared';
 import { useState } from 'react';
 import { Attachments } from '../../api/attachments.api.ts';
 import { kindOf, typeLabelOf, viewOf } from '../../utils/attachment-files.util.ts';

@@ -1,5 +1,5 @@
-import type { MembersQuery, RoleBadge } from '@toppo/shared';
-import { cn, Input } from '@toppo/ui';
+import type { MembersQuery, RoleBadge } from '@toppo-tracker/shared';
+import { cn, Input } from '@toppo-tracker/ui';
 import { SearchIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

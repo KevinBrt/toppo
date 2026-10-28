@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createRoute } from '@tanstack/react-router';
-import { can } from '@toppo/core';
+import { can } from '@toppo-tracker/core';
 import { IssuesQueries } from '../../../features/issues/queries/issues.queries.ts';
 import { ProjectsQueries } from '../../../features/projects/queries/projects.queries.ts';
 import { ProjectPropertiesEditor } from '../../../features/properties/components/project/project-properties.tsx';

@@ -1,5 +1,5 @@
 {
-  "name": "@toppo/e2e",
+  "name": "@toppo-tracker/e2e",
   "version": "0.0.0",
   "private": true,
   "description": "End-to-end tests run against a built Toppo (local build or Docker image).",
@@ -13,7 +13,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.64.1",
-    "@toppo/testing": "0.0.0",
+    "@toppo-tracker/testing": "0.0.0",
     "@types/node": "24.19.2"
   }
 }

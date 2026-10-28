@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import type { UserRef } from '@toppo/shared';
-import { Avatar, Dialog, DialogContent, Input } from '@toppo/ui';
+import type { UserRef } from '@toppo-tracker/shared';
+import { Avatar, Dialog, DialogContent, Input } from '@toppo-tracker/ui';
 import { UserXIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

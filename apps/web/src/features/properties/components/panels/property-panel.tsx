@@ -7,7 +7,7 @@ import {
   type PropertyRow,
   type PropertyType,
   updatePropertyRequestSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import {
   Alert,
   Button,
@@ -17,7 +17,7 @@ import {
   SidePanelClose,
   SidePanelContent,
   SortableList,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { Trash2Icon } from 'lucide-react';
 import { type FormEvent, useId, useState } from 'react';
 import { fieldErrors, requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

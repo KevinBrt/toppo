@@ -1,4 +1,4 @@
-import { ATTACHMENT_NAME_MAX_LENGTH, FILE_NAME_HEADER } from '@toppo/shared';
+import { ATTACHMENT_NAME_MAX_LENGTH, FILE_NAME_HEADER } from '@toppo-tracker/shared';
 import { z } from 'zod';
 
 /** A character takes at most 12 once percent-encoded: 4 bytes of UTF-8, 3 characters each. */

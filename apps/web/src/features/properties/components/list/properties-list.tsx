@@ -4,8 +4,8 @@ import {
   type LabelRow,
   type PriorityRow,
   type PropertyRow,
-} from '@toppo/shared';
-import { Button } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Button } from '@toppo-tracker/ui';
 import { ChevronRightIcon, ListIcon, type LucideIcon, PlusIcon, TagsIcon } from 'lucide-react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';

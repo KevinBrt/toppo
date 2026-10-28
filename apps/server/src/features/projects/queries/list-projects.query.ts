@@ -1,4 +1,4 @@
-import { containsText, type Db, schema } from '@toppo/db';
+import { containsText, type Db, schema } from '@toppo-tracker/db';
 import {
   PRIORITY_LEVELS,
   PROJECT_MEMBERS_PREVIEW,
@@ -6,7 +6,7 @@ import {
   type ProjectSummary,
   type ProjectsResponse,
   projectsQuerySchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, count, eq, inArray, isNotNull, isNull, lte, max, sql } from 'drizzle-orm';
 import { managedBy, reachableBy } from '../../../platform/auth/project-access.ts';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

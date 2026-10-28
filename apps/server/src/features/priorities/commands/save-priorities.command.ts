@@ -1,5 +1,5 @@
-import { isUniqueViolation, schema } from '@toppo/db';
-import { prioritiesRequestSchema } from '@toppo/shared';
+import { isUniqueViolation, schema } from '@toppo-tracker/db';
+import { prioritiesRequestSchema } from '@toppo-tracker/shared';
 import { eq, sql } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

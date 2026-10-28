@@ -1,4 +1,4 @@
-import type { Locale } from '@toppo/shared';
+import type { Locale } from '@toppo-tracker/shared';
 import { composeMail } from '../../../platform/mail/mail-layout.ts';
 import type { MailMessage } from '../../../platform/mail/mailer.ts';
 

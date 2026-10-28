@@ -1,4 +1,4 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Services, Transaction } from '../../../platform/cqrs/cqrs.ts';

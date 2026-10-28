@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogContent } from '@toppo/ui';
+import { Button, Dialog, DialogContent } from '@toppo-tracker/ui';
 import { useI18n } from '../i18n/i18n-provider.tsx';
 
 /** Asks before leaving a page with unsaved changes; `description` says what would be lost. */

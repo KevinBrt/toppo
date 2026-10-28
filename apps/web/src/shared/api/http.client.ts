@@ -1,4 +1,4 @@
-import { apiErrorSchema } from '@toppo/shared';
+import { apiErrorSchema } from '@toppo-tracker/shared';
 import { z } from 'zod';
 
 /** A failed API call, with the stable error code the server or Better Auth returned. */

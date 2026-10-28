@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { PaletteColor, UserRef } from '@toppo/shared';
-import { Alert } from '@toppo/ui';
+import type { PaletteColor, UserRef } from '@toppo-tracker/shared';
+import { Alert } from '@toppo-tracker/ui';
 import { useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

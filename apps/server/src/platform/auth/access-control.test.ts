@@ -3,9 +3,9 @@ import {
   DEFAULT_ROLES,
   instancePermissionsOf,
   type Permission,
-} from '@toppo/core';
-import { schema } from '@toppo/db';
-import { apiErrorSchema, meResponseSchema } from '@toppo/shared';
+} from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { apiErrorSchema, meResponseSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';

@@ -1,5 +1,5 @@
-import type { AssignableRolesResponse, UserSummary } from '@toppo/shared';
-import { Avatar, Badge, BadgeSelect, cn } from '@toppo/ui';
+import type { AssignableRolesResponse, UserSummary } from '@toppo-tracker/shared';
+import { Avatar, Badge, BadgeSelect, cn } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { UserChange } from '../../models/user-change.model.ts';
 import { MemberActions } from './member-actions.tsx';

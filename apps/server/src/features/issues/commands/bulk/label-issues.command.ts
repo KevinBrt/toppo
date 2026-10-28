@@ -1,10 +1,10 @@
-import { labelsChange } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { labelsChange } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   type BulkIssuesResponse,
   bulkLabelsRequestSchema,
   projectIssuesParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, inArray, sql } from 'drizzle-orm';
 import { recordActivities } from '../../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';

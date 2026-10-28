@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createRoute, useNavigate } from '@tanstack/react-router';
-import { can } from '@toppo/core';
-import type { Locale, MembersQuery } from '@toppo/shared';
+import { can } from '@toppo-tracker/core';
+import type { Locale, MembersQuery } from '@toppo-tracker/shared';
 import { useCallback } from 'react';
 import { z } from 'zod';
 import { ProjectPicker } from '../../../features/projects/components/picker/project-picker.tsx';

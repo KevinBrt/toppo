@@ -1,4 +1,4 @@
-import type { LinkedIssue, Locale, NotificationEvent } from '@toppo/shared';
+import type { LinkedIssue, Locale, NotificationEvent } from '@toppo-tracker/shared';
 import { composeMail } from '../../../platform/mail/mail-layout.ts';
 import type { MailMessage } from '../../../platform/mail/mailer.ts';
 

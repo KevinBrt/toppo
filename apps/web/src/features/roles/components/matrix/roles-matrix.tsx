@@ -1,4 +1,4 @@
-import type { RoleDetails } from '@toppo/shared';
+import type { RoleDetails } from '@toppo-tracker/shared';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { MATRIX_SECTIONS, type RoleSettings } from '../../utils/permission-matrix.util.ts';
 import { PermissionControl } from './permission-control.tsx';

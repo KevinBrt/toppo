@@ -22,7 +22,7 @@ export const currentUserSchema = z.object({
   /** The kinds of their notifications emailed too, in catalog order. */
   emailedEvents: z.array(z.enum(NOTIFICATION_EVENTS)),
   /**
-   * Instance permissions, by catalog name (`@toppo/core`), so the web app can hide what the user
+   * Instance permissions, by catalog name (`@toppo-tracker/core`), so the web app can hide what the user
    * cannot do. Plain strings on the wire: the server stays the only judge.
    */
   permissions: z.array(z.string()),

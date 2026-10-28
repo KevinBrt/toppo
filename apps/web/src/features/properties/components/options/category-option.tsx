@@ -1,5 +1,5 @@
-import { CATEGORY_NAME_MAX_LENGTH } from '@toppo/shared';
-import { Button, Input } from '@toppo/ui';
+import { CATEGORY_NAME_MAX_LENGTH } from '@toppo-tracker/shared';
+import { Button, Input } from '@toppo-tracker/ui';
 import { XIcon } from 'lucide-react';
 import { type ReactNode, useId } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

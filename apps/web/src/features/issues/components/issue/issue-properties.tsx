@@ -1,5 +1,5 @@
-import type { IssueFieldsResponse, IssueResponse } from '@toppo/shared';
-import { StatusBadge } from '@toppo/ui';
+import type { IssueFieldsResponse, IssueResponse } from '@toppo-tracker/shared';
+import { StatusBadge } from '@toppo-tracker/ui';
 import { ChevronDownIcon } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { formatFullDateTime } from '../../../../shared/i18n/dates.util.ts';

@@ -1,4 +1,4 @@
-import type { Locale, RoleColor } from '@toppo/shared';
+import type { Locale, RoleColor } from '@toppo-tracker/shared';
 import type { Permission } from './catalog.ts';
 
 /** The three profiles a fresh instance offers. */

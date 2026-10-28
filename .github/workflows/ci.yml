@@ -135,7 +135,7 @@ jobs:
           fi
           echo "E2E_SETUP_CODE=$code" >> "$GITHUB_ENV"
       - name: Run Playwright
-        run: npm run test:e2e --workspace=@toppo/e2e
+        run: npm run test:e2e --workspace=@toppo-tracker/e2e
         env:
           E2E_BASE_URL: http://localhost:3000
       - name: Container logs

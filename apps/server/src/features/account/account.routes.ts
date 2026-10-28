@@ -2,7 +2,7 @@ import {
   accountLocaleRequestSchema,
   emailNotificationsRequestSchema,
   updateAccountRequestSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { ZodTypeProvider } from '../../platform/http/zod.ts';

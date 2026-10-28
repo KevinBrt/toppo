@@ -1,4 +1,4 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import { z } from 'zod';
 import { defineJob, enqueue } from '../../../platform/jobs/jobs.ts';
 import { rebuildProjectWordsJob } from './rebuild-project-words.job.ts';

@@ -1,4 +1,4 @@
-import type { IssueWithProject } from '@toppo/shared';
+import type { IssueWithProject } from '@toppo-tracker/shared';
 import { InboxIcon, SlidersHorizontalIcon } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PaletteCommand } from '../models/palette.model.ts';

@@ -4,7 +4,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import type { ReactElement } from 'react';
 
 /** One of a few choices, as a menu: the issues to show by their state, or how to group them. */

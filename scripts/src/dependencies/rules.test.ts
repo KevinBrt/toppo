@@ -14,58 +14,64 @@ const workspace = (
   devDependencies: Record<string, string> = {},
 ): WorkspaceManifest => ({ path, name, dependencies, devDependencies });
 
-const shared = workspace('packages/shared', '@toppo/shared');
-const db = workspace('packages/db', '@toppo/db');
-const testing = workspace('packages/testing', '@toppo/testing');
-const sdk = workspace('packages/plugin-sdk', '@toppo/plugin-sdk');
+const shared = workspace('packages/shared', '@toppo-tracker/shared');
+const db = workspace('packages/db', '@toppo-tracker/db');
+const testing = workspace('packages/testing', '@toppo-tracker/testing');
+const sdk = workspace('packages/plugin-sdk', '@toppo-tracker/plugin-sdk');
 
 describe('checkWorkspaceGraph', () => {
   it('accepts the documented architecture', () => {
-    const core = workspace('packages/core', '@toppo/core', { '@toppo/shared': '0.0.0' });
+    const core = workspace('packages/core', '@toppo-tracker/core', {
+      '@toppo-tracker/shared': '0.0.0',
+    });
     const server = workspace(
       'apps/server',
-      '@toppo/server',
-      { '@toppo/core': '0.0.0', '@toppo/db': '0.0.0' },
-      { '@toppo/testing': '0.0.0' },
+      '@toppo-tracker/server',
+      { '@toppo-tracker/core': '0.0.0', '@toppo-tracker/db': '0.0.0' },
+      { '@toppo-tracker/testing': '0.0.0' },
     );
     expect(checkWorkspaceGraph([shared, core, db, testing, server])).toStrictEqual([]);
   });
 
   it('keeps core free of infrastructure', () => {
-    const core = workspace('packages/core', '@toppo/core', { '@toppo/db': '0.0.0' });
+    const core = workspace('packages/core', '@toppo-tracker/core', {
+      '@toppo-tracker/db': '0.0.0',
+    });
     expect(checkWorkspaceGraph([core, db])).toStrictEqual([
-      '@toppo/core: must not depend on @toppo/db',
+      '@toppo-tracker/core: must not depend on @toppo-tracker/db',
     ]);
   });
 
   it('keeps server code out of the browser bundle', () => {
-    const web = workspace('apps/web', '@toppo/web', { '@toppo/db': '0.0.0' });
+    const web = workspace('apps/web', '@toppo-tracker/web', { '@toppo-tracker/db': '0.0.0' });
     expect(checkWorkspaceGraph([web, db])).toStrictEqual([
-      '@toppo/web: must not depend on @toppo/db',
+      '@toppo-tracker/web: must not depend on @toppo-tracker/db',
     ]);
   });
 
   it('only lets plugins use the SDK', () => {
-    const plugin = workspace('plugins/github', '@toppo/plugin-github', {
-      '@toppo/plugin-sdk': '0.0.0',
-      '@toppo/db': '0.0.0',
+    const plugin = workspace('plugins/github', '@toppo-tracker/plugin-github', {
+      '@toppo-tracker/plugin-sdk': '0.0.0',
+      '@toppo-tracker/db': '0.0.0',
     });
     expect(checkWorkspaceGraph([plugin, sdk, db])).toStrictEqual([
-      '@toppo/plugin-github: must not depend on @toppo/db',
+      '@toppo-tracker/plugin-github: must not depend on @toppo-tracker/db',
     ]);
   });
 
   it('refuses test helpers as a runtime dependency', () => {
-    const server = workspace('apps/server', '@toppo/server', { '@toppo/testing': '0.0.0' });
+    const server = workspace('apps/server', '@toppo-tracker/server', {
+      '@toppo-tracker/testing': '0.0.0',
+    });
     expect(checkWorkspaceGraph([server, testing])).toStrictEqual([
-      '@toppo/server: @toppo/testing may only be a devDependency',
+      '@toppo-tracker/server: @toppo-tracker/testing may only be a devDependency',
     ]);
   });
 
   it('asks for rules when a new workspace appears', () => {
-    expect(checkWorkspaceGraph([workspace('packages/mailer', '@toppo/mailer')])).toStrictEqual([
-      expect.stringContaining('@toppo/mailer: unknown workspace'),
-    ]);
+    expect(
+      checkWorkspaceGraph([workspace('packages/mailer', '@toppo-tracker/mailer')]),
+    ).toStrictEqual([expect.stringContaining('@toppo-tracker/mailer: unknown workspace')]);
   });
 });
 
@@ -74,22 +80,24 @@ describe('checkExactVersions', () => {
     'refuses %s',
     (spec) => {
       expect(
-        checkExactVersions([workspace('apps/web', '@toppo/web', { react: spec })]),
+        checkExactVersions([workspace('apps/web', '@toppo-tracker/web', { react: spec })]),
       ).toHaveLength(1);
     },
   );
 
   it('accepts exact and prerelease versions', () => {
     expect(
-      checkExactVersions([workspace('apps/web', '@toppo/web', { a: '1.2.3', b: '1.0.0-rc.4' })]),
+      checkExactVersions([
+        workspace('apps/web', '@toppo-tracker/web', { a: '1.2.3', b: '1.0.0-rc.4' }),
+      ]),
     ).toStrictEqual([]);
   });
 
   it('requires one version of a dependency across workspaces', () => {
     expect(
       checkExactVersions([
-        workspace('packages/core', '@toppo/core', {}, { vitest: '5.0.5' }),
-        workspace('packages/db', '@toppo/db', {}, { vitest: '5.0.4' }),
+        workspace('packages/core', '@toppo-tracker/core', {}, { vitest: '5.0.5' }),
+        workspace('packages/db', '@toppo-tracker/db', {}, { vitest: '5.0.4' }),
       ]),
     ).toStrictEqual(['vitest: one version across the monorepo, found 5.0.5, 5.0.4']);
   });
@@ -102,7 +110,7 @@ describe('checkLockfile', () => {
     integrity: 'sha512-abc',
     license: 'MIT',
   };
-  const workspaces = new Set(['@toppo/core']);
+  const workspaces = new Set(['@toppo-tracker/core']);
 
   it('accepts registry packages and workspace links', () => {
     expect(
@@ -112,7 +120,7 @@ describe('checkLockfile', () => {
           packages: {
             '': {},
             'node_modules/a': entry,
-            'node_modules/@toppo/core': { link: true },
+            'node_modules/@toppo-tracker/core': { link: true },
             'packages/core': {},
           },
         },
@@ -131,17 +139,17 @@ describe('checkLockfile', () => {
       {
         lockfileVersion: 3,
         packages: {
-          'node_modules/@toppo/core': fromRegistry('@toppo/core'),
-          'node_modules/a/node_modules/@toppo/db': fromRegistry('@toppo/db'),
+          'node_modules/@toppo-tracker/core': fromRegistry('@toppo-tracker/core'),
+          'node_modules/a/node_modules/@toppo-tracker/db': fromRegistry('@toppo-tracker/db'),
           'node_modules/@other/core': fromRegistry('@other/core'),
         },
       },
-      new Set(['@toppo/core', '@toppo/db']),
+      new Set(['@toppo-tracker/core', '@toppo-tracker/db']),
     );
 
     expect(problems).toStrictEqual([
-      'node_modules/@toppo/core: @toppo/core is a workspace of this repository: it must be linked, never downloaded',
-      'node_modules/a/node_modules/@toppo/db: @toppo/db is a workspace of this repository: it must be linked, never downloaded',
+      'node_modules/@toppo-tracker/core: @toppo-tracker/core is a workspace of this repository: it must be linked, never downloaded',
+      'node_modules/a/node_modules/@toppo-tracker/db: @toppo-tracker/db is a workspace of this repository: it must be linked, never downloaded',
     ]);
   });
 

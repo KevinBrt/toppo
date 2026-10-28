@@ -1,4 +1,4 @@
-import { createPropertyRequestSchema } from '@toppo/shared';
+import { createPropertyRequestSchema } from '@toppo-tracker/shared';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { insertProperty } from '../utils/property-saving.util.ts';
 

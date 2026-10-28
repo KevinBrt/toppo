@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Avatar, cn, toneClassName } from '@toppo/ui';
+import { Avatar, cn, toneClassName } from '@toppo-tracker/ui';
 import {
   type KeyboardEvent,
   type ReactNode,

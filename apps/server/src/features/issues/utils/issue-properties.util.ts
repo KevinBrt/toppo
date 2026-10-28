@@ -1,6 +1,6 @@
-import { effectiveProperties, type PropertyProblem, type PropertyRules } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
-import type { IssuePropertyField, ProjectFields } from '@toppo/shared';
+import { effectiveProperties, type PropertyProblem, type PropertyRules } from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
+import type { IssuePropertyField, ProjectFields } from '@toppo-tracker/shared';
 import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

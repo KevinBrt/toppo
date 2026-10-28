@@ -1,11 +1,11 @@
-import { formatIssueKey } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { formatIssueKey } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   NOTIFICATIONS_PAGE_SIZE,
   type NotificationsResponse,
   notificationsQuerySchema,
   projectKeySchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, count, desc, eq } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { eventOf, originalsFor, peopleNamed, seenBy } from '../utils/notification-rows.util.ts';

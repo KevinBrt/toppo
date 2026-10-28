@@ -1,11 +1,11 @@
-import { type Db, schema } from '@toppo/db';
+import { type Db, schema } from '@toppo-tracker/db';
 import {
   ISSUE_ACTIVITY_PAYLOADS,
   type LinkedIssue,
   type NotificationEvent,
   type NotificationReason,
   type UserRef,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { grantedIn, issuesSeenBy } from '../../../platform/auth/project-access.ts';

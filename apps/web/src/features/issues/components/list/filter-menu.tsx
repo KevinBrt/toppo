@@ -6,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { ChevronDownIcon } from 'lucide-react';
 import type { ComponentProps, ReactNode } from 'react';
 import type { Translate } from '../../../../shared/i18n/i18n.types.ts';

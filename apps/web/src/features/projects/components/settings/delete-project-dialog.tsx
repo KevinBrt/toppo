@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ProjectResponse } from '@toppo/shared';
+import type { ProjectResponse } from '@toppo-tracker/shared';
 import {
   Alert,
   Button,
@@ -9,7 +9,7 @@ import {
   DialogTrigger,
   Field,
   Input,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

@@ -5,13 +5,13 @@ import {
   formatIssueKey,
   initialStatusOf,
   peopleNamedIn,
-} from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
+} from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
 import {
   createIssueRequestSchema,
   projectIssuesParamsSchema,
   projectKeySchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { eq, isNull, or, sql } from 'drizzle-orm';
 import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';

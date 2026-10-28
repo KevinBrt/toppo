@@ -1,4 +1,4 @@
-import { cn } from '@toppo/ui';
+import { cn } from '@toppo-tracker/ui';
 import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { MATRIX_SECTIONS } from '../../utils/permission-matrix.util.ts';

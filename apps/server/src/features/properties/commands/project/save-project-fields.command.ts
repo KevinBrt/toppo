@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { projectFieldsSchema, projectIssuesParamsSchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { projectFieldsSchema, projectIssuesParamsSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';
 

@@ -1,4 +1,4 @@
-import { categoriesRequestSchema } from '@toppo/shared';
+import { categoriesRequestSchema } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import type { OptionDraft } from '../models/option-draft.model.ts';
 import { nameProblemsOf, newOptionKey, nextColor } from './option-drafts.util.ts';

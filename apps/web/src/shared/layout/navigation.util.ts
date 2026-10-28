@@ -1,4 +1,4 @@
-import { canAny } from '@toppo/core';
+import { canAny } from '@toppo-tracker/core';
 import type { NavAudience, NavItem, NavSection } from './navigation.constants.ts';
 
 /** The sections and links a user may use; a section left without links disappears. */

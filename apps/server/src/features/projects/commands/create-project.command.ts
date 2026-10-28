@@ -1,6 +1,6 @@
-import { projectColorFor } from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
-import { createProjectRequestSchema } from '@toppo/shared';
+import { projectColorFor } from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
+import { createProjectRequestSchema } from '@toppo-tracker/shared';
 import { count } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

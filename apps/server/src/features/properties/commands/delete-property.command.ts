@@ -1,4 +1,4 @@
-import { propertyParamsSchema } from '@toppo/shared';
+import { propertyParamsSchema } from '@toppo-tracker/shared';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { deleteWithValues } from '../utils/property-saving.util.ts';

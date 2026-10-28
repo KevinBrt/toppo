@@ -1,4 +1,4 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import { and, count, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

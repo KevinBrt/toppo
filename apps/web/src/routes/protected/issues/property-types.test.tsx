@@ -1,5 +1,5 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import type { IssueActivity, PropertyValue } from '@toppo/shared';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import type { IssueActivity, PropertyValue } from '@toppo-tracker/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import {

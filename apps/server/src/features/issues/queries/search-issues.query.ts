@@ -1,10 +1,10 @@
-import { issueReferencesIn } from '@toppo/core';
-import { schema, similarWords } from '@toppo/db';
+import { issueReferencesIn } from '@toppo-tracker/core';
+import { schema, similarWords } from '@toppo-tracker/db';
 import {
   ISSUE_SEARCH_LIMIT,
   type IssueSearchResponse,
   issueSearchQuerySchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, desc, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { grantedIn } from '../../../platform/auth/project-access.ts';

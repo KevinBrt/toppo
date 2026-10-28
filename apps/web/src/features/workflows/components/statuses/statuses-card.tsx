@@ -1,5 +1,5 @@
-import { WORKFLOW_STATUSES_MAX } from '@toppo/shared';
-import { Button, SortableList } from '@toppo/ui';
+import { WORKFLOW_STATUSES_MAX } from '@toppo-tracker/shared';
+import { Button, SortableList } from '@toppo-tracker/ui';
 import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { sortableMessages } from '../../../../shared/forms/sortable-messages.util.ts';

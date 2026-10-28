@@ -1,4 +1,4 @@
-import { ATTACHMENT_NAME_MAX_LENGTH } from '@toppo/shared';
+import { ATTACHMENT_NAME_MAX_LENGTH } from '@toppo-tracker/shared';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { cleanFileName, extensionOf } from './file-name.ts';

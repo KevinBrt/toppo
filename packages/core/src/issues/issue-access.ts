@@ -1,4 +1,4 @@
-import type { IssueAction } from '@toppo/shared';
+import type { IssueAction } from '@toppo-tracker/shared';
 import { can } from '../permissions/grants.ts';
 
 /** Which issues of a project someone sees: all of them, those they reported, or none. */

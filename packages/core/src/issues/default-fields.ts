@@ -1,4 +1,4 @@
-import type { Locale, PaletteColor, PriorityLevel } from '@toppo/shared';
+import type { Locale, PaletteColor, PriorityLevel } from '@toppo-tracker/shared';
 
 /**
  * What a fresh instance starts with: one workflow and its transitions, four priorities and three

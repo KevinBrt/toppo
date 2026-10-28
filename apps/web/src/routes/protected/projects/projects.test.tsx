@@ -1,5 +1,5 @@
-import { DEFAULT_PRIORITIES } from '@toppo/core';
-import { NOTIFICATION_EVENTS } from '@toppo/shared';
+import { DEFAULT_PRIORITIES } from '@toppo-tracker/core';
+import { NOTIFICATION_EVENTS } from '@toppo-tracker/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import {

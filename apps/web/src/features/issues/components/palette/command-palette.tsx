@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { cn, Dialog, DialogContent } from '@toppo/ui';
+import { cn, Dialog, DialogContent } from '@toppo-tracker/ui';
 import { ArrowRightIcon, SearchIcon } from 'lucide-react';
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

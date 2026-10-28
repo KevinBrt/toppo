@@ -1,5 +1,9 @@
-import { schema } from '@toppo/db';
-import { type AssignedIssuesResponse, ISSUES_PAGE_SIZE, issuesQuerySchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import {
+  type AssignedIssuesResponse,
+  ISSUES_PAGE_SIZE,
+  issuesQuerySchema,
+} from '@toppo-tracker/shared';
 import { and, count, desc, eq, isNull, or } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { grantedIn } from '../../../platform/auth/project-access.ts';

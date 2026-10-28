@@ -1,5 +1,5 @@
 import type { LinkProps } from '@tanstack/react-router';
-import type { Permission } from '@toppo/core';
+import type { Permission } from '@toppo-tracker/core';
 import {
   CircleDotIcon,
   FolderKanbanIcon,

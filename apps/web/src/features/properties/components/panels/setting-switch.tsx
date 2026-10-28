@@ -1,4 +1,4 @@
-import { Switch } from '@toppo/ui';
+import { Switch } from '@toppo-tracker/ui';
 import { useId } from 'react';
 
 /** One setting of the property: what it does, a line of help, and its switch. */

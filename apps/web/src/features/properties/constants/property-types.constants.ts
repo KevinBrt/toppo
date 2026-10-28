@@ -1,4 +1,4 @@
-import type { PropertyType } from '@toppo/shared';
+import type { PropertyType } from '@toppo-tracker/shared';
 import {
   CalendarIcon,
   HashIcon,

@@ -27,14 +27,14 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:e2e": "npm run build && npm run test:e2e --workspace=@toppo/e2e",
+    "test:e2e": "npm run build && npm run test:e2e --workspace=@toppo-tracker/e2e",
     "lint": "biome check . && prettier --check .",
     "lint:fix": "biome check --write . && prettier --write .",
     "check:conventions": "node scripts/src/check-conventions.ts",
     "check:dependencies": "node scripts/src/check-dependencies.ts",
-    "perf:issues": "npm run build --workspace=@toppo/server && node scripts/src/perf/explain-issues.ts",
-    "docs:screenshots": "npm run build && npm run screenshots --workspace=@toppo/e2e",
-    "db:snapshot": "npm run build --workspace=@toppo/server && node scripts/src/upgrades/capture-snapshot.ts",
+    "perf:issues": "npm run build --workspace=@toppo-tracker/server && node scripts/src/perf/explain-issues.ts",
+    "docs:screenshots": "npm run build && npm run screenshots --workspace=@toppo-tracker/e2e",
+    "db:snapshot": "npm run build --workspace=@toppo-tracker/server && node scripts/src/upgrades/capture-snapshot.ts",
     "check": "npm run lint && npm run check:conventions && npm run check:dependencies && npm run typecheck && npm run test && npm run build"
   },
   "devDependencies": {

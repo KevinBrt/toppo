@@ -1,6 +1,6 @@
-import { type CategoriesPlan, planCategories } from '@toppo/core';
-import { isUniqueViolation, schema, uuidv7 } from '@toppo/db';
-import { categoriesRequestSchema } from '@toppo/shared';
+import { type CategoriesPlan, planCategories } from '@toppo-tracker/core';
+import { isUniqueViolation, schema, uuidv7 } from '@toppo-tracker/db';
+import { categoriesRequestSchema } from '@toppo-tracker/shared';
 import { count, eq, inArray, sql } from 'drizzle-orm';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

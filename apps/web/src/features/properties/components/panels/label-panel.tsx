@@ -1,6 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { LABELS_MAX, type LabelRow, type LabelsRequest, labelsRequestSchema } from '@toppo/shared';
-import { Alert, Button, SidePanel, SidePanelClose, SidePanelContent } from '@toppo/ui';
+import {
+  LABELS_MAX,
+  type LabelRow,
+  type LabelsRequest,
+  labelsRequestSchema,
+} from '@toppo-tracker/shared';
+import { Alert, Button, SidePanel, SidePanelClose, SidePanelContent } from '@toppo-tracker/ui';
 import { type FormEvent, useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

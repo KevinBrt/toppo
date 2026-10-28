@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { type Locale, PASSWORD_RESET_LIFETIME_MINUTES } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { type Locale, PASSWORD_RESET_LIFETIME_MINUTES } from '@toppo-tracker/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineJob } from '../jobs/jobs.ts';

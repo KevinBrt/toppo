@@ -1,4 +1,4 @@
-import { acceptInvitationRequestSchema } from '@toppo/shared';
+import { acceptInvitationRequestSchema } from '@toppo-tracker/shared';
 import type { ReactNode } from 'react';
 import type { z } from 'zod';
 

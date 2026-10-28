@@ -3,7 +3,7 @@ import {
   type IssueFieldsResponse,
   type IssueResponse,
   issueTitleSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import {
   BadgeSelect,
   Button,
@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Input,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { CopyIcon, EllipsisIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { formatDateTime } from '../../../../shared/i18n/dates.util.ts';

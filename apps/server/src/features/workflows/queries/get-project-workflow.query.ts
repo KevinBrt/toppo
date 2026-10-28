@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { type ProjectWorkflowResponse, projectKeyParamsSchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { type ProjectWorkflowResponse, projectKeyParamsSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { instanceWorkflow, readWorkflow } from './get-workflow.query.ts';

@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
-import { testDatabaseUrl } from '@toppo/testing';
+import { testDatabaseUrl } from '@toppo-tracker/testing';
 
 /**
  * The screenshots of the documentation (`npm run docs:screenshots`): the locally built server on

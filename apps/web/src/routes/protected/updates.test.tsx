@@ -1,4 +1,4 @@
-import { TOPPO_VERSION } from '@toppo/shared';
+import { TOPPO_VERSION } from '@toppo-tracker/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { ADA, fakeServer, GRACE, renderApp } from '../../test-helpers.tsx';

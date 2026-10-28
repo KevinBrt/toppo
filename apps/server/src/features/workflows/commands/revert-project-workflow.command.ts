@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { projectKeyParamsSchema, revertWorkflowRequestSchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { projectKeyParamsSchema, revertWorkflowRequestSchema } from '@toppo-tracker/shared';
 import { and, count, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

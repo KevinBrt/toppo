@@ -1,4 +1,4 @@
-import { PALETTE_COLORS, WORKFLOW_MODES } from '@toppo/shared';
+import { PALETTE_COLORS, WORKFLOW_MODES } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import {
   boolean,

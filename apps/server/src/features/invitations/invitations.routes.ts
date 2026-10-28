@@ -7,7 +7,7 @@ import {
   invitationLinkSchema,
   invitationPreviewRequestSchema,
   invitationPreviewResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { RateLimit } from '../../platform/http/rate-limit.ts';

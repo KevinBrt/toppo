@@ -1,4 +1,4 @@
-import type { MentionableResponse } from '@toppo/shared';
+import type { MentionableResponse } from '@toppo-tracker/shared';
 
 /** Someone a comment may name. */
 export type Mentionable = MentionableResponse['people'][number];

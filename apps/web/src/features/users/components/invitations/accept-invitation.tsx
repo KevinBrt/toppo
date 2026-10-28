@@ -1,6 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { type InvitationPreview, invitationTokenSchema, PASSWORD_MIN_LENGTH } from '@toppo/shared';
-import { Alert, Button, Field, Input, PasswordInput } from '@toppo/ui';
+import {
+  type InvitationPreview,
+  invitationTokenSchema,
+  PASSWORD_MIN_LENGTH,
+} from '@toppo-tracker/shared';
+import { Alert, Button, Field, Input, PasswordInput } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import { fieldErrors, requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
