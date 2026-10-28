@@ -40,6 +40,9 @@ export const PERMISSIONS = {
   'instance.mail.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
   // Whoever edits roles can give themselves anything: only administrators may.
   'instance.roles.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
+  // A plugin runs code inside Toppo and reads what its approval opens to it, in every project it
+  // is given: only administrators may install, approve or remove one.
+  'instance.plugins.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
 } as const satisfies Record<string, PermissionDefinition>;
 
 export type Permission = keyof typeof PERMISSIONS;

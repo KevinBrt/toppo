@@ -6,6 +6,9 @@ import { apiVersionSchema } from './version.ts';
 /** `time-tracking`: lowercase words joined by dashes, as its URLs and its permissions use it. */
 export const PLUGIN_ID = /^[a-z][a-z0-9-]{1,38}[a-z0-9]$/;
 
+/** `1.2.0`, `1.2.0-beta.1`: Toppo shows it, and compares it when the plugin is upgraded. */
+export const PLUGIN_VERSION = /^\d{1,4}\.\d{1,4}\.\d{1,4}(-[0-9A-Za-z.-]{1,40})?$/;
+
 /** `timeEntry.log`, `reports.read`: a resource, a dot, an action. */
 const NAME = /^[a-z][A-Za-z0-9]*(\.[a-z][A-Za-z0-9]*)+$/;
 

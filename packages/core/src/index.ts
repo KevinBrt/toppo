@@ -122,6 +122,7 @@ export {
   projectPermissionsOf,
   roleInProject,
 } from './permissions/projects.ts';
+export { asksForMore, isReservedPluginId, type PluginGrants } from './plugins/plugins.ts';
 export { projectColorFor } from './projects/project-color.ts';
 export { effectiveProperties, type PropertyAdaptation } from './properties/project-properties.ts';
 export {

@@ -2,9 +2,10 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PLUGIN_PACKAGE_LIMITS } from '@toppo-tracker/plugin-sdk/protocol';
 import { strFromU8, unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildPlugin } from './build.ts';
+import { buildPlugin, packagePlugin } from './build.ts';
 import { manifestOf } from './bundle.ts';
 
 const FIXTURES = fileURLToPath(new URL('../../../test-fixtures/', import.meta.url));
@@ -49,6 +50,18 @@ describe('toppo plugin build', () => {
     ['imports a file that is not there', 'unresolved', /missing\.ts/],
   ])('refuses a plugin that %s', async (_, fixture, message) => {
     await expect(buildPlugin(join(FIXTURES, fixture), out)).rejects.toThrow(message);
+  });
+
+  it('refuses a server bundle heavier than Toppo takes', () => {
+    const code = 'x'.repeat(PLUGIN_PACKAGE_LIMITS.serverBytes);
+
+    expect(Object.keys(unzipSync(packagePlugin(code, '1.0.0'))).sort()).toStrictEqual([
+      'plugin.json',
+      'server.js',
+    ]);
+    expect(() => packagePlugin(`${code};`, '1.0.0')).toThrow(
+      'The server bundle weighs 10241 KB: Toppo takes at most 10240 KB',
+    );
   });
 
   it('refuses a bundle that defines no plugin', () => {

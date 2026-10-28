@@ -13,6 +13,11 @@ import { createAuth } from './platform/auth/auth.ts';
 import { createSecretBox } from './platform/config/secret-box.ts';
 import type { ExecutionContext, Services } from './platform/cqrs/cqrs.ts';
 import { createMailer } from './platform/mail/mailer.ts';
+import { createManifestReader } from './platform/plugins/packages/manifest-reader.ts';
+import {
+  createPackageStore,
+  type PackageStore,
+} from './platform/plugins/packages/package-store.ts';
 import { createFileStorage, type FileStorage } from './platform/uploads/file-storage.ts';
 
 export const TEST_SECRET = 'test-secret-that-is-long-enough-to-be-accepted';
@@ -28,6 +33,19 @@ export interface TestAppOptions {
   files?: FileStorage;
   /** Behind one reverse proxy, as `TOPPO_TRUST_PROXY=true` says; reached directly by default. */
   trustProxy?: boolean;
+  /** Plugins' zips; by default, an empty store of its own in the temporary directory. */
+  packages?: PackageStore;
+}
+
+/** The sandbox worker, run from the sources. */
+export const TEST_SANDBOX_WORKER = new URL(
+  './platform/plugins/sandbox/sandbox-worker.ts',
+  import.meta.url,
+);
+
+/** An empty store of plugins' zips, of its own, in the temporary directory. */
+export function createTestPackageStore(): Promise<PackageStore> {
+  return createPackageStore({ root: mkdtempSync(join(tmpdir(), 'toppo-plugins-')) });
 }
 
 /** Largest attachment in tests unless a test chooses otherwise: small, to test the limit cheaply. */
@@ -51,6 +69,7 @@ export async function buildTestApp({
   webRoot = join(tmpdir(), 'toppo-no-web-root'),
   files,
   trustProxy = false,
+  packages,
 }: TestAppOptions = {}): Promise<FastifyInstance> {
   const url = new URL(publicUrl);
   return await buildApp({
@@ -60,6 +79,10 @@ export async function buildTestApp({
     secret: TEST_SECRET,
     setupCode: TEST_SETUP_CODE,
     files: files ?? (await createTestFileStorage()),
+    plugins: {
+      packages: packages ?? (await createTestPackageStore()),
+      workerUrl: TEST_SANDBOX_WORKER,
+    },
     webRoot,
   });
 }
@@ -84,6 +107,11 @@ export function testServices(overrides: Partial<Services> = {}): Services {
     releases: {
       enabled: false,
       latest: () => Promise.reject(new Error('No release feed in this test')),
+    },
+    // No package is kept unless a test gives a store; bundles run in a real sandbox.
+    plugins: {
+      packages: { keep: () => Promise.reject(new Error('No package store in this test')) },
+      readManifest: createManifestReader(TEST_SANDBOX_WORKER),
     },
     ...overrides,
   };

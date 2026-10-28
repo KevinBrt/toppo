@@ -16,6 +16,7 @@ import {
   buildTestApp,
   cookieHeader,
   createTestFileStorage,
+  createTestPackageStore,
   setupTestDatabase,
   TEST_SETUP_CODE,
   testServices,
@@ -282,7 +283,10 @@ describe('emailing invitations', () => {
     mailServer = await startSmtpServer();
     worker = {
       db: context.database.db,
-      jobs: createJobs({ files: await createTestFileStorage() }),
+      jobs: createJobs({
+        files: await createTestFileStorage(),
+        packages: await createTestPackageStore(),
+      }),
       log: app.log,
       services: testServices(),
     };
