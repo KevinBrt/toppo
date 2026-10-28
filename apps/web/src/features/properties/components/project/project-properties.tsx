@@ -5,8 +5,8 @@ import {
   type ProjectPropertiesResponse,
   type PropertyRow,
   type PropertyType,
-} from '@toppo/shared';
-import { Alert, Badge, Button, Switch } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Alert, Badge, Button, Switch } from '@toppo-tracker/ui';
 import { ChevronRightIcon, PlusIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

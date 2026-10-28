@@ -1,11 +1,11 @@
-import { roleInProject } from '@toppo/core';
-import { containsText, schema } from '@toppo/db';
+import { roleInProject } from '@toppo-tracker/core';
+import { containsText, schema } from '@toppo-tracker/db';
 import {
   issueKeyParamsSchema,
   type MentionableResponse,
   PICKER_RESULTS_MAX,
   pickerQuerySchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, eq, ne, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

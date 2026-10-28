@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { updateAccountRequestSchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { updateAccountRequestSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 

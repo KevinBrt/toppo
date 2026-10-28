@@ -1,5 +1,5 @@
 import { createServer, type Server, type Socket } from 'node:net';
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { setupTestDatabase, TEST_SECRET } from '../../test-helpers.ts';
 import { createSecretBox } from '../config/secret-box.ts';

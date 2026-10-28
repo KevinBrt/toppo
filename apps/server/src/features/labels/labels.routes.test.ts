@@ -1,5 +1,5 @@
-import { DEFAULT_ROLE_IDS } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   apiErrorSchema,
   createIssueResponseSchema,
@@ -7,7 +7,7 @@ import {
   LABELS_MAX,
   type LabelsRequest,
   labelsResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';

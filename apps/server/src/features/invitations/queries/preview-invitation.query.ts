@@ -1,6 +1,6 @@
-import { isInvitationExpired } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { type InvitationPreview, invitationPreviewRequestSchema } from '@toppo/shared';
+import { isInvitationExpired } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { type InvitationPreview, invitationPreviewRequestSchema } from '@toppo-tracker/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

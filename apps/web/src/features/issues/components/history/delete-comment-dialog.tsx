@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { Alert, Button, Dialog, DialogClose, DialogContent } from '@toppo/ui';
+import { Alert, Button, Dialog, DialogClose, DialogContent } from '@toppo-tracker/ui';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { Comments } from '../../api/comments.api.ts';

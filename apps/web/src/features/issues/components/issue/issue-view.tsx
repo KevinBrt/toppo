@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { IssueResponse, UserRef } from '@toppo/shared';
-import { Alert } from '@toppo/ui';
+import type { IssueResponse, UserRef } from '@toppo-tracker/shared';
+import { Alert } from '@toppo-tracker/ui';
 import { useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

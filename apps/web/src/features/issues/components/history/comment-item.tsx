@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { COMMENT_BODY_MAX_LENGTH, type IssueActivity } from '@toppo/shared';
+import { COMMENT_BODY_MAX_LENGTH, type IssueActivity } from '@toppo-tracker/shared';
 import {
   Alert,
   Button,
@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Textarea,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { EllipsisIcon, MessageSquareTextIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { Fragment, useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

@@ -1,4 +1,4 @@
-import { instanceVersionResponseSchema } from '@toppo/shared';
+import { instanceVersionResponseSchema } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from '../../platform/http/zod.ts';
 import { getVersion } from './queries/get-version.query.ts';

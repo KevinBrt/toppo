@@ -1,10 +1,10 @@
-import { containsText, schema } from '@toppo/db';
+import { containsText, schema } from '@toppo-tracker/db';
 import {
   PICKER_RESULTS_MAX,
   pickerQuerySchema,
   type UserProjectsResponse,
   userIdParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { reachableBy } from '../../../platform/auth/project-access.ts';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

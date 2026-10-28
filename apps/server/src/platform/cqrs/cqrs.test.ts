@@ -4,8 +4,8 @@ import {
   DEFAULT_ROLE_IDS,
   DEFAULT_STATUSES,
   type Permission,
-} from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
+} from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
 import { eq } from 'drizzle-orm';
 import Fastify from 'fastify';
 import { describe, expect, it, vi } from 'vitest';

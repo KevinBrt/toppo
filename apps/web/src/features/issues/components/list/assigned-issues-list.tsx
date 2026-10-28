@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import type { IssuesQuery, IssueWithProject } from '@toppo/shared';
-import { cn, swatchClassName } from '@toppo/ui';
+import type { IssuesQuery, IssueWithProject } from '@toppo-tracker/shared';
+import { cn, swatchClassName } from '@toppo-tracker/ui';
 import type { ReactNode } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { IssuesQueries } from '../../queries/issues.queries.ts';

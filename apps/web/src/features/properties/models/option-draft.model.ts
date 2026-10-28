@@ -1,4 +1,4 @@
-import type { PaletteColor } from '@toppo/shared';
+import type { PaletteColor } from '@toppo-tracker/shared';
 
 /** An option as the panel edits it, before the list is saved. */
 export interface OptionDraft {

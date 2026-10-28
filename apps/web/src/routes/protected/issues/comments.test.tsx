@@ -1,4 +1,4 @@
-import type { IssueActivity } from '@toppo/shared';
+import type { IssueActivity } from '@toppo-tracker/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import {

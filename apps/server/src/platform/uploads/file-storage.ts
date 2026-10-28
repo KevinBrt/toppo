@@ -4,7 +4,7 @@ import { mkdir, open, readdir, rename, stat, statfs, unlink } from 'node:fs/prom
 import { dirname, join } from 'node:path';
 import { type Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { createTextScan, FILE_HEAD_LENGTH } from '@toppo/core';
+import { createTextScan, FILE_HEAD_LENGTH } from '@toppo-tracker/core';
 import { HttpError } from '../http/http-error.ts';
 
 /** Where files wait while they arrive, before a command keeps them. */

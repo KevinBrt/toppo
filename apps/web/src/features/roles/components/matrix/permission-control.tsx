@@ -1,6 +1,6 @@
-import { canBeGranted } from '@toppo/core';
-import type { RoleDetails } from '@toppo/shared';
-import { Select, Switch } from '@toppo/ui';
+import { canBeGranted } from '@toppo-tracker/core';
+import type { RoleDetails } from '@toppo-tracker/shared';
+import { Select, Switch } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { PERMISSION_MESSAGES } from '../../constants/permission-messages.constants.ts';
 import {

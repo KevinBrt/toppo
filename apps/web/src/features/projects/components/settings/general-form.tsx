@@ -7,8 +7,8 @@ import {
   type ProjectResponse,
   type UpdateProjectRequest,
   updateProjectRequestSchema,
-} from '@toppo/shared';
-import { Alert, Button, ColorPicker, Field, Input, Textarea } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Alert, Button, ColorPicker, Field, Input, Textarea } from '@toppo-tracker/ui';
 import { type FormEvent, useId, useState } from 'react';
 import { fieldErrors, requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

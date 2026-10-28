@@ -1,5 +1,5 @@
-import type { Permission } from '@toppo/core';
-import { ROLE_COLORS } from '@toppo/shared';
+import type { Permission } from '@toppo-tracker/core';
+import { ROLE_COLORS } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import { boolean, check, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
 import { id, timestamps } from './columns.ts';

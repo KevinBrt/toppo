@@ -1,4 +1,4 @@
-import { DEFAULT_PRIORITIES, DEFAULT_STATUSES } from '@toppo/core';
+import { DEFAULT_PRIORITIES, DEFAULT_STATUSES } from '@toppo-tracker/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import {

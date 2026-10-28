@@ -1,4 +1,4 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import { and, eq, type SQL, sql } from 'drizzle-orm';
 
 const { issues, properties, propertyOptions } = schema;

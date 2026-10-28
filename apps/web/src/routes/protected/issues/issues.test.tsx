@@ -1,5 +1,5 @@
-import { DEFAULT_CATEGORIES, DEFAULT_PRIORITIES } from '@toppo/core';
-import { type CurrentUser, NOTIFICATION_EVENTS } from '@toppo/shared';
+import { DEFAULT_CATEGORIES, DEFAULT_PRIORITIES } from '@toppo-tracker/core';
+import { type CurrentUser, NOTIFICATION_EVENTS } from '@toppo-tracker/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import { lastProject, rememberProject } from '../../../features/issues/utils/last-project.util.ts';

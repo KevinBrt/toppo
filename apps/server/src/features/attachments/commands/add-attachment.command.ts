@@ -1,6 +1,10 @@
-import { type AttachmentPlace, canAttachTo, cleanFileName, mediaTypeOf } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { ATTACHMENTS_MAX, type IssueActivityPayload, issueKeyParamsSchema } from '@toppo/shared';
+import { type AttachmentPlace, canAttachTo, cleanFileName, mediaTypeOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import {
+  ATTACHMENTS_MAX,
+  type IssueActivityPayload,
+  issueKeyParamsSchema,
+} from '@toppo-tracker/shared';
 import { and, count, eq, isNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { recordActivity } from '../../../platform/activities/record-activity.ts';

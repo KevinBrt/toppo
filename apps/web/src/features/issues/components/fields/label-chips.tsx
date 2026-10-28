@@ -1,5 +1,5 @@
-import type { LabelRef } from '@toppo/shared';
-import { Badge, cn } from '@toppo/ui';
+import type { LabelRef } from '@toppo-tracker/shared';
+import { Badge, cn } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
 

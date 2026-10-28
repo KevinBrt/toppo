@@ -1,4 +1,4 @@
-import { Button, Dialog, DialogClose, DialogContent, Field, Select } from '@toppo/ui';
+import { Button, Dialog, DialogClose, DialogContent, Field, Select } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';

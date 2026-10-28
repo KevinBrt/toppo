@@ -1,5 +1,5 @@
-import type { AttachmentKind } from '@toppo/shared';
-import { cn } from '@toppo/ui';
+import type { AttachmentKind } from '@toppo-tracker/shared';
+import { cn } from '@toppo-tracker/ui';
 
 /** The badge of each kind: dark enough for white text. */
 const BADGES: Readonly<Record<AttachmentKind, string>> = {

@@ -44,7 +44,7 @@ insert into projects (id, key, name, color)
 
 insert into users (id, name, email, instance_role_id)
   select uuidv7(), 'Person ' || n, 'person' || n || '@example.com',
-    -- DEFAULT_ROLE_IDS.team (@toppo/core).
+    -- DEFAULT_ROLE_IDS.team (@toppo-tracker/core).
     '01a1569b-9801-747e-91c9-d058653f2a8e'::uuid
   from generate_series(1, 200) as n;
 

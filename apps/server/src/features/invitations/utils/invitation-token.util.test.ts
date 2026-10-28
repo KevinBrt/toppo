@@ -1,4 +1,4 @@
-import { invitationTokenSchema } from '@toppo/shared';
+import { invitationTokenSchema } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import {
   hashInvitationToken,

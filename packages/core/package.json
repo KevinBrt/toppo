@@ -1,5 +1,5 @@
 {
-  "name": "@toppo/core",
+  "name": "@toppo-tracker/core",
   "version": "0.0.0",
   "private": true,
   "description": "Pure business logic of Toppo: issues, workflows, permissions. No I/O.",
@@ -13,7 +13,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@toppo/shared": "0.0.0"
+    "@toppo-tracker/shared": "0.0.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "5.0.5",

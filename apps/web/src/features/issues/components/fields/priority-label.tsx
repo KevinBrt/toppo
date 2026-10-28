@@ -1,5 +1,5 @@
-import type { PriorityLevel } from '@toppo/shared';
-import { PriorityIcon } from '@toppo/ui';
+import type { PriorityLevel } from '@toppo-tracker/shared';
+import { PriorityIcon } from '@toppo-tracker/ui';
 
 /** A priority: its bars and its name. */
 export function PriorityLabel({ priority }: { priority: { name: string; level: PriorityLevel } }) {

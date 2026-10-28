@@ -1,6 +1,10 @@
-import { type OptionsPlan, planOptions } from '@toppo/core';
-import { isUniqueViolation, schema, uuidv7 } from '@toppo/db';
-import { type IssueActivityPayload, type LabelDraft, labelsRequestSchema } from '@toppo/shared';
+import { type OptionsPlan, planOptions } from '@toppo-tracker/core';
+import { isUniqueViolation, schema, uuidv7 } from '@toppo-tracker/db';
+import {
+  type IssueActivityPayload,
+  type LabelDraft,
+  labelsRequestSchema,
+} from '@toppo-tracker/shared';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';

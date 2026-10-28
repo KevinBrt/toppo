@@ -1,4 +1,4 @@
-import type { CurrentUser } from '@toppo/shared';
+import type { CurrentUser } from '@toppo-tracker/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { page, userEvent } from 'vitest/browser';
 import {

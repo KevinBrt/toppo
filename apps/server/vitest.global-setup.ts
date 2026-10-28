@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
-import { createDatabase } from '@toppo/db';
-import { prepareTemplateDatabase, removeTestDatabases } from '@toppo/testing';
+import { createDatabase } from '@toppo-tracker/db';
+import { prepareTemplateDatabase, removeTestDatabases } from '@toppo-tracker/testing';
 import type { TestProject } from 'vitest/node';
 
 const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../packages/db/migrations', import.meta.url));

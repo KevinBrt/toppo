@@ -1,6 +1,6 @@
-import { issueActionsOf } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { type IssueResponse, issueKeyParamsSchema } from '@toppo/shared';
+import { issueActionsOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { type IssueResponse, issueKeyParamsSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

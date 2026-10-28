@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { INVITATION_LIFETIME_DAYS } from '@toppo/core';
-import type { CreateInvitationsResponse } from '@toppo/shared';
-import { Button, Dialog, DialogContent, DialogTrigger } from '@toppo/ui';
+import { INVITATION_LIFETIME_DAYS } from '@toppo-tracker/core';
+import type { CreateInvitationsResponse } from '@toppo-tracker/shared';
+import { Button, Dialog, DialogContent, DialogTrigger } from '@toppo-tracker/ui';
 import { UserPlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

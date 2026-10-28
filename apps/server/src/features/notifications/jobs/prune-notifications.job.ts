@@ -1,4 +1,4 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import { lt, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineJob } from '../../../platform/jobs/jobs.ts';

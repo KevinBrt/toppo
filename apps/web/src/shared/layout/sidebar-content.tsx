@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Logo } from '@toppo/ui';
+import { Logo } from '@toppo-tracker/ui';
 import type { ReactNode } from 'react';
 import { useI18n } from '../i18n/i18n-provider.tsx';
 import { NAV_SECTIONS, type NavAudience } from './navigation.constants.ts';

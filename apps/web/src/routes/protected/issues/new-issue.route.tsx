@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Navigate, useNavigate } from '@tanstack/react-router';
-import { can } from '@toppo/core';
+import { can } from '@toppo-tracker/core';
 import { z } from 'zod';
 import { NewIssueForm } from '../../../features/issues/components/form/new-issue-form.tsx';
 import { ProjectsQueries } from '../../../features/projects/queries/projects.queries.ts';

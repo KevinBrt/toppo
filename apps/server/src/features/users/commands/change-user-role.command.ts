@@ -1,6 +1,6 @@
-import { canActOnRole, keepsAnAdministrator } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { changeUserRoleRequestSchema, userIdParamsSchema } from '@toppo/shared';
+import { canActOnRole, keepsAnAdministrator } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { changeUserRoleRequestSchema, userIdParamsSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { lockInstanceAccounts } from '../../../platform/auth/administrators.ts';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Field, Input, PasswordInput } from '@toppo/ui';
+import { Alert, Button, Field, Input, PasswordInput } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import type { z } from 'zod';
 import { fieldErrors, requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';

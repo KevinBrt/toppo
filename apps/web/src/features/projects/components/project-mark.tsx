@@ -1,5 +1,5 @@
-import type { PaletteColor } from '@toppo/shared';
-import { cn, initialsOf, toneClassName } from '@toppo/ui';
+import type { PaletteColor } from '@toppo-tracker/shared';
+import { cn, initialsOf, toneClassName } from '@toppo-tracker/ui';
 
 /** A project's initials on its color. Decorative: always shown next to the project's name. */
 export function ProjectMark({

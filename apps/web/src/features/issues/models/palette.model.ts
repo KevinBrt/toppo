@@ -1,4 +1,4 @@
-import type { IssueWithProject } from '@toppo/shared';
+import type { IssueWithProject } from '@toppo-tracker/shared';
 import type { LucideIcon } from 'lucide-react';
 
 /** Something the palette offers besides issues: a page to open, an action to take. */

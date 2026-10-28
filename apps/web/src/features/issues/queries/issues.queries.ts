@@ -1,5 +1,5 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query';
-import type { IssuesQuery, ProjectIssuesQuery } from '@toppo/shared';
+import type { IssuesQuery, ProjectIssuesQuery } from '@toppo-tracker/shared';
 import { Attachments } from '../api/attachments.api.ts';
 import { Comments } from '../api/comments.api.ts';
 import { Issues } from '../api/issues.api.ts';

@@ -58,7 +58,7 @@ export const projectResponseSchema = z.object({
   /** The key can change until the project's first issue. */
   keyEditable: z.boolean(),
   /**
-   * What the caller may do in this project, by catalog name (`@toppo/core`), so the web app can
+   * What the caller may do in this project, by catalog name (`@toppo-tracker/core`), so the web app can
    * hide the rest. Plain strings on the wire: the server stays the only judge.
    */
   permissions: z.array(z.string()),

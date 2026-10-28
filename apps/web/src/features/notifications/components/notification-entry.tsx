@@ -1,5 +1,5 @@
-import type { Notification } from '@toppo/shared';
-import { cn } from '@toppo/ui';
+import type { Notification } from '@toppo-tracker/shared';
+import { cn } from '@toppo-tracker/ui';
 import { formatRelativeTime } from '../../../shared/i18n/dates.util.ts';
 import type { Translate } from '../../../shared/i18n/i18n.types.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';

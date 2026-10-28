@@ -1,4 +1,8 @@
-import { type LabelsRequest, type LabelsResponse, labelsResponseSchema } from '@toppo/shared';
+import {
+  type LabelsRequest,
+  type LabelsResponse,
+  labelsResponseSchema,
+} from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
 

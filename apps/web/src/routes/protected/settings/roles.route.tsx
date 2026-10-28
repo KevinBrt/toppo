@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, useBlocker } from '@tanstack/react-router';
-import { can } from '@toppo/core';
+import { can } from '@toppo-tracker/core';
 import { useState } from 'react';
 import { NewRole } from '../../../features/roles/components/dialogs/new-role.tsx';
 import { RolesEditor } from '../../../features/roles/components/roles-editor.tsx';

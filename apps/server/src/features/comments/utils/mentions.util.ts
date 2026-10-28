@@ -1,5 +1,5 @@
-import { issueVisibilityOf } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { issueVisibilityOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import { and, eq, inArray, type SQL, sql } from 'drizzle-orm';
 import { type IssueProjectContext, seeingIssue } from '../../../platform/auth/project-access.ts';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';

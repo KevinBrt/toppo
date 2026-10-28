@@ -4,8 +4,8 @@ import {
   changePasswordRequestSchema,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
-} from '@toppo/shared';
-import { Alert, Button, Field, PasswordInput } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Alert, Button, Field, PasswordInput } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import { ApiRequestError } from '../../../shared/api/http.client.ts';
 import { fieldErrors, requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';

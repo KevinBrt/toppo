@@ -1,9 +1,9 @@
-import { type Db, schema, uuidv7 } from '@toppo/db';
+import { type Db, schema, uuidv7 } from '@toppo-tracker/db';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_RESET_LIFETIME_MINUTES,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError } from 'better-auth/api';

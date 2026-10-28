@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import type { ProjectSummary, ProjectsQuery } from '@toppo/shared';
-import { Alert, Avatar, cn, Input } from '@toppo/ui';
+import type { ProjectSummary, ProjectsQuery } from '@toppo-tracker/shared';
+import { Alert, Avatar, cn, Input } from '@toppo-tracker/ui';
 import { SearchIcon, SlidersHorizontalIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

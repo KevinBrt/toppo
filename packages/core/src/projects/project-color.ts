@@ -1,4 +1,4 @@
-import type { PaletteColor } from '@toppo/shared';
+import type { PaletteColor } from '@toppo-tracker/shared';
 
 /** The colors new projects get in turn: gray is left for those an administrator wants quiet. */
 const PROJECT_COLOR_ROTATION = [

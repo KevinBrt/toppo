@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Link, redirect, useNavigate } from '@tanstack/react-router';
-import { can, issueVisibilityOf } from '@toppo/core';
-import type { ProjectIssuesQuery } from '@toppo/shared';
-import { buttonVariants, EmptyState } from '@toppo/ui';
+import { can, issueVisibilityOf } from '@toppo-tracker/core';
+import type { ProjectIssuesQuery } from '@toppo-tracker/shared';
+import { buttonVariants, EmptyState } from '@toppo-tracker/ui';
 import { FolderXIcon, InboxIcon, PlusIcon } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import { IssuesList } from '../../../features/issues/components/list/issues-list.tsx';

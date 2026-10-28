@@ -1,4 +1,4 @@
-import { Button } from '@toppo/ui';
+import { Button } from '@toppo-tracker/ui';
 import { PaperclipIcon } from 'lucide-react';
 import { type DragEvent, type Ref, useRef, useState } from 'react';
 import { ACCEPTED_EXTENSIONS } from '../../utils/attachment-files.util.ts';

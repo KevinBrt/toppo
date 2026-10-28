@@ -1,5 +1,5 @@
-import { showsInline } from '@toppo/core';
-import { attachmentParamsSchema } from '@toppo/shared';
+import { showsInline } from '@toppo-tracker/core';
+import { attachmentParamsSchema } from '@toppo-tracker/shared';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import type { StoredFile } from '../../../platform/uploads/file-routes.ts';

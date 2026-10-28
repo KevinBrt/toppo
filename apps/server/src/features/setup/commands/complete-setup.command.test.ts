@@ -5,8 +5,8 @@ import {
   DEFAULT_ROLE_NAMES,
   DEFAULT_ROLES,
   DEFAULT_STATUSES,
-} from '@toppo/core';
-import { schema } from '@toppo/db';
+} from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import Fastify from 'fastify';
 import { describe, expect, it } from 'vitest';
 import type { ExecutionContext } from '../../../platform/cqrs/cqrs.ts';

@@ -1,4 +1,4 @@
-import { workflowRequestSchema } from '@toppo/shared';
+import { workflowRequestSchema } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import {
   allows,

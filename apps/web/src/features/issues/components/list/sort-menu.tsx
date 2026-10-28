@@ -1,4 +1,4 @@
-import { ISSUE_SORT_ORDERS, type IssueSort, type SortOrder } from '@toppo/shared';
+import { ISSUE_SORT_ORDERS, type IssueSort, type SortOrder } from '@toppo-tracker/shared';
 import {
   Button,
   DropdownMenu,
@@ -7,7 +7,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { ArrowDownWideNarrowIcon, ArrowUpNarrowWideIcon } from 'lucide-react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { SORT_LABELS } from '../../constants/issue-list.constants.ts';

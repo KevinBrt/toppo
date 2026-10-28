@@ -1,4 +1,4 @@
-import type { WorkflowRequest, WorkflowStatusDraft } from '@toppo/shared';
+import type { WorkflowRequest, WorkflowStatusDraft } from '@toppo-tracker/shared';
 
 type Fields = Omit<WorkflowStatusDraft, 'ref'>;
 

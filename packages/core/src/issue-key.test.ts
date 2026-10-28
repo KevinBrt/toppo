@@ -1,4 +1,4 @@
-import { PROJECT_KEY_MAX_LENGTH, type ProjectKey, projectKeySchema } from '@toppo/shared';
+import { PROJECT_KEY_MAX_LENGTH, type ProjectKey, projectKeySchema } from '@toppo-tracker/shared';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { formatIssueKey, issueReferenceIn, issueReferencesIn, parseIssueKey } from './issue-key.ts';

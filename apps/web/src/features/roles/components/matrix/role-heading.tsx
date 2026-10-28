@@ -1,4 +1,4 @@
-import type { RoleDetails } from '@toppo/shared';
+import type { RoleDetails } from '@toppo-tracker/shared';
 import {
   Badge,
   Button,
@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { EllipsisVerticalIcon, LockIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

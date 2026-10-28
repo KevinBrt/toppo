@@ -50,7 +50,7 @@ export const issuePrioritySchema = z.object({
   level: z.union(PRIORITY_LEVELS.map((level) => z.literal(level))),
 });
 
-/** What someone may do on an issue (`issueActionsOf` in `@toppo/core`); the server stays the judge. */
+/** What someone may do on an issue (`issueActionsOf` in `@toppo-tracker/core`); the server stays the judge. */
 export const ISSUE_ACTIONS = [
   'editText',
   'attach',

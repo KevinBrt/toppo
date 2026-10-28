@@ -1,4 +1,4 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import { z } from 'zod';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 

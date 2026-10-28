@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, type NotificationEvent, SUPPORTED_LOCALES } from '@toppo/shared';
+import { DEFAULT_LOCALE, type NotificationEvent, SUPPORTED_LOCALES } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
@@ -42,12 +42,12 @@ export const users = pgTable(
     allProjects: boolean('all_projects').notNull().default(false),
     /**
      * Toppo: the language of the interface they last used, for what reaches them outside it
-     * (email). Mirrors SUPPORTED_LOCALES (`@toppo/shared`).
+     * (email). Mirrors SUPPORTED_LOCALES (`@toppo-tracker/shared`).
      */
     locale: text('locale', { enum: SUPPORTED_LOCALES }).notNull().default(DEFAULT_LOCALE),
     /**
      * Toppo: the kinds of notifications not to email them (NOTIFICATION_EVENTS of
-     * `@toppo/shared`): every kind is emailed unless turned off, kinds to come included.
+     * `@toppo-tracker/shared`): every kind is emailed unless turned off, kinds to come included.
      */
     emailMutedEvents: text('email_muted_events')
       .array()
@@ -78,7 +78,7 @@ export const users = pgTable(
     ),
     index('users_instance_role_id_idx').on(table.instanceRoleId),
     check('users_locale_check', sql`${table.locale} in ('en', 'fr')`),
-    // Mirrors NOTIFICATION_EVENTS (`@toppo/shared`).
+    // Mirrors NOTIFICATION_EVENTS (`@toppo-tracker/shared`).
     check(
       'users_email_muted_events_check',
       sql`${table.emailMutedEvents} <@ array['created', 'assigned', 'assigneeChanged', 'commented', 'mentioned', 'statusChanged', 'duplicateChanged']::text[]`,

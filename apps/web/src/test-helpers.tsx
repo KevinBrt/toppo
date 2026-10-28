@@ -49,7 +49,7 @@ import {
   samePropertyValue,
   withoutOptions,
   withPropertyValue,
-} from '@toppo/core';
+} from '@toppo-tracker/core';
 import {
   ATTACHMENTS_MAX,
   type AttachmentMediaType,
@@ -112,7 +112,7 @@ import {
   updatePropertyRequestSchema,
   type WorkflowMode,
   workflowRequestSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { vi } from 'vitest';
 import { render } from 'vitest-browser-react';
 import type { z } from 'zod';
@@ -1976,7 +1976,7 @@ function shownValueOf(
   }
 }
 
-/** What decides the values a property takes, as `@toppo/core` checks them. */
+/** What decides the values a property takes, as `@toppo-tracker/core` checks them. */
 const rulesOf = ({ id, type, askedAtCreation, required, options }: IssuePropertyField) =>
   ({ id, type, askedAtCreation, required, optionIds: options.map((option) => option.id) }) as const;
 

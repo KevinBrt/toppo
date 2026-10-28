@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Navigate, useNavigate } from '@tanstack/react-router';
-import { can } from '@toppo/core';
+import { can } from '@toppo-tracker/core';
 import { GeneralSettings } from '../../../features/projects/components/settings/general-settings.tsx';
 import { ProjectsQueries } from '../../../features/projects/queries/projects.queries.ts';
 import { SessionQueries } from '../../../features/session/queries/session.queries.ts';

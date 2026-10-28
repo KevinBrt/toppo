@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { PROPERTIES_MAX, type PropertiesResponse } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { PROPERTIES_MAX, type PropertiesResponse } from '@toppo-tracker/shared';
 import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

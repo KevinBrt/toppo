@@ -1,10 +1,10 @@
-import { commentActionsOf } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { commentActionsOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   commentParamsSchema,
   commentRequestSchema,
   type IssueActivityPayload,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, eq, sql } from 'drizzle-orm';
 import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';

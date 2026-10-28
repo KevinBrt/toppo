@@ -1,4 +1,4 @@
-import { Button, Input } from '@toppo/ui';
+import { Button, Input } from '@toppo-tracker/ui';
 import { PlusIcon } from 'lucide-react';
 import { type KeyboardEvent, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

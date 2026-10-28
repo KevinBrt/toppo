@@ -3,8 +3,8 @@ import {
   DEFAULT_PRIORITIES,
   DEFAULT_ROLE_IDS,
   DEFAULT_STATUSES,
-} from '@toppo/core';
-import { schema } from '@toppo/db';
+} from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   apiErrorSchema,
   bulkIssuesResponseSchema,
@@ -12,7 +12,7 @@ import {
   issueActivitiesResponseSchema,
   issueResponseSchema,
   labelsResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, eq } from 'drizzle-orm';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';

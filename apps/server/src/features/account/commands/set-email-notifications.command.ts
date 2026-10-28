@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { emailNotificationsRequestSchema, NOTIFICATION_EVENTS } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { emailNotificationsRequestSchema, NOTIFICATION_EVENTS } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 

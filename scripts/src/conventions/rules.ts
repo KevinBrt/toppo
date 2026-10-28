@@ -151,7 +151,7 @@ export const RULES: readonly ConventionRule[] = [
   },
   {
     id: 'no-relative-import-across-packages',
-    message: 'Import other workspaces by package name (@toppo/...), never by relative path',
+    message: 'Import other workspaces by package name (@toppo-tracker/...), never by relative path',
     appliesTo: (path) => SOURCE_FILE.test(path),
     check(path, source) {
       const root = workspaceRoot(path);

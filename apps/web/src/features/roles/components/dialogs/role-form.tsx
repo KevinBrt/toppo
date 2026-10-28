@@ -3,8 +3,8 @@ import {
   ROLE_NAME_MAX_LENGTH,
   type RoleRequest,
   roleRequestSchema,
-} from '@toppo/shared';
-import { Alert, Button, badgeClassName, Field, Input } from '@toppo/ui';
+} from '@toppo-tracker/shared';
+import { Alert, Button, badgeClassName, Field, Input } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import { fieldErrors, requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

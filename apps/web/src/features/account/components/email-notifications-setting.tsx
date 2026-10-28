@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { NOTIFICATION_EVENTS, type NotificationEvent } from '@toppo/shared';
-import { Alert, Switch } from '@toppo/ui';
+import { NOTIFICATION_EVENTS, type NotificationEvent } from '@toppo-tracker/shared';
+import { Alert, Switch } from '@toppo-tracker/ui';
 import { useId } from 'react';
 import { requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';

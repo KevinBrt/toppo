@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { IssueResponse } from '@toppo/shared';
-import { Alert, Button, Dialog, DialogClose, DialogContent } from '@toppo/ui';
+import type { IssueResponse } from '@toppo-tracker/shared';
+import { Alert, Button, Dialog, DialogClose, DialogContent } from '@toppo-tracker/ui';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { Issues } from '../../api/issues.api.ts';

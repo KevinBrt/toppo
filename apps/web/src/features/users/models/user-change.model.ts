@@ -1,4 +1,4 @@
-import type { MemberRow, RoleBadge } from '@toppo/shared';
+import type { MemberRow, RoleBadge } from '@toppo-tracker/shared';
 
 /** What an administrator does to an account from the members screen. */
 export type UserChange =

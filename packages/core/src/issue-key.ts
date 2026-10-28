@@ -1,4 +1,4 @@
-import { type ProjectKey, projectKeySchema } from '@toppo/shared';
+import { type ProjectKey, projectKeySchema } from '@toppo-tracker/shared';
 
 export interface IssueKeyParts {
   projectKey: ProjectKey;

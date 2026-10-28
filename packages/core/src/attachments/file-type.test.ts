@@ -1,4 +1,4 @@
-import { ATTACHMENT_MEDIA_TYPES, type AttachmentMediaType } from '@toppo/shared';
+import { ATTACHMENT_MEDIA_TYPES, type AttachmentMediaType } from '@toppo-tracker/shared';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
@@ -80,7 +80,7 @@ describe('mediaTypeOf', () => {
     expect(content && mediaTypeOf(name, content)).toStrictEqual({ mediaType });
   });
 
-  it('accepts every type of @toppo/shared, by one extension at least', () => {
+  it('accepts every type of @toppo-tracker/shared, by one extension at least', () => {
     const accepted = Object.values(FILES).flatMap((content) =>
       ['png', 'jpg', 'webp', 'pdf', 'txt', 'csv', 'doc', 'xls', 'ppt']
         .concat(['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp'])

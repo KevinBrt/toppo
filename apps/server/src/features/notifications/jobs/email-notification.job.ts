@@ -1,6 +1,6 @@
-import { formatIssueKey } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { ISSUE_ACTIVITY_PAYLOADS, projectKeySchema } from '@toppo/shared';
+import { formatIssueKey } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { ISSUE_ACTIVITY_PAYLOADS, projectKeySchema } from '@toppo-tracker/shared';
 import { and, eq, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { z } from 'zod';

@@ -1,7 +1,7 @@
 import type { IncomingMessage } from 'node:http';
 import { Readable } from 'node:stream';
-import { showsInline } from '@toppo/core';
-import type { AttachmentMediaType } from '@toppo/shared';
+import { showsInline } from '@toppo-tracker/core';
+import type { AttachmentMediaType } from '@toppo-tracker/shared';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { contentDisposition } from './content-disposition.ts';

@@ -1,4 +1,4 @@
-import { OPTION_PROBLEMS, PALETTE_COLORS, type PaletteColor } from '@toppo/shared';
+import { OPTION_PROBLEMS, PALETTE_COLORS, type PaletteColor } from '@toppo-tracker/shared';
 import type { z } from 'zod';
 import type { OptionDraft } from '../models/option-draft.model.ts';
 

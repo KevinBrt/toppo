@@ -1,4 +1,4 @@
-import type { IssueActivityPayload, PropertyType, PropertyValue } from '@toppo/shared';
+import type { IssueActivityPayload, PropertyType, PropertyValue } from '@toppo-tracker/shared';
 import { optionsIn } from './property-values.ts';
 
 type Named = { id: string; name: string };

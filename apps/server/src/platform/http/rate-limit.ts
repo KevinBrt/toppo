@@ -1,5 +1,5 @@
 import { isIP } from 'node:net';
-import { type Db, schema } from '@toppo/db';
+import { type Db, schema } from '@toppo-tracker/db';
 import { lt, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';

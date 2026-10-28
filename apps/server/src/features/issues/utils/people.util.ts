@@ -1,5 +1,5 @@
-import { followersOf } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
+import { followersOf } from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import { reachableBy } from '../../../platform/auth/project-access.ts';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';

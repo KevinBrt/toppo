@@ -1,4 +1,4 @@
-import { PROPERTY_TEXT_MAX_LENGTH } from '@toppo/shared';
+import { PROPERTY_TEXT_MAX_LENGTH } from '@toppo-tracker/shared';
 import { describe, expect, it } from 'vitest';
 import { choiceOf, formProblems, valueOfDraft, valuesOfDrafts } from './new-issue-form.model.ts';
 

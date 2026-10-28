@@ -1,4 +1,4 @@
-import { releasedVersionSchema, TOPPO_VERSION } from '@toppo/shared';
+import { releasedVersionSchema, TOPPO_VERSION } from '@toppo-tracker/shared';
 import { z } from 'zod';
 
 /** Where Toppo's releases are published; the only address the check calls. */

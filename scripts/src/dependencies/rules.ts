@@ -14,22 +14,22 @@ export interface WorkspaceManifest {
 
 /** Workspace packages each package may depend on (runtime or dev). */
 export const ALLOWED_WORKSPACE_DEPENDENCIES: Readonly<Record<string, readonly string[]>> = {
-  '@toppo/shared': [],
-  '@toppo/core': ['@toppo/shared'],
-  '@toppo/db': ['@toppo/shared', '@toppo/core'],
-  '@toppo/ui': ['@toppo/shared'],
-  '@toppo/testing': ['@toppo/shared', '@toppo/core', '@toppo/db'],
-  '@toppo/server': ['@toppo/shared', '@toppo/core', '@toppo/db'],
-  '@toppo/web': ['@toppo/shared', '@toppo/core', '@toppo/ui'],
-  '@toppo/plugin-sdk': ['@toppo/shared'],
-  '@toppo/e2e': [],
-  '@toppo/scripts': [],
+  '@toppo-tracker/shared': [],
+  '@toppo-tracker/core': ['@toppo-tracker/shared'],
+  '@toppo-tracker/db': ['@toppo-tracker/shared', '@toppo-tracker/core'],
+  '@toppo-tracker/ui': ['@toppo-tracker/shared'],
+  '@toppo-tracker/testing': ['@toppo-tracker/shared', '@toppo-tracker/core', '@toppo-tracker/db'],
+  '@toppo-tracker/server': ['@toppo-tracker/shared', '@toppo-tracker/core', '@toppo-tracker/db'],
+  '@toppo-tracker/web': ['@toppo-tracker/shared', '@toppo-tracker/core', '@toppo-tracker/ui'],
+  '@toppo-tracker/plugin-sdk': ['@toppo-tracker/shared'],
+  '@toppo-tracker/e2e': [],
+  '@toppo-tracker/scripts': [],
 };
 
 /** Workspaces allowed only as devDependencies: test tooling never ships. */
-const DEV_ONLY_WORKSPACES = new Set(['@toppo/testing']);
+const DEV_ONLY_WORKSPACES = new Set(['@toppo-tracker/testing']);
 
-const PLUGIN_ALLOWED = ['@toppo/plugin-sdk'];
+const PLUGIN_ALLOWED = ['@toppo-tracker/plugin-sdk'];
 
 /** Licenses compatible with distributing Toppo under AGPL-3.0. */
 export const ALLOWED_LICENSES = new Set([

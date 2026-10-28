@@ -1,4 +1,4 @@
-import type { Locale } from '@toppo/shared';
+import type { Locale } from '@toppo-tracker/shared';
 
 const KIBIBYTE = 1024;
 const MEBIBYTE = KIBIBYTE * KIBIBYTE;

@@ -1,5 +1,5 @@
 {
-  "name": "@toppo/server",
+  "name": "@toppo-tracker/server",
   "version": "0.0.0",
   "private": true,
   "description": "Toppo HTTP server: REST API, authentication, background jobs, and the compiled web app.",
@@ -15,9 +15,9 @@
   "dependencies": {
     "@fastify/helmet": "13.2.0",
     "@fastify/static": "10.1.8",
-    "@toppo/core": "0.0.0",
-    "@toppo/db": "0.0.0",
-    "@toppo/shared": "0.0.0",
+    "@toppo-tracker/core": "0.0.0",
+    "@toppo-tracker/db": "0.0.0",
+    "@toppo-tracker/shared": "0.0.0",
     "better-auth": "1.7.14",
     "drizzle-orm": "0.45.4",
     "fastify": "5.12.7",
@@ -25,7 +25,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@toppo/testing": "0.0.0",
+    "@toppo-tracker/testing": "0.0.0",
     "@types/node": "24.19.2",
     "@vitest/coverage-v8": "5.0.5",
     "rolldown": "1.2.15",

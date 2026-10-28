@@ -1,7 +1,7 @@
 import { defineConfig } from 'drizzle-kit';
 
 /**
- * `npm run db:generate --workspace=@toppo/db` writes a migration from schema changes.
+ * `npm run db:generate --workspace=@toppo-tracker/db` writes a migration from schema changes.
  * Generated SQL is reviewed by a human and never edited once released.
  */
 export default defineConfig({

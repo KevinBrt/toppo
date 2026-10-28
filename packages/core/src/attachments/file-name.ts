@@ -1,4 +1,4 @@
-import { ATTACHMENT_NAME_MAX_LENGTH } from '@toppo/shared';
+import { ATTACHMENT_NAME_MAX_LENGTH } from '@toppo-tracker/shared';
 
 /**
  * What a file name never keeps: control characters, and invisible formatting such as the

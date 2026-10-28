@@ -1,4 +1,8 @@
-import { ATTACHMENT_MEDIA_TYPES, ATTACHMENT_TYPES, type AttachmentMediaType } from '@toppo/shared';
+import {
+  ATTACHMENT_MEDIA_TYPES,
+  ATTACHMENT_TYPES,
+  type AttachmentMediaType,
+} from '@toppo-tracker/shared';
 import { extensionOf } from './file-name.ts';
 
 /** How many of a file's first bytes `mediaTypeOf` needs: enough for every signature it checks. */

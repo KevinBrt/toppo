@@ -1,4 +1,8 @@
-import { type IssuePropertyField, PROPERTY_TEXT_MAX_LENGTH, type UserRef } from '@toppo/shared';
+import {
+  type IssuePropertyField,
+  PROPERTY_TEXT_MAX_LENGTH,
+  type UserRef,
+} from '@toppo-tracker/shared';
 import {
   Badge,
   Field,
@@ -7,7 +11,7 @@ import {
   inputClassName,
   Select,
   Switch,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { useId } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { PropertyDraft } from '../../models/new-issue-form.model.ts';

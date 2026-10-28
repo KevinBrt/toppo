@@ -1,4 +1,4 @@
-import type { IssuePropertyValue, PropertyValue } from '@toppo/shared';
+import type { IssuePropertyValue, PropertyValue } from '@toppo-tracker/shared';
 
 /** A property's value as the server stores it, from the value as it reads. */
 export function storedValueOf(value: IssuePropertyValue): PropertyValue {

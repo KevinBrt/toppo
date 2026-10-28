@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createDatabase, waitForDatabase } from '@toppo/db';
+import { createDatabase, waitForDatabase } from '@toppo-tracker/db';
 import { buildApp, createJobs, createServices } from './app.ts';
 import { getSetupStatus } from './features/setup/queries/get-setup-status.query.ts';
 import { generateSetupCode } from './features/setup/utils/setup-code.util.ts';

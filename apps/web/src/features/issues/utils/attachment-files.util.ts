@@ -1,10 +1,10 @@
-import { extensionOf, isImage, showsInline } from '@toppo/core';
+import { extensionOf, isImage, showsInline } from '@toppo-tracker/core';
 import {
   ATTACHMENT_MEDIA_TYPES,
   ATTACHMENT_TYPES,
   type AttachmentKind,
   type AttachmentMediaType,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import type { FileDraft, RefusedFile } from '../models/attachment-draft.model.ts';
 
 const TYPE_BY_EXTENSION: ReadonlyMap<string, AttachmentMediaType> = new Map(

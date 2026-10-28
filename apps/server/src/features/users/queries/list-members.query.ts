@@ -1,11 +1,11 @@
-import type { Db } from '@toppo/db';
-import { containsText, schema } from '@toppo/db';
+import type { Db } from '@toppo-tracker/db';
+import { containsText, schema } from '@toppo-tracker/db';
 import {
   MEMBERS_PAGE_SIZE,
   type MemberRow,
   type MembersResponse,
   membersQuerySchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

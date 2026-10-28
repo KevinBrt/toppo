@@ -3,7 +3,7 @@ import {
   type PropertyFilter,
   type PropertyType,
   type PropertyValue,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 
 /**
  * What a filter keeps of a property, once checked against its type: any of some options or

@@ -5,7 +5,7 @@ import {
   FILE_NAME_HEADER,
   type IssueAttachmentsResponse,
   issueAttachmentsResponseSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { apiBytes, apiRequest } from '../../../shared/api/http.client.ts';
 import { decodeText } from '../utils/text-decoding.util.ts';

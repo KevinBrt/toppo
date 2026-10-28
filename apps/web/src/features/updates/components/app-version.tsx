@@ -1,4 +1,4 @@
-import { TOPPO_VERSION } from '@toppo/shared';
+import { TOPPO_VERSION } from '@toppo-tracker/shared';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';
 
 /**

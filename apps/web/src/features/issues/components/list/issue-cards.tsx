@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { IssueGrouping, IssueSummary } from '@toppo/shared';
+import type { IssueGrouping, IssueSummary } from '@toppo-tracker/shared';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import type { IssueSelection } from '../../models/bulk-change.model.ts';
 import type { IssueSection } from '../../models/issue-list.model.ts';

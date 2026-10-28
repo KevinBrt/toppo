@@ -1,11 +1,11 @@
-import { planOptions } from '@toppo/core';
-import { schema, uuidv7 } from '@toppo/db';
+import { planOptions } from '@toppo-tracker/core';
+import { schema, uuidv7 } from '@toppo-tracker/db';
 import {
   hasOptions,
   type PropertyOptionDraft,
   projectPropertyParamsSchema,
   propertyAdaptationRequestSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { defineCommand, type Transaction } from '../../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../../platform/http/http-error.ts';

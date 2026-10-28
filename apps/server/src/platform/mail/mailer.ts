@@ -1,4 +1,4 @@
-import { type Db, schema } from '@toppo/db';
+import { type Db, schema } from '@toppo-tracker/db';
 import { createTransport } from 'nodemailer';
 import type { SecretBox } from '../config/secret-box.ts';
 

@@ -1,5 +1,5 @@
-import { schema } from '@toppo/db';
-import { assignIssueRequestSchema, issueKeyParamsSchema } from '@toppo/shared';
+import { schema } from '@toppo-tracker/db';
+import { assignIssueRequestSchema, issueKeyParamsSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { recordActivity } from '../../../platform/activities/record-activity.ts';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';

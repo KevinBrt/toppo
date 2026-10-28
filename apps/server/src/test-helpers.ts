@@ -1,9 +1,9 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createDatabase, type Database, schema, uuidv7 } from '@toppo/db';
-import { CSP_NONCE_PLACEHOLDER } from '@toppo/shared';
-import { createTestDatabase } from '@toppo/testing';
+import { createDatabase, type Database, schema, uuidv7 } from '@toppo-tracker/db';
+import { CSP_NONCE_PLACEHOLDER } from '@toppo-tracker/shared';
+import { createTestDatabase } from '@toppo-tracker/testing';
 import { sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll } from 'vitest';

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { CreateProjectRequest } from '@toppo/shared';
-import { Button, Dialog, DialogContent, DialogTrigger } from '@toppo/ui';
+import type { CreateProjectRequest } from '@toppo-tracker/shared';
+import { Button, Dialog, DialogContent, DialogTrigger } from '@toppo-tracker/ui';
 import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

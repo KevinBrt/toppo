@@ -1,4 +1,4 @@
-import { MAIL_SECURITY } from '@toppo/shared';
+import { MAIL_SECURITY } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
 import { check, integer, pgTable, smallint, text, timestamp } from 'drizzle-orm/pg-core';
 import { timestamps } from './columns.ts';
@@ -55,7 +55,7 @@ export const mailSettings = pgTable(
   (table) => [
     check('mail_settings_single_row', sql`${table.id} = 1`),
     check('mail_settings_port_range', sql`${table.port} between 1 and 65535`),
-    // Mirrors MAIL_SECURITY (`@toppo/shared`).
+    // Mirrors MAIL_SECURITY (`@toppo-tracker/shared`).
     check('mail_settings_security_check', sql`${table.security} in ('starttls', 'tls', 'none')`),
     // Signing in takes both, or neither.
     check(

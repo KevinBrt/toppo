@@ -1,4 +1,4 @@
-import { type HealthResponse, healthResponseSchema } from '@toppo/shared';
+import { type HealthResponse, healthResponseSchema } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from '../http/zod.ts';
 

@@ -1,4 +1,4 @@
-import type { PaletteColor, WorkflowMode } from '@toppo/shared';
+import type { PaletteColor, WorkflowMode } from '@toppo-tracker/shared';
 
 /** A status as the editor changes it, before the workflow is saved. */
 export interface StatusDraft {

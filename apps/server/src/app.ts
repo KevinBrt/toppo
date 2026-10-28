@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { Database } from '@toppo/db';
+import type { Database } from '@toppo-tracker/db';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerAccountRoutes } from './features/account/account.routes.ts';
 import { registerAttachmentRoutes } from './features/attachments/attachments.routes.ts';

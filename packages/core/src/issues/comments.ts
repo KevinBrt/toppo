@@ -1,4 +1,4 @@
-import { COMMENT_ACTIONS, type CommentAction } from '@toppo/shared';
+import { COMMENT_ACTIONS, type CommentAction } from '@toppo-tracker/shared';
 import { can } from '../permissions/grants.ts';
 
 /**

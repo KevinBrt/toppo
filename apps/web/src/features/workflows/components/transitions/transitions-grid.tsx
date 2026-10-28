@@ -1,4 +1,4 @@
-import { cn, StatusBadge, swatchClassName } from '@toppo/ui';
+import { cn, StatusBadge, swatchClassName } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { pluralForm } from '../../../../shared/i18n/plural.util.ts';
 import type { WorkflowDraft } from '../../models/workflow-draft.model.ts';

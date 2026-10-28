@@ -66,7 +66,7 @@ const SERVER_LAYERS: LayerModel = {
   messages: {
     platform: 'platform/ cannot import features: it is wired to them in app.ts',
     features:
-      'A feature imports platform/ and its own files only; call another feature through its commands and queries from app.ts, or move shared logic to @toppo/core',
+      'A feature imports platform/ and its own files only; call another feature through its commands and queries from app.ts, or move shared logic to @toppo-tracker/core',
   },
 };
 

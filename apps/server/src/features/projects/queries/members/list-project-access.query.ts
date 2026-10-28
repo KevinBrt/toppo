@@ -1,4 +1,4 @@
-import { containsText, type Db, schema } from '@toppo/db';
+import { containsText, type Db, schema } from '@toppo-tracker/db';
 import {
   PROJECT_ACCESS_PAGE_SIZE,
   type ProjectAccessReason,
@@ -6,7 +6,7 @@ import {
   type ProjectAccessRow,
   projectAccessQuerySchema,
   projectKeyParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { and, count, eq, isNotNull, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { defineQuery } from '../../../../platform/cqrs/cqrs.ts';

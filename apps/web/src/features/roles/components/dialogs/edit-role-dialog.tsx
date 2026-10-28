@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { RoleDetails, RoleRequest } from '@toppo/shared';
-import { Dialog, DialogContent } from '@toppo/ui';
+import type { RoleDetails, RoleRequest } from '@toppo-tracker/shared';
+import { Dialog, DialogContent } from '@toppo-tracker/ui';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { Roles } from '../../api/roles.api.ts';
 import { RolesQueries } from '../../queries/roles.queries.ts';

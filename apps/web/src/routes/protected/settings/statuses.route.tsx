@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createRoute, useBlocker } from '@tanstack/react-router';
-import { can } from '@toppo/core';
-import { Alert } from '@toppo/ui';
+import { can } from '@toppo-tracker/core';
+import { Alert } from '@toppo-tracker/ui';
 import { useState } from 'react';
 import { IssuesQueries } from '../../../features/issues/queries/issues.queries.ts';
 import { SessionQueries } from '../../../features/session/queries/session.queries.ts';

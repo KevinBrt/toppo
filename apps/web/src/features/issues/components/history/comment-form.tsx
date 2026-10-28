@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ATTACHMENTS_MAX, COMMENT_BODY_MAX_LENGTH, type UserRef } from '@toppo/shared';
-import { Alert, Button, cn } from '@toppo/ui';
+import { ATTACHMENTS_MAX, COMMENT_BODY_MAX_LENGTH, type UserRef } from '@toppo-tracker/shared';
+import { Alert, Button, cn } from '@toppo-tracker/ui';
 import { SendIcon } from 'lucide-react';
 import { useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

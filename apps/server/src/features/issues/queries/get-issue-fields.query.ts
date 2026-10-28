@@ -1,6 +1,6 @@
-import { effectiveWorkflow, nextStatusesOf, priorityLevelOf } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { type IssueFieldsResponse, projectIssuesParamsSchema } from '@toppo/shared';
+import { effectiveWorkflow, nextStatusesOf, priorityLevelOf } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { type IssueFieldsResponse, projectIssuesParamsSchema } from '@toppo-tracker/shared';
 import { asc, eq, isNull, or, sql } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { fieldSettingsOf, propertyFields } from '../utils/issue-properties.util.ts';

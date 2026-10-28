@@ -1,5 +1,5 @@
-import type { PaletteColor } from '@toppo/shared';
-import { cn, swatchClassName } from '@toppo/ui';
+import type { PaletteColor } from '@toppo-tracker/shared';
+import { cn, swatchClassName } from '@toppo-tracker/ui';
 
 /** A status: its colored dot and its name. */
 export function StatusLabel({ status }: { status: { name: string; color: PaletteColor } }) {

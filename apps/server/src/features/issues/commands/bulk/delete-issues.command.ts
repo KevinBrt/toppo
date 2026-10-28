@@ -1,9 +1,9 @@
-import { schema } from '@toppo/db';
+import { schema } from '@toppo-tracker/db';
 import {
   type BulkIssuesResponse,
   bulkDeleteRequestSchema,
   projectIssuesParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { inArray } from 'drizzle-orm';
 import { recordActivities } from '../../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';

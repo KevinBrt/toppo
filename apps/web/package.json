@@ -1,8 +1,8 @@
 {
-  "name": "@toppo/web",
+  "name": "@toppo-tracker/web",
   "version": "0.0.0",
   "private": true,
-  "description": "Toppo single-page app, compiled to static files served by @toppo/server.",
+  "description": "Toppo single-page app, compiled to static files served by @toppo-tracker/server.",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
@@ -19,9 +19,9 @@
     "@tiptap/pm": "3.32.0",
     "@tiptap/react": "3.32.0",
     "@tiptap/starter-kit": "3.32.0",
-    "@toppo/core": "0.0.0",
-    "@toppo/shared": "0.0.0",
-    "@toppo/ui": "0.0.0",
+    "@toppo-tracker/core": "0.0.0",
+    "@toppo-tracker/shared": "0.0.0",
+    "@toppo-tracker/ui": "0.0.0",
     "get-nonce": "1.0.1",
     "lucide-react": "1.62.0",
     "react": "19.3.1",

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { IssuePropertyField, PropertyFilter } from '@toppo/shared';
+import type { IssuePropertyField, PropertyFilter } from '@toppo-tracker/shared';
 import {
   Badge,
   Button,
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
   Field,
   Input,
-} from '@toppo/ui';
+} from '@toppo-tracker/ui';
 import { PlusIcon } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { formatDay } from '../../../../shared/i18n/dates.util.ts';

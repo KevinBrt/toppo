@@ -1,5 +1,5 @@
-import { type Db, schema } from '@toppo/db';
-import type { WorkflowResponse, WorkflowStatusRow } from '@toppo/shared';
+import { type Db, schema } from '@toppo-tracker/db';
+import type { WorkflowResponse, WorkflowStatusRow } from '@toppo-tracker/shared';
 import { and, asc, count, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

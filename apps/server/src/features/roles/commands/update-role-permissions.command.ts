@@ -1,6 +1,6 @@
-import { type Permission, permissionsOfRole, rolePermissionsFrom } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { type RolePermissionsRequest, rolePermissionsRequestSchema } from '@toppo/shared';
+import { type Permission, permissionsOfRole, rolePermissionsFrom } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { type RolePermissionsRequest, rolePermissionsRequestSchema } from '@toppo-tracker/shared';
 import { eq, inArray } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';

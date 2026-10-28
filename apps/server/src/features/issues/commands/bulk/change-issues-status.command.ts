@@ -1,10 +1,10 @@
-import { canMoveTo, closedAtFor, type WorkflowMoves } from '@toppo/core';
-import { schema } from '@toppo/db';
+import { canMoveTo, closedAtFor, type WorkflowMoves } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
 import {
   type BulkIssuesResponse,
   bulkStatusRequestSchema,
   projectIssuesParamsSchema,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { eq, inArray } from 'drizzle-orm';
 import { recordActivities } from '../../../../platform/activities/record-activity.ts';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';

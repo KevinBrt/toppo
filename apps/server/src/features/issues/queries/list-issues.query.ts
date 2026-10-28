@@ -1,5 +1,5 @@
-import { effectiveWorkflow, issueReferencesIn, issueVisibilityOf } from '@toppo/core';
-import { type Db, type SimilarWords, schema, similarWords } from '@toppo/db';
+import { effectiveWorkflow, issueReferencesIn, issueVisibilityOf } from '@toppo-tracker/core';
+import { type Db, type SimilarWords, schema, similarWords } from '@toppo-tracker/db';
 import {
   ISSUE_SORT_ORDERS,
   ISSUES_PAGE_SIZE,
@@ -11,7 +11,7 @@ import {
   projectIssuesParamsSchema,
   projectIssuesQuerySchema,
   type SortOrder,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import {
   and,
   asc,

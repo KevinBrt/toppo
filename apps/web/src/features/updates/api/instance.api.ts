@@ -1,4 +1,4 @@
-import { type InstanceVersionResponse, instanceVersionResponseSchema } from '@toppo/shared';
+import { type InstanceVersionResponse, instanceVersionResponseSchema } from '@toppo-tracker/shared';
 import { apiRequest } from '../../../shared/api/http.client.ts';
 
 /** Server calls about the instance itself. */

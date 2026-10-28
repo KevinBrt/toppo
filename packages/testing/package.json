@@ -1,5 +1,5 @@
 {
-  "name": "@toppo/testing",
+  "name": "@toppo-tracker/testing",
   "version": "0.0.0",
   "private": true,
   "description": "Test helpers shared across Toppo packages: database setup and data factories.",

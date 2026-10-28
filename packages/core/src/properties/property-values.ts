@@ -1,4 +1,8 @@
-import { PROPERTY_VALUE_SCHEMAS, type PropertyType, type PropertyValue } from '@toppo/shared';
+import {
+  PROPERTY_VALUE_SCHEMAS,
+  type PropertyType,
+  type PropertyValue,
+} from '@toppo-tracker/shared';
 
 /** What decides the values a property takes: its type, its options, whether creating asks it. */
 export interface PropertyRules {

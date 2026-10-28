@@ -7,7 +7,7 @@ import {
   type PropertyFilter,
   propertyFiltersParameter,
   type SortOrder,
-} from '@toppo/shared';
+} from '@toppo-tracker/shared';
 import { z } from 'zod';
 import {
   HIDEABLE_FIELDS,

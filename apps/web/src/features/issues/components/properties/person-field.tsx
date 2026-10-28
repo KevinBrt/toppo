@@ -1,5 +1,5 @@
-import type { UserRef } from '@toppo/shared';
-import { cn } from '@toppo/ui';
+import type { UserRef } from '@toppo-tracker/shared';
+import { cn } from '@toppo-tracker/ui';
 import { ChevronDownIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

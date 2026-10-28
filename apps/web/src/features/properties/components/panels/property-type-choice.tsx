@@ -1,4 +1,4 @@
-import { PROPERTY_TYPES, type PropertyType } from '@toppo/shared';
+import { PROPERTY_TYPES, type PropertyType } from '@toppo-tracker/shared';
 import { useId } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { PROPERTY_TYPE_ICONS } from '../../constants/property-types.constants.ts';

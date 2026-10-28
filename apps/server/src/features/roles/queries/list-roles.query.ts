@@ -1,6 +1,6 @@
-import { permissionsOfRole } from '@toppo/core';
-import { schema } from '@toppo/db';
-import { ROLES_MAX, type RolesResponse } from '@toppo/shared';
+import { permissionsOfRole } from '@toppo-tracker/core';
+import { schema } from '@toppo-tracker/db';
+import { ROLES_MAX, type RolesResponse } from '@toppo-tracker/shared';
 import { count, countDistinct, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';

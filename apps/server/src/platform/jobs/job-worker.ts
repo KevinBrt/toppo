@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
-import { retryDelay } from '@toppo/core';
-import { type Db, schema } from '@toppo/db';
+import { retryDelay } from '@toppo-tracker/core';
+import { type Db, schema } from '@toppo-tracker/db';
 import { eq, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Services, Transaction } from '../cqrs/cqrs.ts';

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Input } from '@toppo/ui';
+import { Input } from '@toppo-tracker/ui';
 import { XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

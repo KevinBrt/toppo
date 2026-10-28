@@ -1,4 +1,4 @@
-import { createTestDatabase } from '@toppo/testing';
+import { createTestDatabase } from '@toppo-tracker/testing';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from './database.ts';

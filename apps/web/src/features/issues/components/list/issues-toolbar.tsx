@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { ISSUE_GROUPINGS, ISSUE_SORTS, type ProjectIssuesQuery } from '@toppo/shared';
-import { Badge, Button, Input } from '@toppo/ui';
+import { ISSUE_GROUPINGS, ISSUE_SORTS, type ProjectIssuesQuery } from '@toppo-tracker/shared';
+import { Badge, Button, Input } from '@toppo-tracker/ui';
 import { LayersIcon, SearchIcon, XIcon } from 'lucide-react';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

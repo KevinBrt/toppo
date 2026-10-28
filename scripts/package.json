@@ -1,5 +1,5 @@
 {
-  "name": "@toppo/scripts",
+  "name": "@toppo-tracker/scripts",
   "version": "0.0.0",
   "private": true,
   "description": "Repository guards run in CI: code conventions, dependency rules, lockfile integrity.",

@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { BulkIssuesResponse, IssueSummary, ProjectIssuesQuery, UserRef } from '@toppo/shared';
-import { Alert, Button, cn, EmptyState } from '@toppo/ui';
+import type {
+  BulkIssuesResponse,
+  IssueSummary,
+  ProjectIssuesQuery,
+  UserRef,
+} from '@toppo-tracker/shared';
+import { Alert, Button, cn, EmptyState } from '@toppo-tracker/ui';
 import { PlusCircleIcon, SearchXIcon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';

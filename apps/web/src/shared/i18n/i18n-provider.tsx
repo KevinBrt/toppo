@@ -1,4 +1,4 @@
-import type { Locale } from '@toppo/shared';
+import type { Locale } from '@toppo-tracker/shared';
 import { createContext, type ReactNode, use, useEffect, useMemo } from 'react';
 import type { Translate } from './i18n.types.ts';
 import { createTranslator } from './translate.util.ts';

@@ -1,4 +1,4 @@
-import { cn } from '@toppo/ui';
+import { cn } from '@toppo-tracker/ui';
 import { UploadIcon } from 'lucide-react';
 import { useRef } from 'react';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';

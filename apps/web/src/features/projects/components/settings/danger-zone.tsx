@@ -1,6 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ProjectResponse } from '@toppo/shared';
-import { Alert, Button, Dialog, DialogClose, DialogContent, DialogTrigger } from '@toppo/ui';
+import type { ProjectResponse } from '@toppo-tracker/shared';
+import {
+  Alert,
+  Button,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTrigger,
+} from '@toppo-tracker/ui';
 import { ArchiveIcon, ArchiveRestoreIcon } from 'lucide-react';
 import { type ReactNode, useId, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
