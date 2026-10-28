@@ -55,6 +55,7 @@ import {
 import {
   ATTACHMENTS_MAX,
   type AttachmentMediaType,
+  approvePluginRequestSchema,
   type CurrentUser,
   categoriesRequestSchema,
   commentRequestSchema,
@@ -88,7 +89,9 @@ import {
   type Notification,
   type PaletteColor,
   type PendingInvitation,
+  type PluginDetailsResponse,
   type PluginPermissionSection,
+  type PluginSummary,
   PROJECT_ACCESS_PAGE_SIZE,
   PROJECT_MEMBERS_PREVIEW,
   PROJECTS_PAGE_SIZE,
@@ -191,8 +194,10 @@ export interface FakeServerState {
   users: UserSummary[];
   /** The default roles unless a test sets others. */
   roles: FakeRole[];
-  /** The plugins installed, with the permissions they add: none unless a test adds some. */
-  plugins: PluginPermissionSection[];
+  /** The plugins installed, as their pages show them: none unless a test adds some. */
+  plugins: FakePlugin[];
+  /** What the next zip uploaded installs, or how the server refuses it: refused unless set. */
+  pluginPackage: FakePlugin | FakePackageRefusal | null;
   invitations: PendingInvitation[];
   /** The links the fake server made, by token, and what opening them shows. */
   invitationLinks: Map<string, InvitationLinkState>;
@@ -482,6 +487,48 @@ export function invitationToken(seed: number): string {
   return String(seed).padStart(43, 'x');
 }
 
+/** A plugin as the fake server keeps it: as its page shows it. */
+export type FakePlugin = PluginDetailsResponse;
+
+/** How the server refuses a zip: `{ status: 422, code: 'PLUGIN_MANIFEST_INVALID' }`. */
+export interface FakePackageRefusal {
+  status: number;
+  code: string;
+}
+
+/**
+ * A plugin named `name` in both languages, waiting for an approval and declaring nothing, unless
+ * `overrides` says otherwise.
+ */
+export function fakePlugin(
+  slug: string,
+  name: string,
+  overrides: Partial<FakePlugin> = {},
+): FakePlugin {
+  return {
+    slug,
+    name: { en: name, fr: name },
+    version: '1.0.0',
+    state: 'pending',
+    logoUrl: null,
+    createdAt: '2026-10-20T09:14:00.000Z',
+    updatedAt: '2026-10-20T09:14:00.000Z',
+    description: { en: '', fr: '' },
+    packageSha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+    apiVersion: '^1.0',
+    needs: [],
+    permissions: [],
+    events: [],
+    actions: [],
+    allProjects: false,
+    projects: [],
+    approval: null,
+    failures: 0,
+    lastFailure: null,
+    ...overrides,
+  };
+}
+
 export interface FakeServer {
   state: FakeServerState;
   requests: { method: string; path: string; body: unknown }[];
@@ -503,6 +550,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       users: [memberOf(ADA, ROLE_BADGES.administrator), memberOf(GRACE, ROLE_BADGES.team)],
       roles: defaultRoles(),
       plugins: [],
+      pluginPackage: null,
       invitations: [],
       invitationLinks: new Map(),
       projects: [],
@@ -792,6 +840,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
         changeInvitation(state, method, url.pathname) ??
         changeRoleDefinition(state, method, url.pathname, body) ??
         propertyRequest(state, method, url.pathname, body) ??
+        pluginRequest(state, method, url.pathname, body, new Headers(init?.headers)) ??
         apiError(404, 'NOT_FOUND'));
     return await Promise.resolve(answer);
   });
@@ -1033,15 +1082,27 @@ function listRoles(state: FakeServerState): Response {
         .length,
       projectCount: 0,
     })),
-    plugins: state.plugins,
+    plugins: pluginsBySlug(state).map(pluginSectionOf),
   });
+}
+
+/** A plugin's section of the roles matrix: its permissions, named after it in the catalog. */
+function pluginSectionOf({ slug, name, permissions }: FakePlugin): PluginPermissionSection {
+  return {
+    slug,
+    name,
+    permissions: permissions.map((permission) => ({
+      ...permission,
+      name: `${slug}.${permission.name}`,
+    })),
+  };
 }
 
 /** The permissions the plugins of the fake server add to the catalog. */
 const pluginPermissionsOf = (state: FakeServerState) =>
-  state.plugins.flatMap(({ permissions }) =>
-    permissions.map(({ name, scope }) => ({ name, scope })),
-  );
+  state.plugins
+    .map(pluginSectionOf)
+    .flatMap(({ permissions }) => permissions.map(({ name, scope }) => ({ name, scope })));
 
 const sameName = (left: string, right: string) => left.toLowerCase() === right.toLowerCase();
 
@@ -3271,4 +3332,144 @@ function takeFakeOptionsOff(
       });
     }
   }
+}
+
+/** The plugins in the server's order: by slug. */
+const pluginsBySlug = (state: FakeServerState) =>
+  [...state.plugins].sort((left, right) => left.slug.localeCompare(right.slug));
+
+function pluginSummaryOf({
+  slug,
+  name,
+  version,
+  state,
+  logoUrl,
+  createdAt,
+  updatedAt,
+}: FakePlugin): PluginSummary {
+  return { slug, name, version, state, logoUrl, createdAt, updatedAt };
+}
+
+/** Puts `plugin` in the place of the one of its slug: tests share their plugins between runs. */
+function savePlugin(state: FakeServerState, plugin: FakePlugin): void {
+  state.plugins = [...state.plugins.filter(({ slug }) => slug !== plugin.slug), plugin];
+}
+
+const PLUGIN_PATH = /^\/api\/v1\/plugins(?:\/([^/]+)(?:\/(approve|enable|disable))?)?$/;
+
+/** `/api/v1/plugins…`: listing, installing, approving, enabling, disabling and uninstalling. */
+function pluginRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+  body: unknown,
+  headers: Headers,
+): Response | undefined {
+  const match = PLUGIN_PATH.exec(path);
+  if (!match) {
+    return undefined;
+  }
+  const refusal = asHolder(state, 'instance.plugins.manage');
+  if (refusal) {
+    return refusal;
+  }
+  const [, slug, action] = match;
+  if (slug === undefined) {
+    if (method === 'GET') {
+      return json({ plugins: pluginsBySlug(state).map(pluginSummaryOf) });
+    }
+    return method === 'POST' ? installFakePlugin(state, body, headers) : undefined;
+  }
+  const plugin = state.plugins.find((candidate) => candidate.slug === slug);
+  if (!plugin) {
+    return apiError(404, 'PLUGIN_NOT_FOUND');
+  }
+  return action === undefined
+    ? onePluginRequest(state, method, plugin)
+    : pluginCommand(state, method, plugin, action, body);
+}
+
+/** `GET` and `DELETE /api/v1/plugins/:slug`. */
+function onePluginRequest(
+  state: FakeServerState,
+  method: string,
+  plugin: FakePlugin,
+): Response | undefined {
+  if (method === 'GET') {
+    return json(plugin);
+  }
+  if (method === 'DELETE') {
+    state.plugins = state.plugins.filter((candidate) => candidate !== plugin);
+    return NO_CONTENT();
+  }
+  return undefined;
+}
+
+/** `POST /api/v1/plugins/:slug/approve`, `…/enable` and `…/disable`. */
+function pluginCommand(
+  state: FakeServerState,
+  method: string,
+  plugin: FakePlugin,
+  action: string,
+  body: unknown,
+): Response | undefined {
+  if (method !== 'POST') {
+    return undefined;
+  }
+  if (action === 'approve') {
+    return approveFakePlugin(state, plugin, body);
+  }
+  if (action === 'enable' && plugin.approval === null) {
+    return apiError(409, 'PLUGIN_NOT_APPROVED');
+  }
+  savePlugin(
+    state,
+    action === 'enable'
+      ? { ...plugin, state: 'enabled', failures: 0 }
+      : { ...plugin, state: 'disabled' },
+  );
+  return NO_CONTENT();
+}
+
+/**
+ * `POST /api/v1/plugins`: a zip, sent as `application/zip` and nothing else, installs the plugin
+ * the test set as `pluginPackage`, or upgrades the one of its slug; or is refused as it says.
+ */
+function installFakePlugin(state: FakeServerState, body: unknown, headers: Headers): Response {
+  if (!(body instanceof Blob && headers.get('content-type') === 'application/zip')) {
+    return apiError(415, 'UNSUPPORTED_MEDIA_TYPE');
+  }
+  const next = state.pluginPackage;
+  if (next === null) {
+    return apiError(422, 'PLUGIN_PACKAGE_INVALID');
+  }
+  if ('code' in next) {
+    return apiError(next.status, next.code);
+  }
+  savePlugin(state, next);
+  return json({ slug: next.slug }, 201);
+}
+
+/** `POST /api/v1/plugins/:slug/approve`: in projects that all exist, or all of them; enables it. */
+function approveFakePlugin(state: FakeServerState, plugin: FakePlugin, body: unknown): Response {
+  const parsed = approvePluginRequestSchema.safeParse(body);
+  if (!(parsed.success && state.user)) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  const { projects: keys } = parsed.data;
+  const projects = (keys === 'all' ? [] : keys).flatMap((key) => {
+    const found = state.projects.find((project) => project.key === key);
+    return found ? [{ id: found.id, key: found.key, name: found.name }] : [];
+  });
+  if (keys !== 'all' && projects.length !== keys.length) {
+    return apiError(404, 'PROJECT_NOT_FOUND');
+  }
+  savePlugin(state, {
+    ...plugin,
+    state: 'enabled',
+    allProjects: keys === 'all',
+    projects,
+    approval: { by: { id: state.user.id, name: state.user.name }, at: requestTime },
+  });
+  return NO_CONTENT();
 }

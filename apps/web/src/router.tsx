@@ -21,6 +21,9 @@ import { protectedRoute } from './routes/protected/protected.route.tsx';
 import { emailRoute } from './routes/protected/settings/email.route.tsx';
 import { settingsIndexRoute } from './routes/protected/settings/index.route.tsx';
 import { membersRoute } from './routes/protected/settings/members.route.tsx';
+import { pluginsIndexRoute } from './routes/protected/settings/plugins/index.route.tsx';
+import { pluginRoute } from './routes/protected/settings/plugins/plugin.route.tsx';
+import { pluginsRoute } from './routes/protected/settings/plugins/plugins.route.tsx';
 import { propertiesRoute } from './routes/protected/settings/properties.route.tsx';
 import { rolesRoute } from './routes/protected/settings/roles.route.tsx';
 import { settingsRoute } from './routes/protected/settings/settings.route.tsx';
@@ -63,6 +66,7 @@ const routeTree = rootRoute.addChildren([
       statusesRoute,
       propertiesRoute,
       emailRoute,
+      pluginsRoute.addChildren([pluginsIndexRoute, pluginRoute]),
     ]),
     accountRoute,
     notFoundRoute,

@@ -4,11 +4,15 @@ import type { MessagesOf } from './messages.ts';
 import type { PluginNeed } from './protocol/calls.ts';
 import type { EventType } from './protocol/events.ts';
 import type { accessSchema, Messages } from './protocol/manifest.ts';
+import type { PluginLogo } from './protocol/package.ts';
 
 /** What `definePlugin` keeps of a plugin, for `servePlugin` to answer Toppo with. */
 export interface PluginDefinition {
   config: {
     id: string;
+    name: string;
+    description: string;
+    logo?: PluginLogo | undefined;
     apiVersion: string;
     needs?: readonly PluginNeed[] | undefined;
     permissions?:

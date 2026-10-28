@@ -93,6 +93,30 @@ describe('a plugin package', () => {
     expect(refusalOf(zipSync(files))).toMatch(reason);
   });
 
+  it('keeps its logo, one at most, within its weight', () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+    const { logo } = openPluginPackage(
+      zipSync({ 'server.js': BUNDLE, 'plugin.json': VERSION, 'logo.png': png }),
+    );
+    expect(logo?.name).toBe('logo.png');
+    expect([...(logo?.bytes ?? [])]).toStrictEqual([...png]);
+    expect(
+      refusalOf(
+        zipSync({
+          'server.js': BUNDLE,
+          'plugin.json': VERSION,
+          'logo.png': png,
+          'logo.webp': png,
+        }),
+      ),
+    ).toMatch(/it holds two logos: one is enough/);
+    const heavy = new Uint8Array(PLUGIN_PACKAGE_LIMITS.logoBytes + 1);
+    expect(
+      refusalOf(zipSync({ 'server.js': BUNDLE, 'plugin.json': VERSION, 'logo.webp': heavy })),
+    ).toMatch(/logo\.webp unpacks to more than 262144 bytes/);
+  });
+
   it('refuses the same file twice', () => {
     expect(refusalOf(zipWithTwice('server.js'))).toMatch(/it holds server\.js twice/);
   });

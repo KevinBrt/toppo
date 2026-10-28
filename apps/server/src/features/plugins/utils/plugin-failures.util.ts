@@ -5,7 +5,11 @@ import type { FastifyBaseLogger } from 'fastify';
 import { enqueue } from '../../../platform/jobs/jobs.ts';
 import type { SandboxOutcome } from '../../../platform/plugins/sandbox/sandbox-protocol.ts';
 import { emailPluginDisabledJob } from '../jobs/email-plugin-disabled.job.ts';
-import { FAILURES_BEFORE_DISABLING, type PluginFailure } from '../models/plugin-failure.model.ts';
+import {
+  FAILURES_BEFORE_DISABLING,
+  lastErrorOf,
+  type PluginFailure,
+} from '../models/plugin-failure.model.ts';
 
 const { plugins, roles, users } = schema;
 
@@ -44,7 +48,7 @@ export async function recordFailure(
   await db.transaction(async (tx) => {
     const [counted] = await tx
       .update(plugins)
-      .set({ failures: sql`${plugins.failures} + 1`, lastError: `${failure} in ${what}` })
+      .set({ failures: sql`${plugins.failures} + 1`, lastError: lastErrorOf(failure, what) })
       .where(and(eq(plugins.id, plugin.id), eq(plugins.state, 'enabled')))
       .returning({ failures: plugins.failures });
     if (!counted || counted.failures < FAILURES_BEFORE_DISABLING) {

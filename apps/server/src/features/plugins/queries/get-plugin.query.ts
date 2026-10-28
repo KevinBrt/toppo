@@ -7,7 +7,9 @@ import {
 } from '@toppo-tracker/shared';
 import { asc, eq, sql } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
-import { pluginNotFound } from '../utils/plugin-rows.util.ts';
+import { translated } from '../../../platform/plugins/plugin-words.ts';
+import { lastFailureOf } from '../models/plugin-failure.model.ts';
+import { identityOf, PLUGIN_IDENTITY, pluginNotFound } from '../utils/plugin-rows.util.ts';
 
 const { pluginProjects, plugins, projects, users } = schema;
 
@@ -24,8 +26,8 @@ export const getPlugin = defineQuery({
   async handler({ db }, { pluginSlug }): Promise<PluginDetailsResponse> {
     const [plugin] = await db
       .select({
+        ...PLUGIN_IDENTITY,
         id: plugins.id,
-        slug: plugins.slug,
         version: plugins.version,
         state: plugins.state,
         manifest: plugins.manifest,
@@ -34,6 +36,8 @@ export const getPlugin = defineQuery({
         approvedAt: plugins.approvedAt,
         approvedById: users.id,
         approvedByName: approverName,
+        failures: plugins.failures,
+        lastError: plugins.lastError,
         createdAt: plugins.createdAt,
         updatedAt: plugins.updatedAt,
       })
@@ -54,14 +58,16 @@ export const getPlugin = defineQuery({
     const manifest = manifestSchema.parse(plugin.manifest);
     return {
       slug: plugin.slug,
+      ...identityOf(plugin),
       version: plugin.version,
       state: plugin.state,
-      packageSha256: plugin.packageSha256,
+      packageSha256: plugin.sha256,
       apiVersion: manifest.apiVersion,
       needs: manifest.needs,
-      permissions: Object.entries(manifest.permissions).map(([name, permission]) => ({
+      permissions: Object.entries(manifest.permissions).map(([name, { scope, label }]) => ({
         name,
-        ...permission,
+        scope,
+        label: translated(manifest.messages, label, name),
       })),
       events: manifest.events,
       actions: manifest.actions.map((action) => action.name),
@@ -77,6 +83,8 @@ export const getPlugin = defineQuery({
                   : { id: plugin.approvedById, name: plugin.approvedByName },
               at: plugin.approvedAt.toISOString(),
             },
+      failures: plugin.failures,
+      lastFailure: lastFailureOf(plugin.lastError),
       createdAt: plugin.createdAt.toISOString(),
       updatedAt: plugin.updatedAt.toISOString(),
     };

@@ -1,3 +1,4 @@
+import type { Locale } from '@toppo-tracker/shared';
 import type { PlainMessageKey, Translate } from '../../../../shared/i18n/i18n.types.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { PERMISSION_MESSAGES } from '../../constants/permission-messages.constants.ts';
@@ -30,13 +31,14 @@ export function sectionKey(section: MatrixSection): string {
   return section.kind === 'plugin' ? `plugin-${section.slug}` : section.section;
 }
 
-/** What a section is called, and the line under it. */
+/** What a section is called, a plugin's in the language shown, and the line under it. */
 export function sectionText(
   section: MatrixSection,
   t: Translate,
+  locale: Locale,
 ): { title: string; detail: string } {
   return section.kind === 'plugin'
-    ? { title: section.name, detail: t('roles.pluginSection') }
+    ? { title: section.name[locale], detail: t('roles.pluginSection') }
     : { title: t(`roles.sections.${section.section}`), detail: t(`roles.scope.${section.scope}`) };
 }
 

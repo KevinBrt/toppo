@@ -29,6 +29,7 @@ const snapshot = {
 };
 
 const en = {
+  plugin: { name: 'Time tracking', description: 'Time spent on each issue.' },
   permissions: { log: 'Log time' },
   errors: { dailyLimit: 'At most {limit} minutes a day.' },
   comment: { closedAfter: 'Closed after {minutes} minutes.' },
@@ -38,6 +39,9 @@ const en = {
 function timeTracking() {
   const plugin = definePlugin({
     id: 'time-tracking',
+    name: 'plugin.name',
+    description: 'plugin.description',
+    logo: 'logo.png',
     apiVersion: '^1.0',
     needs: ['issue.read', 'comment.create'],
     permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
@@ -45,6 +49,7 @@ function timeTracking() {
     messages: {
       en,
       fr: {
+        plugin: { name: 'Suivi du temps', description: 'Le temps passé sur chaque ticket.' },
         permissions: { log: 'Saisir du temps' },
         errors: { dailyLimit: '{limit} minutes par jour au plus.' },
         comment: { closedAfter: 'Fermé après {minutes} minutes.' },
@@ -120,13 +125,16 @@ afterEach(() => {
 });
 
 describe('a plugin served to Toppo', () => {
-  it('declares a manifest Toppo accepts: its needs, permissions, settings, words, actions and events', () => {
+  it('declares a manifest Toppo accepts: its name, needs, permissions, settings, words, actions and events', () => {
     const { host } = fakeHost();
     const manifest = JSON.parse(servePlugin(timeTracking(), host).manifest());
 
     expect(manifestSchema.parse(manifest)).toStrictEqual(manifest);
     expect(manifest).toMatchObject({
       id: 'time-tracking',
+      name: 'plugin.name',
+      description: 'plugin.description',
+      logo: 'logo.png',
       apiVersion: '^1.0',
       needs: ['issue.read', 'comment.create'],
       permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },

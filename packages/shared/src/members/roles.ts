@@ -48,8 +48,8 @@ export type RoleDetails = z.infer<typeof roleDetailsSchema>;
 /** A plugin installed, with the permissions it adds: a section of the matrix after Toppo's. */
 export const pluginPermissionSectionSchema = z.object({
   slug: z.string(),
-  /** "Time tracking". */
-  name: z.string(),
+  /** "Time tracking", in each language. */
+  name: z.object({ en: z.string(), fr: z.string() }),
   permissions: z.array(
     z.object({
       /** As the catalog names it: `time-tracking.entries.log`. */

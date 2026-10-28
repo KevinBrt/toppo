@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
 import { EVENT_TYPES } from './events.ts';
+import { PLUGIN_LOGO_FILES } from './package.ts';
 import { apiVersionSchema } from './version.ts';
 
 /** `time-tracking`: lowercase words joined by dashes, as its URLs and its permissions use it. */
@@ -50,6 +51,11 @@ export const accessSchema = z.union([
  */
 export const manifestSchema = z.strictObject({
   id: z.string().regex(PLUGIN_ID, 'A plugin id is lowercase words joined by dashes'),
+  /** What it is called and what it does, as keys of its messages, shown in each language. */
+  name: z.string().max(200),
+  description: z.string().max(200),
+  /** Its logo, a file at the root of its package, if it has one. */
+  logo: z.enum(PLUGIN_LOGO_FILES).optional(),
   apiVersion: apiVersionSchema,
   needs: z.array(z.enum(PLUGIN_NEEDS)).max(PLUGIN_NEEDS.length),
   permissions: z

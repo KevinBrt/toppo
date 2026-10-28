@@ -63,6 +63,9 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
 function manifestOf({ config, settings, actions, events }: PluginDefinition): Manifest {
   return {
     id: config.id,
+    name: config.name,
+    description: config.description,
+    ...(config.logo === undefined ? {} : { logo: config.logo }),
     apiVersion: config.apiVersion,
     needs: [...(config.needs ?? [])],
     permissions: config.permissions ?? {},

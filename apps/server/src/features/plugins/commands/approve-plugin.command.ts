@@ -1,8 +1,10 @@
 import { schema } from '@toppo-tracker/db';
+import { manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
 import { approvePluginRequestSchema, pluginSlugSchema } from '@toppo-tracker/shared';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { defineCommand, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import { pluginNameOf } from '../../../platform/plugins/plugin-words.ts';
 import { lockPlugin } from '../utils/plugin-rows.util.ts';
 import { ensurePluginUser } from '../utils/plugin-user.util.ts';
 
@@ -20,7 +22,12 @@ export const approvePlugin = defineCommand({
   async handler({ tx, actor, log }, { pluginSlug, projects: chosen }): Promise<void> {
     const plugin = await lockPlugin(tx, pluginSlug);
     const projectIds = chosen === 'all' ? [] : await projectIdsOf(tx, chosen);
-    await ensurePluginUser(tx, pluginSlug);
+    const [declared] = await tx
+      .select({ manifest: plugins.manifest })
+      .from(plugins)
+      .where(eq(plugins.id, plugin.id));
+    const manifest = manifestSchema.parse(declared?.manifest);
+    await ensurePluginUser(tx, pluginSlug, pluginNameOf(manifest).en);
     await tx.delete(pluginProjects).where(eq(pluginProjects.pluginId, plugin.id));
     if (projectIds.length > 0) {
       await tx

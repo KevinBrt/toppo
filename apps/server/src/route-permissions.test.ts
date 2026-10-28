@@ -57,6 +57,8 @@ const OPEN_API_ROUTES = [
   'GET /api/v1/notifications',
   'GET /api/v1/notifications/unread-count',
   'POST /api/v1/notifications/read',
+  // Every plugin's logo for who manages plugins, those of the plugins at work for the others.
+  'GET /api/v1/plugins/:pluginSlug/logo',
   // Each action checks the access its plugin declares, through what both the plugin and the
   // caller hold; a plugin not enabled, or an action it does not declare, answers 404.
   'POST /api/v1/plugins/:pluginSlug/actions/:action',

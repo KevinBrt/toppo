@@ -2,11 +2,14 @@ import { isReservedPluginId } from '@toppo-tracker/core';
 import {
   API_VERSION,
   isApiCompatible,
+  logoTypeOf,
   type Manifest,
   manifestSchema,
+  PLUGIN_LOGO_TYPES,
 } from '@toppo-tracker/plugin-sdk/protocol';
 import type { FastifyBaseLogger } from 'fastify';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import type { PluginPackage } from '../../../platform/plugins/packages/open-package.ts';
 import type {
   SandboxFailure,
   SandboxOutcome,
@@ -65,4 +68,34 @@ export function declaredManifest(
     throw new HttpError(422, 'PLUGIN_ID_RESERVED', `${manifest.id} is a name of Toppo's own`);
   }
   return manifest;
+}
+
+/**
+ * The logo a package holds, as its manifest names it, checked by its bytes: a PNG named so, or a
+ * WebP. A package holding another logo than its code names is refused, as one naming a missing
+ * logo.
+ */
+export function declaredLogo(
+  manifest: Manifest,
+  opened: PluginPackage,
+): { logo: Buffer; logoType: string } | { logo: null; logoType: null } {
+  if (opened.logo?.name !== manifest.logo) {
+    throw new HttpError(
+      422,
+      'PLUGIN_PACKAGE_INVALID',
+      `This is not a plugin's zip: its code names ${manifest.logo ?? 'no logo'}, it holds ${opened.logo?.name ?? 'none'}`,
+    );
+  }
+  if (!(manifest.logo && opened.logo)) {
+    return { logo: null, logoType: null };
+  }
+  const logoType = PLUGIN_LOGO_TYPES[manifest.logo];
+  if (logoTypeOf(opened.logo.bytes) !== logoType) {
+    throw new HttpError(
+      422,
+      'PLUGIN_PACKAGE_INVALID',
+      `This is not a plugin's zip: ${manifest.logo} is no ${logoType} image`,
+    );
+  }
+  return { logo: Buffer.from(opened.logo.bytes), logoType };
 }

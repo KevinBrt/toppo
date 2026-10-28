@@ -3,10 +3,13 @@ import { join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { z } from '@toppo-tracker/plugin-sdk';
 import {
+  logoTypeOf,
   type Manifest,
+  PLUGIN_LOGO_TYPES,
   PLUGIN_PACKAGE_FILES,
   PLUGIN_PACKAGE_LIMITS,
   PLUGIN_VERSION,
+  type PluginLogo,
 } from '@toppo-tracker/plugin-sdk/protocol';
 import { strToU8, zipSync } from 'fflate';
 import type { CliCommand } from '../../command.ts';
@@ -38,8 +41,39 @@ async function versionOf(directory: string): Promise<string> {
   return read.data.version;
 }
 
-/** The zip of a server bundle and its version, refused if Toppo would refuse its size. */
-export function packagePlugin(code: string, version: string): Uint8Array {
+/** The logo the plugin names, beside its `package.json`, checked as Toppo will. */
+async function logoOf(directory: string, name: PluginLogo): Promise<Uint8Array> {
+  let bytes: Uint8Array;
+  try {
+    bytes = await readFile(join(directory, name));
+  } catch {
+    throw new BuildError(`src/plugin.ts names ${name} as its logo: put it beside package.json`);
+  }
+  checkLogo(name, bytes);
+  return bytes;
+}
+
+/** Refuses a logo that is not what its name says, or too heavy. */
+export function checkLogo(name: PluginLogo, bytes: Uint8Array): void {
+  if (logoTypeOf(bytes) !== PLUGIN_LOGO_TYPES[name]) {
+    throw new BuildError(`${name} is no ${PLUGIN_LOGO_TYPES[name].slice('image/'.length)} image`);
+  }
+  if (bytes.length > PLUGIN_PACKAGE_LIMITS.logoBytes) {
+    throw new BuildError(
+      `${name} weighs ${Math.ceil(bytes.length / 1024)} KB: Toppo takes at most ${PLUGIN_PACKAGE_LIMITS.logoBytes / 1024} KB`,
+    );
+  }
+}
+
+/**
+ * The zip of a server bundle, its version and its logo, if it has one, refused if Toppo would
+ * refuse its size.
+ */
+export function packagePlugin(
+  code: string,
+  version: string,
+  logo?: { name: PluginLogo; bytes: Uint8Array },
+): Uint8Array {
   const server = strToU8(code);
   if (server.length > PLUGIN_PACKAGE_LIMITS.serverBytes) {
     throw new BuildError(
@@ -50,6 +84,8 @@ export function packagePlugin(code: string, version: string): Uint8Array {
     {
       [PLUGIN_PACKAGE_FILES.server]: server,
       [PLUGIN_PACKAGE_FILES.metadata]: strToU8(JSON.stringify({ version })),
+      // Already compressed: zipping it again would only cost time.
+      ...(logo ? { [logo.name]: [logo.bytes, { level: 0 }] } : {}),
     },
     { level: 9 },
   );
@@ -57,7 +93,8 @@ export function packagePlugin(code: string, version: string): Uint8Array {
 
 /**
  * Bundles a plugin, checks it as Toppo will, and writes the zip an administrator uploads: its
- * server bundle, and its version. Nothing in it says what the plugin may do: Toppo asks its code.
+ * server bundle, its version, and its logo. Nothing in it says what the plugin may do: Toppo asks
+ * its code.
  */
 export async function buildPlugin(
   directory: string,
@@ -66,7 +103,10 @@ export async function buildPlugin(
   const version = await versionOf(directory);
   const code = await bundle(directory);
   const manifest = manifestOf(code);
-  const archive = packagePlugin(code, version);
+  const logo = manifest.logo
+    ? { name: manifest.logo, bytes: await logoOf(directory, manifest.logo) }
+    : undefined;
+  const archive = packagePlugin(code, version, logo);
   await mkdir(outDirectory, { recursive: true });
   const file = join(outDirectory, `${manifest.id}-${version}.zip`);
   await writeFile(file, archive);

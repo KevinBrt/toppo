@@ -19,7 +19,7 @@ export interface MatrixProps {
  * permission column stays in place while many roles scroll sideways.
  */
 export function RolesMatrix({ roles, matrix, settingsOf, onChange }: MatrixProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-xs">
@@ -53,9 +53,9 @@ export function RolesMatrix({ roles, matrix, settingsOf, onChange }: MatrixProps
               >
                 {/* Kept beside the permission column while the roles scroll. */}
                 <span className="sticky left-4">
-                  {sectionText(section, t).title}
+                  {sectionText(section, t, locale).title}
                   <span className="ml-2 font-normal text-muted-foreground">
-                    {sectionText(section, t).detail}
+                    {sectionText(section, t, locale).detail}
                   </span>
                 </span>
               </th>

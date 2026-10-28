@@ -6,6 +6,8 @@ import { definePlugin, z } from '@toppo-tracker/plugin-sdk';
  */
 const plugin = definePlugin({
   id: 'sdk-check',
+  name: 'closed',
+  description: 'closed',
   apiVersion: '^1.0',
   needs: ['issue.read', 'comment.create'],
   settings: z.object({ maxMinutesPerDay: z.int().min(1).default(600) }),

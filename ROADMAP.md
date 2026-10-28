@@ -33,7 +33,8 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] plugins' permissions in the catalog and the roles matrix;
     - [x] events fanned out from activities, failures that disable a plugin;
     - [x] actions, which a plugin's screens call for a person;
-    - [ ] **Settings → Plugins**, with the settings form generated from the plugin;
+    - [x] **Settings → Plugins**: install, approve in projects, enable, disable, uninstall; a plugin's name, description and logo;
+    - [ ] a plugin's settings form, generated from the schema it declares;
     - [ ] `plugins/time-tracking`, built and installed through the interface in an end-to-end test;
     - [ ] the plugin author's guide, and `CLAUDE.md`'s rules for plugin code.
   - [ ] **2. Data**: entities and properties.

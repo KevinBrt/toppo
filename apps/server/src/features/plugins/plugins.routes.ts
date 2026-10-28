@@ -13,6 +13,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { ZodTypeProvider } from '../../platform/http/zod.ts';
 import { packageBodySchema } from '../../platform/plugins/packages/package-routes.ts';
+import { imageResponseSchema } from '../../platform/uploads/file-routes.ts';
 import { approvePlugin } from './commands/approve-plugin.command.ts';
 import { disablePlugin } from './commands/disable-plugin.command.ts';
 import { enablePlugin } from './commands/enable-plugin.command.ts';
@@ -20,6 +21,7 @@ import { installPlugin } from './commands/install-plugin.command.ts';
 import { runPluginAction } from './commands/run-plugin-action.command.ts';
 import { uninstallPlugin } from './commands/uninstall-plugin.command.ts';
 import { getPlugin } from './queries/get-plugin.query.ts';
+import { getPluginLogo } from './queries/get-plugin-logo.query.ts';
 import { listPlugins } from './queries/list-plugins.query.ts';
 
 /** Commands answer `204 No Content`: the client refetches what it shows. */
@@ -54,6 +56,16 @@ export function registerPluginRoutes(app: FastifyInstance): void {
       schema: { params: pluginSlugParamsSchema, response: { 200: pluginDetailsResponseSchema } },
     },
     (request) => getPlugin.execute(request.executionContext, request.params),
+  );
+
+  routes.get(
+    '/api/v1/plugins/:pluginSlug/logo',
+    {
+      config: { access: getPluginLogo.access },
+      schema: { params: pluginSlugParamsSchema, response: { 200: imageResponseSchema } },
+    },
+    async (request, reply) =>
+      reply.sendImage(await getPluginLogo.execute(request.executionContext, request.params)),
   );
 
   routes.post(

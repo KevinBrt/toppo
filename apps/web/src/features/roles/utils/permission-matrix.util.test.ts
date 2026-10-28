@@ -13,7 +13,7 @@ import {
 
 const TIME_TRACKING: PluginPermissionSection = {
   slug: 'time-tracking',
-  name: 'Time tracking',
+  name: { en: 'Time tracking', fr: 'Suivi du temps' },
   permissions: [
     {
       name: 'time-tracking.entries.log',
@@ -75,7 +75,7 @@ describe('the matrix', () => {
     expect(WITH_PLUGIN.sections.at(-1)).toStrictEqual({
       kind: 'plugin',
       slug: 'time-tracking',
-      name: 'Time tracking',
+      name: { en: 'Time tracking', fr: 'Suivi du temps' },
       rows: [
         {
           kind: 'pluginPermission',

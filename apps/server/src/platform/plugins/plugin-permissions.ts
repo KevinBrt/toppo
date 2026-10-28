@@ -1,21 +1,22 @@
-import { type PermissionScope, type PluginPermission, pluginUserOf } from '@toppo-tracker/core';
+import type { PermissionScope, PluginPermission } from '@toppo-tracker/core';
 import { type Db, schema } from '@toppo-tracker/db';
-import { type Messages, manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
+import { manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
 import { asc, sql } from 'drizzle-orm';
+import { pluginNameOf, type Translated, translated } from './plugin-words.ts';
 
 const { plugins } = schema;
 
 /** A plugin's section of the roles and permissions matrix. */
 export interface PluginPermissionSection {
   slug: string;
-  /** As its user is named: "Time tracking". */
-  name: string;
+  /** "Time tracking", in each language. */
+  name: Translated;
   permissions: {
     /** As the catalog names it: `time-tracking.entries.log`. */
     name: string;
     scope: PermissionScope;
     /** From the plugin's own words, in each language. */
-    label: { en: string; fr: string };
+    label: Translated;
   }[];
 }
 
@@ -44,21 +45,20 @@ export async function pluginPermissionSections(
       slug: plugins.slug,
       permissions: sql<unknown>`${plugins.manifest}->'permissions'`,
       messages: sql<unknown>`${plugins.manifest}->'messages'`,
+      name: sql<unknown>`${plugins.manifest}->'name'`,
     })
     .from(plugins)
     .orderBy(asc(plugins.slug));
-  return rows.map(({ slug, permissions, messages }) => {
+  return rows.map(({ slug, permissions, messages, name }) => {
     const words = manifestSchema.shape.messages.safeParse(messages).data ?? { en: {}, fr: {} };
+    const key = manifestSchema.shape.name.safeParse(name).data;
     return {
       slug,
-      name: pluginUserOf(slug).name,
-      permissions: declared(permissions).map(([name, { scope, label }]) => ({
-        name: `${slug}.${name}`,
+      name: pluginNameOf({ id: slug, name: key, messages: words }),
+      permissions: declared(permissions).map(([permission, { scope, label }]) => ({
+        name: `${slug}.${permission}`,
         scope,
-        label: {
-          en: messageAt(words.en, label) ?? name,
-          fr: messageAt(words.fr, label) ?? messageAt(words.en, label) ?? name,
-        },
+        label: translated(words, label, permission),
       })),
     };
   });
@@ -73,13 +73,4 @@ function declared(permissions: unknown) {
   return Object.entries(manifestSchema.shape.permissions.safeParse(permissions).data ?? {}).sort(
     ([left], [right]) => (left < right ? -1 : 1),
   );
-}
-
-/** The message at `key` (`permissions.log`), if there is one. */
-function messageAt(messages: Messages, key: string): string | undefined {
-  let found: string | Messages | undefined = messages;
-  for (const part of key.split('.')) {
-    found = typeof found === 'object' && Object.hasOwn(found, part) ? found[part] : undefined;
-  }
-  return typeof found === 'string' ? found : undefined;
 }

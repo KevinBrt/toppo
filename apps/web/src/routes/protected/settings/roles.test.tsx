@@ -1,8 +1,7 @@
 import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
-import type { PluginPermissionSection } from '@toppo-tracker/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
-import { ADA, fakeServer, GRACE, renderApp } from '../../../test-helpers.tsx';
+import { ADA, fakePlugin, fakeServer, GRACE, renderApp } from '../../../test-helpers.tsx';
 
 beforeEach(async () => {
   await page.viewport(1280, 800);
@@ -255,17 +254,13 @@ describe('the roles and permissions screen', () => {
 });
 
 describe('the permissions of plugins', () => {
-  const TIME_TRACKING = {
-    slug: 'time-tracking',
-    name: 'Time tracking',
+  const TIME_TRACKING = fakePlugin('time-tracking', 'Time tracking', {
+    name: { en: 'Time tracking', fr: 'Suivi du temps' },
+    // Named by the plugin; the catalog names it after the plugin: time-tracking.entries.log.
     permissions: [
-      {
-        name: 'time-tracking.entries.log',
-        scope: 'project',
-        label: { en: 'Log time', fr: 'Saisir du temps' },
-      },
+      { name: 'entries.log', scope: 'project', label: { en: 'Log time', fr: 'Saisir du temps' } },
     ],
-  } as const satisfies PluginPermissionSection;
+  });
 
   it('show in a section per plugin, after Toppo’s, given to a role like any other', async () => {
     const server = fakeServer({ user: ADA, plugins: [TIME_TRACKING] });
@@ -309,7 +304,7 @@ describe('the permissions of plugins', () => {
     fakeServer({ user: { ...ADA, locale: 'fr' }, plugins: [TIME_TRACKING] });
     const { screen } = await renderApp({ path: '/settings/roles', locale: 'fr' });
 
-    const section = screen.getByRole('region', { name: 'Time tracking' });
+    const section = screen.getByRole('region', { name: 'Suivi du temps' });
     await expect.element(section.getByText('Permissions ajoutées par ce plugin.')).toBeVisible();
     await expect
       .element(section.getByText('S’applique dans chaque projet auquel le membre a accès.'))

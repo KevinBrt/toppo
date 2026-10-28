@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { PLUGIN_PACKAGE_LIMITS } from '@toppo-tracker/plugin-sdk/protocol';
 import { strFromU8, unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildPlugin, packagePlugin } from './build.ts';
+import { buildPlugin, checkLogo, packagePlugin } from './build.ts';
 import { manifestOf } from './bundle.ts';
 
 const FIXTURES = fileURLToPath(new URL('../../../test-fixtures/', import.meta.url));
@@ -23,7 +23,10 @@ describe('toppo plugin build', () => {
 
     expect(built.file).toBe(join(out, 'time-tracking-1.2.0.zip'));
     const files = unzipSync(await readFile(built.file));
-    expect(Object.keys(files).sort()).toStrictEqual(['plugin.json', 'server.js']);
+    expect(Object.keys(files).sort()).toStrictEqual(['logo.png', 'plugin.json', 'server.js']);
+    expect(files['logo.png']).toStrictEqual(
+      new Uint8Array(await readFile(join(FIXTURES, 'time-tracking', 'logo.png'))),
+    );
     expect(JSON.parse(strFromU8(files['plugin.json'] ?? new Uint8Array()))).toStrictEqual({
       version: '1.2.0',
     });
@@ -48,6 +51,11 @@ describe('toppo plugin build', () => {
     ['has no src/plugin.ts', 'no-entry', /No src\/plugin\.ts in .*: a plugin starts there/],
     ['is not there', 'missing', /No package\.json in/],
     ['imports a file that is not there', 'unresolved', /missing\.ts/],
+    [
+      'names a logo it does not have',
+      'missing-logo',
+      /src\/plugin\.ts names logo\.webp as its logo: put it beside package\.json/,
+    ],
   ])('refuses a plugin that %s', async (_, fixture, message) => {
     await expect(buildPlugin(join(FIXTURES, fixture), out)).rejects.toThrow(message);
   });
@@ -58,6 +66,21 @@ describe('toppo plugin build', () => {
 
     expect(() => packagePlugin(code, '1.0.0')).toThrow(
       'The server bundle weighs 10241 KB: Toppo takes at most 10240 KB',
+    );
+  });
+
+  it('refuses a logo that is not what its name says, or too heavy', () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+    expect(() => checkLogo('logo.png', png)).not.toThrow();
+    expect(() => checkLogo('logo.webp', png)).toThrow('logo.webp is no webp image');
+    expect(() => checkLogo('logo.png', new TextEncoder().encode('<svg/>'))).toThrow(
+      'logo.png is no png image',
+    );
+    const heavy = new Uint8Array(PLUGIN_PACKAGE_LIMITS.logoBytes + 1);
+    heavy.set(png);
+    expect(() => checkLogo('logo.png', heavy)).toThrow(
+      'logo.png weighs 257 KB: Toppo takes at most 256 KB',
     );
   });
 

@@ -21,6 +21,9 @@ export interface StoredFile {
  */
 export const fileResponseSchema = z.custom<Readable>((value) => value instanceof Readable);
 
+/** The response schema of a route that answers an image (`reply.sendImage`): sent as it is. */
+export const imageResponseSchema = z.instanceof(Buffer);
+
 /** The body of a route registered with `app.fileRoutes`. */
 export const receivedFileSchema = z.instanceof(ReceivedFile);
 
@@ -46,6 +49,11 @@ declare module 'fastify' {
      * only images and PDFs are (`showsInline`).
      */
     sendStoredFile(file: StoredFile, disposition: 'attachment' | 'inline'): Promise<FastifyReply>;
+    /**
+     * Sends an image Toppo holds in memory (a plugin's logo), whose address changes with it:
+     * shown, never run, and kept by the browser while its address holds.
+     */
+    sendImage(image: { bytes: Buffer; mediaType: 'image/png' | 'image/webp' }): FastifyReply;
   }
 }
 
@@ -71,6 +79,14 @@ export function registerFileRoutes(app: FastifyInstance, { files }: { files: Fil
       register(scope);
       done();
     });
+  });
+
+  app.decorateReply('sendImage', function sendImage(this: FastifyReply, { bytes, mediaType }) {
+    return this.header('content-type', mediaType)
+      .header('content-length', bytes.length)
+      .header('content-security-policy', FILE_CSP)
+      .header('cache-control', 'private, max-age=31536000, immutable')
+      .send(bytes);
   });
 
   app.decorateReply(
