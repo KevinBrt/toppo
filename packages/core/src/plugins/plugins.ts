@@ -13,6 +13,18 @@ export function isReservedPluginId(id: string): boolean {
   return RESERVED_PLUGIN_IDS.has(id);
 }
 
+/**
+ * A plugin's own user, as people see what it writes: `time-tracking` is "Time tracking". Its
+ * address is under `.invalid`, a domain that reaches no one (RFC 2606).
+ */
+export function pluginUserOf(id: string): { name: string; email: string } {
+  const words = id.split('-').filter(Boolean).join(' ');
+  return {
+    name: `${words.charAt(0).toUpperCase()}${words.slice(1)}`,
+    email: `${id}@plugins.invalid`,
+  };
+}
+
 /** What an administrator approves of a plugin, as its manifest declares it. */
 export interface PluginGrants {
   /** What it reads and writes through Toppo: `issue.read`, `comment.create`… */

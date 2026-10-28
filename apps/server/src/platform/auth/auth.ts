@@ -83,11 +83,9 @@ export function createAuth({ db, secret, publicUrl }: AuthOptions) {
         create: {
           // Runs once the password is verified: only the account's owner learns it is deactivated.
           async before(session) {
-            if (await isDeactivated(db, session.userId)) {
-              throw APIError.from('FORBIDDEN', {
-                code: 'ACCOUNT_DEACTIVATED',
-                message: 'This account is deactivated',
-              });
+            const refusal = await signInRefusal(db, session.userId);
+            if (refusal) {
+              throw APIError.from('FORBIDDEN', refusal);
             }
           },
         },
@@ -117,10 +115,23 @@ export function createAuth({ db, secret, publicUrl }: AuthOptions) {
 
 export type Auth = ReturnType<typeof createAuth>;
 
-async function isDeactivated(db: Db, userId: string): Promise<boolean> {
+/**
+ * Why an account may not sign in, if it may not: deactivated, or a plugin's own user, which has
+ * no password to begin with and writes through its plugin only.
+ */
+async function signInRefusal(
+  db: Db,
+  userId: string,
+): Promise<{ code: string; message: string } | null> {
   const [user] = await db
-    .select({ deactivatedAt: schema.users.deactivatedAt })
+    .select({ deactivatedAt: schema.users.deactivatedAt, pluginSlug: schema.users.pluginSlug })
     .from(schema.users)
     .where(eq(schema.users.id, userId));
-  return user !== undefined && user.deactivatedAt !== null;
+  if (user?.pluginSlug) {
+    return { code: 'PLUGIN_ACCOUNT', message: "A plugin's user never signs in" };
+  }
+  if (user?.deactivatedAt) {
+    return { code: 'ACCOUNT_DEACTIVATED', message: 'This account is deactivated' };
+  }
+  return null;
 }

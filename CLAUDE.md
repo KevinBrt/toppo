@@ -174,6 +174,7 @@ shared/<area>/                code used by several features: api/, i18n/, layout
 - Every foreign key indexed; constraints in the database (NOT NULL, CHECK, UNIQUE, FK actions), not only in code.
 - Data tied to `@toppo-tracker/core` constants (default roles) must match them: a test compares the seeded rows with the constants.
 - Every query on project data is scoped by project and filtered by the user's permissions in the query itself, not after loading.
+- A plugin's own user (`users.plugin_slug`) is no person: it holds no role, so lists of people that join the role leave it out. A query that finds people otherwise (by id, by email) excludes it explicitly, with a test in `plugin-users.test.ts`.
 - Every list query filters, searches and sorts in SQL and returns one page (at most 100 rows); no endpoint returns an unbounded collection. Search goes through `containsText()` (`@toppo-tracker/db`), which escapes `LIKE` wildcards. Checks that need "all of X" count or select only what they need in SQL.
 - Server integration tests call `setupTestDatabase()`: one migrated database per test file, never shared, never mocked.
 

@@ -29,7 +29,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] `@toppo-tracker/plugin-sdk`: `definePlugin`, `defineAction`, `defineEventHandler`, `ctx`;
     - [x] `@toppo-tracker/cli` (`toppo plugin build`) and `@toppo-tracker/plugin-testing`;
     - [x] the `plugins` table, `instance.plugins.manage`, then upload, approval, enabling, uninstalling;
-    - [ ] each plugin's own user, kept out of every list of people;
+    - [x] each plugin's own user, kept out of every list of people;
     - [ ] plugins' permissions in the catalog and the roles matrix;
     - [ ] events fanned out from activities, actions, failures that disable a plugin;
     - [ ] **Settings → Plugins**, with the settings form generated from the plugin;
