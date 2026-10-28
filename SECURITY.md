@@ -16,7 +16,7 @@ What to expect:
 
 ## Supported versions
 
-Toppo is in early development. Until 1.0, only the latest release receives security fixes. Run a pinned version and upgrade when an advisory is published.
+Only the latest release receives security fixes. Run a pinned version and upgrade when an advisory is published.
 
 ## Scope
 
