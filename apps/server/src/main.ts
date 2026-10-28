@@ -10,6 +10,7 @@ import { resolveSecret } from './platform/config/secret.ts';
 import { startJobWorker } from './platform/jobs/job-worker.ts';
 import { scheduleRecurringJobs } from './platform/jobs/jobs.ts';
 import { createPackageStore } from './platform/plugins/packages/package-store.ts';
+import { createPluginRuntime } from './platform/plugins/runtime/plugin-runtime.ts';
 import { createFileStorage } from './platform/uploads/file-storage.ts';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -51,9 +52,11 @@ const files = await createFileStorage({
   root: join(config.dataDir, 'uploads'),
   maxFileSize: config.attachmentMaxSize,
 });
+const packages = await createPackageStore({ root: join(config.dataDir, 'plugins') });
 const plugins = {
-  packages: await createPackageStore({ root: join(config.dataDir, 'plugins') }),
+  packages,
   workerUrl: SANDBOX_WORKER,
+  runtime: createPluginRuntime({ packages, workerUrl: SANDBOX_WORKER }),
 };
 const app = await buildApp({
   config,

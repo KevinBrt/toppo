@@ -13,7 +13,7 @@ import { projectKeySchema } from '@toppo-tracker/shared';
 import { and, eq, inArray, or, type SQL, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { HttpError } from '../http/http-error.ts';
-import type { Actor } from './actor.ts';
+import type { Actor, PluginReach } from './actor.ts';
 
 const { issues, projectMembers, projects, roles, users } = schema;
 const ownRoles = alias(roles, 'own_roles');
@@ -130,7 +130,8 @@ function permissionsArray(permissions: readonly ProjectPermission[]): SQL {
  * The project with `key`, as `actor` may use it. A project out of the actor's reach answers like
  * one that does not exist, so that its very existence stays private; one they reach without
  * `permission` is forbidden. A project permission is looked up in the project, an instance one in
- * the actor's own role. One query: the project, the actor's role and their membership.
+ * the actor's own role. One query: the project, the actor's role and their membership. A plugin
+ * acting as itself reaches its own projects only (`resolvePluginProject`).
  */
 export async function resolveProject(
   db: Db,
@@ -140,6 +141,9 @@ export async function resolveProject(
 ): Promise<ProjectContext> {
   if (key === null) {
     throw notFound();
+  }
+  if (actor.plugin) {
+    return await resolvePluginProject(db, actor, actor.plugin, key, permission);
   }
   const [row] = await db
     .select({
@@ -173,11 +177,56 @@ export async function resolveProject(
   if (!(row && permissions)) {
     throw notFound();
   }
-  const granted = permission && isProjectPermission(permission) ? permissions : actor.permissions;
+  assertGranted(actor, permissions, permission);
+  return { id: row.id, key: row.key, archived: row.archivedAt !== null, permissions };
+}
+
+/**
+ * The project with `key`, as a plugin acting as itself may use it: one of the projects its
+ * approval names, or any when it names them all, where it holds its approved needs and nothing
+ * more. It has no role and no membership: none could give it more.
+ */
+async function resolvePluginProject(
+  db: Db,
+  actor: Actor,
+  plugin: PluginReach,
+  key: string,
+  permission: Permission | undefined,
+): Promise<ProjectContext> {
+  const [row] = await db
+    .select({ id: projects.id, key: projects.key, archivedAt: projects.archivedAt })
+    .from(projects)
+    .where(eq(projects.key, key));
+  if (!(row && (plugin.allProjects || plugin.projectIds.includes(row.id)))) {
+    throw notFound();
+  }
+  const permissions = plugin.needs.filter(isProjectPermission);
+  assertGranted(actor, permissions, permission);
+  return { id: row.id, key: row.key, archived: row.archivedAt !== null, permissions };
+}
+
+/** A project permission is looked up in the project, an instance one in the actor's own. */
+function assertGranted(
+  actor: Actor,
+  inProject: readonly string[],
+  permission: Permission | undefined,
+): void {
+  const granted = permission && isProjectPermission(permission) ? inProject : actor.permissions;
   if (permission && !can(granted, permission)) {
     throw new HttpError(403, 'FORBIDDEN', 'You do not have permission to do this');
   }
-  return { id: row.id, key: row.key, archived: row.archivedAt !== null, permissions };
+}
+
+/** The key of the issue `issueId` (`WEB-42`), or `null` when there is none. */
+export async function issueKeyOf(db: Db, issueId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ projectKey: projects.key, number: issues.number })
+    .from(issues)
+    .innerJoin(projects, eq(projects.id, issues.projectId))
+    .where(eq(issues.id, issueId));
+  return row
+    ? formatIssueKey({ projectKey: projectKeySchema.parse(row.projectKey), number: row.number })
+    : null;
 }
 
 /**

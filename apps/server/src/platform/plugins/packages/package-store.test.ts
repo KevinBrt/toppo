@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdtempSync } from 'node:fs';
 import { readdir, readFile, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -31,6 +32,18 @@ describe('the package store', () => {
     expect([...(await readFile(join(root, 'time-tracking', `${NEW}.zip`)))]).toStrictEqual([
       1, 2, 3,
     ]);
+  });
+
+  it('reads a package back, but not one changed on the disk since', async () => {
+    const zip = new Uint8Array([1, 2, 3]);
+    const sha256 = createHash('sha256').update(zip).digest('hex');
+    await store.keep({ slug: 'time-tracking', sha256 }, zip);
+
+    expect([...(await store.read({ slug: 'time-tracking', sha256 }))]).toStrictEqual([1, 2, 3]);
+    await writeFile(join(root, 'time-tracking', `${sha256}.zip`), new Uint8Array([6, 6, 6]));
+    await expect(store.read({ slug: 'time-tracking', sha256 })).rejects.toThrow(
+      'The package of time-tracking is not the one installed',
+    );
   });
 
   it('refuses a name that would lead elsewhere', async () => {

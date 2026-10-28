@@ -16,11 +16,18 @@ export function testManifest(overrides: Partial<Manifest> = {}): Manifest {
   };
 }
 
-/** A server bundle written straight to the protocol, that declares `manifest`, whatever it is. */
-export function testBundle(manifest: unknown): string {
+/**
+ * A server bundle written straight to the protocol, that declares `manifest`, whatever it is, and
+ * runs `run`: the body of `async run(kind, name, payload, context)`, its arguments as JSON, which
+ * answers a run's answer as JSON, and may `await __host.call(method, args)`.
+ */
+export function testBundle(
+  manifest: unknown,
+  run = `throw new Error('This plugin runs nothing');`,
+): string {
   return `globalThis.__toppo = {
   manifest() { return ${JSON.stringify(JSON.stringify(manifest))}; },
-  async run() { throw new Error('Installing a plugin runs nothing of it'); },
+  async run(kind, name, payload, context) { ${run} },
 };`;
 }
 
@@ -31,16 +38,19 @@ export function testBundle(manifest: unknown): string {
 export function testPackage({
   manifest = testManifest(),
   version = '1.2.0',
+  run,
   files,
 }: {
   manifest?: unknown;
   version?: string;
+  /** What it runs (`testBundle`). */
+  run?: string;
   files?: Zippable;
 } = {}): Buffer {
   return Buffer.from(
     zipSync(
       files ?? {
-        'server.js': strToU8(testBundle(manifest)),
+        'server.js': strToU8(testBundle(manifest, run)),
         'plugin.json': strToU8(JSON.stringify({ version })),
       },
     ),
