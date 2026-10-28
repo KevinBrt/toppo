@@ -11,17 +11,33 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
 ## Now
 
 - [ ] Protect `main` once contributors arrive: require the CI checks (quality, tests, end-to-end) before merging.
-- [ ] Check that the `ghcr.io/kevinbrt/toppo` package is public once the first `edge` image is published (GitHub → Packages → Package settings).
+- [x] Check that the `ghcr.io/kevinbrt/toppo` package is public once the first `edge` image is published (GitHub → Packages → Package settings).
 
 ## Step 6: release 1.0
 
 - [ ] Scan the image in CI (Trivy) on every publication and weekly: fail on a critical or high vulnerability that has a fix.
-- [ ] Merge the release-please pull request, left open until then: version 1.0.0 and the `latest` image.
-- [ ] Announcement on r/selfhosted.
+- [x] Merge the release-please pull request: version 1.0.0 and the `latest` image.
+- [ ] Announcement on r/selfhosted, once the plugin system and the core features below are in: Toppo goes out as a solid base, not one more tracker.
 
 ## After 1.0
 
-- [ ] Plugin system, as designed in [docs/plugins/design.md](docs/plugins/design.md): `@toppo-tracker/plugin-sdk` and `@toppo-tracker/plugin-ui` (MIT), server code in a WebAssembly sandbox, entities, screens in sandboxed frames, a reference plugin kept in this repository. A security review of its own before it ships: third-party code will run inside Toppo.
+- [ ] Plugin system, as designed in [docs/plugins/design.md](docs/plugins/design.md). Built on the integration branch `feat/plugin-system`, one pull request per task, merged into `main` as one change at the end. A security review of its own before it ships: third-party code will run inside Toppo.
+  - [ ] **1. Foundations**:
+    - [ ] the design's decisions in `ARCHITECTURE.md` (this change);
+    - [ ] internal packages renamed `@toppo-tracker/*` (straight into `main`);
+    - [ ] the sandbox: QuickJS in WebAssembly, a worker per plugin, capped memory, deadlines, the `ctx` bridge;
+    - [ ] `@toppo-tracker/plugin-sdk`: `definePlugin`, `defineAction`, `defineEventHandler`, `ctx`;
+    - [ ] `@toppo-tracker/cli` (`toppo plugin build`) and `@toppo-tracker/plugin-testing`;
+    - [ ] the `plugins` table, each plugin's own user, `instance.plugins.manage`, then upload, approval, enabling, uninstalling;
+    - [ ] plugins' permissions in the catalog and the roles matrix;
+    - [ ] events fanned out from activities, actions, failures that disable a plugin;
+    - [ ] **Settings → Plugins**, with the settings form generated from the plugin;
+    - [ ] `plugins/time-tracking`, built and installed through the interface in an end-to-end test;
+    - [ ] the plugin author's guide, and `CLAUDE.md`'s rules for plugin code.
+  - [ ] **2. Data**: entities and properties.
+  - [ ] **3. Interface**: plugins' screens in sandboxed frames, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page.
+  - [ ] **4. Beyond the instance**: routes, `ctx.crypto`, outbound HTTP, recurring jobs.
+  - [ ] Publish the packages to npm from GitHub Actions, once steps 1 to 3 are done.
 - [ ] Webhooks, then the GitHub integration, in the core, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature.
 - [ ] OIDC, SAML and LDAP, free (Better Auth plugins, added to the endpoint allowlist).
 - [ ] Imports from Mantis, Redmine and Jira (CSV first); inbound email.
