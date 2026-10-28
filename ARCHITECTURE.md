@@ -129,7 +129,8 @@ One Toppo instance = one organization; projects live inside it. No multiple work
 | `notifications`                 | user_id, activity_id, reason, read_at                                                                                                          | One per person told of an activity, at most once (unique user and activity), written by the `activity.recorded` job: the people concerned (`recipientsOf` in `@toppo/core`) who are active and still see the issue, never who acted. `reason`: `assigned`, `mentioned`, `participating`, `following` or `newIssue`. Listed only while the issue is still seen; gone with the activity or the person; read ones pruned after 90 days                                                                                                                                                        |
 | `issue_followers`               | issue_id, user_id, following                                                                                                                   | One person's choice about an issue (unique issue and user): `true` to follow it without taking part, `false` to stop following it though taking part. Its reporter, assignee and commenters follow it with no row (`followersOf` in `@toppo/core`); a choice lasts until changed, commenting again does not undo it. Gone with the issue or the person                                                                                                                                                                                                                                     |
 | `jobs`                          | type, payload, priority, run_at, attempts, max_attempts, status (pending, failed), last_error, unique_key                                      | Background work, claimed with `FOR UPDATE SKIP LOCKED` by any server's worker, the highest priority first (a password reset, then an invitation), then the oldest, run in its own transaction, retried with backoff; deleted once done, a recurring one rescheduled. At most one pending job per `unique_key`                                                                                                                                                                                                                                                                              |
-| `plugins`                       | plugin_id, version, enabled, settings (JSONB)                                                                                                  | After v1.0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `plugins`                       | plugin id, version, state, the needs and hosts approved, settings (secrets sealed), sha256 of its package                                      | After v1.0. Each has a user of its own (`users.plugin_id`), that cannot sign in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `plugin_records`                | plugin, entity, project, issue, author, `data` (JSONB), typed slots for indexed fields                                                         | After v1.0. Plugins' entities, seen as their issue or project is.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 Key point: **every issue change writes an `activities` row in the same transaction.** It is the single source for history, notifications, webhooks and plugins. Rows written together read back in order: ids are UUID v7 with a counter within the millisecond.
 
@@ -218,43 +219,19 @@ Organisation permissions apply to the whole instance, the others inside projects
 
 ## Plugin system (after v1.0)
 
-Plugins arrive right after v1.0, but the core prepares for them now: every change goes through `activities` and the job queue, and the core's integrations build on blocks plugins will share. The contract below is the target; [docs/plugins/design.md](docs/plugins/design.md) proposes its detailed design.
+Designed in [docs/plugins/design.md](docs/plugins/design.md), which holds the details, the measurements of its prototype and the steps; this section keeps its decisions. The core prepares for it already: every change goes through `activities` and the job queue, and the core's integrations build on blocks plugins will share.
 
-A plugin is an npm package (or a folder in `plugins/`) exporting `definePlugin()` and declaring what it may do. It is Toppo's public contract: designed by hand, never generated.
-
-The core writes the issue and its activity in one transaction; the job queue then dispatches the event to notifications and plugins, which never block the UI.
-
-**Manifest** (`package.json`, `toppo` key): `id`, `name`, `version`, `apiVersion` (e.g. `^1.0`), `permissions` (e.g. `issue.read`, `issue.update`, `http.outbound`), Zod schema of the settings.
-
-**v1 extension points**
-
-1. **Event hooks**: `issue.created`, `issue.updated`, `issue.status_changed`, `issue.assigned`, `comment.created`. Fed by `activities`, asynchronous through the job queue: a slow plugin never blocks the UI.
-2. **HTTP routes** mounted under `/api/plugins/<id>/…`, for inbound webhooks (GitLab, Sentry…).
-3. **Limited Toppo API**: read and update issues and comments, within the declared permissions.
-4. **Settings**: form generated from the Zod schema in the admin screen.
-5. **Declarative UI contributions**: actions in an issue menu, links and small sidebar panels, described as JSON. No arbitrary front-end code in v1, for security and stability.
-
-```ts
-import { definePlugin, z } from "@toppo-tracker/plugin-sdk";
-
-export default definePlugin({
-  settings: z.object({ webhookUrl: z.string().url() }),
-  setup(ctx) {
-    ctx.on("issue.created", async ({ issue }) => {
-      await ctx.http.post(ctx.settings.webhookUrl, {
-        text: `New issue ${issue.key}: ${issue.title}`,
-      });
-    });
-  },
-});
-```
-
-**Contract rules**
-
-- `apiVersion` is semver: Toppo refuses to load an incompatible plugin, with a clear message.
-- Nothing breaks in a minor version; any break = new major API version and a deprecation period.
-- In v1, plugins run in the server process and are installed by an admin (trusted). Isolation (worker threads) comes if the ecosystem grows.
-- The core's own features do not go through the SDK: a reference plugin, kept in this repository and tested in CI, uses every part of it.
+- **A plugin** is TypeScript built by `toppo plugin build` into a zip, which an administrator uploads in **Settings → Plugins**. It imports only the published packages (`@toppo-tracker/plugin-sdk`, `@toppo-tracker/plugin-ui`, MIT). Its manifest is derived from its code, run in the sandbox when it is uploaded, never read from a file its author writes.
+- **Its API**: `definePlugin`, `defineEntity`, `defineProperty`, then `plugin.defineAction`, `defineEventHandler`, `definePage`, `definePanel`, `defineRoute`, `defineJob`. Each takes one object; types flow from the objects, with no registration file. A plugin can be one file.
+- **The sandbox**: a plugin's server code runs in QuickJS compiled to WebAssembly, one per plugin, in a worker thread, with a capped `WebAssembly.Memory` and deadlines. Its only door is `ctx`, checked on every call. The Node permission model was tried and rejected as a boundary.
+- **Permissions**: `needs` (the core permissions it uses, approved by the administrator) and `permissions` (new ones, in the same catalog, prefixed with its id, held by the system role only until given). Acting for a user takes both the user's access and the plugin's `needs`. Managing plugins is `instance.plugins.manage`, `systemOnly`.
+- **Identity**: each plugin has a user of its own (`users.plugin_id`) that cannot sign in, with an address under `.invalid`, kept out of member lists, mentions and assignment. What a plugin writes shows as written by it.
+- **Events** are Toppo's activity types: the job of each recorded activity fans out to the plugins subscribed, each retried alone.
+- **Data**: entities attached to an issue or a project, stored by Toppo in one table with typed slots and seen as their issue or project is; properties of issues, of which those a plugin computes record no activity.
+- **Screens**: React in a sandboxed frame with a CSP of its own (`connect-src 'none'`), talking to Toppo through a bridge.
+- **Outbound HTTP**: declared hosts only, through a guard of the core shared with its integrations, never to an internal address.
+- **Packages** are kept in the data volume (`/data/plugins/`), their sha256 in the database. Official plugins live in `plugins/`, without privilege, shipped in the image disabled.
+- **The contract**: `apiVersion` is semver; nothing breaks in a minor version, a break is a new major after a deprecation period. The packages are published to npm, by GitHub Actions, once the contract is complete (data and screens included).
 
 ## Self-hosted installation
 

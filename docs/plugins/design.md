@@ -1,6 +1,6 @@
 # Plugin system: design
 
-Status: **proposal**, for review before any code. Once agreed, its decisions move to `ARCHITECTURE.md` and its steps to `ROADMAP.md`. Every number below comes from a throwaway prototype, not kept in the repository, summarized in the appendix.
+Status: **agreed**. Its decisions are summed up in `ARCHITECTURE.md`, its steps tracked in `ROADMAP.md`. Every number below comes from a throwaway prototype, not kept in the repository, summarized in the appendix.
 
 ## Goal
 
@@ -21,7 +21,7 @@ Toppo's core covers what most teams need, complete from install: nobody should a
 
 ## A plugin
 
-A plugin is TypeScript built by `toppo-plugin build` into one package: a server bundle, a browser bundle per screen, and a manifest the build derives from the code.
+A plugin is TypeScript built by `toppo plugin build` into one zip: a server bundle and a browser bundle per screen. Toppo derives its manifest from the code, which it runs in the sandbox when the zip is uploaded.
 
 ### The smallest: one file
 
@@ -197,6 +197,7 @@ Rules:
 - `systemOnly: true` keeps a permission to the system role for good, as in the core: for what reaches beyond the instance.
 - Whoever acts through a plugin holds **both** sides: an action run for a user needs the user's access (`access`) and the plugin's `needs`. A plugin never gives anyone more than they have.
 - The SDK never exposes role names: "a permission, never a role name" holds by construction.
+- Each plugin has a user of its own (`users.plugin_id`), which cannot sign in and has an address under `.invalid`, kept out of member lists, mentions and assignment. What the plugin writes (a comment, an activity) is written by that user, so it shows as written by the plugin.
 - Installing, enabling, configuring and removing plugins is a new core permission, `instance.plugins.manage`, `systemOnly`: it runs code and chooses outgoing addresses.
 
 ## Data: entities
@@ -356,7 +357,7 @@ export const sourcePage = plugin.definePage({
 
 ## Installing and lifecycle
 
-- **Package**: `toppo-plugin build` writes a zip: `manifest.json` (derived from the code), the server bundle, the browser bundles and their assets.
+- **Package**: `toppo plugin build` writes a zip: the server bundle, the browser bundles and their assets. It holds no manifest a person writes: Toppo runs the server bundle in the sandbox and asks it what it declares, so a package cannot claim less than it does. Packages are kept in the data volume (`/data/plugins/`), their sha256 in the database.
 - **Install**: an administrator uploads the zip in **Settings → Plugins**. Toppo checks it before anything runs: size limits, file types, no links or paths leaving the archive, a strict manifest (unknown keys refused), a compatible `apiVersion` (or a clear message). It shows the package's hash.
 - **Approve**: the screen lists what the plugin needs, adds, stores, shows and reaches, the resources it asks beyond the defaults, and the projects it applies to. The administrator confirms, with the suggested grants of its permissions.
 - **Upgrade**: a new version asking for more is approved again; otherwise it replaces the old one. A new index fills its slot in a job.
@@ -382,8 +383,8 @@ The plugin's author is not trusted; the administrator who installs it is, for th
 ## For authors
 
 - `npm create @toppo-tracker/plugin`: a plugin ready to build and test.
-- `toppo-plugin dev`: runs it against a local Toppo, reloading on change.
-- `toppo-plugin build`: the zip to install.
+- `toppo plugin dev`: runs it against a local Toppo, reloading on change.
+- `toppo plugin build`: the zip to install.
 - `@toppo-tracker/plugin-testing`: a fake Toppo to test a plugin without an instance (`createTestToppo(plugin)`, users who see given issues, `user.run(logTime, input)`).
 - Documentation in `docs/plugins/`, with a worked example.
 
@@ -391,15 +392,15 @@ The plugin's author is not trusted; the administrator who installs it is, for th
 
 The published packages live under the npm scope `@toppo-tracker` (the GitHub organization of the same name is Toppo's too; `@toppo` belongs to someone else):
 
-| Package                         | For                                                            |
-| ------------------------------- | -------------------------------------------------------------- |
-| `@toppo-tracker/plugin-sdk`     | `definePlugin`, `defineEntity`, `defineProperty`: the contract |
-| `@toppo-tracker/plugin-ui`      | components and hooks for a plugin's screens                    |
-| `@toppo-tracker/plugin-testing` | the fake Toppo to test a plugin                                |
-| `@toppo-tracker/plugin-cli`     | `toppo-plugin dev` and `toppo-plugin build`                    |
-| `@toppo-tracker/create-plugin`  | `npm create @toppo-tracker/plugin`                             |
+| Package                         | For                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `@toppo-tracker/plugin-sdk`     | `definePlugin`, `defineEntity`, `defineProperty`: the contract                   |
+| `@toppo-tracker/plugin-ui`      | components and hooks for a plugin's screens                                      |
+| `@toppo-tracker/plugin-testing` | the fake Toppo to test a plugin                                                  |
+| `@toppo-tracker/cli`            | the `toppo` command: `toppo plugin build`, `toppo plugin dev`; other tools later |
+| `@toppo-tracker/create-plugin`  | `npm create @toppo-tracker/plugin`                                               |
 
-- MIT, published by the release workflow with npm provenance, versioned by semver along `apiVersion`.
+- MIT, versioned by semver along `apiVersion`, published to npm with provenance by GitHub Actions once the contract is complete: data and screens included (steps 1 to 3). Until then they stay private.
 - `plugin-ui` is a facade: it bundles the components of `packages/ui` it chooses to expose, under an API kept stable. `packages/ui` stays private and free to change, as `core` stays private behind `plugin-sdk`.
 - Toppo's internal packages (`@toppo/core`, `@toppo/ui`…) are renamed `@toppo-tracker/…` when the SDK lands: one scope in the repository, and no internal name in a scope someone else owns. They stay private.
 
@@ -408,6 +409,7 @@ The published packages live under the npm scope `@toppo-tracker` (the GitHub org
 ## What changes in the core
 
 - Tables: `plugins` (id, version, state, approved needs and hosts, settings with sealed secrets, hash), `plugin_records` (entities), and their slots' assignments.
+- `users.plugin_id`: each plugin's own user.
 - `properties` gains its owning plugin and who writes it; a number property may be displayed as a duration.
 - The rule "every issue change writes an `activities` row" (`CLAUDE.md`) gains its one exception: a property a plugin computes is derived data and records no activity.
 - The permission catalog accepts plugins' permissions next to the core's typed ones; roles keep storing them as text.
@@ -423,7 +425,7 @@ The published packages live under the npm scope `@toppo-tracker` (the GitHub org
 
 The core's own features do not go through the SDK, so a **reference plugin**, kept in this repository (`plugins/time-tracking`) and tested in CI, uses every part of it: **time tracking**. Each step ends with it using what the step adds, and with its own tests (a test per SDK operation that refuses it without the permission, generated like `route-permissions.test.ts`). The kanban board, webhooks and the GitHub integration follow their own roadmap in the core; the outbound guard, signed webhooks and signature-checked routes are built once, for them and for plugins.
 
-1. **Foundations**: packages, upload and validation, approval, the sandbox runtime and its resources, `needs` and `permissions` in the catalog, settings and secrets, actions, event handlers, `ctx.issues`, the CLI and testing kit. _Time tracking: its permissions and settings, logging time through an action, a comment when an issue closes._
+1. **Foundations**: packages, upload and validation, approval, the sandbox runtime and its resources, `needs` and `permissions` in the catalog, settings and secrets, actions, event handlers, `ctx.issues`, the CLI and testing kit. _Time tracking: its permission and settings, an action that checks an entry (its daily limit included) without storing it yet._
 2. **Data**: entities (`plugin_records`, slots, queries, limits, uninstall choices) and properties. _Time tracking: time entries, the estimate and the time spent in the issue list._
 3. **Interface**: the frame host and its bridge, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page. _Time tracking: the issue panel, the project's report._
 4. **Beyond the instance**: routes, `ctx.crypto`, the outbound guard and `ctx.http`, recurring jobs. _Time tracking: entries received from Clockify or Toggl by signed webhook, a weekly summary sent to an address set in its settings._
