@@ -9,7 +9,7 @@ import { createEmptyTestDatabase, type TestDatabase } from './test-database.ts';
  * it had, and every row of its tables, the columns PostgreSQL computes left out.
  */
 export interface DatabaseSnapshot {
-  /** The version it comes from: `1.0.0`, or `pre-1.0` before the first release. */
+  /** The version it comes from: `1.0.0`. */
   name: string;
   /** The tag of its last migration, `0042_issue_duplicates`. */
   migration: string;

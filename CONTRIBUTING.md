@@ -45,7 +45,7 @@ npm run dev                      # database + API on :3000 + web app on :5173
 release-please opens the release pull request from the Conventional Commits. Before merging it:
 
 1. With the test server up (`npm run db:up`), run `npm run db:snapshot -- <version>`: it writes `packages/db/snapshots/<version>.json`, the database this version leaves, which the upgrade tests restore and migrate from then on.
-2. Keep the snapshots of the last three versions only, and the one named `pre-1.0` until `1.0.0` replaces it: Toppo upgrades directly from these, and through them from older ones.
+2. Keep the snapshots of the last three versions only: Toppo upgrades directly from these, and through them from older ones.
 3. If screens changed, refresh the README's screenshots: `npm run docs:screenshots`.
 4. Commit the snapshot (and the screenshots) with the release. A released migration is never edited afterwards.
 
