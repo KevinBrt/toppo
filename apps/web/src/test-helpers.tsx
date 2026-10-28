@@ -25,6 +25,7 @@ import {
   followersOf,
   type InstancePermission,
   instancePermissionsOf,
+  invitationExpiry,
   isNewerVersion,
   issueActionsOf,
   issueChanges,
@@ -937,7 +938,8 @@ function invite(state: FakeServerState, body: Record<string, unknown>): Response
       email,
       role,
       invitedBy: state.user?.name ?? '',
-      expiresAt: '2026-10-28T10:00:00.000Z',
+      // As on the server: from when it is made, never a fixed day that one morning lies behind us.
+      expiresAt: invitationExpiry(new Date(requestTime)).toISOString(),
     });
     state.invitationProjects.set(id, {
       allProjects: body['allProjects'] === true,
