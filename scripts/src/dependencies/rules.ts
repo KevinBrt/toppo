@@ -19,9 +19,16 @@ export const ALLOWED_WORKSPACE_DEPENDENCIES: Readonly<Record<string, readonly st
   '@toppo-tracker/db': ['@toppo-tracker/shared', '@toppo-tracker/core'],
   '@toppo-tracker/ui': ['@toppo-tracker/shared'],
   '@toppo-tracker/testing': ['@toppo-tracker/shared', '@toppo-tracker/core', '@toppo-tracker/db'],
-  '@toppo-tracker/server': ['@toppo-tracker/shared', '@toppo-tracker/core', '@toppo-tracker/db'],
+  '@toppo-tracker/server': [
+    '@toppo-tracker/shared',
+    '@toppo-tracker/core',
+    '@toppo-tracker/db',
+    // The protocol plugins speak: one definition for the SDK and the server that checks it.
+    '@toppo-tracker/plugin-sdk',
+  ],
   '@toppo-tracker/web': ['@toppo-tracker/shared', '@toppo-tracker/core', '@toppo-tracker/ui'],
-  '@toppo-tracker/plugin-sdk': ['@toppo-tracker/shared'],
+  // Published under MIT: nothing of Toppo's own, AGPL code.
+  '@toppo-tracker/plugin-sdk': [],
   '@toppo-tracker/e2e': [],
   '@toppo-tracker/scripts': [],
 };

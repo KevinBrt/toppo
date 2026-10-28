@@ -1,19 +1,14 @@
+import type { RunKind } from '@toppo-tracker/plugin-sdk/protocol';
+
 /**
  * What crosses between Toppo and a plugin's sandbox: strings of JSON, each bounded. No object,
  * function or prototype of Toppo's is ever handed to a plugin's code, nor one of its to Toppo.
+ * The two globals they meet through are the SDK's protocol: `__toppo` and `__host`.
  */
-
-/** The global a plugin's bundle defines (`manifest()`, `run()`), through which Toppo asks it. */
-export const PLUGIN_GLOBAL = '__toppo';
-
-/** The global Toppo defines in the sandbox: `call(method, args)`, the plugin's one door out. */
-export const HOST_GLOBAL = '__host';
+export { HOST_GLOBAL, PLUGIN_GLOBAL, type RunKind } from '@toppo-tracker/plugin-sdk/protocol';
 
 /** The most characters of one message: a payload, an answer, the arguments of a call. */
 export const MESSAGE_MAX_LENGTH = 1_000_000;
-
-/** What Toppo asks a plugin to run. */
-export type RunKind = 'action' | 'event';
 
 export interface RunRequest {
   kind: RunKind;
