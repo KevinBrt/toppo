@@ -180,7 +180,7 @@ shared/<area>/                code used by several features: api/, i18n/, layout
 ## Dependencies
 
 - Prefer the platform and what we already have. A new dependency needs a reason in the PR: maintained, small, MIT/Apache/BSD/ISC-compatible (`check:dependencies` enforces licenses), and not replaceable by ~50 lines of our own.
-- Versions are exact (`.npmrc save-exact`), one version per package across the monorepo, lockfile from `registry.npmjs.org` only, each entry bound to the tarball of the package and version it names (no aliases). Install scripts are disabled (`ignore-scripts`). A change of `package-lock.json` in a PR is reviewed like code.
+- Versions are exact (`.npmrc save-exact`), one version per package across the monorepo, lockfile from `registry.npmjs.org` only, each entry bound to the tarball of the package and version it names (no aliases), the repository's own packages always linked, never downloaded. Install scripts are disabled (`ignore-scripts`). A change of `package-lock.json` in a PR is reviewed like code.
 - GitHub Actions are pinned by commit SHA; Docker base images by digest.
 
 ## Git and pull requests

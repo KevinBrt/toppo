@@ -125,29 +125,44 @@ export interface Lockfile {
   packages: Record<string, LockfileEntry>;
 }
 
-export function checkLockfile(lockfile: Lockfile): string[] {
+/** `workspaceNames`: the packages of this repository, which npm must link, never download. */
+export function checkLockfile(lockfile: Lockfile, workspaceNames: ReadonlySet<string>): string[] {
   if (lockfile.lockfileVersion !== 3) {
     return [`package-lock.json: expected lockfileVersion 3, found ${lockfile.lockfileVersion}`];
   }
+  return Object.entries(lockfile.packages)
+    .filter(([path, entry]) => path !== '' && !entry.link && path.includes('node_modules/'))
+    .flatMap(([path, entry]) => checkDownloaded(path, entry, workspaceNames));
+}
+
+/** One package npm downloads: from where, under which name, with which license. */
+function checkDownloaded(
+  path: string,
+  entry: LockfileEntry,
+  workspaceNames: ReadonlySet<string>,
+): string[] {
+  const name = packageNameOf(path);
+  // Downloaded under one of our names, it is whatever someone else published there (our scope
+  // on npm is not ours): dependency confusion, however valid its tarball looks.
+  if (workspaceNames.has(name)) {
+    return [
+      `${path}: ${name} is a workspace of this repository: it must be linked, never downloaded`,
+    ];
+  }
   const problems: string[] = [];
-  for (const [path, entry] of Object.entries(lockfile.packages)) {
-    if (path === '' || entry.link || !path.includes('node_modules/')) {
-      continue;
-    }
-    // The tarball of the very package and version the entry names, which reviews, `npm audit`
-    // and dependency review read: never another one swapped in under the same name.
-    const expected = registryTarball(packageNameOf(path), entry.version);
-    if (entry.name !== undefined) {
-      problems.push(`${path}: installs ${entry.name} under another name: aliases are not allowed`);
-    } else if (entry.resolved !== expected) {
-      problems.push(`${path}: must resolve to ${expected}, got ${entry.resolved}`);
-    }
-    if (!entry.integrity?.startsWith('sha512-')) {
-      problems.push(`${path}: missing sha512 integrity`);
-    }
-    if (!(entry.dev || isLicenseAllowed(entry.license))) {
-      problems.push(`${path}: license ${entry.license ?? '(none)'} is not allowed in shipped code`);
-    }
+  // The tarball of the very package and version the entry names, which reviews, `npm audit`
+  // and dependency review read: never another one swapped in under the same name.
+  const expected = registryTarball(name, entry.version);
+  if (entry.name !== undefined) {
+    problems.push(`${path}: installs ${entry.name} under another name: aliases are not allowed`);
+  } else if (entry.resolved !== expected) {
+    problems.push(`${path}: must resolve to ${expected}, got ${entry.resolved}`);
+  }
+  if (!entry.integrity?.startsWith('sha512-')) {
+    problems.push(`${path}: missing sha512 integrity`);
+  }
+  if (!(entry.dev || isLicenseAllowed(entry.license))) {
+    problems.push(`${path}: license ${entry.license ?? '(none)'} is not allowed in shipped code`);
   }
   return problems;
 }

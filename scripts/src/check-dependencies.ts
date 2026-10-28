@@ -1,7 +1,7 @@
 /**
  * Guards the dependency tree: architecture boundaries between workspaces, exact versions,
- * a lockfile that only pulls from npmjs.org the very package and version each entry names, and
- * AGPL-compatible licenses.
+ * a lockfile that only pulls from npmjs.org the very package and version each entry names and
+ * always links the repository's own packages, and AGPL-compatible licenses.
  */
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -34,7 +34,7 @@ const lockfile = JSON.parse(readRepositoryFile('package-lock.json')) as Lockfile
 const problems = [
   ...checkWorkspaceGraph(manifests),
   ...checkExactVersions([...manifests, { ...root, path: '.' }]),
-  ...checkLockfile(lockfile),
+  ...checkLockfile(lockfile, new Set(manifests.map((manifest) => manifest.name))),
 ];
 
 if (problems.length > 0) {
