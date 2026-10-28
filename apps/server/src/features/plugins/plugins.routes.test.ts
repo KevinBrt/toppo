@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
 import { schema } from '@toppo-tracker/db';
-import { PLUGIN_PACKAGE_LIMITS } from '@toppo-tracker/plugin-sdk/protocol';
+import { type Manifest, PLUGIN_PACKAGE_LIMITS } from '@toppo-tracker/plugin-sdk/protocol';
 import {
   apiErrorSchema,
   PLUGINS_MAX,
@@ -48,7 +48,12 @@ let teamCookie: string;
 const ORIGIN = 'http://localhost:3000';
 const PASSWORD = 'correct horse battery staple';
 
-function call(method: 'GET' | 'POST' | 'DELETE', url: string, body?: object, cookie = adminCookie) {
+function call(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  url: string,
+  body?: object,
+  cookie = adminCookie,
+) {
   return app.inject({
     method,
     url,
@@ -328,6 +333,217 @@ describe('installing a plugin', () => {
     const refused = await call('GET', '/api/v1/plugins', undefined, teamCookie);
 
     expect(refused.statusCode).toBe(403);
+  });
+});
+
+/** A plugin with settings of each kind, named in its words. */
+function withSettings(): Manifest {
+  const { messages } = testManifest();
+  return testManifest({
+    settings: {
+      type: 'object',
+      properties: {
+        reminderDays: { type: 'integer', minimum: 1, maximum: 1000 },
+        team: { type: 'string', maxLength: 80, default: 'Support' },
+        webhookUrl: { type: 'string', format: 'uri' },
+        billable: { type: 'boolean', default: true },
+        period: { type: 'string', enum: ['week', 'month'], default: 'week' },
+      },
+    },
+    messages: {
+      en: {
+        ...messages.en,
+        settings: {
+          reminderDays: {
+            label: 'Reminder, in days',
+            help: 'Days without time logged before one.',
+          },
+          team: { label: 'Team' },
+          webhookUrl: { label: 'Webhook' },
+          billable: { label: 'Billable' },
+          period: { label: 'Period', options: { week: 'A week', month: 'A month' } },
+        },
+      },
+      fr: {
+        ...messages.fr,
+        settings: {
+          reminderDays: {
+            label: 'Rappel, en jours',
+            help: 'Jours sans temps saisi avant un rappel.',
+          },
+          team: { label: 'Équipe' },
+          webhookUrl: { label: 'Webhook' },
+          billable: { label: 'Facturable' },
+          period: { label: 'Période', options: { week: 'Une semaine' } },
+        },
+      },
+    },
+  });
+}
+
+/** Checks its settings as the SDK would, with its own schema: whole days, from 1 to `max`. */
+function checksDays(max: number): string {
+  return `const { reminderDays } = JSON.parse(payload);
+    if (kind === 'settings' && reminderDays !== undefined
+      && !(Number.isInteger(reminderDays) && reminderDays >= 1 && reminderDays <= ${max})) {
+      return JSON.stringify({ ok: false, error: { code: 'VALIDATION_FAILED',
+        issues: [{ path: 'reminderDays', message: 'Too big: expected at most ${max}' }] } });
+    }
+    return JSON.stringify({ ok: true, result: null });`;
+}
+
+function saveSettings(values: Record<string, unknown>, cookie = adminCookie) {
+  return call('PUT', '/api/v1/plugins/time-tracking/settings', { values }, cookie);
+}
+
+describe('a plugin’s settings', () => {
+  it('are drawn from what its code declares, in its words, and saved once its code takes them', async () => {
+    await install(testPackage({ manifest: withSettings(), run: checksDays(1000) }));
+
+    expect((await details()).settings).toStrictEqual({
+      fields: [
+        {
+          name: 'reminderDays',
+          kind: 'number',
+          label: { en: 'Reminder, in days', fr: 'Rappel, en jours' },
+          help: {
+            en: 'Days without time logged before one.',
+            fr: 'Jours sans temps saisi avant un rappel.',
+          },
+          integer: true,
+          min: 1,
+          max: 1000,
+          default: null,
+        },
+        {
+          name: 'team',
+          kind: 'text',
+          label: { en: 'Team', fr: 'Équipe' },
+          help: null,
+          format: 'text',
+          maxLength: 80,
+          default: 'Support',
+        },
+        {
+          name: 'webhookUrl',
+          kind: 'text',
+          label: { en: 'Webhook', fr: 'Webhook' },
+          help: null,
+          format: 'url',
+          maxLength: null,
+          default: null,
+        },
+        {
+          name: 'billable',
+          kind: 'boolean',
+          label: { en: 'Billable', fr: 'Facturable' },
+          help: null,
+          default: true,
+        },
+        {
+          name: 'period',
+          kind: 'choice',
+          label: { en: 'Period', fr: 'Période' },
+          help: null,
+          options: [
+            { value: 'week', label: { en: 'A week', fr: 'Une semaine' } },
+            { value: 'month', label: { en: 'A month', fr: 'A month' } },
+          ],
+          default: 'week',
+        },
+      ],
+      values: {},
+      refused: false,
+    });
+
+    // While it waits for its approval: it is set up before it runs.
+    const saved = await saveSettings({ reminderDays: 8, team: 'Billing', billable: false });
+    expect(saved.statusCode, saved.body).toBe(204);
+    expect((await details()).settings.values).toStrictEqual({
+      reminderDays: 8,
+      team: 'Billing',
+      billable: false,
+    });
+  });
+
+  it('are refused, field by field, when its code refuses them or does not have them', async () => {
+    await install(testPackage({ manifest: withSettings(), run: checksDays(1000) }));
+
+    const refused = await saveSettings({ reminderDays: 5000 });
+    const unknown = await saveSettings({ reminderDays: 8, colour: 'red' });
+
+    expect(refused.statusCode).toBe(400);
+    expect(apiErrorSchema.parse(refused.json()).error).toMatchObject({
+      code: 'PLUGIN_SETTINGS_INVALID',
+      details: [{ path: 'reminderDays', message: 'Too big: expected at most 1000' }],
+    });
+    expect(unknown.statusCode).toBe(400);
+    expect(apiErrorSchema.parse(unknown.json()).error).toMatchObject({
+      code: 'PLUGIN_SETTINGS_INVALID',
+      details: [{ path: 'colour' }],
+    });
+    expect((await details()).settings.values).toStrictEqual({});
+  });
+
+  it('are not saved when its code fails to check them', async () => {
+    await install(
+      testPackage({ manifest: withSettings(), run: `throw new Error('Broken on purpose');` }),
+    );
+
+    const failed = await saveSettings({ reminderDays: 8 });
+
+    // In Toppo's words, not the plugin's: its error stays in the log.
+    expect(failed.statusCode).toBe(502);
+    expect(errorCode(failed)).toBe('INTERNAL_ERROR');
+    expect((await details()).settings.values).toStrictEqual({});
+  });
+
+  it('wait, the plugin with them, to be corrected when an upgrade refuses them', async () => {
+    await install(testPackage({ manifest: withSettings(), run: checksDays(1000) }));
+    await approve(['WEB']);
+    expect((await saveSettings({ reminderDays: 500 })).statusCode).toBe(204);
+
+    await install(
+      testPackage({ version: '1.3.0', manifest: withSettings(), run: checksDays(100) }),
+    );
+
+    expect(await details()).toMatchObject({
+      state: 'pending',
+      approval: null,
+      settings: { values: { reminderDays: 500 }, refused: true },
+    });
+    const approval = await call('POST', '/api/v1/plugins/time-tracking/approve', {
+      projects: ['WEB'],
+    });
+    expect(approval.statusCode).toBe(409);
+    expect(errorCode(approval)).toBe('PLUGIN_SETTINGS_REFUSED');
+    expect((await saveSettings({ reminderDays: 50 })).statusCode).toBe(204);
+    expect((await details()).settings.refused).toBe(false);
+    await approve(['WEB']);
+    expect((await details()).state).toBe('enabled');
+  });
+
+  it('stay, and the plugin running, when an upgrade takes them', async () => {
+    await install(testPackage({ manifest: withSettings(), run: checksDays(1000) }));
+    await approve(['WEB']);
+    expect((await saveSettings({ reminderDays: 50 })).statusCode).toBe(204);
+
+    await install(
+      testPackage({ version: '1.3.0', manifest: withSettings(), run: checksDays(100) }),
+    );
+
+    expect(await details()).toMatchObject({
+      state: 'enabled',
+      settings: { values: { reminderDays: 50 }, refused: false },
+    });
+  });
+
+  it('are for administrators, of a plugin installed', async () => {
+    await install(testPackage({ manifest: withSettings(), run: checksDays(1000) }));
+
+    expect((await saveSettings({ reminderDays: 8 }, teamCookie)).statusCode).toBe(403);
+    const missing = await call('PUT', '/api/v1/plugins/nothing-here/settings', { values: {} });
+    expect(missing.statusCode).toBe(404);
   });
 });
 

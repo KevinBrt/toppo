@@ -15,9 +15,14 @@ export function pluginNotFound(): HttpError {
 export async function lockPlugin(
   tx: Transaction,
   slug: string,
-): Promise<{ id: string; version: string; approvedAt: Date | null }> {
+): Promise<{ id: string; version: string; approvedAt: Date | null; settingsRefused: boolean }> {
   const [plugin] = await tx
-    .select({ id: plugins.id, version: plugins.version, approvedAt: plugins.approvedAt })
+    .select({
+      id: plugins.id,
+      version: plugins.version,
+      approvedAt: plugins.approvedAt,
+      settingsRefused: plugins.settingsRefused,
+    })
     .from(plugins)
     .where(eq(plugins.slug, slug))
     .for('update');
@@ -25,6 +30,17 @@ export async function lockPlugin(
     throw pluginNotFound();
   }
   return plugin;
+}
+
+/** Refuses to start a plugin whose code refuses its settings: each of its runs would fail. */
+export function assertSettingsAccepted(plugin: { settingsRefused: boolean }): void {
+  if (plugin.settingsRefused) {
+    throw new HttpError(
+      409,
+      'PLUGIN_SETTINGS_REFUSED',
+      'This version of the plugin refuses its settings: correct them first',
+    );
+  }
 }
 
 /**

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
 import { EVENT_TYPES } from './events.ts';
 import { PLUGIN_LOGO_FILES } from './package.ts';
+import { checkSettings, settingsSchema } from './settings.ts';
 import { apiVersionSchema } from './version.ts';
 
 /** `time-tracking`: lowercase words joined by dashes, as its URLs and its permissions use it. */
@@ -92,13 +93,14 @@ export const manifestSchema = z
       .refine((permissions) => Object.keys(permissions).length <= PLUGIN_LIMITS.permissions, {
         message: `At most ${PLUGIN_LIMITS.permissions} permissions`,
       }),
-    settings: jsonSchema,
+    settings: settingsSchema,
     messages: z.strictObject({ en: messagesSchema, fr: messagesSchema }),
     actions: z
       .array(z.strictObject({ name: nameSchema, access: accessSchema, input: jsonSchema }))
       .max(PLUGIN_LIMITS.actions),
     events: z.array(z.enum(EVENT_TYPES)).max(EVENT_TYPES.length),
   })
-  .superRefine(checkIssueActions);
+  .superRefine(checkIssueActions)
+  .superRefine(checkSettings);
 
 export type Manifest = z.infer<typeof manifestSchema>;

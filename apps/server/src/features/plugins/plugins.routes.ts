@@ -2,12 +2,14 @@ import {
   approvePluginRequestSchema,
   installPluginResponseSchema,
   PLUGIN_ACTION_INPUT_MAX_BYTES,
+  PLUGIN_SETTINGS_MAX_BYTES,
   pluginActionParamsSchema,
   pluginActionRequestSchema,
   pluginActionResponseSchema,
   pluginDetailsResponseSchema,
   pluginSlugParamsSchema,
   pluginsResponseSchema,
+  savePluginSettingsRequestSchema,
 } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -19,6 +21,7 @@ import { disablePlugin } from './commands/disable-plugin.command.ts';
 import { enablePlugin } from './commands/enable-plugin.command.ts';
 import { installPlugin } from './commands/install-plugin.command.ts';
 import { runPluginAction } from './commands/run-plugin-action.command.ts';
+import { savePluginSettings } from './commands/save-plugin-settings.command.ts';
 import { uninstallPlugin } from './commands/uninstall-plugin.command.ts';
 import { getPlugin } from './queries/get-plugin.query.ts';
 import { getPluginLogo } from './queries/get-plugin-logo.query.ts';
@@ -34,7 +37,7 @@ const NO_CONTENT = { 204: z.void() };
 const ACTION_RATE_LIMIT = { max: 60, windowSeconds: 60 };
 
 /**
- * The plugins of the instance, named by their id: uploaded as a zip (`application/zip`),
+ * The plugins of the instance, named by their id: uploaded as a zip (`application/zip`), set up,
  * approved in some projects or all, enabled, disabled, removed. Administrators only.
  */
 export function registerPluginRoutes(app: FastifyInstance): void {
@@ -81,6 +84,27 @@ export function registerPluginRoutes(app: FastifyInstance): void {
     async (request, reply) =>
       reply.status(204).send(
         await approvePlugin.execute(request.executionContext, {
+          ...request.params,
+          ...request.body,
+        }),
+      ),
+  );
+
+  routes.put(
+    '/api/v1/plugins/:pluginSlug/settings',
+    {
+      config: { access: savePluginSettings.access },
+      // The settings, and the object around them.
+      bodyLimit: PLUGIN_SETTINGS_MAX_BYTES + 1024,
+      schema: {
+        params: pluginSlugParamsSchema,
+        body: savePluginSettingsRequestSchema,
+        response: NO_CONTENT,
+      },
+    },
+    async (request, reply) =>
+      reply.status(204).send(
+        await savePluginSettings.execute(request.executionContext, {
           ...request.params,
           ...request.body,
         }),

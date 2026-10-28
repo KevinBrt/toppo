@@ -1,6 +1,7 @@
 import {
   installPluginResponseSchema,
   type PluginDetailsResponse,
+  type PluginSettingValues,
   type PluginSummary,
   pluginDetailsResponseSchema,
   pluginsResponseSchema,
@@ -47,6 +48,18 @@ export const Plugins = {
     await apiRequest(`${pluginPath(slug)}/approve`, {
       method: 'POST',
       body: { projects },
+      schema: noContent,
+    });
+  },
+
+  /**
+   * Saves its settings, once the plugin's own code accepted them; those left out take their
+   * default. Settings it refused since an upgrade are so corrected.
+   */
+  async saveSettings(slug: string, values: PluginSettingValues): Promise<void> {
+    await apiRequest(`${pluginPath(slug)}/settings`, {
+      method: 'PUT',
+      body: { values },
       schema: noContent,
     });
   },

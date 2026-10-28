@@ -45,6 +45,84 @@ export type PluginFailure = (typeof PLUGIN_FAILURES)[number];
 /** Runs that fail in a row before Toppo disables their plugin. */
 export const FAILURES_BEFORE_DISABLING = 10;
 
+/** `hoursPerDay`. Mirrors SETTING_NAME (`@toppo-tracker/plugin-sdk/protocol`). */
+const settingNameSchema = z.string().regex(/^[a-z][A-Za-z0-9]{0,39}$/);
+
+/** At most this many settings in a plugin. Mirrors PLUGIN_SETTINGS_MAX (`…/protocol`). */
+const SETTINGS_MAX = 30;
+
+/** What a plugin's settings may weigh, as JSON: a form's worth, not files. */
+export const PLUGIN_SETTINGS_MAX_BYTES = 16 * 1024;
+
+/** The longest text a setting holds. */
+export const PLUGIN_SETTING_TEXT_MAX_LENGTH = 1000;
+
+/** A setting's value, as its form gives it. */
+export const pluginSettingValueSchema = z.union([
+  z.string().max(PLUGIN_SETTING_TEXT_MAX_LENGTH),
+  z.number(),
+  z.boolean(),
+]);
+
+export type PluginSettingValue = z.infer<typeof pluginSettingValueSchema>;
+
+const settingWords = {
+  name: z.string(),
+  /** What the form calls it, in each language, from the plugin's messages. */
+  label: translatedSchema,
+  help: translatedSchema.nullable(),
+};
+
+/**
+ * One of a plugin's settings, as its form draws it: a text (an address, an email), a number, a
+ * yes or no, or a choice. Its default applies while it is left empty; the plugin checks the rest.
+ */
+export const pluginSettingFieldSchema = z.discriminatedUnion('kind', [
+  z.object({
+    ...settingWords,
+    kind: z.literal('text'),
+    format: z.enum(['text', 'url', 'email']),
+    maxLength: z.number().int().nullable(),
+    default: z.string().nullable(),
+  }),
+  z.object({
+    ...settingWords,
+    kind: z.literal('number'),
+    integer: z.boolean(),
+    min: z.number().nullable(),
+    max: z.number().nullable(),
+    default: z.number().nullable(),
+  }),
+  z.object({ ...settingWords, kind: z.literal('boolean'), default: z.boolean().nullable() }),
+  z.object({
+    ...settingWords,
+    kind: z.literal('choice'),
+    options: z.array(z.object({ value: z.string(), label: translatedSchema })),
+    default: z.string().nullable(),
+  }),
+]);
+
+export type PluginSettingField = z.infer<typeof pluginSettingFieldSchema>;
+
+/** Settings an administrator saves, by name: those left empty take their default. */
+export const pluginSettingValuesSchema = z
+  .record(settingNameSchema, pluginSettingValueSchema)
+  .refine((values) => Object.keys(values).length <= SETTINGS_MAX, {
+    message: `At most ${SETTINGS_MAX} settings`,
+  })
+  .refine(
+    (values) =>
+      new TextEncoder().encode(JSON.stringify(values)).length <= PLUGIN_SETTINGS_MAX_BYTES,
+    { message: `At most ${PLUGIN_SETTINGS_MAX_BYTES} bytes of settings` },
+  );
+
+export type PluginSettingValues = z.infer<typeof pluginSettingValuesSchema>;
+
+/** Body of `PUT /api/v1/plugins/:pluginSlug/settings`, checked by the plugin before it is kept. */
+export const savePluginSettingsRequestSchema = z.object({ values: pluginSettingValuesSchema });
+
+export type SavePluginSettingsRequest = z.infer<typeof savePluginSettingsRequestSchema>;
+
 /** A plugin as the list of installed ones shows it. */
 export const pluginSummarySchema = z.object({
   slug: z.string(),
@@ -110,6 +188,13 @@ export const pluginDetailsResponseSchema = pluginSummarySchema.extend({
   failures: z.number().int().nonnegative(),
   /** How its last run that failed went wrong, and in what (`issue.statusChanged`, `action …`). */
   lastFailure: z.object({ reason: z.enum(PLUGIN_FAILURES), during: z.string() }).nullable(),
+  settings: z.object({
+    fields: z.array(pluginSettingFieldSchema),
+    /** As saved, for the settings it still has. */
+    values: z.record(z.string(), pluginSettingValueSchema),
+    /** Its code refuses them since an upgrade: it waits for them to be corrected, then approved. */
+    refused: z.boolean(),
+  }),
 });
 
 export type PluginDetailsResponse = z.infer<typeof pluginDetailsResponseSchema>;

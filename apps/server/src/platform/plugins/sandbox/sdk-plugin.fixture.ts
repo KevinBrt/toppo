@@ -13,10 +13,12 @@ const plugin = definePlugin({
   settings: z.object({ maxMinutesPerDay: z.int().min(1).default(600) }),
   messages: {
     en: {
+      settings: { maxMinutesPerDay: { label: 'Minutes a day, at most' } },
       errors: { dailyLimit: 'At most {limit} minutes a day.' },
       closed: 'Closed, {minutes} minutes in.',
     },
     fr: {
+      settings: { maxMinutesPerDay: { label: 'Minutes par jour, au plus' } },
       errors: { dailyLimit: '{limit} minutes par jour au plus.' },
       closed: 'Fermé, après {minutes} minutes.',
     },

@@ -112,7 +112,7 @@ async function anyPluginHears(tx: Transaction, types: readonly string[]): Promis
     .where(
       and(
         eq(plugins.state, 'enabled'),
-        sql`jsonb_exists_any(${plugins.manifest}->'events', ${heard})`,
+        sql`jsonb_exists_any((${plugins.manifest}->'events')::jsonb, ${heard})`,
       ),
     )
     .limit(1);

@@ -6,6 +6,7 @@ import {
   customType,
   index,
   integer,
+  json,
   jsonb,
   pgTable,
   text,
@@ -38,15 +39,21 @@ export const plugins = pgTable(
     state: text('state', { enum: PLUGIN_STATES }).$type<PluginState>().notNull().default('pending'),
     /**
      * What its code declared when it was uploaded, as the sandbox answered it and Toppo checked it
-     * (`manifestSchema`): what an administrator approves, and what Toppo enforces.
+     * (`manifestSchema`): what an administrator approves, and what Toppo enforces. JSON as written,
+     * not `jsonb`, which sorts keys: its settings and permissions show in its author's order.
      */
-    manifest: jsonb('manifest').$type<Record<string, unknown>>().notNull(),
+    manifest: json('manifest').$type<Record<string, unknown>>().notNull(),
     /** SHA-256 of the zip uploaded, hex-encoded: shown to the administrator, checked on loading. */
     packageSha256: text('package_sha256').notNull(),
     /** It acts in every project, present and future; otherwise in `plugin_projects` only. */
     allProjects: boolean('all_projects').notNull().default(false),
-    /** As the administrator saved them; the secrets among them sealed with the instance key. */
+    /** As an administrator saved them, checked by its code; secrets sealed by the instance key. */
     settings: jsonb('settings').$type<Record<string, unknown>>().notNull().default({}),
+    /**
+     * Its code refuses the settings saved, since an upgrade: it waits for an administrator to
+     * correct them, then to approve it again.
+     */
+    settingsRefused: boolean('settings_refused').notNull().default(false),
     approvedById: uuid('approved_by_id').references(() => users.id, { onDelete: 'set null' }),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
     /** Its runs that failed in a row: past a few, it is stopped and the administrators told. */
@@ -77,6 +84,13 @@ export const plugins = pgTable(
     check('plugins_logo_whole', sql`(${table.logo} is null) = (${table.logoType} is null)`),
     check('plugins_logo_type', sql`${table.logoType} in ('image/png', 'image/webp')`),
     check('plugins_logo_size', sql`octet_length(${table.logo}) <= 262144`),
+    check('plugins_settings_object', sql`jsonb_typeof(${table.settings}) = 'object'`),
+    // Twice PLUGIN_SETTINGS_MAX_BYTES (`@toppo-tracker/shared`): PostgreSQL writes JSON looser.
+    check('plugins_settings_size', sql`octet_length(${table.settings}::text) <= 32768`),
+    check(
+      'plugins_refused_settings_stop',
+      sql`not ${table.settingsRefused} or ${table.state} <> 'enabled'`,
+    ),
     // Running takes an administrator's approval, whoever gave it.
     check(
       'plugins_enabled_are_approved',

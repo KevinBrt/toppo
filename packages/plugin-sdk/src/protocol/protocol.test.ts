@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
 import { EVENT_TYPES, eventPayloadSchema } from './events.ts';
 import { type Manifest, manifestSchema, PLUGIN_LIMITS } from './manifest.ts';
 import { logoTypeOf } from './package.ts';
+import { PLUGIN_SETTINGS_MAX } from './settings.ts';
 import { isApiCompatible } from './version.ts';
 
 const manifest: Manifest = {
@@ -103,6 +105,71 @@ describe('the manifest Toppo accepts', () => {
     expect(
       manifestSchema.safeParse({ ...manifest, needs: ['comment.create'], actions: [] }).success,
     ).toBe(true);
+  });
+});
+
+describe('the settings Toppo draws', () => {
+  /** Settings as Zod writes them, with a label for each in both languages, unless told. */
+  function withSettings(shape: z.ZodRawShape, labelled = Object.keys(shape)) {
+    const settings = Object.fromEntries(labelled.map((name) => [name, { label: name }]));
+    return {
+      ...manifest,
+      settings: z.toJSONSchema(z.object(shape), { io: 'input', unrepresentable: 'any' }),
+      messages: { en: { settings }, fr: { settings } },
+    };
+  }
+
+  it('takes a text, an address, an email, a number, a yes or no and a choice', () => {
+    const declared = withSettings({
+      team: z.string().max(80).default('Support'),
+      webhookUrl: z.url().optional(),
+      replyTo: z.email().optional(),
+      reminderDays: z.int().min(1).max(30).optional(),
+      rate: z.number().positive().default(1.5),
+      billable: z.boolean().default(true),
+      period: z.enum(['week', 'month']).default('week'),
+    });
+
+    expect(manifestSchema.parse(declared)).toStrictEqual(declared);
+  });
+
+  it.each([
+    ['one that may be null', { team: z.string().nullable().optional() }],
+    ['one that is a list', { teams: z.array(z.string()).optional() }],
+    ['one that is an object', { limits: z.object({ daily: z.int() }).optional() }],
+    ['one named otherwise than a word', { 'max-hours': z.int().optional() }],
+    [
+      'more than it can show',
+      Object.fromEntries(
+        Array.from({ length: PLUGIN_SETTINGS_MAX + 1 }, (_, i) => [
+          `setting${i}`,
+          z.boolean().default(false),
+        ]),
+      ),
+    ],
+  ])('refuses %s', (_, shape) => {
+    expect(manifestSchema.safeParse(withSettings(shape)).success).toBe(false);
+  });
+
+  it('refuses a setting the plugin cannot run without, or one without a label, saying which', () => {
+    const required = manifestSchema.safeParse(withSettings({ webhookUrl: z.url() }));
+    const unlabelled = manifestSchema.safeParse(
+      withSettings({ webhookUrl: z.url().optional(), team: z.string().optional() }, ['team']),
+    );
+
+    expect(required.error?.issues).toStrictEqual([
+      expect.objectContaining({
+        path: ['settings', 'required'],
+        message:
+          'The setting webhookUrl needs a default, or .optional(): the plugin runs before anyone sets it',
+      }),
+    ]);
+    expect(unlabelled.error?.issues.map(({ path, message }) => ({ path, message }))).toStrictEqual(
+      ['en', 'fr'].map((locale) => ({
+        path: ['messages', locale],
+        message: 'settings.webhookUrl.label is missing: the form names each setting with it',
+      })),
+    );
   });
 });
 

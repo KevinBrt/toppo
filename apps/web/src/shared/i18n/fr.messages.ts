@@ -1185,6 +1185,17 @@ export const fr: Messages = {
     saving: 'Enregistrement…',
     approved: 'Plugin approuvé et activé.',
     saved: 'Projets enregistrés.',
+    settingsTitle: 'Paramètres',
+    settingsDescription:
+      'Son fonctionnement dans cette instance. Un paramètre laissé vide prend sa valeur par défaut.',
+    settingDefault: 'Laissé vide : {value}.',
+    settingDefaultOption: 'Par défaut ({value})',
+    settingNone: 'Aucun',
+    saveSettings: 'Enregistrer les paramètres',
+    settingsSaved: 'Paramètres enregistrés.',
+    settingsRefused:
+      'Cette version du plugin refuse ses paramètres : corrigez-les, puis approuvez-le à nouveau.',
+    settingRefused: 'Le plugin refuse cette valeur.',
     manageTitle: 'Gérer',
     newVersionTitle: 'Nouvelle version',
     newVersionDescription:
@@ -1237,6 +1248,11 @@ export const fr: Messages = {
       userEmailTaken:
         'Un compte utilise déjà l’adresse que Toppo donne à l’utilisateur propre de ce plugin. Changez l’adresse de ce compte, puis approuvez de nouveau.',
       notApproved: 'Approuvez d’abord ce que déclare ce plugin.',
+      settingsInvalid: 'Le plugin refuse certains de ces paramètres.',
+      settingsRefused:
+        'Cette version refuse les paramètres du plugin : corrigez-les d’abord, plus haut.',
+      pluginChanged:
+        'Une nouvelle version du plugin a été installée entre-temps. Rechargez la page, puis enregistrez à nouveau.',
     },
   },
   invitation: {
@@ -1319,6 +1335,11 @@ export const fr: Messages = {
     tooShort: 'Utilisez au moins {min} caractères.',
     tooLong: 'Utilisez au plus {max} caractères.',
     invalid: 'Cette valeur n’est pas valide.',
+    number: 'Saisissez un nombre.',
+    wholeNumber: 'Saisissez un nombre entier.',
+    atLeast: 'Saisissez au moins {min}.',
+    atMost: 'Saisissez au plus {max}.',
+    url: 'Saisissez une adresse web, comme https://example.com.',
   },
   errors: {
     network: 'Toppo est injoignable. Vérifiez votre connexion puis réessayez.',

@@ -66,6 +66,20 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   await expect(logo).toHaveJSProperty('naturalWidth', 256);
   await expectAccessible(page);
 
+  // Set up before it runs: its own code checks the settings, in its sandbox.
+  const settings = page.getByRole('region', { name: 'Settings', exact: true });
+  const day = settings.getByRole('textbox', { name: 'Hours in a working day' });
+  const saveSettings = settings.getByRole('button', { name: 'Save the settings' });
+  await expect(day).toHaveAccessibleDescription(
+    'The time logged counts in days of this many hours, as projects’ budgets do. Left empty: 8.',
+  );
+  await day.fill('0');
+  await saveSettings.click();
+  await expect(settings.getByText('Enter at least 1.')).toBeVisible();
+  await day.fill('7');
+  await saveSettings.click();
+  await expect(settings.getByText('Settings saved.')).toBeVisible();
+
   await page.getByRole('radio', { name: 'Chosen projects' }).check();
   await page.getByRole('searchbox', { name: 'Search projects' }).fill(key);
   await page.getByRole('checkbox', { name: new RegExp(key) }).check();
@@ -81,6 +95,8 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   );
   expect(overflow, 'horizontal overflow at 320px').toBe(0);
   await page.setViewportSize({ width: 1280, height: 800 });
+  await page.reload();
+  await expect(day).toHaveValue('7');
 
   // It runs, in its sandbox, for whoever asks, in the projects it was approved in only.
   const logged = await page.request.post(LOG_TIME, {

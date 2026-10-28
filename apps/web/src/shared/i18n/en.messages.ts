@@ -1143,6 +1143,16 @@ export const en = {
     saving: 'Saving…',
     approved: 'Plugin approved and enabled.',
     saved: 'Projects saved.',
+    settingsTitle: 'Settings',
+    settingsDescription: 'How it works in this instance. A setting left empty takes its default.',
+    settingDefault: 'Left empty: {value}.',
+    settingDefaultOption: 'Default ({value})',
+    settingNone: 'None',
+    saveSettings: 'Save the settings',
+    settingsSaved: 'Settings saved.',
+    settingsRefused:
+      'This version of the plugin refuses its settings: correct them, then approve it again.',
+    settingRefused: 'The plugin refuses this value.',
     manageTitle: 'Manage',
     newVersionTitle: 'New version',
     newVersionDescription:
@@ -1193,6 +1203,10 @@ export const en = {
       userEmailTaken:
         'An account already uses the address Toppo gives this plugin’s own user. Change that account’s address, then approve again.',
       notApproved: 'Approve what this plugin declares first.',
+      settingsInvalid: 'The plugin refuses some of these settings.',
+      settingsRefused: 'This version refuses the plugin’s settings: correct them first, above.',
+      pluginChanged:
+        'A new version of the plugin was installed meanwhile. Reload the page, then save again.',
     },
   },
   invitation: {
@@ -1271,6 +1285,11 @@ export const en = {
     tooShort: 'Use at least {min} characters.',
     tooLong: 'Use at most {max} characters.',
     invalid: 'This value is not valid.',
+    number: 'Enter a number.',
+    wholeNumber: 'Enter a whole number.',
+    atLeast: 'Enter at least {min}.',
+    atMost: 'Enter at most {max}.',
+    url: 'Enter a web address, such as https://example.com.',
   },
   errors: {
     network: 'Toppo cannot be reached. Check your connection and try again.',

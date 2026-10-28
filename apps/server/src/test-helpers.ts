@@ -13,7 +13,10 @@ import { createAuth } from './platform/auth/auth.ts';
 import { createSecretBox } from './platform/config/secret-box.ts';
 import type { ExecutionContext, Services } from './platform/cqrs/cqrs.ts';
 import { createMailer } from './platform/mail/mailer.ts';
-import { createManifestReader } from './platform/plugins/packages/manifest-reader.ts';
+import {
+  createManifestReader,
+  createSettingsChecker,
+} from './platform/plugins/packages/manifest-reader.ts';
 import {
   createPackageStore,
   type PackageStore,
@@ -120,6 +123,7 @@ export function testServices(overrides: Partial<Services> = {}): Services {
     plugins: {
       packages: { keep: () => Promise.reject(new Error('No package store in this test')) },
       readManifest: createManifestReader(TEST_SANDBOX_WORKER),
+      checkSettings: createSettingsChecker(TEST_SANDBOX_WORKER),
       runtime: { run: () => Promise.reject(new Error('No plugin runs in this test')) },
       calls: createHostCalls(),
     },

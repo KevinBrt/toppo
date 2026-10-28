@@ -113,6 +113,7 @@ import {
   resetPasswordRequestSchema,
   rolePermissionsRequestSchema,
   type SortOrder,
+  savePluginSettingsRequestSchema,
   TOPPO_VERSION,
   type UserSummary,
   updatePropertyRequestSchema,
@@ -198,6 +199,8 @@ export interface FakeServerState {
   plugins: FakePlugin[];
   /** What the next zip uploaded installs, or how the server refuses it: refused unless set. */
   pluginPackage: FakePlugin | FakePackageRefusal | null;
+  /** Settings the plugins' code refuses, whatever their value: none unless a test sets some. */
+  refusedSettings: string[];
   invitations: PendingInvitation[];
   /** The links the fake server made, by token, and what opening them shows. */
   invitationLinks: Map<string, InvitationLinkState>;
@@ -525,6 +528,7 @@ export function fakePlugin(
     approval: null,
     failures: 0,
     lastFailure: null,
+    settings: { fields: [], values: {}, refused: false },
     ...overrides,
   };
 }
@@ -551,6 +555,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       roles: defaultRoles(),
       plugins: [],
       pluginPackage: null,
+      refusedSettings: [],
       invitations: [],
       invitationLinks: new Map(),
       projects: [],
@@ -3355,9 +3360,12 @@ function savePlugin(state: FakeServerState, plugin: FakePlugin): void {
   state.plugins = [...state.plugins.filter(({ slug }) => slug !== plugin.slug), plugin];
 }
 
-const PLUGIN_PATH = /^\/api\/v1\/plugins(?:\/([^/]+)(?:\/(approve|enable|disable))?)?$/;
+const PLUGIN_PATH = /^\/api\/v1\/plugins(?:\/([^/]+)(?:\/(approve|enable|disable|settings))?)?$/;
 
-/** `/api/v1/plugins…`: listing, installing, approving, enabling, disabling and uninstalling. */
+/**
+ * `/api/v1/plugins…`: listing, installing, setting up, approving, enabling, disabling and
+ * uninstalling.
+ */
 function pluginRequest(
   state: FakeServerState,
   method: string,
@@ -3405,7 +3413,7 @@ function onePluginRequest(
   return undefined;
 }
 
-/** `POST /api/v1/plugins/:slug/approve`, `…/enable` and `…/disable`. */
+/** `PUT /api/v1/plugins/:slug/settings`, `POST …/approve`, `…/enable` and `…/disable`. */
 function pluginCommand(
   state: FakeServerState,
   method: string,
@@ -3413,6 +3421,9 @@ function pluginCommand(
   action: string,
   body: unknown,
 ): Response | undefined {
+  if (action === 'settings') {
+    return method === 'PUT' ? saveFakePluginSettings(state, plugin, body) : undefined;
+  }
   if (method !== 'POST') {
     return undefined;
   }
@@ -3450,11 +3461,40 @@ function installFakePlugin(state: FakeServerState, body: unknown, headers: Heade
   return json({ slug: next.slug }, 201);
 }
 
-/** `POST /api/v1/plugins/:slug/approve`: in projects that all exist, or all of them; enables it. */
+/**
+ * `PUT /api/v1/plugins/:slug/settings`: kept unless the plugin's code refuses one of them, as the
+ * test says; settings refused since an upgrade are so corrected.
+ */
+function saveFakePluginSettings(
+  state: FakeServerState,
+  plugin: FakePlugin,
+  body: unknown,
+): Response {
+  const parsed = savePluginSettingsRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  const { values } = parsed.data;
+  const refused = Object.keys(values).filter((name) => state.refusedSettings.includes(name));
+  if (refused.length > 0) {
+    const details = refused.map((path) => ({ path, message: 'Refused by the plugin' }));
+    return json({ error: { code: 'PLUGIN_SETTINGS_INVALID', message: 'Refused', details } }, 400);
+  }
+  savePlugin(state, { ...plugin, settings: { ...plugin.settings, values, refused: false } });
+  return NO_CONTENT();
+}
+
+/**
+ * `POST /api/v1/plugins/:slug/approve`: in projects that all exist, or all of them, once its code
+ * takes its settings; enables it.
+ */
 function approveFakePlugin(state: FakeServerState, plugin: FakePlugin, body: unknown): Response {
   const parsed = approvePluginRequestSchema.safeParse(body);
   if (!(parsed.success && state.user)) {
     return apiError(400, 'VALIDATION_FAILED');
+  }
+  if (plugin.settings.refused) {
+    return apiError(409, 'PLUGIN_SETTINGS_REFUSED');
   }
   const { projects: keys } = parsed.data;
   const projects = (keys === 'all' ? [] : keys).flatMap((key) => {

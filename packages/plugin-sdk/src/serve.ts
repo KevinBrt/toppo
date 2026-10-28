@@ -20,6 +20,9 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
   const definition = definitionOf(plugin);
 
   async function execute(kind: RunKind, name: string, payload: unknown, context: RunContext) {
+    if (kind === 'settings') {
+      return checkSettings(definition, payload);
+    }
     const settings = definition.settings.safeParse(context.settings);
     if (!settings.success) {
       return failure('INVALID_SETTINGS');
@@ -59,8 +62,16 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
   };
 }
 
-/** What the plugin declares: everything Toppo approves, checks and shows of it. */
-function manifestOf({ config, settings, actions, events }: PluginDefinition): Manifest {
+/**
+ * What the plugin declares: everything Toppo approves, checks and shows of it. Its settings go as
+ * Zod writes them: Toppo's manifest schema says whether it can draw them.
+ */
+function manifestOf({
+  config,
+  settings,
+  actions,
+  events,
+}: PluginDefinition): Omit<Manifest, 'settings'> & { settings: Record<string, unknown> } {
   return {
     id: config.id,
     name: config.name,
@@ -123,6 +134,12 @@ async function runAction(
   }
   const result = await action.handler({ ...ctx, user }, input.data);
   return { ok: true, result: result ?? null };
+}
+
+/** Whether settings an administrator typed fit the plugin's schema: Toppo saves them if so. */
+function checkSettings(definition: PluginDefinition, payload: unknown): RunAnswer {
+  const settings = definition.settings.safeParse(payload);
+  return settings.success ? { ok: true, result: null } : invalid(settings.error);
 }
 
 function isEventType(name: string): name is EventType {
