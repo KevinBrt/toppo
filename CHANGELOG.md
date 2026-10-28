@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/KevinBrt/toppo/compare/v1.0.1...v1.1.0) (2026-10-28)
+
+
+### Features
+
+* **plugins:** install, approve and remove plugins from a zip ([#24](https://github.com/KevinBrt/toppo/issues/24)) ([192da8b](https://github.com/KevinBrt/toppo/commit/192da8b844f0cb1c79dcdbc64f1965970f2bd639))
+
 ## [1.0.1](https://github.com/KevinBrt/toppo/compare/v1.0.0...v1.0.1) (2026-10-28)
 
 
