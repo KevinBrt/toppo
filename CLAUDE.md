@@ -37,6 +37,7 @@ apps/server  → core, shared, db          apps/web → core, shared, ui
 packages/core → shared only (pure: no I/O, no framework, no Date.now() without injection)
 packages/db   → shared, core             packages/ui → shared
 plugins/*     → plugin-sdk only          packages/testing → devDependency only
+                (cli, plugin-testing: dev)
 ```
 
 Enforced by `check:dependencies` (allowed graph in `scripts/src/dependencies/rules.ts`) and Biome `noUndeclaredDependencies`. Import other workspaces by package name (`@toppo-tracker/core`), never by relative path.

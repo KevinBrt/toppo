@@ -35,7 +35,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] actions, which a plugin's screens call for a person;
     - [x] **Settings → Plugins**: install, approve in projects, enable, disable, uninstall; a plugin's name, description and logo;
     - [ ] a plugin's settings form, generated from the schema it declares;
-    - [ ] `plugins/time-tracking`, built and installed through the interface in an end-to-end test;
+    - [x] `plugins/time-tracking`, built and installed through the interface in an end-to-end test;
     - [ ] the plugin author's guide, and `CLAUDE.md`'s rules for plugin code.
   - [ ] **2. Data**: entities and properties.
   - [ ] **3. Interface**: plugins' screens in sandboxed frames, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page.

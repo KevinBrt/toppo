@@ -83,6 +83,27 @@ describe('the manifest Toppo accepts', () => {
   ])('refuses %s', (_, declared) => {
     expect(manifestSchema.safeParse(declared).success).toBe(false);
   });
+
+  it('refuses an action on an issue from a plugin that does not read issues, saying which', () => {
+    const declared = manifestSchema.safeParse({
+      ...manifest,
+      needs: ['comment.create'],
+      actions: [
+        { name: 'report.export', access: 'authenticated', input: {} },
+        { name: 'timeEntry.log', access: { issue: 'issueId' }, input: {} },
+      ],
+    });
+
+    expect(declared.error?.issues).toStrictEqual([
+      expect.objectContaining({
+        path: ['actions', 1, 'access'],
+        message: 'timeEntry.log acts on an issue: the plugin needs issue.read',
+      }),
+    ]);
+    expect(
+      manifestSchema.safeParse({ ...manifest, needs: ['comment.create'], actions: [] }).success,
+    ).toBe(true);
+  });
 });
 
 describe('the protocol', () => {

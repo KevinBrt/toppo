@@ -355,6 +355,16 @@ describe('a zip that is no plugin Toppo runs', () => {
       'PLUGIN_MANIFEST_INVALID',
     ],
     [
+      'an action on an issue from a plugin that does not read issues',
+      testPackage({
+        manifest: testManifest({
+          needs: ['comment.create'],
+          actions: [{ name: 'timeEntry.log', access: { issue: 'issueId' }, input: {} }],
+        }),
+      }),
+      'PLUGIN_MANIFEST_INVALID',
+    ],
+    [
       'an API this Toppo does not speak',
       testPackage({ manifest: testManifest({ apiVersion: '^2.0' }) }),
       'PLUGIN_API_INCOMPATIBLE',

@@ -46,32 +46,59 @@ export const accessSchema = z.union([
 ]);
 
 /**
+ * Refuses an action on an issue from a plugin that does not read issues: whoever runs it sees
+ * only what the plugin sees, so Toppo would answer 404 for every issue.
+ */
+function checkIssueActions(
+  manifest: {
+    needs: readonly string[];
+    actions: readonly { name: string; access: z.output<typeof accessSchema> }[];
+  },
+  ctx: z.RefinementCtx,
+): void {
+  if (manifest.needs.includes('issue.read')) {
+    return;
+  }
+  manifest.actions.forEach(({ name, access }, index) => {
+    if (access !== 'authenticated' && 'issue' in access) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['actions', index, 'access'],
+        message: `${name} acts on an issue: the plugin needs issue.read`,
+      });
+    }
+  });
+}
+
+/**
  * What a plugin declares, as its bundle answers `manifest()` in the sandbox: Toppo never reads it
  * from a file its author writes. Unknown keys are refused, as is anything past its limits.
  */
-export const manifestSchema = z.strictObject({
-  id: z.string().regex(PLUGIN_ID, 'A plugin id is lowercase words joined by dashes'),
-  /** What it is called and what it does, as keys of its messages, shown in each language. */
-  name: z.string().max(200),
-  description: z.string().max(200),
-  /** Its logo, a file at the root of its package, if it has one. */
-  logo: z.enum(PLUGIN_LOGO_FILES).optional(),
-  apiVersion: apiVersionSchema,
-  needs: z.array(z.enum(PLUGIN_NEEDS)).max(PLUGIN_NEEDS.length),
-  permissions: z
-    .record(
-      nameSchema,
-      z.strictObject({ scope: z.enum(['instance', 'project']), label: z.string().max(200) }),
-    )
-    .refine((permissions) => Object.keys(permissions).length <= PLUGIN_LIMITS.permissions, {
-      message: `At most ${PLUGIN_LIMITS.permissions} permissions`,
-    }),
-  settings: jsonSchema,
-  messages: z.strictObject({ en: messagesSchema, fr: messagesSchema }),
-  actions: z
-    .array(z.strictObject({ name: nameSchema, access: accessSchema, input: jsonSchema }))
-    .max(PLUGIN_LIMITS.actions),
-  events: z.array(z.enum(EVENT_TYPES)).max(EVENT_TYPES.length),
-});
+export const manifestSchema = z
+  .strictObject({
+    id: z.string().regex(PLUGIN_ID, 'A plugin id is lowercase words joined by dashes'),
+    /** What it is called and what it does, as keys of its messages, shown in each language. */
+    name: z.string().max(200),
+    description: z.string().max(200),
+    /** Its logo, a file at the root of its package, if it has one. */
+    logo: z.enum(PLUGIN_LOGO_FILES).optional(),
+    apiVersion: apiVersionSchema,
+    needs: z.array(z.enum(PLUGIN_NEEDS)).max(PLUGIN_NEEDS.length),
+    permissions: z
+      .record(
+        nameSchema,
+        z.strictObject({ scope: z.enum(['instance', 'project']), label: z.string().max(200) }),
+      )
+      .refine((permissions) => Object.keys(permissions).length <= PLUGIN_LIMITS.permissions, {
+        message: `At most ${PLUGIN_LIMITS.permissions} permissions`,
+      }),
+    settings: jsonSchema,
+    messages: z.strictObject({ en: messagesSchema, fr: messagesSchema }),
+    actions: z
+      .array(z.strictObject({ name: nameSchema, access: accessSchema, input: jsonSchema }))
+      .max(PLUGIN_LIMITS.actions),
+    events: z.array(z.enum(EVENT_TYPES)).max(EVENT_TYPES.length),
+  })
+  .superRefine(checkIssueActions);
 
 export type Manifest = z.infer<typeof manifestSchema>;
