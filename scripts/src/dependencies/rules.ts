@@ -29,6 +29,9 @@ export const ALLOWED_WORKSPACE_DEPENDENCIES: Readonly<Record<string, readonly st
   '@toppo-tracker/web': ['@toppo-tracker/shared', '@toppo-tracker/core', '@toppo-tracker/ui'],
   // Published under MIT: nothing of Toppo's own, AGPL code.
   '@toppo-tracker/plugin-sdk': [],
+  // Published under MIT with the SDK: what plugin authors build and test with.
+  '@toppo-tracker/plugin-testing': ['@toppo-tracker/plugin-sdk'],
+  '@toppo-tracker/cli': ['@toppo-tracker/plugin-sdk'],
   '@toppo-tracker/e2e': [],
   '@toppo-tracker/scripts': [],
 };
