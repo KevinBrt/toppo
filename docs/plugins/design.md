@@ -12,7 +12,7 @@ Toppo's core covers what most teams need, complete from install: nobody should a
 
 ## Principles
 
-1. **One contract.** A plugin imports only `@toppo/plugin-sdk` and `@toppo/plugin-ui` (MIT). It never reaches Toppo's database, files, configuration or network directly. What the SDK does not offer, a plugin cannot do.
+1. **One contract.** A plugin imports only `@toppo-tracker/plugin-sdk` and `@toppo-tracker/plugin-ui` (MIT). It never reaches Toppo's database, files, configuration or network directly. What the SDK does not offer, a plugin cannot do.
 2. **What the core's integrations build on, plugins share.** Webhooks and GitHub live in the core, on blocks plugins use too: the outbound HTTP guard, signed webhooks, routes that check a signature. GitLab or Bitbucket can then be plugins written with the same tools. The core never tests a plugin's id.
 3. **Toppo's conventions.** An action is declared like a command (`access`, Zod `input`, `handler`), translations are typed in English and French, permissions join the same catalog.
 4. **Everything declared.** What a plugin may do, store, show and reach is in its manifest, validated strictly when it is installed, shown to the administrator, and enforced at run time.
@@ -27,7 +27,7 @@ A plugin is TypeScript built by `toppo-plugin build` into one package: a server 
 
 ```ts
 // src/plugin.ts
-import { definePlugin, z } from "@toppo/plugin-sdk";
+import { definePlugin, z } from "@toppo-tracker/plugin-sdk";
 
 export const plugin = definePlugin({
   id: "slack",
@@ -138,7 +138,7 @@ export const summarizeOnClose = plugin.defineEventHandler({
 
 ```tsx
 // src/web/issue-panel.tsx: real React, in a sandboxed frame
-import { DataTable, Stat, useList, usePanel, useSum, useT } from "@toppo/plugin-ui";
+import { DataTable, Stat, useList, usePanel, useSum, useT } from "@toppo-tracker/plugin-ui";
 import { plugin } from "../plugin.ts";
 import { TimeEntryForm } from "./components/time-entry-form.tsx";
 
@@ -308,7 +308,7 @@ img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'
 
 - The frame has no origin: it cannot read Toppo's page, the user's cookies or storage, call Toppo's API or any site, open windows or navigate the tab. Its only way out is the bridge (`postMessage`), checked by Toppo like a request from the browser.
 - Toppo's own CSP stays as strict as today.
-- `@toppo/plugin-ui` gives Toppo's components, its theme as CSS variables, the user's language, and hooks built on TanStack Query: `useList`, `useSum`, `useGet`, `useAction`, `useT`, `usePanel`, `usePage`, `usePageParams`, `usePageSearch`, `PluginLink`. Plain HTML, CSS and any bundled React library work too; then accessibility and phone widths are the author's to keep.
+- `@toppo-tracker/plugin-ui` gives Toppo's components, its theme as CSS variables, the user's language, and hooks built on TanStack Query: `useList`, `useSum`, `useGet`, `useAction`, `useT`, `usePanel`, `usePage`, `usePageParams`, `usePageSearch`, `PluginLink`. Plain HTML, CSS and any bundled React library work too; then accessibility and phone widths are the author's to keep.
 - `useAction(logTime)` imports the action into the browser bundle; the build replaces its handler with a reference, so server code never reaches the browser.
 - Found in the prototype: the bundle must be a classic script (an origin-less frame refuses module scripts; never answer that with `Access-Control-Allow-Origin: null`); the frame is sized to its content's height, which the frame reports. A screen with React weighs 220 KB minified; Toppo serves one shared React runtime so plugins leave it out.
 
@@ -381,11 +381,29 @@ The plugin's author is not trusted; the administrator who installs it is, for th
 
 ## For authors
 
-- `npm create toppo-plugin`: a plugin ready to build and test.
+- `npm create @toppo-tracker/plugin`: a plugin ready to build and test.
 - `toppo-plugin dev`: runs it against a local Toppo, reloading on change.
 - `toppo-plugin build`: the zip to install.
-- `@toppo/plugin-testing`: a fake Toppo to test a plugin without an instance (`createTestToppo(plugin)`, users who see given issues, `user.run(logTime, input)`).
+- `@toppo-tracker/plugin-testing`: a fake Toppo to test a plugin without an instance (`createTestToppo(plugin)`, users who see given issues, `user.run(logTime, input)`).
 - Documentation in `docs/plugins/`, with a worked example.
+
+## Packages and official plugins
+
+The published packages live under the npm scope `@toppo-tracker` (the GitHub organization of the same name is Toppo's too; `@toppo` belongs to someone else):
+
+| Package                         | For                                                            |
+| ------------------------------- | -------------------------------------------------------------- |
+| `@toppo-tracker/plugin-sdk`     | `definePlugin`, `defineEntity`, `defineProperty`: the contract |
+| `@toppo-tracker/plugin-ui`      | components and hooks for a plugin's screens                    |
+| `@toppo-tracker/plugin-testing` | the fake Toppo to test a plugin                                |
+| `@toppo-tracker/plugin-cli`     | `toppo-plugin dev` and `toppo-plugin build`                    |
+| `@toppo-tracker/create-plugin`  | `npm create @toppo-tracker/plugin`                             |
+
+- MIT, published by the release workflow with npm provenance, versioned by semver along `apiVersion`.
+- `plugin-ui` is a facade: it bundles the components of `packages/ui` it chooses to expose, under an API kept stable. `packages/ui` stays private and free to change, as `core` stays private behind `plugin-sdk`.
+- Toppo's internal packages (`@toppo/core`, `@toppo/ui`…) are renamed `@toppo-tracker/…` when the SDK lands: one scope in the repository, and no internal name in a scope someone else owns. They stay private.
+
+**Official plugins** live in this repository, under `plugins/` (time tracking first), without privilege: they import only the published packages, by name; the same CLI builds them; an end-to-end test installs one through the interface, approval included. They ship in Toppo's image, installed but disabled: an administrator enables one from **Settings → Plugins** with the same approval as an uploaded zip. They follow Toppo's version; release-please can version one on its own when it needs to move faster.
 
 ## What changes in the core
 
@@ -398,6 +416,7 @@ The plugin's author is not trusted; the administrator who installs it is, for th
 - The outbound HTTP guard in `platform/http/`, shared with the core's webhooks and GitHub integration.
 - A project home page with its latest activity, which is also the `project` zone.
 - The sandbox runtime (`platform/plugins/`): loading packages, workers, QuickJS, the `ctx` calls, the frame host and its bridge.
+- Internal packages renamed `@toppo-tracker/…`; the release workflow publishes the plugin packages to npm.
 - `ARCHITECTURE.md`: its "Plugin system" section is replaced by this design's decisions; the plugins row of its data model is updated.
 
 ## Steps
@@ -406,7 +425,7 @@ The core's own features do not go through the SDK, so a **reference plugin**, ke
 
 1. **Foundations**: packages, upload and validation, approval, the sandbox runtime and its resources, `needs` and `permissions` in the catalog, settings and secrets, actions, event handlers, `ctx.issues`, the CLI and testing kit. _Time tracking: its permissions and settings, logging time through an action, a comment when an issue closes._
 2. **Data**: entities (`plugin_records`, slots, queries, limits, uninstall choices) and properties. _Time tracking: time entries, the estimate and the time spent in the issue list._
-3. **Interface**: the frame host and its bridge, `@toppo/plugin-ui`, pages, panels, zones, the project home page. _Time tracking: the issue panel, the project's report._
+3. **Interface**: the frame host and its bridge, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page. _Time tracking: the issue panel, the project's report._
 4. **Beyond the instance**: routes, `ctx.crypto`, the outbound guard and `ctx.http`, recurring jobs. _Time tracking: entries received from Clockify or Toggl by signed webhook, a weekly summary sent to an address set in its settings._
 5. **Imports**, if they become a plugin: an `issue.import` capability (`systemOnly`: issues with their original dates, authors and history).
 
