@@ -330,6 +330,13 @@
       "when": 1793116671485,
       "tag": "0046_job_priority_and_word_length",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793196287166,
+      "tag": "0047_plugins",
+      "breakpoints": true
     }
   ]
 }

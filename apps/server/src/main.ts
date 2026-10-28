@@ -9,6 +9,7 @@ import { type Config, ConfigError, loadConfig } from './platform/config/config.t
 import { resolveSecret } from './platform/config/secret.ts';
 import { startJobWorker } from './platform/jobs/job-worker.ts';
 import { scheduleRecurringJobs } from './platform/jobs/jobs.ts';
+import { createPackageStore } from './platform/plugins/packages/package-store.ts';
 import { createFileStorage } from './platform/uploads/file-storage.ts';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -20,6 +21,13 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 const WEB_ROOT = fileURLToPath(new URL('../../web/dist', import.meta.url));
 const MIGRATIONS_FOLDER = fileURLToPath(
   new URL('../../../packages/db/migrations', import.meta.url),
+);
+/** Run by Node from the sources in development (`src/main.ts`), bundled beside `dist/main.js`. */
+const SANDBOX_WORKER = new URL(
+  import.meta.url.endsWith('.ts')
+    ? './platform/plugins/sandbox/sandbox-worker.ts'
+    : './plugin-sandbox-worker.js',
+  import.meta.url,
 );
 
 function loadConfigOrExit(): Config {
@@ -43,16 +51,30 @@ const files = await createFileStorage({
   root: join(config.dataDir, 'uploads'),
   maxFileSize: config.attachmentMaxSize,
 });
-const app = await buildApp({ config, database, auth, secret, setupCode, files, webRoot: WEB_ROOT });
+const plugins = {
+  packages: await createPackageStore({ root: join(config.dataDir, 'plugins') }),
+  workerUrl: SANDBOX_WORKER,
+};
+const app = await buildApp({
+  config,
+  database,
+  auth,
+  secret,
+  setupCode,
+  files,
+  plugins,
+  webRoot: WEB_ROOT,
+});
 const services = createServices({
   auth,
   secret,
   setupCode,
   files,
+  plugins,
   publicUrl: config.publicUrl,
   updateCheck: config.updateCheck,
 });
-const jobs = createJobs({ files });
+const jobs = createJobs({ files, packages: plugins.packages });
 let worker: { stop: () => Promise<void> } | undefined;
 
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
