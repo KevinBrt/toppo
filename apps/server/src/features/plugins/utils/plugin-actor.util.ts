@@ -1,7 +1,8 @@
 import { type Db, schema } from '@toppo-tracker/db';
-import { manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
+import { type Manifest, manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
 import { and, eq } from 'drizzle-orm';
 import type { Actor } from '../../../platform/auth/actor.ts';
+import { throughPlugin } from '../../../platform/auth/project-access.ts';
 import { pluginPermissionsOf } from '../../../platform/plugins/plugin-permissions.ts';
 
 const { pluginProjects, plugins, users } = schema;
@@ -12,14 +13,18 @@ export interface ActingPlugin {
   slug: string;
   sha256: string;
   /** What it declared, as approved. */
+  manifest: Manifest;
   needs: readonly string[];
   settings: Record<string, unknown>;
   /** Its own user, holding its needs in its projects (`resolvePluginProject`). */
   actor: Actor;
 }
 
-/** Plugin `pluginId` as it acts now, or `null` once it is not enabled any more. */
-export async function actingPlugin(db: Db, pluginId: string): Promise<ActingPlugin | null> {
+/** A plugin as it acts now, by id or by slug, or `null` while it is not enabled. */
+export async function actingPlugin(
+  db: Db,
+  which: { id: string } | { slug: string },
+): Promise<ActingPlugin | null> {
   const [plugin] = await db
     .select({
       id: plugins.id,
@@ -35,11 +40,17 @@ export async function actingPlugin(db: Db, pluginId: string): Promise<ActingPlug
     .from(plugins)
     // Made with its approval, which enabling takes.
     .innerJoin(users, eq(users.pluginSlug, plugins.slug))
-    .where(and(eq(plugins.id, pluginId), eq(plugins.state, 'enabled')));
+    .where(
+      and(
+        'id' in which ? eq(plugins.id, which.id) : eq(plugins.slug, which.slug),
+        eq(plugins.state, 'enabled'),
+      ),
+    );
   if (!plugin) {
     return null;
   }
-  const { needs } = manifestSchema.parse(plugin.manifest);
+  const manifest = manifestSchema.parse(plugin.manifest);
+  const { needs } = manifest;
   const projects = plugin.allProjects
     ? []
     : await db
@@ -50,6 +61,7 @@ export async function actingPlugin(db: Db, pluginId: string): Promise<ActingPlug
     id: plugin.id,
     slug: plugin.slug,
     sha256: plugin.sha256,
+    manifest,
     needs,
     settings: plugin.settings,
     actor: {
@@ -66,5 +78,21 @@ export async function actingPlugin(db: Db, pluginId: string): Promise<ActingPlug
         projectIds: projects.map(({ id }) => id),
       },
     },
+  };
+}
+
+/**
+ * The plugin acting for `person`, running one of its actions: what it writes is written by its
+ * own user, while it reaches what both reach and holds what both hold.
+ */
+export function actingFor(plugin: ActingPlugin, person: Actor): Actor {
+  const { plugin: reach } = plugin.actor;
+  if (!reach) {
+    throw new Error('A plugin acts with its reach');
+  }
+  return {
+    ...plugin.actor,
+    permissions: person.permissions.filter((permission) => throughPlugin(reach, permission)),
+    plugin: { ...reach, onBehalfOf: person },
   };
 }

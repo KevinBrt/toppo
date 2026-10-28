@@ -29,6 +29,11 @@ export interface PluginReach {
   allProjects: boolean;
   /** The projects it acts in, when not all of them. */
   projectIds: readonly string[];
+  /**
+   * The person it acts for, running one of its actions: it then reaches what both reach, and
+   * holds what both hold.
+   */
+  onBehalfOf?: Actor;
 }
 
 /**

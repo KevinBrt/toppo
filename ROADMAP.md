@@ -32,7 +32,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] each plugin's own user, kept out of every list of people;
     - [x] plugins' permissions in the catalog and the roles matrix;
     - [x] events fanned out from activities, failures that disable a plugin;
-    - [ ] actions, which a plugin's screens call for a person;
+    - [x] actions, which a plugin's screens call for a person;
     - [ ] **Settings → Plugins**, with the settings form generated from the plugin;
     - [ ] `plugins/time-tracking`, built and installed through the interface in an end-to-end test;
     - [ ] the plugin author's guide, and `CLAUDE.md`'s rules for plugin code.

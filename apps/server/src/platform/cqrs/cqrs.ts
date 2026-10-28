@@ -139,17 +139,51 @@ export function defineCommand<Input extends z.ZodType, Output, A extends Access<
     name: definition.name,
     access: definition.access,
     async execute(context, rawInput) {
-      const { actor, input, project } = await prepare(definition, context, rawInput);
-      const { access } = definition;
-      if (project?.archived && isProjectAccess(access) && !access.evenArchived) {
-        throw new HttpError(409, 'PROJECT_ARCHIVED', 'This project is archived: it is read-only');
-      }
+      const { actor, input, project } = await prepareCommand(definition, context, rawInput);
       const log = context.log.child({ command: definition.name });
       return await context.db.transaction((tx) =>
         definition.handler({ tx, actor, project, log, services: context.services }, input),
       );
     },
   };
+}
+
+/**
+ * A command that waits on something slow, a plugin's run, checked like any other but with no
+ * transaction of its own: it holds no connection while it waits. What it changes goes through
+ * other commands, each in its own transaction.
+ */
+export function defineDetachedCommand<
+  Input extends z.ZodType,
+  Output,
+  A extends Access<z.output<Input>>,
+>(definition: QueryDefinition<Input, Output, A>): Operation<Input, Output> {
+  return {
+    name: definition.name,
+    access: definition.access,
+    async execute(context, rawInput) {
+      const { actor, input, project } = await prepareCommand(definition, context, rawInput);
+      const log = context.log.child({ command: definition.name });
+      return await definition.handler(
+        { db: context.db, actor, project, log, services: context.services },
+        input,
+      );
+    },
+  };
+}
+
+/** What every command checks first: its access, its input, and that it changes no archive. */
+async function prepareCommand<Input extends z.ZodType, A extends Access<z.output<Input>>>(
+  definition: Definition<Input, A>,
+  context: ExecutionContext,
+  rawInput: unknown,
+) {
+  const prepared = await prepare(definition, context, rawInput);
+  const { access } = definition;
+  if (prepared.project?.archived && isProjectAccess(access) && !access.evenArchived) {
+    throw new HttpError(409, 'PROJECT_ARCHIVED', 'This project is archived: it is read-only');
+  }
+  return prepared;
 }
 
 /** A read: access checked, input validated, no transaction, no write. */

@@ -182,9 +182,10 @@ export async function resolveProject(
 }
 
 /**
- * The project with `key`, as a plugin acting as itself may use it: one of the projects its
- * approval names, or any when it names them all, where it holds its approved needs and nothing
- * more. It has no role and no membership: none could give it more.
+ * The project with `key`, as a plugin may use it: one of the projects its approval names, or any
+ * when it names them all, where it holds its approved needs and nothing more. It has no role and
+ * no membership: none could give it more. Acting for a person, it needs their reach too, and
+ * holds only what both hold (`throughPlugin`).
  */
 async function resolvePluginProject(
   db: Db,
@@ -200,9 +201,25 @@ async function resolvePluginProject(
   if (!(row && (plugin.allProjects || plugin.projectIds.includes(row.id)))) {
     throw notFound();
   }
-  const permissions = plugin.needs.filter(isProjectPermission);
+  const permissions = plugin.onBehalfOf
+    ? (await resolveProject(db, plugin.onBehalfOf, key)).permissions.filter((granted) =>
+        throughPlugin(plugin, granted),
+      )
+    : plugin.needs.filter(isProjectPermission);
   assertGranted(actor, permissions, permission);
   return { id: row.id, key: row.key, archived: row.archivedAt !== null, permissions };
+}
+
+/**
+ * Whether a person holds `permission` through a plugin acting for them: the plugin needs it, or
+ * it is one of the plugin's own. Reading every issue covers reading one's own.
+ */
+export function throughPlugin(plugin: PluginReach, permission: string): boolean {
+  return (
+    plugin.needs.includes(permission) ||
+    permission.startsWith(`${plugin.slug}.`) ||
+    (permission === 'issue.read.own' && plugin.needs.includes('issue.read'))
+  );
 }
 
 /** A project permission is looked up in the project, an instance one in the actor's own. */
@@ -326,7 +343,8 @@ export async function resolveIssue(
         .from(issues)
         .where(and(eq(issues.projectId, project.id), eq(issues.number, parts.number)))
     : [];
-  const reportedByActor = issue?.reporterId === actor.id;
+  // A plugin acting for someone sees, of the issues they reported, those they see.
+  const reportedByActor = issue?.reporterId === (actor.plugin?.onBehalfOf ?? actor).id;
   if (!(parts && issue && canSeeIssue(project.permissions, reportedByActor))) {
     throw new HttpError(404, 'ISSUE_NOT_FOUND', 'This issue does not exist');
   }
