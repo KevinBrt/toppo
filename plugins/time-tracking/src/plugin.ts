@@ -1,4 +1,5 @@
 import { definePlugin, z } from '@toppo-tracker/plugin-sdk';
+import { timeEntry } from './entities/time-entry.entity.ts';
 
 /**
  * Time tracking: who spent how long on which issue. Toppo's reference plugin, built with
@@ -21,6 +22,7 @@ export const plugin = definePlugin({
     // The whole project's, all issues together. A mark, not a limit: no time is refused.
     budgetDays: z.number().positive().max(100_000).optional(),
   }),
+  entities: { timeEntry },
   messages: {
     en: {
       plugin: {

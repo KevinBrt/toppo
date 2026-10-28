@@ -13,6 +13,7 @@ import {
   projectPluginParamsSchema,
   projectPluginsResponseSchema,
   savePluginSettingsRequestSchema,
+  uninstallPluginQuerySchema,
 } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -140,12 +141,19 @@ export function registerPluginRoutes(app: FastifyInstance): void {
     '/api/v1/plugins/:pluginSlug',
     {
       config: { access: uninstallPlugin.access },
-      schema: { params: pluginSlugParamsSchema, response: NO_CONTENT },
+      schema: {
+        params: pluginSlugParamsSchema,
+        querystring: uninstallPluginQuerySchema,
+        response: NO_CONTENT,
+      },
     },
     async (request, reply) =>
-      reply
-        .status(204)
-        .send(await uninstallPlugin.execute(request.executionContext, request.params)),
+      reply.status(204).send(
+        await uninstallPlugin.execute(request.executionContext, {
+          ...request.params,
+          ...request.query,
+        }),
+      ),
   );
 
   routes.post(

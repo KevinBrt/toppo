@@ -18,12 +18,18 @@ import { emailNotificationJob } from './features/notifications/jobs/email-notifi
 import { notifyActivityJob } from './features/notifications/jobs/notify-activity.job.ts';
 import { pruneNotificationsJob } from './features/notifications/jobs/prune-notifications.job.ts';
 import { registerNotificationRoutes } from './features/notifications/notifications.routes.ts';
+import { createRecord } from './features/plugins/commands/records/create-record.command.ts';
+import { deleteRecord } from './features/plugins/commands/records/delete-record.command.ts';
+import { updateRecord } from './features/plugins/commands/records/update-record.command.ts';
 import { deliverEventsJob } from './features/plugins/jobs/deliver-events.job.ts';
 import { emailPluginDisabledJob } from './features/plugins/jobs/email-plugin-disabled.job.ts';
 import { fanOutEventsJob } from './features/plugins/jobs/fan-out-events.job.ts';
 import { sweepOnceKeysJob } from './features/plugins/jobs/sweep-once-keys.job.ts';
 import { registerPluginRoutes } from './features/plugins/plugins.routes.ts';
 import { readOwnProjectSettings } from './features/plugins/queries/read-own-project-settings.query.ts';
+import { aggregateRecords } from './features/plugins/queries/records/aggregate-records.query.ts';
+import { getRecord } from './features/plugins/queries/records/get-record.query.ts';
+import { listRecords } from './features/plugins/queries/records/list-records.query.ts';
 import { registerPriorityRoutes } from './features/priorities/priorities.routes.ts';
 import { registerProjectRoutes } from './features/projects/projects.routes.ts';
 import { registerPropertyRoutes } from './features/properties/properties.routes.ts';
@@ -41,7 +47,7 @@ import { passwordResetMailJob } from './platform/auth/password-reset-mail.ts';
 import { issueKeyOf } from './platform/auth/project-access.ts';
 import type { Config } from './platform/config/config.ts';
 import { createSecretBox } from './platform/config/secret-box.ts';
-import type { Services } from './platform/cqrs/cqrs.ts';
+import type { ExecutionContext, Services } from './platform/cqrs/cqrs.ts';
 import { registerExecutionContext } from './platform/cqrs/execution-context.ts';
 import { registerHealthRoute } from './platform/health/health-route.ts';
 import { registerErrorHandler } from './platform/http/error-handler.ts';
@@ -123,7 +129,32 @@ export function createHostCalls(): HostCalls {
     },
     'projects.settings': (context, { projectId }) =>
       readOwnProjectSettings.execute(context, { projectId }),
+    // A write answers the record as the plugin reads it back.
+    'entities.create': async (context, args) => {
+      const { id } = await createRecord.execute(context, args);
+      return await recordWritten(context, args.entity, id);
+    },
+    'entities.get': (context, args) => getRecord.execute(context, args),
+    'entities.update': async (context, args) => {
+      await updateRecord.execute(context, args);
+      return await recordWritten(context, args.entity, args.id);
+    },
+    'entities.delete': async (context, args) => {
+      await deleteRecord.execute(context, args);
+      return null;
+    },
+    'entities.list': (context, args) => listRecords.execute(context, args),
+    'entities.aggregate': (context, args) => aggregateRecords.execute(context, args),
   };
+}
+
+/** A record just written, as the plugin that wrote it reads it. */
+async function recordWritten(context: ExecutionContext, entity: string, id: string) {
+  const record = await getRecord.execute(context, { entity, id });
+  if (!record) {
+    throw new Error(`The record ${id} just written is not seen`);
+  }
+  return record;
 }
 
 /** What commands and queries may use besides the database. */

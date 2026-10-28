@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import { createEntityClient, type Entity, type EntityClient } from './entity.ts';
 import { PluginFailure } from './failure.ts';
 import { type MessageKey, type MessageParams, translate } from './messages.ts';
 import { HOST_CALLS, type HostCallMethod, type IssueDetails } from './protocol/calls.ts';
@@ -6,11 +7,15 @@ import type { Messages } from './protocol/manifest.ts';
 import type { Locale } from './protocol/run.ts';
 import type { HostGlobal } from './protocol/sandbox.ts';
 
+/** A plugin's entities, by name: the records it keeps. */
+export type Entities = Readonly<Record<string, Entity>>;
+
 /** What every handler is given: the plugin's settings and words, and what it may ask Toppo. */
 export interface Context<
   S extends z.ZodType,
   M extends Messages,
   PS extends z.ZodType = z.ZodType,
+  E extends Entities = Entities,
 > {
   /** As the administrator saved them, parsed with the plugin's schema: its defaults applied. */
   readonly settings: z.output<S>;
@@ -40,6 +45,8 @@ export interface Context<
      */
     settings(projectId: string): Promise<z.output<PS>>;
   };
+  /** Its records, entity by entity, as far as it, and whoever it acts for, sees them. */
+  readonly entities: { readonly [K in keyof E]: EntityClient<E[K]> };
 }
 
 /** What an action is given besides: who it runs for. */
@@ -47,7 +54,8 @@ export interface ActionContext<
   S extends z.ZodType,
   M extends Messages,
   PS extends z.ZodType = z.ZodType,
-> extends Context<S, M, PS> {
+  E extends Entities = Entities,
+> extends Context<S, M, PS, E> {
   readonly user: { readonly id: string };
 }
 
@@ -73,8 +81,13 @@ export function createContext<
   settings: z.output<S>;
   /** The plugin's schema of a project's settings, which parses what Toppo answers. */
   projectSettings: PS;
+  entities: Entities;
 }): Context<S, M, PS> {
   const { host, messages, locale, settings, projectSettings } = options;
+  const call = <T extends HostCallMethod>(
+    method: T,
+    args: z.input<(typeof HOST_CALLS)[T]['args']>,
+  ) => callToppo(host, method, args);
   return {
     settings,
     locale,
@@ -100,5 +113,11 @@ export function createContext<
         return saved.data;
       },
     },
+    entities: Object.fromEntries(
+      Object.entries(options.entities).map(([name, entity]) => [
+        name,
+        createEntityClient(call, name, entity),
+      ]),
+    ),
   };
 }

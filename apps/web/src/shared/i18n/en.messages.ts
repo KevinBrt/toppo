@@ -1184,6 +1184,9 @@ export const en = {
     uninstallConfirmDescription:
       'Its permissions leave the roles. What it wrote in Toppo stays, signed with its name.',
     uninstallConfirm: 'Uninstall the plugin',
+    uninstallData: 'What it kept',
+    keepData: 'Keep it: the plugin finds it again if it comes back',
+    deleteData: 'Delete it, for good',
     cancel: 'Cancel',
     close: 'Close',
     stopped:

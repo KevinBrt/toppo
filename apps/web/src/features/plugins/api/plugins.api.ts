@@ -7,6 +7,7 @@ import {
   pluginDetailsResponseSchema,
   pluginsResponseSchema,
   projectPluginsResponseSchema,
+  type UninstallPluginQuery,
 } from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
@@ -97,7 +98,7 @@ export const Plugins = {
   },
 
   /** Removes it and its permissions; what it wrote stays, signed with its name. */
-  async uninstall(slug: string): Promise<void> {
-    await apiRequest(pluginPath(slug), { method: 'DELETE', schema: noContent });
+  async uninstall(slug: string, data: UninstallPluginQuery['data']): Promise<void> {
+    await apiRequest(`${pluginPath(slug)}?data=${data}`, { method: 'DELETE', schema: noContent });
   },
 };

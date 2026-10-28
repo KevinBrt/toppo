@@ -372,6 +372,13 @@
       "when": 1793220718295,
       "tag": "0052_plugin_project_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1793224459698,
+      "tag": "0053_plugin_records",
+      "breakpoints": true
     }
   ]
 }

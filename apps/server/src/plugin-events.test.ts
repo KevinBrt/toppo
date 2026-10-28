@@ -291,6 +291,37 @@ describe('a plugin hearing of events', () => {
     ]);
   });
 
+  it('keeps records as itself, in its projects, written by its own user', async () => {
+    await install(
+      listener({
+        entities: {
+          note: {
+            attachedTo: 'issue',
+            fields: { type: 'object', properties: { moved: { type: 'boolean' } } },
+            limits: {},
+          },
+        },
+      }),
+      `const { issue, event } = JSON.parse(payload);
+       const ask = (method, args) => __host.call(method, JSON.stringify(args)).then(JSON.parse);
+       await ask('entities.create', { entity: 'note', issueId: issue.id, fields: { moved: true } });
+       const { total } = await ask('entities.aggregate', { entity: 'note', op: 'count' });
+       await __host.call('issues.comment', JSON.stringify({ issueId: issue.id, body: total + ' kept', once: event.id }));
+       return JSON.stringify({ ok: true, result: null });`,
+    );
+    const key = await report('WEB');
+
+    await move(key, 'inProgress');
+    await runJobs();
+
+    expect(await commentsOn(key)).toMatchObject([{ body: '1 kept', author: 'Time tracking' }]);
+    const [kept] = await context.database.db
+      .select({ author: schema.users.pluginSlug })
+      .from(schema.pluginRecords)
+      .innerJoin(schema.users, eq(schema.users.id, schema.pluginRecords.createdById));
+    expect(kept).toStrictEqual({ author: 'time-tracking' });
+  });
+
   it('may ask only what its needs allow', async () => {
     // It may comment, not read: its refusal says so on the issue.
     await install(

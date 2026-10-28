@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { PluginDetailsResponse } from '@toppo-tracker/shared';
+import type { PluginDetailsResponse, UninstallPluginQuery } from '@toppo-tracker/shared';
 import {
   Alert,
   Button,
@@ -11,14 +11,21 @@ import {
 import { Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
+import type { PlainMessageKey } from '../../../../shared/i18n/i18n.types.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { Plugins } from '../../api/plugins.api.ts';
 import { CHANGE_ERRORS } from '../../constants/plugin-errors.constants.ts';
 import { PluginsQueries } from '../../queries/plugins.queries.ts';
 
+const DATA_CHOICES = {
+  keep: 'plugins.keepData',
+  delete: 'plugins.deleteData',
+} as const satisfies Record<UninstallPluginQuery['data'], PlainMessageKey>;
+
 /**
  * "Uninstall" and its confirmation, which says what goes and what stays: its permissions leave
- * the roles, what it wrote keeps its name. Reports it once done, for the screen to leave its page.
+ * the roles, what it wrote keeps its name, and what it kept stays unless deleted. Reports it once
+ * done, for the screen to leave its page.
  */
 export function UninstallPluginDialog({
   plugin,
@@ -30,9 +37,10 @@ export function UninstallPluginDialog({
   const { t, locale } = useI18n();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [data, setData] = useState<UninstallPluginQuery['data']>('keep');
 
   const uninstall = useMutation({
-    mutationFn: () => Plugins.uninstall(plugin.slug),
+    mutationFn: () => Plugins.uninstall(plugin.slug, data),
     onSuccess: async () => {
       setOpen(false);
       await onUninstalled();
@@ -62,6 +70,27 @@ export function UninstallPluginDialog({
         closeLabel={t('plugins.close')}
       >
         <div className="flex flex-col gap-4">
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-2 text-sm font-medium text-foreground">
+              {t('plugins.uninstallData')}
+            </legend>
+            {(['keep', 'delete'] as const).map((choice) => (
+              <label
+                key={choice}
+                className="flex items-center gap-2 text-sm text-foreground pointer-coarse:min-h-11"
+              >
+                <input
+                  type="radio"
+                  name="plugin-data"
+                  value={choice}
+                  checked={data === choice}
+                  onChange={() => setData(choice)}
+                  className="size-4 accent-primary"
+                />
+                {t(DATA_CHOICES[choice])}
+              </label>
+            ))}
+          </fieldset>
           {uninstall.isError ? (
             <Alert tone="danger">{requestErrorMessage(uninstall.error, t, CHANGE_ERRORS)}</Alert>
           ) : null}

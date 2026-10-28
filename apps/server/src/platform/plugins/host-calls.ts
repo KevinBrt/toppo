@@ -50,6 +50,30 @@ async function dispatch(
       return HOST_CALLS[method].result.parse(
         await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
       );
+    case 'entities.create':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
+    case 'entities.get':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
+    case 'entities.update':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
+    case 'entities.delete':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
+    case 'entities.list':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
+    case 'entities.aggregate':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
   }
 }
 

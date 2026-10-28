@@ -296,7 +296,7 @@ describe('a plugin’s page', () => {
     expect(calls).toContain('POST /api/v1/plugins/time-tracking/enable');
   });
 
-  it('uninstalls a plugin once confirmed, saying what stays', async () => {
+  it('uninstalls a plugin once confirmed, saying what stays, its data kept unless deleted', async () => {
     const { server, screen } = await openPlugin(ENABLED);
 
     await screen.getByRole('button', { name: 'Uninstall', exact: true }).click();
@@ -306,12 +306,19 @@ describe('a plugin’s page', () => {
       .toMatchTextContent(
         'Its permissions leave the roles. What it wrote in Toppo stays, signed with its name.',
       );
+    const kept = dialog.getByRole('group', { name: 'What it kept' });
+    await expect
+      .element(
+        kept.getByRole('radio', { name: 'Keep it: the plugin finds it again if it comes back' }),
+      )
+      .toBeChecked();
+    await kept.getByRole('radio', { name: 'Delete it, for good' }).click();
     await dialog.getByRole('button', { name: 'Uninstall the plugin' }).click();
 
     await expect.element(screen.getByRole('heading', { level: 1, name: 'Plugins' })).toBeVisible();
     await expect.element(screen.getByText('No plugin installed')).toBeVisible();
     expect(server.requests.map(({ method, path }) => `${method} ${path}`)).toContain(
-      'DELETE /api/v1/plugins/time-tracking',
+      'DELETE /api/v1/plugins/time-tracking?data=delete',
     );
   });
 

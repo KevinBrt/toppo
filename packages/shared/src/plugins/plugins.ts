@@ -23,6 +23,16 @@ export const pluginSlugParamsSchema = z.object({
   pluginSlug: pluginSlugSchema,
 });
 
+/**
+ * Query of `DELETE /api/v1/plugins/:pluginSlug`: what becomes of what the plugin kept. Kept, it is
+ * found again if the plugin comes back.
+ */
+export const uninstallPluginQuerySchema = z.object({
+  data: z.enum(['keep', 'delete']).default('keep'),
+});
+
+export type UninstallPluginQuery = z.infer<typeof uninstallPluginQuerySchema>;
+
 /** Words in each language Toppo speaks: a plugin's, from its own messages. */
 const translatedSchema = z.object({ en: z.string(), fr: z.string() });
 
