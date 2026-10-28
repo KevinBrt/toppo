@@ -14,6 +14,8 @@ export default defineConfig({
   input: {
     main: 'src/main.ts',
     healthcheck: 'src/healthcheck.ts',
+    // Started by the server for each plugin, from next to `main.js`.
+    'plugin-sandbox-worker': 'src/platform/plugins/sandbox/sandbox-worker.ts',
   },
   platform: 'node',
   external: isExternal,
