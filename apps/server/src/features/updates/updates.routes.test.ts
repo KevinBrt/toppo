@@ -10,7 +10,6 @@ import {
   buildTestApp,
   cookieHeader,
   createTestFileStorage,
-  createTestPackageStore,
   createTestUser,
   setupTestDatabase,
   TEST_SETUP_CODE,
@@ -50,10 +49,7 @@ async function versionFor(cookie: string) {
 async function check(releases: ReleaseFeed): Promise<void> {
   const worker: WorkerContext = {
     db: context.database.db,
-    jobs: createJobs({
-      files: await createTestFileStorage(),
-      packages: await createTestPackageStore(),
-    }),
+    jobs: createJobs({ files: await createTestFileStorage() }),
     log: app.log,
     services: testServices({ releases }),
   };

@@ -1,4 +1,3 @@
-export { watchDatabaseClock } from './database-clock.ts';
 export { testDatabaseUrl } from './database-url.ts';
 export { ensurePostgres, recreateDatabase } from './postgres-server.ts';
 export { type ReceivedMail, startSmtpServer, type TestSmtpServer } from './smtp-server.ts';

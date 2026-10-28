@@ -25,7 +25,6 @@ import { createFileStorage, type FileStorage } from '../../platform/uploads/file
 import {
   buildTestApp,
   cookieHeader,
-  createTestPackageStore,
   createTestUser,
   setupTestDatabase,
   TEST_ATTACHMENT_MAX_SIZE,
@@ -544,7 +543,7 @@ describe('removing a file', () => {
     // The sweep runs as a recurring job, by whichever worker comes first, among the others due.
     const worker = {
       db: context.database.db,
-      jobs: createJobs({ files, packages: await createTestPackageStore() }),
+      jobs: createJobs({ files }),
       log: app.log,
       services: testServices(),
     };

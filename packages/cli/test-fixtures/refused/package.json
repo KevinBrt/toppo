@@ -1,9 +1,0 @@
-{
-  "name": "fixture-refused",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "@toppo-tracker/plugin-sdk": "0.0.0"
-  }
-}

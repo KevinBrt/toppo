@@ -39,7 +39,6 @@ describe('MATRIX_SECTIONS', () => {
           'instance.settings.manage',
           'instance.mail.manage',
           'instance.roles.manage',
-          'instance.plugins.manage',
         ],
       },
       { section: 'notifications', scope: 'project', rows: ['notifyNewIssues'] },
