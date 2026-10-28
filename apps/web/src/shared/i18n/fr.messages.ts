@@ -1065,6 +1065,11 @@ export const fr: Messages = {
         label: 'Gérer les rôles',
         description: 'Créer des rôles et choisir leurs permissions. Administrateurs uniquement.',
       },
+      pluginsManage: {
+        label: 'Gérer les plugins',
+        description:
+          'Installer, approuver et retirer les plugins, qui exécutent du code dans Toppo. Administrateurs uniquement.',
+      },
     },
     saved: 'Permissions enregistrées.',
     rolesChanged:

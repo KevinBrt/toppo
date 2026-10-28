@@ -197,7 +197,7 @@ Rules:
 - `systemOnly: true` keeps a permission to the system role for good, as in the core: for what reaches beyond the instance.
 - Whoever acts through a plugin holds **both** sides: an action run for a user needs the user's access (`access`) and the plugin's `needs`. A plugin never gives anyone more than they have.
 - The SDK never exposes role names: "a permission, never a role name" holds by construction.
-- Each plugin has a user of its own (`users.plugin_id`), which cannot sign in and has an address under `.invalid`, kept out of member lists, mentions and assignment. What the plugin writes (a comment, an activity) is written by that user, so it shows as written by the plugin.
+- Each plugin has a user of its own (`users.plugin_slug`), which cannot sign in and has an address under `.invalid`, kept out of member lists, mentions and assignment. What the plugin writes (a comment, an activity) is written by that user, so it shows as written by the plugin.
 - Installing, enabling, configuring and removing plugins is a new core permission, `instance.plugins.manage`, `systemOnly`: it runs code and chooses outgoing addresses.
 
 ## Data: entities
@@ -409,7 +409,7 @@ The published packages live under the npm scope `@toppo-tracker` (the GitHub org
 ## What changes in the core
 
 - Tables: `plugins` (id, version, state, approved needs and hosts, settings with sealed secrets, hash), `plugin_records` (entities), and their slots' assignments.
-- `users.plugin_id`: each plugin's own user.
+- `users.plugin_slug`: each plugin's own user.
 - `properties` gains its owning plugin and who writes it; a number property may be displayed as a duration.
 - The rule "every issue change writes an `activities` row" (`CLAUDE.md`) gains its one exception: a property a plugin computes is derived data and records no activity.
 - The permission catalog accepts plugins' permissions next to the core's typed ones; roles keep storing them as text.

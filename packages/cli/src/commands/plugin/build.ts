@@ -2,15 +2,17 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { z } from '@toppo-tracker/plugin-sdk';
-import type { Manifest } from '@toppo-tracker/plugin-sdk/protocol';
+import {
+  type Manifest,
+  PLUGIN_PACKAGE_FILES,
+  PLUGIN_PACKAGE_LIMITS,
+  PLUGIN_VERSION,
+} from '@toppo-tracker/plugin-sdk/protocol';
 import { strToU8, zipSync } from 'fflate';
 import type { CliCommand } from '../../command.ts';
 import { BuildError, bundle, manifestOf } from './bundle.ts';
 
-/** `1.2.0`, `1.2.0-beta.1`: Toppo shows it, and compares it when the plugin is upgraded. */
-const versionSchema = z
-  .string()
-  .regex(/^\d{1,4}\.\d{1,4}\.\d{1,4}(-[0-9A-Za-z.-]{1,40})?$/, 'a version such as 1.2.0');
+const versionSchema = z.string().regex(PLUGIN_VERSION, 'a version such as 1.2.0');
 
 export interface BuiltPlugin {
   /** The zip to install. */
@@ -36,6 +38,23 @@ async function versionOf(directory: string): Promise<string> {
   return read.data.version;
 }
 
+/** The zip of a server bundle and its version, refused if Toppo would refuse its size. */
+export function packagePlugin(code: string, version: string): Uint8Array {
+  const server = strToU8(code);
+  if (server.length > PLUGIN_PACKAGE_LIMITS.serverBytes) {
+    throw new BuildError(
+      `The server bundle weighs ${Math.ceil(server.length / 1024)} KB: Toppo takes at most ${PLUGIN_PACKAGE_LIMITS.serverBytes / 1024} KB`,
+    );
+  }
+  return zipSync(
+    {
+      [PLUGIN_PACKAGE_FILES.server]: server,
+      [PLUGIN_PACKAGE_FILES.metadata]: strToU8(JSON.stringify({ version })),
+    },
+    { level: 9 },
+  );
+}
+
 /**
  * Bundles a plugin, checks it as Toppo will, and writes the zip an administrator uploads: its
  * server bundle, and its version. Nothing in it says what the plugin may do: Toppo asks its code.
@@ -47,10 +66,7 @@ export async function buildPlugin(
   const version = await versionOf(directory);
   const code = await bundle(directory);
   const manifest = manifestOf(code);
-  const archive = zipSync(
-    { 'server.js': strToU8(code), 'plugin.json': strToU8(JSON.stringify({ version })) },
-    { level: 9 },
-  );
+  const archive = packagePlugin(code, version);
   await mkdir(outDirectory, { recursive: true });
   const file = join(outDirectory, `${manifest.id}-${version}.zip`);
   await writeFile(file, archive);

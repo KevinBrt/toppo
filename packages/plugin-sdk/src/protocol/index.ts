@@ -29,7 +29,9 @@ export {
   messagesSchema,
   PLUGIN_ID,
   PLUGIN_LIMITS,
+  PLUGIN_VERSION,
 } from './manifest.ts';
+export { PLUGIN_PACKAGE_FILES, PLUGIN_PACKAGE_LIMITS } from './package.ts';
 export {
   LOCALES,
   type Locale,

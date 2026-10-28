@@ -1,11 +1,18 @@
 import { fileURLToPath } from 'node:url';
-import { prepareTemplateDatabase, removeTestDatabases } from '@toppo-tracker/testing';
+import {
+  prepareTemplateDatabase,
+  removeTestDatabases,
+  watchDatabaseClock,
+} from '@toppo-tracker/testing';
 import type { TestProject } from 'vitest/node';
 import { createDatabase } from './src/database.ts';
 
 export const MIGRATIONS_FOLDER = fileURLToPath(new URL('./migrations', import.meta.url));
 
-/** Prepares the template each test file clones; the teardown it hands back drops them all. */
+/**
+ * Prepares the template each test file clones; the teardown it hands back drops them all, and
+ * tells whether the database's clock kept time meanwhile.
+ */
 export async function setup(project: TestProject): Promise<() => Promise<void>> {
   const template = await prepareTemplateDatabase({
     name: 'toppo_test_db',
@@ -19,5 +26,9 @@ export async function setup(project: TestProject): Promise<() => Promise<void>> 
     },
   });
   project.provide('testTemplateDatabase', template);
-  return () => removeTestDatabases(template);
+  const checkClock = await watchDatabaseClock();
+  return async () => {
+    await removeTestDatabases(template);
+    await checkClock();
+  };
 }

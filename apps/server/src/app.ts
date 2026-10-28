@@ -16,6 +16,7 @@ import { emailNotificationJob } from './features/notifications/jobs/email-notifi
 import { notifyActivityJob } from './features/notifications/jobs/notify-activity.job.ts';
 import { pruneNotificationsJob } from './features/notifications/jobs/prune-notifications.job.ts';
 import { registerNotificationRoutes } from './features/notifications/notifications.routes.ts';
+import { registerPluginRoutes } from './features/plugins/plugins.routes.ts';
 import { registerPriorityRoutes } from './features/priorities/priorities.routes.ts';
 import { registerProjectRoutes } from './features/projects/projects.routes.ts';
 import { registerPropertyRoutes } from './features/properties/properties.routes.ts';
@@ -44,6 +45,10 @@ import { registerWebApp } from './platform/http/web-app.ts';
 import { serializerCompiler, validatorCompiler } from './platform/http/zod.ts';
 import type { RunnableJob } from './platform/jobs/jobs.ts';
 import { createMailer } from './platform/mail/mailer.ts';
+import { createManifestReader } from './platform/plugins/packages/manifest-reader.ts';
+import { registerPackageRoutes } from './platform/plugins/packages/package-routes.ts';
+import type { PackageStore } from './platform/plugins/packages/package-store.ts';
+import { packageSweepJob } from './platform/plugins/packages/package-sweeper.ts';
 import { createReleaseFeed } from './platform/updates/release-feed.ts';
 import { registerFileRoutes } from './platform/uploads/file-routes.ts';
 import type { FileStorage } from './platform/uploads/file-storage.ts';
@@ -59,6 +64,12 @@ export interface AppDependencies {
   setupCode: string;
   /** Attached files, under `<dataDir>/uploads`. */
   files: FileStorage;
+  plugins: {
+    /** Plugins' zips, under `<dataDir>/plugins`. */
+    packages: PackageStore;
+    /** The script of a plugin's sandbox worker: from the sources, or built beside `main.js`. */
+    workerUrl: URL;
+  };
   /** Directory of the compiled web app. Not configurable: it ships inside the image. */
   webRoot: string;
 }
@@ -76,9 +87,10 @@ export function createServices({
   secret,
   setupCode,
   files,
+  plugins,
   publicUrl,
   updateCheck,
-}: Pick<AppDependencies, 'auth' | 'secret' | 'setupCode' | 'files'> & {
+}: Pick<AppDependencies, 'auth' | 'secret' | 'setupCode' | 'files' | 'plugins'> & {
   publicUrl: URL;
   updateCheck: boolean;
 }): Services {
@@ -91,13 +103,21 @@ export function createServices({
     secrets,
     mailer: createMailer(secrets),
     releases: createReleaseFeed({ enabled: updateCheck }),
+    plugins: {
+      packages: plugins.packages,
+      readManifest: createManifestReader(plugins.workerUrl),
+    },
   };
 }
 
 /** Every job the workers run: each server process runs one worker, `main.ts` starts it. */
-export function createJobs({ files }: Pick<AppDependencies, 'files'>): RunnableJob[] {
+export function createJobs({
+  files,
+  packages,
+}: Pick<AppDependencies, 'files'> & { packages: PackageStore }): RunnableJob[] {
   return [
     fileSweepJob(files),
+    packageSweepJob(packages),
     notifyActivityJob,
     pruneNotificationsJob,
     emailInvitationJob,
@@ -127,6 +147,7 @@ export async function buildApp({
   secret,
   setupCode,
   files,
+  plugins,
   webRoot,
 }: AppDependencies): Promise<FastifyInstance> {
   const app = Fastify({
@@ -158,11 +179,13 @@ export async function buildApp({
       secret,
       setupCode,
       files,
+      plugins,
       publicUrl: config.publicUrl,
       updateCheck: config.updateCheck,
     }),
   });
   registerFileRoutes(app, { files });
+  registerPackageRoutes(app);
   app.addHook('onRequest', (request, reply, done) => {
     reply.header('x-request-id', request.id);
     done();
@@ -190,6 +213,7 @@ export async function buildApp({
   registerNotificationRoutes(app);
   registerWorkflowRoutes(app);
   registerUpdateRoutes(app);
+  registerPluginRoutes(app);
 
   const servesWebApp = await registerWebApp(app, webRoot);
   if (!servesWebApp) {
