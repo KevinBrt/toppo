@@ -23,13 +23,12 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
 
 - [ ] Plugin system, as designed in [docs/plugins/design.md](docs/plugins/design.md). Built on the integration branch `feat/plugin-system`, one pull request per task, merged into `main` as one change at the end. A security review of its own before it ships: third-party code will run inside Toppo.
   - [ ] **1. Foundations**:
-    - [x] the design's decisions in `ARCHITECTURE.md`;
-    - [x] internal packages renamed `@toppo-tracker/*` (straight into `main`);
-    - [x] the sandbox: QuickJS in WebAssembly, a worker per plugin, capped memory, deadlines, the `ctx` bridge;
-    - [x] `@toppo-tracker/plugin-sdk`: `definePlugin`, `defineAction`, `defineEventHandler`, `ctx`;
-    - [x] `@toppo-tracker/cli` (`toppo plugin build`) and `@toppo-tracker/plugin-testing`;
-    - [x] the `plugins` table, `instance.plugins.manage`, then upload, approval, enabling, uninstalling;
-    - [ ] each plugin's own user, kept out of every list of people;
+    - [ ] the design's decisions in `ARCHITECTURE.md` (this change);
+    - [ ] internal packages renamed `@toppo-tracker/*` (straight into `main`);
+    - [ ] the sandbox: QuickJS in WebAssembly, a worker per plugin, capped memory, deadlines, the `ctx` bridge;
+    - [ ] `@toppo-tracker/plugin-sdk`: `definePlugin`, `defineAction`, `defineEventHandler`, `ctx`;
+    - [ ] `@toppo-tracker/cli` (`toppo plugin build`) and `@toppo-tracker/plugin-testing`;
+    - [ ] the `plugins` table, each plugin's own user, `instance.plugins.manage`, then upload, approval, enabling, uninstalling;
     - [ ] plugins' permissions in the catalog and the roles matrix;
     - [ ] events fanned out from activities, actions, failures that disable a plugin;
     - [ ] **Settings → Plugins**, with the settings form generated from the plugin;

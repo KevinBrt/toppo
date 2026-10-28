@@ -18,7 +18,6 @@ import {
   buildTestApp,
   cookieHeader,
   createTestFileStorage,
-  createTestPackageStore,
   createTestUser,
   setupTestDatabase,
   TEST_SETUP_CODE,
@@ -121,10 +120,7 @@ beforeAll(async () => {
   app = await buildTestApp({ database: context.database });
   worker = {
     db: context.database.db,
-    jobs: createJobs({
-      files: await createTestFileStorage(),
-      packages: await createTestPackageStore(),
-    }),
+    jobs: createJobs({ files: await createTestFileStorage() }),
     log: app.log,
     services: testServices(),
   };

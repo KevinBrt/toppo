@@ -325,24 +325,6 @@ export {
   unreadNotificationsResponseSchema,
 } from './notifications.ts';
 export {
-  type ApprovePluginRequest,
-  approvePluginRequestSchema,
-  type InstallPluginResponse,
-  installPluginResponseSchema,
-  PLUGIN_PROJECTS_MAX,
-  PLUGIN_STATES,
-  PLUGINS_MAX,
-  type PluginDetailsResponse,
-  type PluginState,
-  type PluginSummary,
-  type PluginsResponse,
-  pluginDetailsResponseSchema,
-  pluginSlugParamsSchema,
-  pluginSlugSchema,
-  pluginSummarySchema,
-  pluginsResponseSchema,
-} from './plugins/plugins.ts';
-export {
   PROJECT_KEY_MAX_LENGTH,
   PROJECT_KEY_MIN_LENGTH,
   PROJECT_KEY_PATTERN,

@@ -1027,11 +1027,6 @@ export const en = {
         label: 'Manage roles',
         description: 'Create roles and choose their permissions. Administrators only.',
       },
-      pluginsManage: {
-        label: 'Manage plugins',
-        description:
-          'Install, approve and remove plugins, which run code inside Toppo. Administrators only.',
-      },
     },
     saved: 'Permissions saved.',
     rolesChanged:
