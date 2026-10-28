@@ -364,8 +364,15 @@ describe('the files of a new issue', () => {
       .element(zone.getByText(/Office and OpenDocument files · 20\sMB maximum per file$/))
       .toBeVisible();
     await userEvent.upload(fileInput(zone.element()), [png('erreur.png'), csv('oublie.csv')]);
-    const thumbnail = zone.getByText('erreur.png').element().closest('li')?.querySelector('img');
-    expect(thumbnail?.getAttribute('src')).toMatch(/^blob:/);
+    // The preview gets its address once drawn, after the file shows: wait for it.
+    const thumbnailSource = () =>
+      zone
+        .getByText('erreur.png')
+        .element()
+        .closest('li')
+        ?.querySelector('img')
+        ?.getAttribute('src');
+    await expect.poll(thumbnailSource).toMatch(/^blob:/);
     await zone.getByRole('button', { name: 'Remove oublie.csv' }).click();
     await screen.getByRole('button', { name: 'Create the issue' }).click();
 
