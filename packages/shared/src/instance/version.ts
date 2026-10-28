@@ -5,7 +5,7 @@ import { z } from 'zod';
  * version (`extra-files` in release-please-config.json), so that the server and the web app both
  * know it from their build. Between releases, the version last released.
  */
-export const TOPPO_VERSION = '1.0.0'; // x-release-please-version
+export const TOPPO_VERSION = '1.0.1'; // x-release-please-version
 
 /** A released version, as its tag names it without the `v`: `0.2.0`. */
 export const releasedVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
