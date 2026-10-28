@@ -1,4 +1,5 @@
 import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
+import type { PluginPermissionSection } from '@toppo-tracker/shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { ADA, fakeServer, GRACE, renderApp } from '../../../test-helpers.tsx';
@@ -250,6 +251,71 @@ describe('the roles and permissions screen', () => {
           .getByRole('link', { name: 'Roles and permissions' }),
       )
       .not.toBeInTheDocument();
+  });
+});
+
+describe('the permissions of plugins', () => {
+  const TIME_TRACKING = {
+    slug: 'time-tracking',
+    name: 'Time tracking',
+    permissions: [
+      {
+        name: 'time-tracking.entries.log',
+        scope: 'project',
+        label: { en: 'Log time', fr: 'Saisir du temps' },
+      },
+    ],
+  } as const satisfies PluginPermissionSection;
+
+  it('show in a section per plugin, after Toppo’s, given to a role like any other', async () => {
+    const server = fakeServer({ user: ADA, plugins: [TIME_TRACKING] });
+    const { screen } = await renderApp({ path: '/settings/roles' });
+
+    // The last group of rows: Toppo's sections come first.
+    const section = screen.getByRole('rowgroup').last();
+    await expect
+      .element(section.getByRole('cell').first())
+      .toHaveTextContent('Time trackingPermissions this plugin adds.');
+    await expect
+      .element(
+        section.getByRole('rowheader', {
+          name: 'Log time Applies in each project the member has access to.',
+        }),
+      )
+      .toBeVisible();
+    await expect.element(control('Log time', 'Administrator')).toBeChecked();
+    await expect.element(control('Log time', 'Administrator')).toBeDisabled();
+    await expect.element(control('Log time', 'Team')).not.toBeChecked();
+
+    await control('Log time', 'Team').click();
+    await expect.element(screen.getByText('1 unsaved change')).toBeVisible();
+    await screen.getByRole('button', { name: 'Save' }).click();
+
+    await expect.element(screen.getByText('Permissions saved.')).toBeVisible();
+    const save = server.requests.find(({ method }) => method === 'PUT');
+    expect(save?.body).toMatchObject({
+      changes: [
+        {
+          roleId: DEFAULT_ROLE_IDS.team,
+          to: expect.arrayContaining(['issue.create', 'time-tracking.entries.log']),
+        },
+      ],
+    });
+    await expect.element(control('Log time', 'Team')).toBeChecked();
+  });
+
+  it('are named in the plugin’s own words, in the language shown, on phones too', async () => {
+    await page.viewport(375, 812);
+    fakeServer({ user: { ...ADA, locale: 'fr' }, plugins: [TIME_TRACKING] });
+    const { screen } = await renderApp({ path: '/settings/roles', locale: 'fr' });
+
+    const section = screen.getByRole('region', { name: 'Time tracking' });
+    await expect.element(section.getByText('Permissions ajoutées par ce plugin.')).toBeVisible();
+    await expect
+      .element(section.getByText('S’applique dans chaque projet auquel le membre a accès.'))
+      .toBeVisible();
+    // Role names are the instance's own, in no language.
+    await expect.element(control('Saisir du temps', 'Administrator')).toBeChecked();
   });
 });
 
