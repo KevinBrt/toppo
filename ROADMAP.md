@@ -26,7 +26,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] the design's decisions in `ARCHITECTURE.md`;
     - [x] internal packages renamed `@toppo-tracker/*` (straight into `main`);
     - [x] the sandbox: QuickJS in WebAssembly, a worker per plugin, capped memory, deadlines, the `ctx` bridge;
-    - [ ] `@toppo-tracker/plugin-sdk`: `definePlugin`, `defineAction`, `defineEventHandler`, `ctx`;
+    - [x] `@toppo-tracker/plugin-sdk`: `definePlugin`, `defineAction`, `defineEventHandler`, `ctx`;
     - [ ] `@toppo-tracker/cli` (`toppo plugin build`) and `@toppo-tracker/plugin-testing`;
     - [ ] the `plugins` table, each plugin's own user, `instance.plugins.manage`, then upload, approval, enabling, uninstalling;
     - [ ] plugins' permissions in the catalog and the roles matrix;

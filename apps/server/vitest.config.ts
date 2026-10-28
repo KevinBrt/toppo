@@ -7,7 +7,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/test-helpers.ts', 'src/main.ts', 'src/healthcheck.ts'],
+      exclude: [
+        'src/**/*.test.ts',
+        // Bundled by the tests and run in the sandbox, never imported by Node.
+        'src/**/*.fixture.ts',
+        'src/test-helpers.ts',
+        'src/main.ts',
+        'src/healthcheck.ts',
+      ],
       thresholds: { lines: 85, functions: 85, branches: 85, statements: 85 },
     },
   },
