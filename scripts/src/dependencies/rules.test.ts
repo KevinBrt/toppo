@@ -102,56 +102,90 @@ describe('checkLockfile', () => {
     integrity: 'sha512-abc',
     license: 'MIT',
   };
+  const workspaces = new Set(['@toppo/core']);
 
   it('accepts registry packages and workspace links', () => {
     expect(
-      checkLockfile({
-        lockfileVersion: 3,
-        packages: {
-          '': {},
-          'node_modules/a': entry,
-          'node_modules/@toppo/core': { link: true },
-          'packages/core': {},
+      checkLockfile(
+        {
+          lockfileVersion: 3,
+          packages: {
+            '': {},
+            'node_modules/a': entry,
+            'node_modules/@toppo/core': { link: true },
+            'packages/core': {},
+          },
         },
-      }),
+        workspaces,
+      ),
     ).toStrictEqual([]);
   });
 
-  it('refuses packages from other sources', () => {
-    const problems = checkLockfile({
-      lockfileVersion: 3,
-      packages: {
-        'node_modules/a': { ...entry, resolved: 'https://evil.example.com/a.tgz' },
-        'node_modules/b': { ...entry, resolved: 'git+ssh://git@github.com/x/b.git' },
-      },
+  it('refuses a package named like a workspace that is downloaded instead of linked', () => {
+    const fromRegistry = (name: string) => ({
+      ...entry,
+      resolved: `https://registry.npmjs.org/${name}/-/${name.split('/')[1]}-1.0.0.tgz`,
     });
+
+    const problems = checkLockfile(
+      {
+        lockfileVersion: 3,
+        packages: {
+          'node_modules/@toppo/core': fromRegistry('@toppo/core'),
+          'node_modules/a/node_modules/@toppo/db': fromRegistry('@toppo/db'),
+          'node_modules/@other/core': fromRegistry('@other/core'),
+        },
+      },
+      new Set(['@toppo/core', '@toppo/db']),
+    );
+
+    expect(problems).toStrictEqual([
+      'node_modules/@toppo/core: @toppo/core is a workspace of this repository: it must be linked, never downloaded',
+      'node_modules/a/node_modules/@toppo/db: @toppo/db is a workspace of this repository: it must be linked, never downloaded',
+    ]);
+  });
+
+  it('refuses packages from other sources', () => {
+    const problems = checkLockfile(
+      {
+        lockfileVersion: 3,
+        packages: {
+          'node_modules/a': { ...entry, resolved: 'https://evil.example.com/a.tgz' },
+          'node_modules/b': { ...entry, resolved: 'git+ssh://git@github.com/x/b.git' },
+        },
+      },
+      workspaces,
+    );
     expect(problems).toHaveLength(2);
   });
 
   it('refuses a tarball other than the package and version an entry names', () => {
-    const problems = checkLockfile({
-      lockfileVersion: 3,
-      packages: {
-        'node_modules/fastify': {
-          ...entry,
-          version: '5.12.7',
-          resolved: 'https://registry.npmjs.org/not-fastify/-/not-fastify-1.0.0.tgz',
-        },
-        'node_modules/@scope/b': {
-          ...entry,
-          resolved: 'https://registry.npmjs.org/@scope/b/-/b-2.0.0.tgz',
-        },
-        'node_modules/c': {
-          ...entry,
-          name: 'evil',
-          resolved: 'https://registry.npmjs.org/c/-/c-1.0.0.tgz',
-        },
-        'node_modules/a/node_modules/@scope/d': {
-          ...entry,
-          resolved: 'https://registry.npmjs.org/@scope/d/-/d-1.0.0.tgz',
+    const problems = checkLockfile(
+      {
+        lockfileVersion: 3,
+        packages: {
+          'node_modules/fastify': {
+            ...entry,
+            version: '5.12.7',
+            resolved: 'https://registry.npmjs.org/not-fastify/-/not-fastify-1.0.0.tgz',
+          },
+          'node_modules/@scope/b': {
+            ...entry,
+            resolved: 'https://registry.npmjs.org/@scope/b/-/b-2.0.0.tgz',
+          },
+          'node_modules/c': {
+            ...entry,
+            name: 'evil',
+            resolved: 'https://registry.npmjs.org/c/-/c-1.0.0.tgz',
+          },
+          'node_modules/a/node_modules/@scope/d': {
+            ...entry,
+            resolved: 'https://registry.npmjs.org/@scope/d/-/d-1.0.0.tgz',
+          },
         },
       },
-    });
+      workspaces,
+    );
 
     expect(problems).toStrictEqual([
       'node_modules/fastify: must resolve to https://registry.npmjs.org/fastify/-/fastify-5.12.7.tgz, got https://registry.npmjs.org/not-fastify/-/not-fastify-1.0.0.tgz',
@@ -163,33 +197,39 @@ describe('checkLockfile', () => {
   it('requires integrity hashes', () => {
     const { integrity: _ignored, ...withoutIntegrity } = entry;
     expect(
-      checkLockfile({ lockfileVersion: 3, packages: { 'node_modules/a': withoutIntegrity } }),
+      checkLockfile(
+        { lockfileVersion: 3, packages: { 'node_modules/a': withoutIntegrity } },
+        workspaces,
+      ),
     ).toStrictEqual(['node_modules/a: missing sha512 integrity']);
   });
 
   it('checks licenses of shipped packages only', () => {
     expect(
-      checkLockfile({
-        lockfileVersion: 3,
-        packages: {
-          'node_modules/gpl-tool': {
-            ...entry,
-            resolved: 'https://registry.npmjs.org/gpl-tool/-/gpl-tool-1.0.0.tgz',
-            license: 'GPL-3.0-only',
-            dev: true,
-          },
-          'node_modules/gpl-lib': {
-            ...entry,
-            resolved: 'https://registry.npmjs.org/gpl-lib/-/gpl-lib-1.0.0.tgz',
-            license: 'GPL-3.0-only',
+      checkLockfile(
+        {
+          lockfileVersion: 3,
+          packages: {
+            'node_modules/gpl-tool': {
+              ...entry,
+              resolved: 'https://registry.npmjs.org/gpl-tool/-/gpl-tool-1.0.0.tgz',
+              license: 'GPL-3.0-only',
+              dev: true,
+            },
+            'node_modules/gpl-lib': {
+              ...entry,
+              resolved: 'https://registry.npmjs.org/gpl-lib/-/gpl-lib-1.0.0.tgz',
+              license: 'GPL-3.0-only',
+            },
           },
         },
-      }),
+        workspaces,
+      ),
     ).toStrictEqual(['node_modules/gpl-lib: license GPL-3.0-only is not allowed in shipped code']);
   });
 
   it('refuses old lockfile formats', () => {
-    expect(checkLockfile({ lockfileVersion: 2, packages: {} })).toHaveLength(1);
+    expect(checkLockfile({ lockfileVersion: 2, packages: {} }, workspaces)).toHaveLength(1);
   });
 });
 
