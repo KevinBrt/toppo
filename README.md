@@ -71,4 +71,4 @@ npm run dev     # database + API on :3000 + web app on :5173
 
 ## License
 
-Toppo is licensed under the [GNU Affero General Public License v3.0](LICENSE): you can use, modify and host it freely; if you offer a modified version to others over a network, you share its source. The plugin SDK (`@toppo/plugin-sdk`, coming after 1.0) will be MIT-licensed, so plugins can use any license.
+Toppo is licensed under the [GNU Affero General Public License v3.0](LICENSE): you can use, modify and host it freely; if you offer a modified version to others over a network, you share its source. The plugin SDK (`@toppo-tracker/plugin-sdk`, coming after 1.0) will be MIT-licensed, so plugins can use any license.

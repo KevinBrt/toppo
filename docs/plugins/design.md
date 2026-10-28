@@ -12,7 +12,7 @@ Toppo's core covers what most teams need, complete from install: nobody should a
 
 ## Principles
 
-1. **One contract.** A plugin imports only `@toppo/plugin-sdk` and `@toppo/plugin-ui` (MIT). It never reaches Toppo's database, files, configuration or network directly. What the SDK does not offer, a plugin cannot do.
+1. **One contract.** A plugin imports only `@toppo-tracker/plugin-sdk` and `@toppo-tracker/plugin-ui` (MIT). It never reaches Toppo's database, files, configuration or network directly. What the SDK does not offer, a plugin cannot do.
 2. **What the core's integrations build on, plugins share.** Webhooks and GitHub live in the core, on blocks plugins use too: the outbound HTTP guard, signed webhooks, routes that check a signature. GitLab or Bitbucket can then be plugins written with the same tools. The core never tests a plugin's id.
 3. **Toppo's conventions.** An action is declared like a command (`access`, Zod `input`, `handler`), translations are typed in English and French, permissions join the same catalog.
 4. **Everything declared.** What a plugin may do, store, show and reach is in its manifest, validated strictly when it is installed, shown to the administrator, and enforced at run time.
@@ -27,7 +27,7 @@ A plugin is TypeScript built by `toppo-plugin build` into one package: a server 
 
 ```ts
 // src/plugin.ts
-import { definePlugin, z } from "@toppo/plugin-sdk";
+import { definePlugin, z } from "@toppo-tracker/plugin-sdk";
 
 export const plugin = definePlugin({
   id: "slack",
@@ -138,7 +138,7 @@ export const summarizeOnClose = plugin.defineEventHandler({
 
 ```tsx
 // src/web/issue-panel.tsx: real React, in a sandboxed frame
-import { DataTable, Stat, useList, usePanel, useSum, useT } from "@toppo/plugin-ui";
+import { DataTable, Stat, useList, usePanel, useSum, useT } from "@toppo-tracker/plugin-ui";
 import { plugin } from "../plugin.ts";
 import { TimeEntryForm } from "./components/time-entry-form.tsx";
 
@@ -162,20 +162,21 @@ export function IssuePanel() {
 
 ### Conventions
 
-| Piece                             | Form                                                                                                  |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| The plugin                        | `definePlugin({ id, apiVersion, needs, permissions, http, settings, entities, messages, resources })` |
-| An entity                         | `defineEntity({ attachedTo, fields, indexes, limits })`                                               |
-| An action                         | `plugin.defineAction({ name, access, input, handler })`                                               |
-| A reaction to an event            | `plugin.defineEventHandler({ event, handler })`                                                       |
-| A recurring job                   | `plugin.defineJob({ name, every, handler })`                                                          |
-| An inbound HTTP route             | `plugin.defineRoute({ method, path, access, input, handler })`                                        |
-| A page                            | `plugin.definePage({ zone, path, params?, search?, access, title, nav?, component })`                 |
-| A panel in one of Toppo's screens | `plugin.definePanel({ on, access, title, component })`                                                |
-| In the browser                    | React's conventions: `useX` hooks, PascalCase components                                              |
+| Piece                             | Form                                                                                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| The plugin                        | `definePlugin({ id, apiVersion, needs, permissions, http, settings, entities, properties, messages, resources })` |
+| An entity                         | `defineEntity({ attachedTo, fields, indexes, limits })`                                                           |
+| A property of issues              | `defineProperty({ name, type, display, writtenBy })`                                                              |
+| An action                         | `plugin.defineAction({ name, access, input, handler })`                                                           |
+| A reaction to an event            | `plugin.defineEventHandler({ event, handler })`                                                                   |
+| A recurring job                   | `plugin.defineJob({ name, every, handler })`                                                                      |
+| An inbound HTTP route             | `plugin.defineRoute({ method, path, access, input, handler })`                                                    |
+| A page                            | `plugin.definePage({ zone, path, params?, search?, access, title, nav?, component })`                             |
+| A panel in one of Toppo's screens | `plugin.definePanel({ on, access, title, component })`                                                            |
+| In the browser                    | React's conventions: `useX` hooks, PascalCase components                                                          |
 
 - `define…` declares a piece Toppo must know, and always takes one object.
-- What goes into the plugin's declaration is an imported function (`definePlugin`, `defineEntity`); what builds on the plugin is a method (`plugin.defineAction`), which gives a typed `ctx`.
+- What goes into the plugin's declaration is an imported function (`definePlugin`, `defineEntity`, `defineProperty`); what builds on the plugin is a method (`plugin.defineAction`), which gives a typed `ctx`.
 - Plain data stays plain: a settings schema is a Zod object, translations are objects.
 - The build finds every `plugin.define…` call in `src/`: there is no list to keep.
 - Types flow from the objects themselves, never from strings or a registration file: `useList(timeEntry)`, `useAction(logTime)`, `usePageParams(timeEntryPage)`. In the prototype, 18 mistakes an author could make (an unknown entity, field, setting, message key, permission or page parameter, a wrong input type, a missing French key…) were all refused by TypeScript, across files that import each other in cycles, in 0.12 s.
@@ -223,6 +224,37 @@ Measured on PostgreSQL 18, among 400,000 rows of another plugin, every query sco
 Expression indexes built per plugin at install read as fast as the slots, but need SQL written at run time; the slots need none. Writes: 1.6 ms per insert (4 writers, one transaction each), plus 0.3 ms with 30 partial slot indexes. Large sums will want covering indexes or totals kept by Toppo.
 
 When a plugin is uninstalled, the administrator chooses: keep its data (it comes back if the plugin is reinstalled) or delete it.
+
+## Properties
+
+A plugin may add **properties** to issues, which then behave as any other: a column of the issue list, a filter, a sort, a grouping, shown or hidden project by project. Time tracking adds an estimate people type in, and the time spent it computes:
+
+```ts
+export const estimate = defineProperty({
+  name: "properties.estimate",
+  type: "number",
+  display: "duration",
+  writtenBy: "people",
+});
+
+export const timeSpent = defineProperty({
+  name: "properties.timeSpent",
+  type: "number",
+  display: "duration",
+  writtenBy: "plugin",
+});
+
+// definePlugin({ …, properties: { estimate, timeSpent } }), then, in the action that logs time:
+await ctx.issues.setProperty(input.issueId, "timeSpent", total);
+```
+
+- The same types as the core's properties. `display` formats a number: `duration` shows minutes as "6 h 40".
+- `writtenBy: 'people'`: typed in like any property. Changing it takes `issue.update` and records an activity, as usual. The plugin reads it on the issue.
+- `writtenBy: 'plugin'`: only the plugin writes it; everyone else reads it. Writing its own property takes no `needs`. **It records no activity**: it is derived data, like a count, whose history is the plugin's own records. Recording it would fill the issue's history at every change and, through `issue.propertyChanged`, let plugins answer each other in loops.
+- Stored where the core's properties are (`issues.properties`, and the `properties` table with the plugin as owner), so the issue list, its filters and its sorts work unchanged.
+- Its name is data, as for every property: written when the plugin is installed, in the instance's language, then renamed at will. If a property already has that name, the administrator chooses another when approving.
+- The administrator adapts it like any property (shown in the list, hidden in a project; asked at creation when people write it), but cannot delete it or change its type while the plugin is installed.
+- At most 5 per plugin. When the plugin is uninstalled, they follow the administrator's choice: kept with their values, or deleted.
 
 ## Events, actions, jobs and routes
 
@@ -276,7 +308,7 @@ img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'
 
 - The frame has no origin: it cannot read Toppo's page, the user's cookies or storage, call Toppo's API or any site, open windows or navigate the tab. Its only way out is the bridge (`postMessage`), checked by Toppo like a request from the browser.
 - Toppo's own CSP stays as strict as today.
-- `@toppo/plugin-ui` gives Toppo's components, its theme as CSS variables, the user's language, and hooks built on TanStack Query: `useList`, `useSum`, `useGet`, `useAction`, `useT`, `usePanel`, `usePage`, `usePageParams`, `usePageSearch`, `PluginLink`. Plain HTML, CSS and any bundled React library work too; then accessibility and phone widths are the author's to keep.
+- `@toppo-tracker/plugin-ui` gives Toppo's components, its theme as CSS variables, the user's language, and hooks built on TanStack Query: `useList`, `useSum`, `useGet`, `useAction`, `useT`, `usePanel`, `usePage`, `usePageParams`, `usePageSearch`, `PluginLink`. Plain HTML, CSS and any bundled React library work too; then accessibility and phone widths are the author's to keep.
 - `useAction(logTime)` imports the action into the browser bundle; the build replaces its handler with a reference, so server code never reaches the browser.
 - Found in the prototype: the bundle must be a classic script (an origin-less frame refuses module scripts; never answer that with `Access-Control-Allow-Origin: null`); the frame is sized to its content's height, which the frame reports. A screen with React weighs 220 KB minified; Toppo serves one shared React runtime so plugins leave it out.
 
@@ -349,36 +381,56 @@ The plugin's author is not trusted; the administrator who installs it is, for th
 
 ## For authors
 
-- `npm create toppo-plugin`: a plugin ready to build and test.
+- `npm create @toppo-tracker/plugin`: a plugin ready to build and test.
 - `toppo-plugin dev`: runs it against a local Toppo, reloading on change.
 - `toppo-plugin build`: the zip to install.
-- `@toppo/plugin-testing`: a fake Toppo to test a plugin without an instance (`createTestToppo(plugin)`, users who see given issues, `user.run(logTime, input)`).
+- `@toppo-tracker/plugin-testing`: a fake Toppo to test a plugin without an instance (`createTestToppo(plugin)`, users who see given issues, `user.run(logTime, input)`).
 - Documentation in `docs/plugins/`, with a worked example.
+
+## Packages and official plugins
+
+The published packages live under the npm scope `@toppo-tracker` (the GitHub organization of the same name is Toppo's too; `@toppo` belongs to someone else):
+
+| Package                         | For                                                            |
+| ------------------------------- | -------------------------------------------------------------- |
+| `@toppo-tracker/plugin-sdk`     | `definePlugin`, `defineEntity`, `defineProperty`: the contract |
+| `@toppo-tracker/plugin-ui`      | components and hooks for a plugin's screens                    |
+| `@toppo-tracker/plugin-testing` | the fake Toppo to test a plugin                                |
+| `@toppo-tracker/plugin-cli`     | `toppo-plugin dev` and `toppo-plugin build`                    |
+| `@toppo-tracker/create-plugin`  | `npm create @toppo-tracker/plugin`                             |
+
+- MIT, published by the release workflow with npm provenance, versioned by semver along `apiVersion`.
+- `plugin-ui` is a facade: it bundles the components of `packages/ui` it chooses to expose, under an API kept stable. `packages/ui` stays private and free to change, as `core` stays private behind `plugin-sdk`.
+- Toppo's internal packages (`@toppo/core`, `@toppo/ui`…) are renamed `@toppo-tracker/…` when the SDK lands: one scope in the repository, and no internal name in a scope someone else owns. They stay private.
+
+**Official plugins** live in this repository, under `plugins/` (time tracking first), without privilege: they import only the published packages, by name; the same CLI builds them; an end-to-end test installs one through the interface, approval included. They ship in Toppo's image, installed but disabled: an administrator enables one from **Settings → Plugins** with the same approval as an uploaded zip. They follow Toppo's version; release-please can version one on its own when it needs to move faster.
 
 ## What changes in the core
 
 - Tables: `plugins` (id, version, state, approved needs and hosts, settings with sealed secrets, hash), `plugin_records` (entities), and their slots' assignments.
+- `properties` gains its owning plugin and who writes it; a number property may be displayed as a duration.
+- The rule "every issue change writes an `activities` row" (`CLAUDE.md`) gains its one exception: a property a plugin computes is derived data and records no activity.
 - The permission catalog accepts plugins' permissions next to the core's typed ones; roles keep storing them as text.
 - `instance.plugins.manage` (`systemOnly`).
 - The job of each recorded activity fans out to subscribed plugins.
 - The outbound HTTP guard in `platform/http/`, shared with the core's webhooks and GitHub integration.
 - A project home page with its latest activity, which is also the `project` zone.
 - The sandbox runtime (`platform/plugins/`): loading packages, workers, QuickJS, the `ctx` calls, the frame host and its bridge.
+- Internal packages renamed `@toppo-tracker/…`; the release workflow publishes the plugin packages to npm.
 - `ARCHITECTURE.md`: its "Plugin system" section is replaced by this design's decisions; the plugins row of its data model is updated.
 
 ## Steps
 
-The core's own features do not go through the SDK, so a **reference plugin**, kept in this repository and tested in CI, uses every part of it: each step ends with that plugin using what the step adds, and with its own tests (a test per SDK operation that refuses it without the permission, generated like `route-permissions.test.ts`). The kanban board, webhooks and the GitHub integration follow their own roadmap in the core; the outbound guard, signed webhooks and signature-checked routes are built once, for them and for plugins.
+The core's own features do not go through the SDK, so a **reference plugin**, kept in this repository (`plugins/time-tracking`) and tested in CI, uses every part of it: **time tracking**. Each step ends with it using what the step adds, and with its own tests (a test per SDK operation that refuses it without the permission, generated like `route-permissions.test.ts`). The kanban board, webhooks and the GitHub integration follow their own roadmap in the core; the outbound guard, signed webhooks and signature-checked routes are built once, for them and for plugins.
 
-1. **Foundations**: packages, upload and validation, approval, the sandbox runtime and its resources, `needs` and `permissions` in the catalog, settings and secrets, event handlers, the outbound guard, `ctx.issues` and `ctx.http`, the CLI and testing kit.
-2. **Inbound**: routes, `ctx.crypto`, recurring jobs.
-3. **Entities**: `plugin_records`, slots, queries, limits, uninstall choices.
-4. **Interface**: the frame host and its bridge, `@toppo/plugin-ui`, pages, panels, zones, the project home page.
+1. **Foundations**: packages, upload and validation, approval, the sandbox runtime and its resources, `needs` and `permissions` in the catalog, settings and secrets, actions, event handlers, `ctx.issues`, the CLI and testing kit. _Time tracking: its permissions and settings, logging time through an action, a comment when an issue closes._
+2. **Data**: entities (`plugin_records`, slots, queries, limits, uninstall choices) and properties. _Time tracking: time entries, the estimate and the time spent in the issue list._
+3. **Interface**: the frame host and its bridge, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page. _Time tracking: the issue panel, the project's report._
+4. **Beyond the instance**: routes, `ctx.crypto`, the outbound guard and `ctx.http`, recurring jobs. _Time tracking: entries received from Clockify or Toggl by signed webhook, a weekly summary sent to an address set in its settings._
 5. **Imports**, if they become a plugin: an `issue.import` capability (`systemOnly`: issues with their original dates, authors and history).
 
 ## Open questions
 
-- The reference plugin: which one, and what it covers. It must use every part of the SDK.
 - Core or plugin: Slack, Teams or Discord notifications; GitLab; imports from Mantis, Redmine and Jira.
 - Covering indexes, or totals kept by Toppo, for large sums over entities.
 

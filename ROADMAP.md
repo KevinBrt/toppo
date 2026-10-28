@@ -21,7 +21,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
 
 ## After 1.0
 
-- [ ] Plugin system, as designed in [docs/plugins/design.md](docs/plugins/design.md): `@toppo/plugin-sdk` and `@toppo/plugin-ui` (MIT), server code in a WebAssembly sandbox, entities, screens in sandboxed frames, a reference plugin kept in this repository. A security review of its own before it ships: third-party code will run inside Toppo.
+- [ ] Plugin system, as designed in [docs/plugins/design.md](docs/plugins/design.md): `@toppo-tracker/plugin-sdk` and `@toppo-tracker/plugin-ui` (MIT), server code in a WebAssembly sandbox, entities, screens in sandboxed frames, a reference plugin kept in this repository. A security review of its own before it ships: third-party code will run inside Toppo.
 - [ ] Webhooks, then the GitHub integration, in the core, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature.
 - [ ] OIDC, SAML and LDAP, free (Better Auth plugins, added to the endpoint allowlist).
 - [ ] Imports from Mantis, Redmine and Jira (CSV first); inbound email.
