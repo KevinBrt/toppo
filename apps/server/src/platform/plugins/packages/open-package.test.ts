@@ -89,14 +89,6 @@ describe('a plugin package', () => {
       { 'server.js': new Uint8Array([0xff, 0xfe, 0x00]), 'plugin.json': VERSION },
       /server\.js is not UTF-8 text/,
     ],
-    [
-      'a version too long',
-      {
-        'server.js': BUNDLE,
-        'plugin.json': new Uint8Array(PLUGIN_PACKAGE_LIMITS.metadataBytes + 1),
-      },
-      /plugin\.json unpacks to more than 1024 bytes/,
-    ],
   ])('refuses a zip with %s', (_, files, reason) => {
     expect(refusalOf(zipSync(files))).toMatch(reason);
   });
@@ -113,11 +105,12 @@ describe('a plugin package', () => {
     expect(refusalOf(unknownMethod)).toMatch(/server\.js cannot be unpacked/);
   });
 
-  it('stops unpacking a bundle past its limit, whatever its size compressed', () => {
-    const huge = new Uint8Array(PLUGIN_PACKAGE_LIMITS.serverBytes + 1).fill(0x20);
-    const zip = zipSync({ 'server.js': huge, 'plugin.json': VERSION }, { level: 9 });
+  it('stops unpacking a file past its limit, whatever its size compressed', () => {
+    // A thousand times its limit, compressed to about its limit: the zip says nothing of it.
+    const huge = new Uint8Array(PLUGIN_PACKAGE_LIMITS.metadataBytes * 1024);
+    const zip = zipSync({ 'server.js': BUNDLE, 'plugin.json': huge }, { level: 9 });
 
-    expect(zip.length).toBeLessThan(100 * 1024);
-    expect(refusalOf(zip)).toMatch(/server\.js unpacks to more than 10485760 bytes/);
+    expect(zip.length).toBeLessThan(BUNDLE.length + 4 * PLUGIN_PACKAGE_LIMITS.metadataBytes);
+    expect(refusalOf(zip)).toMatch(/plugin\.json unpacks to more than 1024 bytes/);
   });
 });

@@ -1,6 +1,5 @@
 import { randomBytes } from 'node:crypto';
 import { inject } from 'vitest';
-import { clockWarning, readDatabaseClock } from './database-clock.ts';
 import { testDatabaseUrl } from './database-url.ts';
 import {
   createDatabase,
@@ -26,19 +25,13 @@ export interface TemplateOptions {
 /**
  * Called once per test run from a Vitest global setup: (re)creates a template database with the
  * current schema and removes clones left over by interrupted runs. The global setup hands
- * `removeTestDatabases(name)` back as its teardown. Warns, without failing, when the database's
- * clock cannot be trusted.
+ * `removeTestDatabases(name)` back as its teardown.
  */
 export async function prepareTemplateDatabase({ name, migrate }: TemplateOptions): Promise<string> {
   await ensurePostgres();
-  const clockBefore = await readDatabaseClock();
   await removeTestDatabases(name);
   await createDatabase(name);
   await migrate(testDatabaseUrl(name));
-  const warning = clockWarning(clockBefore, await readDatabaseClock());
-  if (warning) {
-    process.stderr.write(`\n${warning}\n\n`);
-  }
   return name;
 }
 

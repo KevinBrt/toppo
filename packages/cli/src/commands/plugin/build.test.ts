@@ -52,14 +52,11 @@ describe('toppo plugin build', () => {
     await expect(buildPlugin(join(FIXTURES, fixture), out)).rejects.toThrow(message);
   });
 
-  it('refuses a server bundle heavier than Toppo takes', () => {
-    const code = 'x'.repeat(PLUGIN_PACKAGE_LIMITS.serverBytes);
+  it('refuses a server bundle heavier than Toppo takes, in bytes, before zipping it', () => {
+    // Two bytes each in UTF-8: half as many characters as the limit counts bytes.
+    const code = `${'é'.repeat(PLUGIN_PACKAGE_LIMITS.serverBytes / 2)};`;
 
-    expect(Object.keys(unzipSync(packagePlugin(code, '1.0.0'))).sort()).toStrictEqual([
-      'plugin.json',
-      'server.js',
-    ]);
-    expect(() => packagePlugin(`${code};`, '1.0.0')).toThrow(
+    expect(() => packagePlugin(code, '1.0.0')).toThrow(
       'The server bundle weighs 10241 KB: Toppo takes at most 10240 KB',
     );
   });

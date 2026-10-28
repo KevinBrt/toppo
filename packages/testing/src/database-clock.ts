@@ -57,3 +57,18 @@ export function clockWarning(first: ClockReading, last: ClockReading): string | 
     'Restart Docker (on Windows: `wsl --shutdown`, then Docker Desktop) and run them again.',
   ].join('\n');
 }
+
+/**
+ * Reads the database's clock as a test run starts, and answers what to call as it ends: a
+ * warning, without failing, when the clocks did not keep time together meanwhile. A whole run
+ * is long enough to tell a drift from a slow round trip.
+ */
+export async function watchDatabaseClock(): Promise<() => Promise<void>> {
+  const start = await readDatabaseClock();
+  return async () => {
+    const warning = clockWarning(start, await readDatabaseClock());
+    if (warning) {
+      process.stderr.write(`\n${warning}\n\n`);
+    }
+  };
+}
