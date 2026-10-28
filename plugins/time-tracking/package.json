@@ -1,0 +1,22 @@
+{
+  "name": "@toppo-tracker/plugin-time-tracking",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Time tracking for Toppo: who spent how long on which issue. The reference plugin, built and tested as any author would.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "toppo plugin build",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@toppo-tracker/plugin-sdk": "0.0.0"
+  },
+  "devDependencies": {
+    "@toppo-tracker/cli": "0.0.0",
+    "@toppo-tracker/plugin-testing": "0.0.0",
+    "@vitest/coverage-v8": "5.0.5",
+    "vitest": "5.0.5"
+  }
+}

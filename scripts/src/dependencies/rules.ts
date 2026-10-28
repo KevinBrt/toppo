@@ -41,6 +41,12 @@ const DEV_ONLY_WORKSPACES = new Set(['@toppo-tracker/testing']);
 
 const PLUGIN_ALLOWED = ['@toppo-tracker/plugin-sdk'];
 
+/**
+ * What an official plugin builds and tests itself with, as any author would: never shipped with
+ * it, so devDependencies only.
+ */
+const PLUGIN_DEV_ONLY = new Set(['@toppo-tracker/cli', '@toppo-tracker/plugin-testing']);
+
 /** Licenses compatible with distributing Toppo under AGPL-3.0. */
 export const ALLOWED_LICENSES = new Set([
   '0BSD',
@@ -92,6 +98,9 @@ function checkWorkspace(manifest: WorkspaceManifest, workspaceNames: Set<string>
   return allDependencies(manifest)
     .filter(([name]) => workspaceNames.has(name))
     .flatMap(([name, , kind]) => {
+      if (isPlugin && PLUGIN_DEV_ONLY.has(name)) {
+        return kind === 'dev' ? [] : [`${manifest.name}: ${name} may only be a devDependency`];
+      }
       if (DEV_ONLY_WORKSPACES.has(name)) {
         return kind === 'dev' ? [] : [`${manifest.name}: ${name} may only be a devDependency`];
       }

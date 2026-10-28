@@ -59,6 +59,20 @@ describe('checkWorkspaceGraph', () => {
     ]);
   });
 
+  it('lets a plugin build and test itself with the CLI and the testing kit, as devDependencies', () => {
+    const cli = workspace('packages/cli', '@toppo-tracker/cli');
+    const kit = workspace('packages/plugin-testing', '@toppo-tracker/plugin-testing');
+    const plugin = workspace(
+      'plugins/time-tracking',
+      '@toppo-tracker/plugin-time-tracking',
+      { '@toppo-tracker/plugin-sdk': '0.0.0', '@toppo-tracker/cli': '0.0.0' },
+      { '@toppo-tracker/plugin-testing': '0.0.0' },
+    );
+    expect(checkWorkspaceGraph([plugin, sdk, cli, kit])).toStrictEqual([
+      '@toppo-tracker/plugin-time-tracking: @toppo-tracker/cli may only be a devDependency',
+    ]);
+  });
+
   it('refuses test helpers as a runtime dependency', () => {
     const server = workspace('apps/server', '@toppo-tracker/server', {
       '@toppo-tracker/testing': '0.0.0',

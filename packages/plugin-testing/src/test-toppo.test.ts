@@ -105,14 +105,27 @@ describe('a fake Toppo for a plugin’s tests', () => {
   });
 
   it('refuses the plugin a call its needs do not allow', async () => {
-    const { plugin, ask } = timeTracking(['comment.create']);
+    // It reads issues, and comments on those closed without asking to.
+    const { plugin } = timeTracking(['issue.read']);
     const toppo = createTestToppo(plugin);
-    const issue = toppo.createIssue();
+    const issue = toppo.createIssue({ closedAt: '2026-01-02T09:00:00.000Z' });
 
-    const refused = toppo.createUser().run(ask, { issueId: issue.id });
+    const refused = toppo.emit('issue.statusChanged', {
+      issue,
+      change: { from: issue.status, to: issue.status },
+    });
 
     await expect(refused).rejects.toBeInstanceOf(PluginRunError);
     await expect(refused).rejects.toMatchObject({ code: 'PLUGIN_ERROR', detail: 'FORBIDDEN' });
+    expect(toppo.comments).toStrictEqual([]);
+  });
+
+  it('refuses, as Toppo would, a plugin acting on issues it does not read', () => {
+    const { plugin } = timeTracking(['comment.create']);
+
+    expect(() => createTestToppo(plugin)).toThrow(
+      'timeEntry.log acts on an issue: the plugin needs issue.read',
+    );
   });
 
   it('refuses in the plugin’s words, with the settings given', async () => {

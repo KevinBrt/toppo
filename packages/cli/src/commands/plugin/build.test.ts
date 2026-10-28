@@ -45,7 +45,11 @@ describe('toppo plugin build', () => {
       'node-api',
       /src[\\/]plugin\.ts imports node:fs: plugins run in Toppo's sandbox/,
     ],
-    ['declares what Toppo would refuse', 'refused', /Toppo would refuse its manifest:[\s\S]*id/],
+    [
+      'declares what Toppo would refuse',
+      'refused',
+      /Toppo would refuse its manifest:[\s\S]*id[\s\S]*timeEntry\.log acts on an issue: the plugin needs issue\.read\s+→ at actions\[0\]\.access/,
+    ],
     ['fails as it loads', 'throws', /The plugin fails as it loads: .*Broken on purpose/],
     ['has no version', 'no-version', /needs a version, such as 1\.2\.0/],
     ['has no src/plugin.ts', 'no-entry', /No src\/plugin\.ts in .*: a plugin starts there/],

@@ -1,4 +1,4 @@
-import type { Action, EventType, z } from '@toppo-tracker/plugin-sdk';
+import { type Action, type EventType, z } from '@toppo-tracker/plugin-sdk';
 import { servePlugin } from '@toppo-tracker/plugin-sdk/host';
 import {
   type DeletedIssue,
@@ -74,7 +74,11 @@ export function createTestToppo(
     call: async (method, args) => JSON.stringify(await answer(method, JSON.parse(args))),
   };
   const served = servePlugin(plugin, host);
-  const manifest: Manifest = manifestSchema.parse(JSON.parse(served.manifest()));
+  const declared = manifestSchema.safeParse(JSON.parse(served.manifest()));
+  if (!declared.success) {
+    throw new Error(`Toppo would refuse its manifest:\n${z.prettifyError(declared.error)}`);
+  }
+  const manifest: Manifest = declared.data;
   if (!isApiCompatible(manifest.apiVersion)) {
     throw new Error(`The plugin asks for API ${manifest.apiVersion}, which this Toppo lacks`);
   }
