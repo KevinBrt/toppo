@@ -1,6 +1,6 @@
 # Plugin system: design
 
-Status: **proposal**, for review before any code. Once agreed, its decisions move to `ARCHITECTURE.md` and its steps to `ROADMAP.md`. Every number below comes from a throwaway prototype (branch `spike/plugin-system`, never merged), summarized in the appendix.
+Status: **proposal**, for review before any code. Once agreed, its decisions move to `ARCHITECTURE.md` and its steps to `ROADMAP.md`. Every number below comes from a throwaway prototype, not kept in the repository, summarized in the appendix.
 
 ## Goal
 
@@ -384,7 +384,7 @@ The core's own features do not go through the SDK, so a **reference plugin**, ke
 
 ## Appendix: the prototype
 
-Branch `spike/plugin-system` (throwaway, never merged), `spike/plugin-system/FINDINGS.md` for the details. Node 24.22, PostgreSQL 18, Chromium through Playwright.
+Throwaway code, not kept in the repository. Node 24.22, PostgreSQL 18, Chromium through Playwright.
 
 - **Node process with the permission model**: files, programs, workers and addons blocked; network and signals to the parent allowed. Rejected as a boundary.
 - **Sandboxed frame**: React renders and reacts; the bridge works both ways; every escape tried was blocked by the sandbox or the frame's CSP; the server never saw a request from the frame carrying the session.
