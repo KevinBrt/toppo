@@ -10,7 +10,7 @@ import {
   openPluginPackage,
   type PluginPackage,
 } from '../../../platform/plugins/packages/open-package.ts';
-import { declaredManifest } from '../utils/declared-manifest.util.ts';
+import { declaredLogo, declaredManifest } from '../utils/declared-manifest.util.ts';
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
 
 const { plugins } = schema;
@@ -39,6 +39,7 @@ export const installPlugin = defineCommand({
     }
     const opened = openPluginPackage(zip);
     const manifest = declaredManifest(await services.plugins.readManifest(opened.code, log), log);
+    const logo = declaredLogo(manifest, opened);
     const [installed] = await tx
       .select({
         id: plugins.id,
@@ -61,7 +62,7 @@ export const installPlugin = defineCommand({
     };
 
     if (!installed) {
-      await tx.insert(plugins).values(rowOf(manifest, opened));
+      await tx.insert(plugins).values(rowOf(manifest, opened, logo));
       log.info(plugin, 'Plugin installed, waiting for approval');
       return { slug: manifest.id };
     }
@@ -72,7 +73,7 @@ export const installPlugin = defineCommand({
     await tx
       .update(plugins)
       .set({
-        ...rowOf(manifest, opened),
+        ...rowOf(manifest, opened, logo),
         ...(waitsForApproval ? { state: 'pending', approvedAt: null, approvedById: null } : {}),
       })
       .where(eq(plugins.id, installed.id));
@@ -97,11 +98,12 @@ async function assertRoomForOneMore(tx: Transaction): Promise<void> {
   }
 }
 
-function rowOf(manifest: Manifest, opened: PluginPackage) {
+function rowOf(manifest: Manifest, opened: PluginPackage, logo: ReturnType<typeof declaredLogo>) {
   return {
     slug: manifest.id,
     version: opened.version,
     manifest,
     packageSha256: opened.sha256,
+    ...logo,
   };
 }

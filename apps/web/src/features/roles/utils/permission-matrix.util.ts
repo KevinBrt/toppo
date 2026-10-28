@@ -55,7 +55,13 @@ export type MatrixSection =
       scope: PermissionScope;
       rows: readonly MatrixRow[];
     }
-  | { kind: 'plugin'; slug: string; name: string; rows: readonly MatrixRow[] };
+  | {
+      kind: 'plugin';
+      slug: string;
+      /** In each language: the matrix shows the user's. */
+      name: PluginPermissionSection['name'];
+      rows: readonly MatrixRow[];
+    };
 
 /** The matrix as the server draws it: its sections, and the permissions the plugins add. */
 export interface Matrix {

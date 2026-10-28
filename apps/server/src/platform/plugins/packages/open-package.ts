@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
 import {
+  PLUGIN_LOGO_FILES,
   PLUGIN_PACKAGE_FILES,
   PLUGIN_PACKAGE_LIMITS,
   PLUGIN_VERSION,
+  type PluginLogo,
 } from '@toppo-tracker/plugin-sdk/protocol';
 import { Unzip, UnzipInflate } from 'fflate';
 import { z } from 'zod';
@@ -16,12 +18,15 @@ export interface PluginPackage {
   version: string;
   /** The server bundle. */
   code: string;
+  /** Its logo, as the package holds it: what it is, its manifest is to say (`logoOf`). */
+  logo?: { name: PluginLogo; bytes: Uint8Array };
 }
 
 /** Each file a zip may hold, with its size once unpacked, at most. */
 const FILE_LIMITS: ReadonlyMap<string, number> = new Map([
   [PLUGIN_PACKAGE_FILES.server, PLUGIN_PACKAGE_LIMITS.serverBytes],
   [PLUGIN_PACKAGE_FILES.metadata, PLUGIN_PACKAGE_LIMITS.metadataBytes],
+  ...PLUGIN_LOGO_FILES.map((name) => [name, PLUGIN_PACKAGE_LIMITS.logoBytes] as const),
 ]);
 
 /**
@@ -37,8 +42,9 @@ function invalid(reason: string): HttpError {
 }
 
 /**
- * Opens a zip uploaded as a plugin: `server.js` and `plugin.json`, nothing else, none twice,
- * each within its limit once unpacked. Paths are compared whole, so none can lead elsewhere.
+ * Opens a zip uploaded as a plugin: `server.js` and `plugin.json`, perhaps a logo, nothing else,
+ * none twice, each within its limit once unpacked. Paths are compared whole, so none can lead
+ * elsewhere.
  */
 export function openPluginPackage(zip: Uint8Array): PluginPackage {
   const files = unpack(zip);
@@ -47,10 +53,19 @@ export function openPluginPackage(zip: Uint8Array): PluginPackage {
   if (!(server && metadata)) {
     throw invalid('it must hold server.js and plugin.json, as `toppo plugin build` writes them');
   }
+  const logos = PLUGIN_LOGO_FILES.flatMap((name) => {
+    const bytes = files.get(name);
+    return bytes ? [{ name, bytes }] : [];
+  });
+  const [logo, another] = logos;
+  if (another) {
+    throw invalid('it holds two logos: one is enough');
+  }
   return {
     sha256: createHash('sha256').update(zip).digest('hex'),
     version: versionOf(metadata),
     code: textOf(server, PLUGIN_PACKAGE_FILES.server),
+    ...(logo ? { logo } : {}),
   };
 }
 

@@ -5,6 +5,7 @@ import type { MessageKey, MessagesOf } from './messages.ts';
 import type { PluginNeed } from './protocol/calls.ts';
 import type { EventPayload, EventType } from './protocol/events.ts';
 import type { Messages } from './protocol/manifest.ts';
+import type { PluginLogo } from './protocol/package.ts';
 import { HOST_GLOBAL, type HostGlobal, PLUGIN_GLOBAL } from './protocol/sandbox.ts';
 import { servePlugin } from './serve.ts';
 
@@ -36,6 +37,11 @@ export interface PluginConfig<
 > {
   /** `time-tracking`: lowercase words joined by dashes. */
   id: string;
+  /** What it is called, and what it does in a sentence: shown to who approves and uses it. */
+  name: MessageKey<M>;
+  description: MessageKey<M>;
+  /** Its logo, `logo.png` or `logo.webp` beside its `package.json`: PNG or WebP, 256 KB at most. */
+  logo?: PluginLogo;
   /** The plugin API it was written for: `^1.0`. */
   apiVersion: string;
   /** The core permissions it uses, which the administrator approves: its ceiling. */

@@ -8,6 +8,8 @@ function timeTracking(
 ) {
   const plugin = definePlugin({
     id: 'time-tracking',
+    name: 'closed',
+    description: 'closed',
     apiVersion: '^1.0',
     needs,
     permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
@@ -166,8 +168,10 @@ describe('a fake Toppo for a plugin’s tests', () => {
   it('refuses a plugin for another API', () => {
     const plugin = definePlugin({
       id: 'from-the-future',
+      name: 'name',
+      description: 'name',
       apiVersion: '^2.0',
-      messages: { en: {}, fr: {} },
+      messages: { en: { name: 'From the future' }, fr: { name: 'Du futur' } },
     });
 
     expect(() => createTestToppo(plugin)).toThrow('asks for API ^2.0');

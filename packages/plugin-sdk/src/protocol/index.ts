@@ -31,7 +31,14 @@ export {
   PLUGIN_LIMITS,
   PLUGIN_VERSION,
 } from './manifest.ts';
-export { PLUGIN_PACKAGE_FILES, PLUGIN_PACKAGE_LIMITS } from './package.ts';
+export {
+  logoTypeOf,
+  PLUGIN_LOGO_FILES,
+  PLUGIN_LOGO_TYPES,
+  PLUGIN_PACKAGE_FILES,
+  PLUGIN_PACKAGE_LIMITS,
+  type PluginLogo,
+} from './package.ts';
 export {
   LOCALES,
   type Locale,

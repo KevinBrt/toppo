@@ -158,7 +158,8 @@ describe('the permissions of a plugin', () => {
     expect(plugins).toStrictEqual([
       {
         slug: 'time-tracking',
-        name: 'Time tracking',
+        // It says no name of its own: one is made from its id.
+        name: { en: 'Time tracking', fr: 'Time tracking' },
         permissions: [
           { name: LOG, scope: 'project', label: { en: 'Log time', fr: 'Saisir du temps' } },
           {
@@ -201,7 +202,7 @@ describe('the permissions of a plugin', () => {
     });
 
     expect((await matrix()).plugins).toStrictEqual([
-      { slug: 'unreadable', name: 'Unreadable', permissions: [] },
+      { slug: 'unreadable', name: { en: 'Unreadable', fr: 'Unreadable' }, permissions: [] },
     ]);
     expect((await call('GET', '/api/v1/me', undefined, graceCookie)).statusCode).toBe(200);
   });

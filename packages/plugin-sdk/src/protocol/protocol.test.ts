@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { PLUGIN_NEEDS } from './calls.ts';
 import { EVENT_TYPES, eventPayloadSchema } from './events.ts';
 import { type Manifest, manifestSchema, PLUGIN_LIMITS } from './manifest.ts';
+import { logoTypeOf } from './package.ts';
 import { isApiCompatible } from './version.ts';
 
 const manifest: Manifest = {
   id: 'time-tracking',
+  name: 'plugin.name',
+  description: 'plugin.description',
   apiVersion: '^1.0',
   needs: ['issue.read'],
   permissions: { 'reports.read': { scope: 'project', label: 'permissions.reportsRead' } },
@@ -92,5 +95,17 @@ describe('the protocol', () => {
       expect(eventPayloadSchema(type).shape.change).toBeDefined();
     }
     expect(EVENT_TYPES).toHaveLength(16);
+  });
+});
+
+describe('a plugin’s logo', () => {
+  it('is known by its first bytes, whatever its name says', () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0]);
+    const webp = new TextEncoder().encode('RIFF\0\0\0\0WEBPVP8 ');
+
+    expect(logoTypeOf(png)).toBe('image/png');
+    expect(logoTypeOf(webp)).toBe('image/webp');
+    expect(logoTypeOf(new TextEncoder().encode('<svg onload="alert(1)">'))).toBeNull();
+    expect(logoTypeOf(new Uint8Array())).toBeNull();
   });
 });

@@ -7,6 +7,7 @@ import {
   ListIcon,
   type LucideIcon,
   MailIcon,
+  PuzzleIcon,
   ShieldCheckIcon,
   SlidersHorizontalIcon,
   UserIcon,
@@ -38,12 +39,13 @@ export interface NavSection {
   items: readonly NavItem[];
 }
 
-/** Each of these opens a part of the settings: instance settings, members, roles. */
+/** Each of these opens a part of the settings: instance settings, members, roles, plugins. */
 export const SETTINGS_PERMISSIONS: readonly Permission[] = [
   'instance.settings.manage',
   'instance.mail.manage',
   'instance.users.manage',
   'instance.roles.manage',
+  'instance.plugins.manage',
 ];
 
 export const NAV_SECTIONS: readonly NavSection[] = [
@@ -116,6 +118,12 @@ export const SETTINGS_NAV: readonly NavSection[] = [
         labelKey: 'mail.title',
         icon: MailIcon,
         requiresAnyOf: ['instance.mail.manage'],
+      },
+      {
+        to: '/settings/plugins',
+        labelKey: 'plugins.title',
+        icon: PuzzleIcon,
+        requiresAnyOf: ['instance.plugins.manage'],
       },
     ],
   },

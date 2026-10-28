@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  customType,
   index,
   integer,
   jsonb,
@@ -15,6 +16,9 @@ import {
 import { users } from '../auth.ts';
 import { id, timestamps } from '../columns.ts';
 import { projects } from '../projects.ts';
+
+/** Bytes as PostgreSQL keeps them, which the driver reads as a `Buffer`. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
 
 /**
  * A plugin installed by an administrator: the package uploaded, what its code declared, and what
@@ -48,6 +52,12 @@ export const plugins = pgTable(
     /** Its runs that failed in a row: past a few, it is stopped and the administrators told. */
     failures: integer('failures').notNull().default(0),
     lastError: text('last_error'),
+    /**
+     * Its logo, from its package, checked by its bytes: small enough to keep beside it here, and
+     * gone with it. Mirrors PLUGIN_LOGO_TYPES (`@toppo-tracker/plugin-sdk/protocol`).
+     */
+    logo: bytea('logo'),
+    logoType: text('logo_type'),
     ...timestamps,
   },
   (table) => [
@@ -64,6 +74,9 @@ export const plugins = pgTable(
     check('plugins_package_sha256_format', sql`${table.packageSha256} ~ '^[0-9a-f]{64}$'`),
     check('plugins_failures_not_negative', sql`${table.failures} >= 0`),
     check('plugins_last_error_length', sql`char_length(${table.lastError}) <= 2000`),
+    check('plugins_logo_whole', sql`(${table.logo} is null) = (${table.logoType} is null)`),
+    check('plugins_logo_type', sql`${table.logoType} in ('image/png', 'image/webp')`),
+    check('plugins_logo_size', sql`octet_length(${table.logo}) <= 262144`),
     // Running takes an administrator's approval, whoever gave it.
     check(
       'plugins_enabled_are_approved',

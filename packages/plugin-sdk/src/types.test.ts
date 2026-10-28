@@ -8,9 +8,23 @@ import { definePlugin, z } from './index.ts';
  */
 describe('the types of a plugin', () => {
   it('refuse its author’s mistakes before anything runs', () => {
-    const en = { permissions: { log: 'Log time' }, errors: { tooMuch: 'Too much' } } as const;
-    const fr = { permissions: { log: 'Saisir' }, errors: { tooMuch: 'Trop' } } as const;
-    const declared = { id: 'time-tracking', apiVersion: '^1.0', messages: { en, fr } } as const;
+    const en = {
+      name: 'Time tracking',
+      permissions: { log: 'Log time' },
+      errors: { tooMuch: 'Too much' },
+    } as const;
+    const fr = {
+      name: 'Suivi du temps',
+      permissions: { log: 'Saisir' },
+      errors: { tooMuch: 'Trop' },
+    } as const;
+    const declared = {
+      id: 'time-tracking',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.0',
+      messages: { en, fr },
+    } as const;
 
     // Each mistake of a declaration alone: one hides the next, as TypeScript reports one at a time.
     // @ts-expect-error a core permission plugins cannot need
@@ -22,6 +36,10 @@ describe('the types of a plugin', () => {
     });
     // @ts-expect-error French words with a key missing
     definePlugin({ ...declared, messages: { en, fr: { permissions: { log: 'Saisir' } } } });
+    // @ts-expect-error a description that is no message key
+    definePlugin({ ...declared, description: 'Logs time' });
+    // @ts-expect-error a logo Toppo would not show
+    definePlugin({ ...declared, logo: 'logo.svg' });
 
     const plugin = definePlugin({
       ...declared,

@@ -23,11 +23,37 @@ export const pluginSlugParamsSchema = z.object({
   pluginSlug: pluginSlugSchema,
 });
 
+/** Words in each language Toppo speaks: a plugin's, from its own messages. */
+const translatedSchema = z.object({ en: z.string(), fr: z.string() });
+
+/**
+ * How a plugin's run went wrong, in Toppo's words: the sandbox's own failures, and a handler that
+ * answered an error. Never in the plugin's words, which stay in the server's log.
+ */
+export const PLUGIN_FAILURES = [
+  'LOAD_FAILED',
+  'TIMEOUT',
+  'OUT_OF_MEMORY',
+  'PLUGIN_ERROR',
+  'INVALID_ANSWER',
+  'CRASHED',
+  'ANSWERED_ERROR',
+] as const;
+
+export type PluginFailure = (typeof PLUGIN_FAILURES)[number];
+
+/** Runs that fail in a row before Toppo disables their plugin. */
+export const FAILURES_BEFORE_DISABLING = 10;
+
 /** A plugin as the list of installed ones shows it. */
 export const pluginSummarySchema = z.object({
   slug: z.string(),
+  /** "Time tracking", in each language. */
+  name: translatedSchema,
   version: z.string(),
   state: z.enum(PLUGIN_STATES),
+  /** Where its logo is served, a new address for each package; `null` when it has none. */
+  logoUrl: z.string().nullable(),
   /** UTC ISO 8601 date it was uploaded first. */
   createdAt: z.iso.datetime(),
   /** UTC ISO 8601 date of its last upload, approval or change of state. */
@@ -55,6 +81,8 @@ export type InstallPluginResponse = z.infer<typeof installPluginResponseSchema>;
 
 /** Body of `GET /api/v1/plugins/:pluginSlug`: what its code declares, to approve it. */
 export const pluginDetailsResponseSchema = pluginSummarySchema.extend({
+  /** What it does, in a sentence, in each language. */
+  description: translatedSchema,
   /** SHA-256 of the zip uploaded, hex-encoded, for the administrator to compare. */
   packageSha256: z.string(),
   /** The plugin API it was written for: `^1.0`. */
@@ -66,7 +94,7 @@ export const pluginDetailsResponseSchema = pluginSummarySchema.extend({
     z.object({
       name: z.string(),
       scope: z.enum(['instance', 'project']),
-      label: z.string(),
+      label: translatedSchema,
     }),
   ),
   /** The events it hears of. */
@@ -78,6 +106,10 @@ export const pluginDetailsResponseSchema = pluginSummarySchema.extend({
   projects: z.array(z.object({ id: z.uuid(), key: z.string(), name: z.string() })),
   /** Who approved what it declares, and when: `null` while it waits for an approval. */
   approval: z.object({ by: userRefSchema.nullable(), at: z.iso.datetime() }).nullable(),
+  /** Its runs that failed in a row: at 10, Toppo disables it. */
+  failures: z.number().int().nonnegative(),
+  /** How its last run that failed went wrong, and in what (`issue.statusChanged`, `action …`). */
+  lastFailure: z.object({ reason: z.enum(PLUGIN_FAILURES), during: z.string() }).nullable(),
 });
 
 export type PluginDetailsResponse = z.infer<typeof pluginDetailsResponseSchema>;

@@ -8,7 +8,7 @@ import { RowLabel, rowKey, sectionKey, sectionText } from './row-label.tsx';
 
 /** The matrix for small screens: one role at a time, chosen with tabs that scroll sideways. */
 export function RolePermissions({ roles, matrix, settingsOf, onChange }: MatrixProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [chosenId, setChosenId] = useState<string>();
   const role = roles.find((candidate) => candidate.id === chosenId) ?? roles[0];
 
@@ -47,9 +47,11 @@ export function RolePermissions({ roles, matrix, settingsOf, onChange }: MatrixP
               id={`role-section-${sectionKey(section)}`}
               className="text-xs font-semibold text-foreground"
             >
-              {sectionText(section, t).title}
+              {sectionText(section, t, locale).title}
             </h2>
-            <p className="text-xs text-muted-foreground">{sectionText(section, t).detail}</p>
+            <p className="text-xs text-muted-foreground">
+              {sectionText(section, t, locale).detail}
+            </p>
           </div>
           <ul className="divide-y divide-border">
             {section.rows.map((row) => (

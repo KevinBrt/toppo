@@ -351,6 +351,13 @@
       "when": 1793205081425,
       "tag": "0049_plugin_once_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793209203512,
+      "tag": "0050_plugin_logos",
+      "breakpoints": true
     }
   ]
 }

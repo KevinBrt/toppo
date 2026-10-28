@@ -3,6 +3,7 @@ import { PLUGINS_MAX, type PluginsResponse } from '@toppo-tracker/shared';
 import { asc } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
+import { identityOf, PLUGIN_IDENTITY } from '../utils/plugin-rows.util.ts';
 
 const { plugins } = schema;
 
@@ -14,7 +15,7 @@ export const listPlugins = defineQuery({
   async handler({ db }): Promise<PluginsResponse> {
     const rows = await db
       .select({
-        slug: plugins.slug,
+        ...PLUGIN_IDENTITY,
         version: plugins.version,
         state: plugins.state,
         createdAt: plugins.createdAt,
@@ -24,11 +25,18 @@ export const listPlugins = defineQuery({
       .orderBy(asc(plugins.slug))
       .limit(PLUGINS_MAX);
     return {
-      plugins: rows.map((row) => ({
-        ...row,
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-      })),
+      plugins: rows.map((row) => {
+        const { name, logoUrl } = identityOf(row);
+        return {
+          slug: row.slug,
+          name,
+          version: row.version,
+          state: row.state,
+          logoUrl,
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+        };
+      }),
     };
   },
 });

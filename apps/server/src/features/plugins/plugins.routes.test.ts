@@ -22,7 +22,11 @@ import {
   createPackageStore,
   type PackageStore,
 } from '../../platform/plugins/packages/package-store.ts';
-import { testManifest, testPackage } from '../../platform/plugins/packages/test-package.ts';
+import {
+  TEST_PNG,
+  testManifest,
+  testPackage,
+} from '../../platform/plugins/packages/test-package.ts';
 import {
   buildTestApp,
   cookieHeader,
@@ -147,16 +151,69 @@ describe('installing a plugin', () => {
       { slug: 'time-tracking', version: '1.2.0', state: 'pending' },
     ]);
     expect(await details()).toMatchObject({
+      name: { en: 'Time tracking', fr: 'Suivi du temps' },
+      description: { en: 'Time spent on each issue.', fr: 'Le temps passé sur chaque ticket.' },
+      logoUrl: null,
       packageSha256: sha256,
       apiVersion: '^1.0',
       needs: ['issue.read', 'comment.create'],
-      permissions: [{ name: 'entries.log', scope: 'project', label: 'Log time' }],
+      permissions: [
+        {
+          name: 'entries.log',
+          scope: 'project',
+          label: { en: 'Log time', fr: 'Saisir du temps' },
+        },
+      ],
       events: ['issue.statusChanged'],
       actions: ['timeEntry.log'],
       allProjects: false,
       projects: [],
       approval: null,
+      failures: 0,
+      lastFailure: null,
     });
+  });
+
+  it('keeps its logo, served to whoever may see it, at an address of its package', async () => {
+    await install(
+      testPackage({
+        manifest: testManifest({ logo: 'logo.png' }),
+        logo: { name: 'logo.png', bytes: TEST_PNG },
+      }),
+    );
+    const { logoUrl } = await details();
+    expect(logoUrl).toMatch(/^\/api\/v1\/plugins\/time-tracking\/logo\?v=[0-9a-f]{16}$/);
+    expect((await listed())[0]?.logoUrl).toBe(logoUrl);
+
+    const logo = await call('GET', logoUrl ?? '');
+    expect(logo.statusCode).toBe(200);
+    expect(logo.headers['content-type']).toBe('image/png');
+    expect(logo.headers['content-security-policy']).toBe("default-src 'none'; sandbox");
+    expect(new Uint8Array(logo.rawPayload)).toStrictEqual(TEST_PNG);
+    // Waiting for an approval, its logo tells nobody else it is there.
+    expect((await call('GET', logoUrl ?? '', undefined, teamCookie)).statusCode).toBe(404);
+    await approve('all');
+    expect((await call('GET', logoUrl ?? '', undefined, teamCookie)).statusCode).toBe(200);
+  });
+
+  it('refuses a logo that is not the one its code names, or not what its name says', async () => {
+    for (const zip of [
+      testPackage({ logo: { name: 'logo.png', bytes: TEST_PNG } }),
+      testPackage({ manifest: testManifest({ logo: 'logo.png' }) }),
+      testPackage({
+        manifest: testManifest({ logo: 'logo.webp' }),
+        logo: { name: 'logo.webp', bytes: TEST_PNG },
+      }),
+      testPackage({
+        manifest: testManifest({ logo: 'logo.png' }),
+        logo: { name: 'logo.png', bytes: new TextEncoder().encode('<svg onload="x()">') },
+      }),
+    ]) {
+      const refused = await upload(zip);
+      expect(refused.statusCode).toBe(422);
+      expect(errorCode(refused)).toBe('PLUGIN_PACKAGE_INVALID');
+    }
+    expect(await listed()).toStrictEqual([]);
   });
 
   it('runs once approved, in the projects chosen or in all of them', async () => {
