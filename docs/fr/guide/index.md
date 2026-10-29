@@ -14,7 +14,13 @@ Toppo est un outil de suivi de tickets open source que vous hébergez vous-même
 - **Votre équipe et vos clients au même endroit.** Les rôles sont faits des permissions que vous choisissez. Les demandeurs signalent et suivent leurs propres tickets sans voir ceux des autres.
 - **Sur tous les écrans.** Chaque page fonctionne sur un téléphone, au clavier seul, et avec un lecteur d’écran.
 
-## Par où commencer
+## Ce guide
 
-- Pour installer Toppo sur votre serveur, lisez [Auto-hébergement](../self-hosting).
-- Pour travailler sur le code de Toppo, lisez [Contribuer](../contributing).
+- [Se repérer](./getting-around) : la barre latérale, la palette de commandes, le clavier.
+- [Projets](./projects) et [tickets](./issues) : signaler, commenter, joindre, suivre, les doublons.
+- [Trouver des tickets](./finding-issues) : la liste, ses filtres, tris et regroupements, la recherche, les changements sur plusieurs tickets à la fois.
+- [Workflows et statuts](./workflows) et [propriétés et champs](./properties) : façonner les tickets à la manière de votre équipe.
+- [Rôles et permissions](./roles) et [membres et accès](./members) : qui peut faire quoi, et où.
+- [Notifications](./notifications) et [votre compte](./account).
+
+Pour installer Toppo sur votre serveur, lisez [Auto-hébergement](../self-hosting) ; pour travailler sur son code, [Contribuer](../contributing).

@@ -14,7 +14,13 @@ Toppo is an open-source issue tracker you host yourself: one edition with every 
 - **Your team and your customers in one place.** Roles are made of permissions you choose. Requesters report and follow their own issues without seeing anyone else's.
 - **On every screen.** Every page works on a phone, with the keyboard alone, and with a screen reader.
 
-## Where to start
+## This guide
 
-- To install Toppo on your server, read [Self-hosting](../self-hosting).
-- To work on Toppo's code, read [Contributing](../contributing).
+- [Getting around](./getting-around): the sidebar, the command palette, the keyboard.
+- [Projects](./projects) and [issues](./issues): reporting, commenting, attaching, following, duplicates.
+- [Finding issues](./finding-issues): the list, its filters, sorts and groups, the search, changes to many issues at once.
+- [Workflows and statuses](./workflows) and [properties and fields](./properties): shaping issues for the way your team works.
+- [Roles and permissions](./roles) and [members and access](./members): who may do what, and where.
+- [Notifications](./notifications) and [your account](./account).
+
+To install Toppo on your server, read [Self-hosting](../self-hosting); to work on its code, [Contributing](../contributing).

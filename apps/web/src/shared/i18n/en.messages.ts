@@ -1000,7 +1000,7 @@ export const en = {
       },
       projectSettings: {
         label: 'Project settings',
-        description: 'Adapt a project’s workflow, fields and labels.',
+        description: 'Rename or archive a project, adapt its workflow and its properties.',
       },
       projectMembers: {
         label: 'Project access',
