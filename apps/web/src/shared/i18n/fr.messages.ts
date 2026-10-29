@@ -1038,7 +1038,7 @@ export const fr: Messages = {
       },
       projectSettings: {
         label: 'Paramètres du projet',
-        description: 'Adapter le workflow, les champs et les labels d’un projet.',
+        description: 'Renommer ou archiver un projet, adapter son workflow et ses propriétés.',
       },
       projectMembers: {
         label: 'Accès au projet',

@@ -10,7 +10,22 @@ const ENGLISH: DefaultTheme.Config = {
     { text: 'Contributing', link: '/contributing' },
   ],
   sidebar: [
-    { text: 'Guide', items: [{ text: 'What Toppo is', link: '/guide/' }] },
+    {
+      text: 'Guide',
+      items: [
+        { text: 'What Toppo is', link: '/guide/' },
+        { text: 'Getting around', link: '/guide/getting-around' },
+        { text: 'Projects', link: '/guide/projects' },
+        { text: 'Issues', link: '/guide/issues' },
+        { text: 'Finding issues', link: '/guide/finding-issues' },
+        { text: 'Workflows and statuses', link: '/guide/workflows' },
+        { text: 'Properties and fields', link: '/guide/properties' },
+        { text: 'Roles and permissions', link: '/guide/roles' },
+        { text: 'Members and access', link: '/guide/members' },
+        { text: 'Notifications', link: '/guide/notifications' },
+        { text: 'Your account', link: '/guide/account' },
+      ],
+    },
     {
       text: 'Self-hosting',
       items: [
@@ -42,7 +57,22 @@ const FRENCH: DefaultTheme.Config = {
     { text: 'Contribuer', link: '/fr/contributing' },
   ],
   sidebar: [
-    { text: 'Guide', items: [{ text: 'Ce qu’est Toppo', link: '/fr/guide/' }] },
+    {
+      text: 'Guide',
+      items: [
+        { text: 'Ce qu’est Toppo', link: '/fr/guide/' },
+        { text: 'Se repérer', link: '/fr/guide/getting-around' },
+        { text: 'Projets', link: '/fr/guide/projects' },
+        { text: 'Tickets', link: '/fr/guide/issues' },
+        { text: 'Trouver des tickets', link: '/fr/guide/finding-issues' },
+        { text: 'Workflows et statuts', link: '/fr/guide/workflows' },
+        { text: 'Propriétés et champs', link: '/fr/guide/properties' },
+        { text: 'Rôles et permissions', link: '/fr/guide/roles' },
+        { text: 'Membres et accès', link: '/fr/guide/members' },
+        { text: 'Notifications', link: '/fr/guide/notifications' },
+        { text: 'Votre compte', link: '/fr/guide/account' },
+      ],
+    },
     {
       text: 'Auto-hébergement',
       items: [
