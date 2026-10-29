@@ -96,7 +96,9 @@ describe('timeEntry.log', () => {
     expect(toppo.records('timeEntry')).toStrictEqual([]);
   });
 
-  it('stops at a thousand entries on one issue', async () => {
+  // A thousand runs, each counting the issue's entries again: a tenth of a second here, past
+  // five seconds on a CI runner busy with the other workspaces' tests.
+  it('stops at a thousand entries on one issue', { timeout: 30_000 }, async () => {
     const { issue, logger } = withIssue();
     for (let entry = 0; entry < 1000; entry++) {
       await logger.run(logTime, { issueId: issue.id, minutes: 1, spentOn: DAY });
