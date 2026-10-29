@@ -1,4 +1,5 @@
-import type { PluginDetailsResponse } from '@toppo-tracker/shared';
+import type { Locale, PluginDetailsResponse } from '@toppo-tracker/shared';
+import type { Translate } from '../../../../shared/i18n/i18n.types.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { PLUGIN_EVENT_MESSAGES } from '../../constants/plugin-events.constants.ts';
 import type { NeedLabel } from '../../models/plugin-page.model.ts';
@@ -6,8 +7,8 @@ import { DetailsSection } from './details-section.tsx';
 
 /**
  * What a plugin declares, in plain words, for an administrator to approve it knowingly: what it
- * does in Toppo, the permissions it adds, the properties it adds to issues, and the events it
- * listens to.
+ * does in Toppo, the permissions it adds, the properties it adds to issues, the events it
+ * listens to, what it reaches outside Toppo, and what it does on its own.
  */
 export function PluginDeclarations({
   plugin,
@@ -88,8 +89,50 @@ export function PluginDeclarations({
           empty={t('plugins.eventsNone')}
         />
       </DetailsSection>
+      <DetailsSection
+        title={t('plugins.httpTitle')}
+        description={plugin.http ? t('plugins.httpDescription') : undefined}
+      >
+        <Sentences sentences={reached(plugin.http, locale, t)} empty={t('plugins.httpNone')} />
+      </DetailsSection>
+      <DetailsSection
+        title={t('plugins.jobsTitle')}
+        description={plugin.jobs.length > 0 ? t('plugins.jobsDescription') : undefined}
+      >
+        <Sentences
+          sentences={plugin.jobs.map((job) => ({
+            key: job.name,
+            text: t('plugins.jobLine', {
+              job: job.label[locale],
+              every: t(`plugins.jobEvery.${job.every}`),
+            }),
+          }))}
+          empty={t('plugins.jobsNone')}
+        />
+      </DetailsSection>
     </>
   );
+}
+
+/** Where it may send requests, one sentence each: a site, a setting's address, any site. */
+function reached(
+  http: PluginDetailsResponse['http'],
+  locale: Locale,
+  t: Translate,
+): { key: string; text: string }[] {
+  switch (http?.kind) {
+    case 'hosts':
+      return http.hosts.map((host) => ({ key: host, text: t('plugins.httpHost', { host }) }));
+    case 'settings':
+      return http.settings.map((setting) => ({
+        key: setting.en,
+        text: t('plugins.httpSetting', { setting: setting[locale] }),
+      }));
+    case 'any':
+      return [{ key: 'any', text: t('plugins.httpAny') }];
+    default:
+      return [];
+  }
 }
 
 /** A list of short sentences, or a line saying there is none. */

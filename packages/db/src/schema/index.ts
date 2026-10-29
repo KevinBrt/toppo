@@ -25,6 +25,7 @@ export {
   propertyOptions,
 } from './issues.ts';
 export { jobs } from './jobs.ts';
+export { pluginHttpCalls } from './plugins/plugin-http-calls.ts';
 export { pluginOnceKeys } from './plugins/plugin-once-keys.ts';
 export { pluginProjectSettings } from './plugins/plugin-project-settings.ts';
 export { pluginRecordSlots } from './plugins/plugin-record-slots.ts';

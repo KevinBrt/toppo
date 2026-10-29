@@ -4,11 +4,13 @@ import { type PluginDefinition, register } from './definition.ts';
 import type { MessageKey, MessagesOf } from './messages.ts';
 import type { Properties, PropertyNames } from './property.ts';
 import type { PluginNeed } from './protocol/calls.ts';
+import type { JobEvery } from './protocol/declarations/jobs.ts';
 import type { ScreenIcon } from './protocol/declarations/screens.ts';
 import type { EventPayload, EventType } from './protocol/events.ts';
 import type { Messages } from './protocol/manifest.ts';
 import type { PluginLogo } from './protocol/package.ts';
 import { HOST_GLOBAL, type HostGlobal, PLUGIN_GLOBAL } from './protocol/sandbox.ts';
+import { provideUrl } from './sandbox/url.ts';
 import { type Page, type Panel, type ScreenComponent, serveScreens } from './screens/screens.ts';
 import { servePlugin } from './serve.ts';
 
@@ -32,6 +34,22 @@ export type Access<P, Input> =
   | { issue: StringFieldOf<Input>; permission?: PermissionOf<P> };
 
 const NO_SETTINGS = z.object({});
+
+/** The settings of a plugin that hold a text: those that may hold an address. */
+type TextSettingOf<S extends z.ZodType> = {
+  [K in keyof z.output<S>]-?: NonNullable<z.output<S>[K]> extends string ? K : never;
+}[keyof z.output<S>] &
+  string;
+
+/**
+ * What a plugin may reach outside Toppo, shown to who approves it: hosts it names, the address
+ * typed in some of its settings, or any public site. Never an address inside the network, unless
+ * its approval names the host.
+ */
+export type HttpReach<S extends z.ZodType> =
+  | readonly string[]
+  | { fromSettings: readonly TextSettingOf<S>[] }
+  | 'any';
 
 type NoEntities = Record<never, never>;
 
@@ -70,6 +88,8 @@ export interface PluginConfig<
   entities?: E;
   /** What it adds to issues, by name, each declared with `defineProperty`: 5 at most. */
   properties?: Pr & PropertyNames<M, Pr>;
+  /** What it may reach outside Toppo through `ctx.http`: nothing unless it says so. */
+  http?: HttpReach<S>;
   messages: { en: M; fr: MessagesOf<M> };
 }
 
@@ -82,6 +102,12 @@ export interface Action<I extends z.ZodType, R> {
 
 export interface EventHandler<T extends EventType> {
   readonly event: T;
+}
+
+/** A job of the plugin: what it does on its own, again and again. */
+export interface Job {
+  readonly name: string;
+  readonly every: JobEvery;
 }
 
 /**
@@ -138,6 +164,19 @@ export interface Plugin<
   ): Page;
   /** A panel of the plugin beside one of Toppo's screens: an issue's. */
   definePanel(definition: ScreenDeclaration<M, P> & { on: Panel['on'] }): Panel;
+  /**
+   * What the plugin does on its own, as itself, every hour, day or week, counted from its last
+   * run: Toppo keeps no time zone to run it at an hour. Its work must bear being done twice: a
+   * server stopped mid-way runs it again.
+   */
+  defineJob(definition: {
+    /** `weeklySummary`. */
+    name: string;
+    every: JobEvery;
+    /** What it does, shown to who approves the plugin. */
+    label: MessageKey<M>;
+    handler(ctx: Context<S, M, PS, E, Pr>): Promise<void>;
+  }): Job;
 }
 
 /**
@@ -166,6 +205,7 @@ export function definePlugin<
     events: new Map(),
     pages: new Map(),
     panels: new Map(),
+    jobs: new Map(),
   };
   const assertNewScreen = (name: string) => {
     if (definition.pages.has(name) || definition.panels.has(name)) {
@@ -220,6 +260,18 @@ export function definePlugin<
       definition.panels.set(name, { on, access, title, component });
       return { name, on };
     },
+    defineJob({ name, every, label, handler }) {
+      if (definition.jobs.has(name)) {
+        throw new Error(`The job ${name} is defined twice`);
+      }
+      // Toppo runs it with a context of this plugin.
+      definition.jobs.set(name, {
+        every,
+        label,
+        handler: (ctx) => handler(ctx as unknown as Context<S, M, PS, E, Pr>),
+      });
+      return { name, every };
+    },
   };
   register(plugin, definition);
   answerInSandbox(plugin);
@@ -231,10 +283,14 @@ export function definePlugin<
   return plugin;
 }
 
-/** In Toppo's sandbox, defines `__toppo` for Toppo to ask; elsewhere (tests), does nothing. */
+/**
+ * In Toppo's sandbox, defines `__toppo` for Toppo to ask, and a `URL` for what reads addresses
+ * (`z.url()`), which its JavaScript lacks; elsewhere (tests), does nothing.
+ */
 function answerInSandbox(plugin: object): void {
   const host: unknown = Reflect.get(globalThis, HOST_GLOBAL);
   if (isHost(host)) {
+    provideUrl(globalThis);
     Reflect.set(globalThis, PLUGIN_GLOBAL, servePlugin(plugin, host));
   }
 }

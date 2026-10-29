@@ -38,6 +38,17 @@ describe('the time tracking plugin', () => {
     });
   });
 
+  it('sends the time of each week to the chat its settings name, which no one sees again', async () => {
+    await import('./jobs/weekly-summary.job.ts');
+    const { manifest } = createTestToppo(plugin);
+
+    expect(manifest.jobs).toStrictEqual([
+      { name: 'weeklySummary', every: 'week', label: 'jobs.weeklySummary' },
+    ]);
+    expect(manifest.http).toStrictEqual({ fromSettings: ['summaryUrl'] });
+    expect(manifest.settings.properties['summaryUrl']).toMatchObject({ writeOnly: true });
+  });
+
   it('shows its time beside each issue, and across its projects in a page of the main sidebar', () => {
     const { manifest } = createTestToppo(plugin);
 

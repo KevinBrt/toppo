@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { definitionOf } from './definition.ts';
-import { z } from './index.ts';
+import { HttpFailure, secret, z } from './index.ts';
 import { definePlugin } from './plugin.ts';
 import { defineProperty } from './property.ts';
 import { SCREEN_RUNTIME_GLOBAL } from './protocol/bridge.ts';
@@ -34,7 +34,11 @@ const snapshot = {
 const en = {
   plugin: { name: 'Time tracking', description: 'Time spent on each issue.' },
   permissions: { log: 'Log time' },
-  settings: { maxMinutesPerDay: { label: 'Minutes a day, at most' } },
+  settings: {
+    maxMinutesPerDay: { label: 'Minutes a day, at most' },
+    webhookUrl: { label: 'Chat webhook' },
+  },
+  jobs: { weeklySummary: 'Sends the week’s time to the chat' },
   projectSettings: {
     budgetDays: { label: 'Budget, in days' },
     reportedEvery: { label: 'Reported every' },
@@ -54,7 +58,11 @@ function timeTracking() {
     apiVersion: '^1.0',
     needs: ['issue.read', 'comment.create'],
     permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
-    settings: z.object({ maxMinutesPerDay: z.int().min(1).default(600) }),
+    settings: z.object({
+      maxMinutesPerDay: z.int().min(1).default(600),
+      webhookUrl: secret(z.url()).optional(),
+    }),
+    http: { fromSettings: ['webhookUrl'] },
     projectSettings: z.object({
       budgetDays: z.number().positive().optional(),
       reportedEvery: z.enum(['week', 'month']).default('month'),
@@ -77,7 +85,11 @@ function timeTracking() {
       fr: {
         plugin: { name: 'Suivi du temps', description: 'Le temps passé sur chaque ticket.' },
         permissions: { log: 'Saisir du temps' },
-        settings: { maxMinutesPerDay: { label: 'Minutes par jour, au plus' } },
+        settings: {
+          maxMinutesPerDay: { label: 'Minutes par jour, au plus' },
+          webhookUrl: { label: 'Webhook du chat' },
+        },
+        jobs: { weeklySummary: 'Envoie le temps de la semaine au chat' },
         projectSettings: {
           budgetDays: { label: 'Budget, en jours' },
           reportedEvery: { label: 'Rapport tous les' },
@@ -114,6 +126,16 @@ function timeTracking() {
           return await ctx.issues.comment(ISSUE, '   ');
         case 'budget':
           return await ctx.projects.settings(PROJECT);
+        case 'fetch': {
+          const answer = await ctx.http.fetch('https://hooks.example.com/T');
+          return { status: answer.status, ok: answer.ok, json: await answer.json() };
+        }
+        case 'fetch-refused':
+          try {
+            return await ctx.http.fetch('https://hooks.example.com/T');
+          } catch (error) {
+            return error instanceof HttpFailure ? { failed: error.code } : 'not an HttpFailure';
+          }
         case 'spent': {
           const issue = await ctx.issues.get(ISSUE);
           await ctx.issues.setProperty(ISSUE, 'timeSpent', (issue?.properties.timeSpent ?? 0) + 30);
@@ -138,6 +160,24 @@ function timeTracking() {
     access: { permission: 'entries.log' },
     title: 'properties.timeSpent',
     component: () => Promise.resolve('EntriesPanel'),
+  });
+  plugin.defineJob({
+    name: 'weeklySummary',
+    every: 'week',
+    label: 'jobs.weeklySummary',
+    async handler(ctx) {
+      if (ctx.settings.webhookUrl === undefined) {
+        return;
+      }
+      const answer = await ctx.http.fetch(ctx.settings.webhookUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: ctx.t('comment.closedAfter', { minutes: 90 }) }),
+      });
+      if (!answer.ok) {
+        throw new Error(`The chat answered ${answer.status}`);
+      }
+    },
   });
   plugin.defineEventHandler({
     event: 'issue.statusChanged',
@@ -229,7 +269,10 @@ describe('a plugin served to Toppo', () => {
           title: 'properties.timeSpent',
         },
       ],
+      jobs: [{ name: 'weeklySummary', every: 'week', label: 'jobs.weeklySummary' }],
+      http: { fromSettings: ['webhookUrl'] },
     });
+    expect(manifest.settings.properties.webhookUrl).toMatchObject({ writeOnly: true });
   });
 
   it('hands its screens to Toppo’s runtime in a frame, each drawn by its own component', async () => {
@@ -453,6 +496,69 @@ describe('a plugin served to Toppo', () => {
     ).toStrictEqual({ ok: false, error: { code: 'UNKNOWN_EVENT' } });
   });
 
+  it('runs a job as itself, sending what it says where its settings say', async () => {
+    const { host, call } = fakeHost({ 'http.fetch': { status: 200, headers: {}, body: 'ok' } });
+    const served = servePlugin(timeTracking(), host);
+    const run = (settings: Record<string, unknown>) =>
+      served.run('job', 'weeklySummary', 'null', context({ user: null, settings }));
+
+    expect(JSON.parse(await run({}))).toStrictEqual({ ok: true, result: null });
+    expect(call).not.toHaveBeenCalled();
+    expect(JSON.parse(await run({ webhookUrl: 'https://hooks.example.com/T' }))).toStrictEqual({
+      ok: true,
+      result: null,
+    });
+    expect(call).toHaveBeenCalledWith(
+      'http.fetch',
+      JSON.stringify({
+        url: 'https://hooks.example.com/T',
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: 'Closed after 90 minutes.' }),
+      }),
+    );
+    expect(
+      JSON.parse(await served.run('job', 'monthlySummary', 'null', context({ user: null }))),
+    ).toStrictEqual({ ok: false, error: { code: 'UNKNOWN_JOB' } });
+  });
+
+  it('fails a job whose request got an answer it did not want', async () => {
+    const { host } = fakeHost({ 'http.fetch': { status: 410, headers: {}, body: 'gone' } });
+
+    const answer = await servePlugin(timeTracking(), host).run(
+      'job',
+      'weeklySummary',
+      'null',
+      context({ user: null, settings: { webhookUrl: 'https://hooks.example.com/T' } }),
+    );
+
+    expect(JSON.parse(answer)).toMatchObject({
+      ok: false,
+      error: { code: 'PLUGIN_ERROR' },
+      detail: expect.stringContaining('The chat answered 410'),
+    });
+  });
+
+  it('reads what a request answers, and tells why one got no answer', async () => {
+    const answered = fakeHost({
+      'http.fetch': { status: 201, headers: { 'content-type': 'application/json' }, body: '[1]' },
+    });
+    const refused = (code: string) => ({
+      host: { call: () => Promise.reject(new Error(code)) } satisfies HostGlobal,
+    });
+
+    expect(await act(answered.host, 'oddities.run', { what: 'fetch' })).toStrictEqual({
+      ok: true,
+      result: { status: 201, ok: true, json: [1] },
+    });
+    expect(
+      await act(refused('ADDRESS_NOT_ALLOWED').host, 'oddities.run', { what: 'fetch-refused' }),
+    ).toStrictEqual({ ok: true, result: { failed: 'ADDRESS_NOT_ALLOWED' } });
+    expect(
+      await act(refused('FORBIDDEN').host, 'oddities.run', { what: 'fetch-refused' }),
+    ).toStrictEqual({ ok: true, result: 'not an HttpFailure' });
+  });
+
   it('answers Toppo in its sandbox only, through `__toppo`', () => {
     timeTracking();
     expect(Reflect.get(globalThis, '__toppo')).toBeUndefined();
@@ -480,6 +586,14 @@ describe('a plugin served to Toppo', () => {
     expect(() =>
       plugin.defineEventHandler({ event: 'issue.statusChanged', handler: () => Promise.resolve() }),
     ).toThrow('The event issue.statusChanged has a handler already');
+    expect(() =>
+      plugin.defineJob({
+        name: 'weeklySummary',
+        every: 'day',
+        label: 'jobs.weeklySummary',
+        handler: () => Promise.resolve(),
+      }),
+    ).toThrow('The job weeklySummary is defined twice');
     expect(() => definitionOf({})).toThrow('Not a plugin');
   });
 });

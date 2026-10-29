@@ -51,7 +51,12 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [ ] the `project` zone, with a project's home page;
     - [ ] pages with typed parameters, several entries of one page;
     - [ ] dialogs, menus and side panels opened by Toppo outside the frame; pickers of people and issues; charts.
-  - [ ] **4. Beyond the instance**: routes, `ctx.crypto`, outbound HTTP, recurring jobs.
+  - [ ] **4. Beyond the instance**:
+    - [x] the core's guard of outbound requests, and `ctx.http.fetch` where a plugin declares, inside the network only as its approval names;
+    - [x] secret settings, sealed once typed;
+    - [x] recurring jobs, every hour, day or week;
+    - [x] `plugins/time-tracking`: the time of each week sent to a chat;
+    - [ ] routes and `ctx.crypto`, opened to plugins once the core's webhooks and GitHub integration build them.
   - [ ] Publish the packages to npm from GitHub Actions, once steps 1 to 3 are done.
 - [ ] Webhooks, then the GitHub integration, in the core, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature.
 - [ ] OIDC, SAML and LDAP, free (Better Auth plugins, added to the endpoint allowlist).

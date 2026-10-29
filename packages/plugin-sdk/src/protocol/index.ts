@@ -58,6 +58,31 @@ export {
   recordFieldsSchemaOf,
 } from './declarations/entities.ts';
 export {
+  checkHttp,
+  HTTP_FAILURES,
+  HTTP_HOST,
+  HTTP_LIMITS,
+  HTTP_METHODS,
+  type HttpAnswer,
+  type HttpDeclaration,
+  type HttpFailureCode,
+  type HttpMethod,
+  type HttpRequest,
+  httpAnswerSchema,
+  httpDeclarationSchema,
+  httpRequestSchema,
+} from './declarations/http.ts';
+export {
+  JOB_EVERY,
+  JOB_EVERY_MS,
+  JOB_NAME,
+  JOBS_MAX,
+  type JobDeclaration,
+  type JobEvery,
+  jobSchema,
+  jobsSchema,
+} from './declarations/jobs.ts';
+export {
   checkProperties,
   PLUGIN_PROPERTIES_MAX,
   PLUGIN_PROPERTY_TYPES,
@@ -88,6 +113,7 @@ export {
   screenAccessSchema,
 } from './declarations/screens.ts';
 export {
+  isSecretSetting,
   NO_SETTINGS_SCHEMA,
   PLUGIN_SETTINGS_MAX,
   SETTING_NAME,

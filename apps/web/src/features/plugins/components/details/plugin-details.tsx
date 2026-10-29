@@ -7,6 +7,7 @@ import { PluginSettingsForm } from '../settings/plugin-settings-form.tsx';
 import { RefusedProjectsAlert } from '../settings/refused-projects-alert.tsx';
 import { PluginDeclarations } from './plugin-declarations.tsx';
 import { PluginHeader } from './plugin-header.tsx';
+import { PluginHttpCalls } from './plugin-http-calls.tsx';
 import { PluginManagement } from './plugin-management.tsx';
 import { PluginReachForm } from './plugin-reach-form.tsx';
 import { PluginStoppedAlert } from './plugin-stopped-alert.tsx';
@@ -49,6 +50,9 @@ export function PluginDetails({
       ) : null}
       {/* A new version starts the form over, from what it was approved for. */}
       <PluginReachForm key={plugin.packageSha256} plugin={plugin} projectPicker={projectPicker} />
+      {plugin.http !== null || plugin.httpCalls.length > 0 ? (
+        <PluginHttpCalls calls={plugin.httpCalls} />
+      ) : null}
       <PluginManagement
         plugin={plugin}
         stopped={stopped}

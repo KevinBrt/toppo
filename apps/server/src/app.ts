@@ -22,10 +22,13 @@ import { registerNotificationRoutes } from './features/notifications/notificatio
 import { createRecord } from './features/plugins/commands/records/create-record.command.ts';
 import { deleteRecord } from './features/plugins/commands/records/delete-record.command.ts';
 import { updateRecord } from './features/plugins/commands/records/update-record.command.ts';
+import { sendPluginRequest } from './features/plugins/commands/send-plugin-request.command.ts';
 import { deliverEventsJob } from './features/plugins/jobs/deliver-events.job.ts';
 import { emailPluginDisabledJob } from './features/plugins/jobs/email-plugin-disabled.job.ts';
 import { fanOutEventsJob } from './features/plugins/jobs/fan-out-events.job.ts';
 import { fillRecordSlotsJob } from './features/plugins/jobs/fill-record-slots.job.ts';
+import { runPluginJobJob } from './features/plugins/jobs/run-plugin-job.job.ts';
+import { schedulePluginJobsJob } from './features/plugins/jobs/schedule-plugin-jobs.job.ts';
 import { sweepOnceKeysJob } from './features/plugins/jobs/sweep-once-keys.job.ts';
 import { registerPluginRoutes } from './features/plugins/plugins.routes.ts';
 import { readOwnProjectSettings } from './features/plugins/queries/read-own-project-settings.query.ts';
@@ -159,6 +162,7 @@ export function createHostCalls(): HostCalls {
     },
     'entities.list': (context, args) => listRecords.execute(context, args),
     'entities.aggregate': (context, args) => aggregateRecords.execute(context, args),
+    'http.fetch': (context, args) => sendPluginRequest.execute(context, args),
   };
 }
 
@@ -229,6 +233,8 @@ export function createJobs({
     emailPluginDisabledJob,
     sweepOnceKeysJob,
     fillRecordSlotsJob,
+    schedulePluginJobsJob,
+    runPluginJobJob,
   ];
 }
 

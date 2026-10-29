@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
 import { checkEntities, entitiesSchema } from './declarations/entities.ts';
+import { checkHttp, httpDeclarationSchema } from './declarations/http.ts';
+import { jobsSchema } from './declarations/jobs.ts';
 import { checkProperties, propertiesSchema } from './declarations/properties.ts';
 import { checkScreens, pagesSchema, panelsSchema } from './declarations/screens.ts';
 import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './declarations/settings.ts';
@@ -111,11 +113,16 @@ export const manifestSchema = z
     pages: pagesSchema.default([]),
     panels: panelsSchema.default([]),
     events: z.array(z.enum(EVENT_TYPES)).max(EVENT_TYPES.length),
+    /** What it does on its own, again and again; none for a plugin uploaded before jobs. */
+    jobs: jobsSchema.default([]),
+    /** What it may reach outside Toppo; nothing for a plugin uploaded before. */
+    http: httpDeclarationSchema.nullable().default(null),
   })
   .superRefine(checkIssueActions)
   .superRefine(checkSettings)
   .superRefine(checkEntities)
   .superRefine(checkProperties)
-  .superRefine(checkScreens);
+  .superRefine(checkScreens)
+  .superRefine(checkHttp);
 
 export type Manifest = z.infer<typeof manifestSchema>;

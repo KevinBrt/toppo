@@ -32,7 +32,7 @@ export const runPluginAction = defineDetachedCommand({
   access: 'authenticated',
   input: pluginActionParamsSchema.extend({ input: z.record(z.string(), z.unknown()) }),
   async handler({ db, actor, log, services }, { pluginSlug, action, input }) {
-    const plugin = await actingPlugin(db, { slug: pluginSlug });
+    const plugin = await actingPlugin(db, { slug: pluginSlug }, services.secrets);
     const declared = plugin?.manifest.actions.find(({ name }) => name === action);
     if (!(plugin && declared)) {
       throw notFound();

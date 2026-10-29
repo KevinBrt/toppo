@@ -37,9 +37,12 @@ async function bundle(): Promise<string> {
   return output[0].code;
 }
 
-const onCall = vi.fn((method: string, _args: unknown) =>
-  Promise.resolve(method === 'issues.get' ? { ...snapshot, description: '' } : { commentId: ADA }),
-);
+const ANSWERS: Record<string, unknown> = {
+  'issues.get': { ...snapshot, description: '' },
+  'issues.comment': { commentId: ADA },
+  'http.fetch': { status: 200, headers: {}, body: 'ok' },
+};
+const onCall = vi.fn((method: string, _args: unknown) => Promise.resolve(ANSWERS[method]));
 let plugin: PluginSandbox;
 let code: string;
 
@@ -56,7 +59,12 @@ beforeAll(async () => {
 
 afterAll(() => plugin.close());
 
-function run(kind: 'action' | 'event', name: string, payload: unknown, context: object) {
+function run(
+  kind: 'action' | 'event' | 'job' | 'settings',
+  name: string,
+  payload: unknown,
+  context: object,
+) {
   return plugin.run({ kind, name, payload, context, deadlineMs: 2000 });
 }
 
@@ -102,6 +110,35 @@ describe('a plugin written with the SDK, in the sandbox', () => {
     ).toStrictEqual({
       ok: true,
       value: { ok: false, error: { code: 'errors.dailyLimit', params: { limit: 60 } } },
+    });
+  });
+
+  it('checks an address in its settings, though the sandbox’s JavaScript has no URL', async () => {
+    const check = (chatUrl: string) =>
+      run('settings', 'instance', { chatUrl }, { locale: 'en', user: null, settings: {} });
+
+    expect(await check('https://hooks.slack.com/services/T0/B0/x')).toStrictEqual({
+      ok: true,
+      value: { ok: true, result: null },
+    });
+    expect(await check('hooks.slack.com/services')).toMatchObject({
+      ok: true,
+      value: { ok: false, error: { code: 'VALIDATION_FAILED', issues: [{ path: 'chatUrl' }] } },
+    });
+  });
+
+  it('runs a job that sends a request with its body, counted without TextEncoder', async () => {
+    const settings = { chatUrl: 'https://hooks.slack.com/services/T0/B0/x' };
+
+    expect(await run('job', 'tell', null, { locale: 'en', user: null, settings })).toStrictEqual({
+      ok: true,
+      value: { ok: true, result: null },
+    });
+    expect(onCall).toHaveBeenCalledWith('http.fetch', {
+      url: settings.chatUrl,
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{"text":"Semaine 44 : 32 h"}',
     });
   });
 

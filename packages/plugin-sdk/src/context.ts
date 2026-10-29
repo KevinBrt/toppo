@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import { createEntityClient, type Entity, type EntityClient } from './entity.ts';
 import { PluginFailure } from './failure.ts';
+import { createHttpClient, type HttpClient } from './http/http.ts';
 import { type MessageKey, type MessageParams, translate } from './messages.ts';
 import type { OwnWritten, Properties, PropertyInput, PropertyValues } from './property.ts';
 import { HOST_CALLS, type HostCallMethod, type IssueDetails } from './protocol/calls.ts';
@@ -67,6 +68,8 @@ export interface Context<
   };
   /** Its records, entity by entity, as far as it, and whoever it acts for, sees them. */
   readonly entities: { readonly [K in keyof E]: EntityClient<E[K]> };
+  /** Requests outside Toppo, where it declared it may go (`http` in `definePlugin`). */
+  readonly http: HttpClient;
 }
 
 /** What an action is given besides: who it runs for. */
@@ -145,5 +148,6 @@ export function createContext<
         createEntityClient(call, name, entity),
       ]),
     ),
+    http: createHttpClient((request) => callToppo(host, 'http.fetch', request)),
   };
 }

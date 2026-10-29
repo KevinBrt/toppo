@@ -78,6 +78,10 @@ async function dispatch(
       return HOST_CALLS[method].result.parse(
         await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
       );
+    case 'http.fetch':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
   }
 }
 

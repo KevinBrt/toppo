@@ -548,6 +548,10 @@ export function fakePlugin(
     properties: [],
     events: [],
     actions: [],
+    jobs: [],
+    http: null,
+    privateHosts: [],
+    httpCalls: [],
     allProjects: false,
     projects: [],
     approval: null,
@@ -3512,28 +3516,51 @@ function saveFakePluginSettings(
   plugin: FakePlugin,
   body: unknown,
 ): Response {
-  return checkFakeSettings(state, body, (values) =>
-    savePlugin(state, { ...plugin, settings: { ...plugin.settings, values, refused: false } }),
-  );
+  // A secret typed is set, one cleared is not, one left out is as it was: never shown again.
+  const isSet = (
+    name: string,
+    values: PluginSettingValues,
+    cleared: readonly string[],
+    was: boolean,
+  ) => Object.hasOwn(values, name) || (was && !cleared.includes(name));
+  return checkFakeSettings(state, body, (values, cleared) => {
+    const { fields } = plugin.settings;
+    const secrets = new Set(
+      fields.flatMap((field) => (field.kind === 'text' && field.secret ? [field.name] : [])),
+    );
+    savePlugin(state, {
+      ...plugin,
+      settings: {
+        ...plugin.settings,
+        fields: fields.map((field) =>
+          field.kind === 'text' && field.secret
+            ? { ...field, secret: { set: isSet(field.name, values, cleared, field.secret.set) } }
+            : field,
+        ),
+        values: Object.fromEntries(Object.entries(values).filter(([name]) => !secrets.has(name))),
+        refused: false,
+      },
+    });
+  });
 }
 
 /** Settings sent, kept by `keep` unless the plugin's code refuses one of them, as the test says. */
 function checkFakeSettings(
   state: FakeServerState,
   body: unknown,
-  keep: (values: PluginSettingValues) => void,
+  keep: (values: PluginSettingValues, clearSecrets: readonly string[]) => void,
 ): Response {
   const parsed = savePluginSettingsRequestSchema.safeParse(body);
   if (!parsed.success) {
     return apiError(400, 'VALIDATION_FAILED');
   }
-  const { values } = parsed.data;
+  const { values, clearSecrets } = parsed.data;
   const refused = Object.keys(values).filter((name) => state.refusedSettings.includes(name));
   if (refused.length > 0) {
     const details = refused.map((path) => ({ path, message: 'Refused by the plugin' }));
     return json({ error: { code: 'PLUGIN_SETTINGS_INVALID', message: 'Refused', details } }, 400);
   }
-  keep(values);
+  keep(values, clearSecrets);
   return NO_CONTENT();
 }
 
@@ -3589,6 +3616,7 @@ function approveFakePlugin(state: FakeServerState, plugin: FakePlugin, body: unk
     state: 'enabled',
     allProjects: keys === 'all',
     projects,
+    privateHosts: [...new Set(parsed.data.privateHosts)],
     approval: { by: { id: state.user.id, name: state.user.name }, at: requestTime },
   });
   return NO_CONTENT();

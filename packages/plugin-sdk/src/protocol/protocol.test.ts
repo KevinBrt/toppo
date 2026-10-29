@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { secret } from '../settings/secret.ts';
 import { PLUGIN_NEEDS } from './calls.ts';
 import { PLUGIN_SETTINGS_MAX } from './declarations/settings.ts';
 import { EVENT_TYPES, eventPayloadSchema } from './events.ts';
@@ -23,6 +24,8 @@ const manifest: Manifest = {
   messages: { en: { permissions: { reportsRead: 'See reports' } }, fr: {} },
   actions: [{ name: 'timeEntry.log', access: { issue: 'issueId' }, input: { type: 'object' } }],
   events: ['issue.created'],
+  jobs: [],
+  http: null,
 };
 
 describe('the API version a plugin asks for', () => {
@@ -154,6 +157,38 @@ describe('the settings Toppo draws', () => {
     ],
   ])('refuses %s', (_, shape) => {
     expect(manifestSchema.safeParse(withSettings(shape)).success).toBe(false);
+  });
+
+  it('takes a secret of the instance’s, typed in rather than given by default', () => {
+    const declared = withSettings({ summaryUrl: secret(z.url()).optional() });
+
+    expect(manifestSchema.parse(declared).settings.properties['summaryUrl']).toMatchObject({
+      type: 'string',
+      format: 'uri',
+      writeOnly: true,
+    });
+    expect(
+      manifestSchema.safeParse(withSettings({ token: secret(z.string()).default('abc') })).error
+        ?.issues[0]?.message,
+    ).toBe("The secret token is the instance's, typed in: no project sets it, no default fills it");
+  });
+
+  it('refuses a secret among a project’s settings', () => {
+    const settings = { token: { label: 'Token' } };
+    const declared = {
+      ...manifest,
+      projectSettings: z.toJSONSchema(z.object({ token: secret(z.string()).optional() }), {
+        io: 'input',
+        unrepresentable: 'any',
+      }),
+      messages: { en: { projectSettings: settings }, fr: { projectSettings: settings } },
+    };
+
+    expect(manifestSchema.safeParse(declared).error?.issues[0]?.path).toStrictEqual([
+      'projectSettings',
+      'properties',
+      'token',
+    ]);
   });
 
   it('takes settings for each project, labelled apart from the instance’s', () => {

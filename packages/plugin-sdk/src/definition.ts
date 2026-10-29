@@ -3,6 +3,7 @@ import type { ActionContext, Context, Entities } from './context.ts';
 import type { MessagesOf } from './messages.ts';
 import type { Properties } from './property.ts';
 import type { PluginNeed } from './protocol/calls.ts';
+import type { JobEvery } from './protocol/declarations/jobs.ts';
 import type { EventType } from './protocol/events.ts';
 import type { accessSchema, Messages } from './protocol/manifest.ts';
 import type { PluginLogo } from './protocol/package.ts';
@@ -20,6 +21,7 @@ export interface PluginDefinition {
     permissions?:
       | Readonly<Record<string, { scope: 'instance' | 'project'; label: string }>>
       | undefined;
+    http?: readonly string[] | { fromSettings: readonly string[] } | 'any' | undefined;
     messages: { en: Messages; fr: MessagesOf<Messages> };
   };
   settings: z.ZodType;
@@ -38,6 +40,11 @@ export interface PluginDefinition {
   /** Its screens, by name, in the order they were defined. */
   pages: Map<string, PageDefinition>;
   panels: Map<string, PanelDefinition>;
+  /** What it does on its own, by name. */
+  jobs: Map<
+    string,
+    { every: JobEvery; label: string; handler(ctx: Context<z.ZodType, Messages>): Promise<void> }
+  >;
 }
 
 const definitions = new WeakMap<object, PluginDefinition>();

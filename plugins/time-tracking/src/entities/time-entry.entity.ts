@@ -12,4 +12,6 @@ export const timeEntry = defineEntity({
     spentOn: z.iso.date(),
     note: z.string().trim().max(500).optional(),
   }),
+  // The weekly summary counts the time of a week by its days.
+  indexes: ['spentOn'],
 });

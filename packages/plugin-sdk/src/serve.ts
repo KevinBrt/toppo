@@ -35,6 +35,9 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
       projectSettings: definition.projectSettings,
       entities: definition.entities,
     });
+    if (kind === 'job') {
+      return await runJob(definition, ctx, name);
+    }
     return kind === 'event'
       ? await runEvent(definition, ctx, name, payload)
       : await runAction(definition, ctx, name, payload, context.user);
@@ -78,6 +81,7 @@ function manifestOf({
   events,
   pages,
   panels,
+  jobs,
 }: PluginDefinition): Omit<Manifest, 'settings' | 'projectSettings' | 'entities'> &
   Record<'settings' | 'projectSettings' | 'entities', Record<string, unknown>> {
   return {
@@ -119,7 +123,17 @@ function manifestOf({
       ...(nav === undefined ? {} : { nav }),
     })),
     panels: [...panels].map(([name, { on, access, title }]) => ({ name, on, access, title })),
+    jobs: [...jobs].map(([name, { every, label }]) => ({ name, every, label })),
+    http: httpOf(config.http),
   };
+}
+
+/** What it may reach, as the manifest writes it. */
+function httpOf(http: PluginDefinition['config']['http']): Manifest['http'] {
+  if (http === undefined || http === 'any') {
+    return http ?? null;
+  }
+  return 'fromSettings' in http ? { fromSettings: [...http.fromSettings] } : [...http];
 }
 
 /** As JSON Schema, for Toppo to check what reaches the plugin and build its forms. */
@@ -142,6 +156,19 @@ async function runEvent(
     return invalid(event.error);
   }
   await handle(ctx, event.data);
+  return { ok: true, result: null };
+}
+
+async function runJob(
+  definition: PluginDefinition,
+  ctx: PluginContext,
+  name: string,
+): Promise<RunAnswer> {
+  const job = definition.jobs.get(name);
+  if (!job) {
+    return failure('UNKNOWN_JOB');
+  }
+  await job.handler(ctx);
   return { ok: true, result: null };
 }
 

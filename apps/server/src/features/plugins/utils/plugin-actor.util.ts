@@ -3,7 +3,9 @@ import { type Manifest, manifestSchema } from '@toppo-tracker/plugin-sdk/protoco
 import { and, eq } from 'drizzle-orm';
 import type { Actor } from '../../../platform/auth/actor.ts';
 import { throughPlugin } from '../../../platform/auth/project-access.ts';
+import type { SecretBox } from '../../../platform/config/secret-box.ts';
 import { pluginPermissionsOf } from '../../../platform/plugins/plugin-permissions.ts';
+import { openSettings } from './settings/secret-settings.util.ts';
 
 const { pluginProjects, plugins, users } = schema;
 
@@ -15,7 +17,10 @@ export interface ActingPlugin {
   /** What it declared, as approved. */
   manifest: Manifest;
   needs: readonly string[];
+  /** As it reads them: its secrets opened. */
   settings: Record<string, unknown>;
+  /** Hosts inside the network its approval lets it reach. */
+  privateHosts: readonly string[];
   /** Its own user, holding its needs in its projects (`resolvePluginProject`). */
   actor: Actor;
 }
@@ -24,6 +29,7 @@ export interface ActingPlugin {
 export async function actingPlugin(
   db: Db,
   which: { id: string } | { slug: string },
+  secrets: SecretBox,
 ): Promise<ActingPlugin | null> {
   const [plugin] = await db
     .select({
@@ -32,6 +38,7 @@ export async function actingPlugin(
       sha256: plugins.packageSha256,
       manifest: plugins.manifest,
       settings: plugins.settings,
+      privateHosts: plugins.privateHosts,
       allProjects: plugins.allProjects,
       userId: users.id,
       userName: users.name,
@@ -63,7 +70,8 @@ export async function actingPlugin(
     sha256: plugin.sha256,
     manifest,
     needs,
-    settings: plugin.settings,
+    settings: openSettings(plugin.settings, secrets),
+    privateHosts: plugin.privateHosts,
     actor: {
       id: plugin.userId,
       name: plugin.userName,

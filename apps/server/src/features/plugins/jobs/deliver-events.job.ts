@@ -29,7 +29,7 @@ export const deliverEventsJob = defineJob({
     activityIds: z.array(z.uuid()).min(1).max(EVENTS_PER_DELIVERY),
   }),
   async handler({ db, log, services }, { pluginId, activityIds }) {
-    const plugin = await actingPlugin(db, { id: pluginId });
+    const plugin = await actingPlugin(db, { id: pluginId }, services.secrets);
     if (!plugin) {
       log.info({ pluginId }, 'Events no longer to hand: the plugin is not enabled');
       return;

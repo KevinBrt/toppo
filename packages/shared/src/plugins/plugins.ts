@@ -2,6 +2,12 @@ import { z } from 'zod';
 import { userRefSchema } from '../members/users.ts';
 import { projectKeySchema } from '../project-key.ts';
 import { PROPERTY_DISPLAYS, PROPERTY_TYPES, PROPERTY_WRITERS } from '../properties/properties.ts';
+import {
+  PLUGIN_JOB_EVERY,
+  PLUGIN_PRIVATE_HOSTS_MAX,
+  pluginHttpCallSchema,
+  privateHostSchema,
+} from './plugin-outbound.ts';
 
 /**
  * `pending` until an administrator approves what it declares, and again when an upgrade asks for
@@ -95,6 +101,8 @@ export const pluginSettingFieldSchema = z.discriminatedUnion('kind', [
     format: z.enum(['text', 'url', 'email']),
     maxLength: z.number().int().nullable(),
     default: z.string().nullable(),
+    /** A secret, never shown again once typed: whether it holds one. `null` for a plain text. */
+    secret: z.object({ set: z.boolean() }).nullable(),
   }),
   z.object({
     ...settingWords,
@@ -129,8 +137,14 @@ export const pluginSettingValuesSchema = z
 
 export type PluginSettingValues = z.infer<typeof pluginSettingValuesSchema>;
 
-/** Body of `PUT /api/v1/plugins/:pluginSlug/settings`, checked by the plugin before it is kept. */
-export const savePluginSettingsRequestSchema = z.object({ values: pluginSettingValuesSchema });
+/**
+ * Body of `PUT /api/v1/plugins/:pluginSlug/settings`, checked by the plugin before it is kept. A
+ * secret left out keeps what it holds; one named in `clearSecrets` holds nothing any more.
+ */
+export const savePluginSettingsRequestSchema = z.object({
+  values: pluginSettingValuesSchema,
+  clearSecrets: z.array(settingNameSchema).max(SETTINGS_MAX).default([]),
+});
 
 export type SavePluginSettingsRequest = z.infer<typeof savePluginSettingsRequestSchema>;
 
@@ -202,6 +216,25 @@ export const pluginDetailsResponseSchema = pluginSummarySchema.extend({
   events: z.array(z.string()),
   /** What people may ask it to do. */
   actions: z.array(z.string()),
+  /** What it does on its own, as itself. */
+  jobs: z.array(
+    z.object({ name: z.string(), every: z.enum(PLUGIN_JOB_EVERY), label: translatedSchema }),
+  ),
+  /**
+   * Where it may send requests outside Toppo: hosts it names, the address typed in some of its
+   * settings (named by their labels), or any public site; `null` for nowhere.
+   */
+  http: z
+    .discriminatedUnion('kind', [
+      z.object({ kind: z.literal('hosts'), hosts: z.array(z.string()) }),
+      z.object({ kind: z.literal('settings'), settings: z.array(translatedSchema) }),
+      z.object({ kind: z.literal('any') }),
+    ])
+    .nullable(),
+  /** Hosts inside the network it may reach, as its approval named them. */
+  privateHosts: z.array(z.string()),
+  /** Its last calls outside Toppo, the latest first. */
+  httpCalls: z.array(pluginHttpCallSchema),
   /** It acts in every project, present and future; otherwise in `projects` only. */
   allProjects: z.boolean(),
   projects: z.array(z.object({ id: z.uuid(), key: z.string(), name: z.string() })),
@@ -228,6 +261,8 @@ export type PluginDetailsResponse = z.infer<typeof pluginDetailsResponseSchema>;
 export const approvePluginRequestSchema = z.object({
   /** Every project, present and future, or these ones. */
   projects: z.union([z.literal('all'), z.array(projectKeySchema).max(PLUGIN_PROJECTS_MAX)]),
+  /** Hosts inside the network it may reach (a team's own chat): none unless named. */
+  privateHosts: z.array(privateHostSchema).max(PLUGIN_PRIVATE_HOSTS_MAX).default([]),
 });
 
 export type ApprovePluginRequest = z.infer<typeof approvePluginRequestSchema>;

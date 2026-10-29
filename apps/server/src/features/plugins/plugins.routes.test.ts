@@ -424,6 +424,7 @@ describe('a plugin’s settings', () => {
           format: 'text',
           maxLength: 80,
           default: 'Support',
+          secret: null,
         },
         {
           name: 'webhookUrl',
@@ -433,6 +434,7 @@ describe('a plugin’s settings', () => {
           format: 'url',
           maxLength: null,
           default: null,
+          secret: null,
         },
         {
           name: 'billable',

@@ -1,5 +1,5 @@
 import { schema } from '@toppo-tracker/db';
-import { pluginSettingValuesSchema, pluginSlugSchema } from '@toppo-tracker/shared';
+import { pluginSettingValueSchema, pluginSlugSchema } from '@toppo-tracker/shared';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineCommand } from '../../../../platform/cqrs/cqrs.ts';
@@ -18,7 +18,11 @@ export const storePluginSettings = defineCommand({
     pluginSlug: pluginSlugSchema,
     /** The package whose code accepted them. */
     sha256: z.string(),
-    values: pluginSettingValuesSchema,
+    /** As kept: its secrets sealed. */
+    values: z.record(
+      z.string(),
+      z.union([pluginSettingValueSchema, z.strictObject({ sealed: z.string() })]),
+    ),
   }),
   async handler({ tx, actor, log }, { pluginSlug, sha256, values }): Promise<void> {
     const [stored] = await tx
@@ -29,7 +33,7 @@ export const storePluginSettings = defineCommand({
     if (!stored) {
       throw new HttpError(409, 'PLUGIN_CHANGED', 'The plugin changed meanwhile: save again');
     }
-    // Which settings, not what they are: some may be secrets one day.
+    // Which settings, not what they are: some are secrets.
     log.info(
       { plugin: pluginSlug, version: stored.version, settings: Object.keys(values), by: actor.id },
       'Plugin settings saved',

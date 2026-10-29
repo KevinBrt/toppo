@@ -11,6 +11,7 @@ import {
 } from '@toppo-tracker/shared';
 import { z } from 'zod';
 import { apiRequest } from '../../../shared/api/http.client.ts';
+import type { SettingsRequest } from '../models/plugin-settings-form.model.ts';
 
 /** Commands answer `204 No Content`. */
 const noContent = z.null();
@@ -47,10 +48,14 @@ export const Plugins = {
   },
 
   /** Approves what it declares, in the projects of these keys or all of them, and enables it. */
-  async approve(slug: string, projects: 'all' | readonly string[]): Promise<void> {
+  async approve(
+    slug: string,
+    projects: 'all' | readonly string[],
+    privateHosts: readonly string[],
+  ): Promise<void> {
     await apiRequest(`${pluginPath(slug)}/approve`, {
       method: 'POST',
-      body: { projects },
+      body: { projects, privateHosts },
       schema: noContent,
     });
   },
@@ -59,10 +64,10 @@ export const Plugins = {
    * Saves its settings, once the plugin's own code accepted them; those left out take their
    * default. Settings it refused since an upgrade are so corrected.
    */
-  async saveSettings(slug: string, values: PluginSettingValues): Promise<void> {
+  async saveSettings(slug: string, request: SettingsRequest): Promise<void> {
     await apiRequest(`${pluginPath(slug)}/settings`, {
       method: 'PUT',
-      body: { values },
+      body: request,
       schema: noContent,
     });
   },

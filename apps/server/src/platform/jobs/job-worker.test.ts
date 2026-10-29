@@ -56,7 +56,19 @@ const urgent = defineJob({
   },
 });
 
-function worker(all: readonly RunnableJob[] = [greet, flaky, hourly, urgent]): WorkerContext {
+/** Runs again as long as its payload says, each at its own pace. */
+const paced = defineJob({
+  type: 'test.paced',
+  payload: z.object({ name: z.string(), againInMs: z.int().nullable() }),
+  handler(_scope, { name, againInMs }) {
+    done.push(`paced ${name}`);
+    return Promise.resolve(againInMs === null ? undefined : { runAgainInMs: againInMs });
+  },
+});
+
+function worker(
+  all: readonly RunnableJob[] = [greet, flaky, hourly, urgent, paced],
+): WorkerContext {
   return { db: context.database.db, jobs: all, log, services: testServices() };
 }
 
@@ -234,6 +246,28 @@ describe('a recurring job', () => {
       .from(jobs)
       .where(eq(jobs.type, 'test.hourly'));
     expect(Number(next?.inMinutes)).toBeGreaterThan(59);
+  });
+});
+
+describe('a job queued once that asks to run again', () => {
+  it('waits for its next run, each at its own pace, until it asks no more', async () => {
+    const { db } = context.database;
+    await enqueue(db, paced, { name: 'daily', againInMs: 24 * 60 * 60 * 1000 });
+    await enqueue(db, paced, { name: 'done', againInMs: null });
+
+    expect(await runNextJob(worker())).toBe(true);
+    expect(await runNextJob(worker())).toBe(true);
+
+    expect(done).toStrictEqual(['paced daily', 'paced done']);
+    const [next] = await db
+      .select({
+        payload: jobs.payload,
+        inHours: sql<number>`extract(epoch from ${jobs.runAt} - now()) / 3600`,
+      })
+      .from(jobs);
+    expect(next?.payload).toStrictEqual({ name: 'daily', againInMs: 24 * 60 * 60 * 1000 });
+    expect(Number(next?.inHours)).toBeGreaterThan(23.9);
+    expect(await stored()).toHaveLength(1);
   });
 });
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ENTITY_INDEXES_TOTAL, ENTITY_NAME } from './declarations/entities.ts';
+import { httpAnswerSchema, httpRequestSchema } from './declarations/http.ts';
 import { issueSnapshotSchema } from './events.ts';
 
 /** The value of one of a plugin's properties: a number, a text, a day, a box ticked (`true`). */
@@ -189,6 +190,15 @@ export const HOST_CALLS = {
         .max(RECORD_GROUPS_MAX)
         .optional(),
     }),
+  },
+  /**
+   * Sends a request outside Toppo, where the plugin declared it may (`http` in its manifest), to
+   * a public address unless its approval names the host. Rejected with one of HTTP_FAILURES.
+   */
+  'http.fetch': {
+    needs: null,
+    args: httpRequestSchema,
+    result: httpAnswerSchema,
   },
 } as const;
 

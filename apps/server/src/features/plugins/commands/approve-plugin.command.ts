@@ -14,14 +14,15 @@ const { pluginProjects, plugins, projects, users } = schema;
 /**
  * Approves what a plugin declares, as it is now, in the projects chosen (or all of them), and
  * enables it, with a user of its own and the properties it adds to issues, named in the language
- * of whoever approves it, once its code takes its settings. Approving again changes its
- * projects; an upgrade that asks for more is approved so.
+ * of whoever approves it, once its code takes its settings. The hosts inside the network it may
+ * reach are named with it. Approving again changes its projects and those hosts; an upgrade that
+ * asks for more is approved so.
  */
 export const approvePlugin = defineCommand({
   name: 'plugin.approve',
   access: { permission: 'instance.plugins.manage' },
   input: approvePluginRequestSchema.extend({ pluginSlug: pluginSlugSchema }),
-  async handler({ tx, actor, log }, { pluginSlug, projects: chosen }): Promise<void> {
+  async handler({ tx, actor, log }, { pluginSlug, projects: chosen, privateHosts }): Promise<void> {
     const plugin = await lockPlugin(tx, pluginSlug);
     await assertSettingsAccepted(tx, plugin);
     const projectIds = chosen === 'all' ? [] : await projectIdsOf(tx, chosen);
@@ -47,12 +48,13 @@ export const approvePlugin = defineCommand({
       .set({
         state: 'enabled',
         allProjects: chosen === 'all',
+        privateHosts: [...new Set(privateHosts)],
         approvedById: actor.id,
         approvedAt: sql`now()`,
       })
       .where(eq(plugins.id, plugin.id));
     log.info(
-      { plugin: pluginSlug, version: plugin.version, projects: chosen, by: actor.id },
+      { plugin: pluginSlug, version: plugin.version, projects: chosen, privateHosts, by: actor.id },
       'Plugin approved and enabled',
     );
   },

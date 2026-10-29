@@ -68,6 +68,16 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
       .getByRole('listitem')
       .filter({ hasText: 'Time spent' }),
   ).toContainText('Duration, written by the plugin');
+  await expect(
+    page
+      .getByRole('region', { name: 'What it reaches outside Toppo' })
+      .getByText('The address typed in its setting “Weekly summary, to a chat”'),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'What it does on its own' })
+      .getByText('Sends the time of the week to a chat, every week'),
+  ).toBeVisible();
   const logo = page.getByRole('main').locator('img');
   await expect(logo).toHaveJSProperty('naturalWidth', 256);
   await expectAccessible(page);
@@ -83,8 +93,19 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   await saveSettings.click();
   await expect(settings.getByText('Enter at least 1.')).toBeVisible();
   await day.fill('7');
+  // A secret is typed blind, then never shown again, even once the page is read anew.
+  const chat = settings.getByLabel('Weekly summary, to a chat', { exact: true });
+  const chatUrl = 'https://hooks.slack.com/services/T0/B0/e2e';
+  await chat.fill(chatUrl);
   await saveSettings.click();
   await expect(settings.getByText('Settings saved.')).toBeVisible();
+  await expect(chat).toHaveValue('');
+  await page.reload();
+  await expect(chat).toHaveValue('');
+  await expect(chat).toHaveAccessibleDescription(
+    /Set, and kept secret: leave it empty to keep it\./,
+  );
+  await expect(page.getByText(chatUrl)).toHaveCount(0);
 
   await page.getByRole('radio', { name: 'Chosen projects' }).check();
   await page.getByRole('searchbox', { name: 'Search projects' }).fill(key);

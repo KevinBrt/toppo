@@ -4,7 +4,7 @@ import { type Db, schema } from '@toppo-tracker/db';
 import { eq, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Services, Transaction } from '../cqrs/cqrs.ts';
-import type { RunnableJob } from './jobs.ts';
+import type { JobOutcome, RunnableJob } from './jobs.ts';
 
 const { jobs } = schema;
 
@@ -75,9 +75,10 @@ async function runLocked(tx: Transaction, job: StoredJob, context: WorkerContext
     await failed(tx, job, definition, new Error('Interrupted too many times'), log);
     return;
   }
+  let outcome: JobOutcome | undefined;
   try {
     // A savepoint: the job's own writes go if it fails, and its failure is still recorded here.
-    await tx.transaction((savepoint) =>
+    outcome = await tx.transaction((savepoint) =>
       definition.run(
         { tx: savepoint, db: context.db, log, services: context.services },
         job.payload,
@@ -87,10 +88,11 @@ async function runLocked(tx: Transaction, job: StoredJob, context: WorkerContext
     await failed(tx, job, definition, error, log);
     return;
   }
-  if (definition.every === null) {
+  const every = definition.every ?? outcome?.runAgainInMs ?? null;
+  if (every === null) {
     await tx.delete(jobs).where(eq(jobs.id, job.id));
   } else {
-    await nextRun(tx, job.id, definition.every, null);
+    await nextRun(tx, job.id, every, null);
   }
 }
 

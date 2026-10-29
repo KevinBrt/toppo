@@ -28,6 +28,8 @@ export function testManifest(overrides: Partial<Manifest> = {}): Manifest {
     events: ['issue.statusChanged'],
     pages: [],
     panels: [],
+    jobs: [],
+    http: null,
     ...overrides,
   };
 }

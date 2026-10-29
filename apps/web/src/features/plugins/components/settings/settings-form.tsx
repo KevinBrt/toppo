@@ -1,23 +1,23 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type {
-  PluginSettingField,
-  PluginSettingValue,
-  PluginSettingValues,
-} from '@toppo-tracker/shared';
+import type { PluginSettingField, PluginSettingValue } from '@toppo-tracker/shared';
 import { Alert, Button } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import { ApiRequestError } from '../../../../shared/api/http.client.ts';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { SETTINGS_ERRORS } from '../../constants/plugin-errors.constants.ts';
-import { settingsForm, settingsRequest } from '../../models/plugin-settings-form.model.ts';
+import {
+  type SettingsRequest,
+  settingsForm,
+  settingsRequest,
+} from '../../models/plugin-settings-form.model.ts';
 import { PluginsQueries } from '../../queries/plugins.queries.ts';
 import { SettingControl } from './setting-control.tsx';
 
 /**
  * A plugin's settings, the instance's or a project's: its form drawn from what its code declares,
  * saved once its code accepts them, saying which it refused. Says so when an upgrade refuses those
- * saved.
+ * saved. A secret is never shown: typed, it replaces the one kept; left empty, it keeps it.
  */
 export function SettingsForm({
   fields,
@@ -29,16 +29,23 @@ export function SettingsForm({
   values: Readonly<Record<string, PluginSettingValue>>;
   /** What to say when an upgrade refuses the settings saved; `null` when it takes them. */
   refused: string | null;
-  save: (values: PluginSettingValues) => Promise<void>;
+  save: (request: SettingsRequest) => Promise<void>;
 }) {
   const { t, locale } = useI18n();
   const queryClient = useQueryClient();
   const [form, setForm] = useState(() => settingsForm(fields, values, locale));
+  const [cleared, setCleared] = useState<ReadonlySet<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const saving = useMutation({
     mutationFn: save,
     onSuccess: async () => {
+      // A secret saved is not shown again: its field starts empty, as kept.
+      const secrets = fields.flatMap((field) =>
+        field.kind === 'text' && field.secret ? [field.name] : [],
+      );
+      setForm((typed) => ({ ...typed, ...Object.fromEntries(secrets.map((name) => [name, ''])) }));
+      setCleared(new Set());
       await queryClient.invalidateQueries({ queryKey: PluginsQueries.all });
     },
     onError: (error) => {
@@ -56,12 +63,19 @@ export function SettingsForm({
     saving.reset();
   }
 
+  function clear(name: string, removed: boolean) {
+    setCleared((names) =>
+      removed ? new Set([...names, name]) : new Set([...names].filter((other) => other !== name)),
+    );
+    edit(name, '');
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const request = settingsRequest(fields, form, t);
     setErrors(request.errors);
     if (Object.keys(request.errors).length === 0) {
-      saving.mutate(request.values);
+      saving.mutate({ values: request.values, clearSecrets: [...cleared] });
     }
   }
 
@@ -78,6 +92,8 @@ export function SettingsForm({
           value={form[field.name]}
           error={errors[field.name]}
           onChange={(value) => edit(field.name, value)}
+          cleared={cleared.has(field.name)}
+          onClear={(removed) => clear(field.name, removed)}
         />
       ))}
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">

@@ -33,7 +33,13 @@ describe('a plugin’s settings, as saved', () => {
   it('are texts, numbers and yes or no, by name', () => {
     const values = { hoursPerDay: 7.5, team: 'Billing', billable: false };
 
-    expect(savePluginSettingsRequestSchema.parse({ values })).toStrictEqual({ values });
+    expect(savePluginSettingsRequestSchema.parse({ values })).toStrictEqual({
+      values,
+      clearSecrets: [],
+    });
+    expect(
+      savePluginSettingsRequestSchema.parse({ values, clearSecrets: ['summaryUrl'] }).clearSecrets,
+    ).toStrictEqual(['summaryUrl']);
   });
 
   it.each([

@@ -47,6 +47,11 @@ export const plugins = pgTable(
     packageSha256: text('package_sha256').notNull(),
     /** It acts in every project, present and future; otherwise in `plugin_projects` only. */
     allProjects: boolean('all_projects').notNull().default(false),
+    /**
+     * Hosts it may reach although they are inside the network (a chat server of the team's own),
+     * as its approval names them: any other internal address is refused to it.
+     */
+    privateHosts: text('private_hosts').array().notNull().default(sql`'{}'::text[]`),
     /** As an administrator saved them, checked by its code; secrets sealed by the instance key. */
     settings: jsonb('settings').$type<Record<string, unknown>>().notNull().default({}),
     /**
@@ -84,6 +89,12 @@ export const plugins = pgTable(
     check('plugins_logo_whole', sql`(${table.logo} is null) = (${table.logoType} is null)`),
     check('plugins_logo_type', sql`${table.logoType} in ('image/png', 'image/webp')`),
     check('plugins_logo_size', sql`octet_length(${table.logo}) <= 262144`),
+    // Mirrors PLUGIN_PRIVATE_HOSTS_MAX and PRIVATE_HOST (`@toppo-tracker/shared`).
+    check('plugins_private_hosts_count', sql`cardinality(${table.privateHosts}) <= 10`),
+    check(
+      'plugins_private_hosts_format',
+      sql`array_to_string(${table.privateHosts}, ' ') ~ '^([a-z0-9]([a-z0-9.:-]{0,251}[a-z0-9])?( |$))*$'`,
+    ),
     check('plugins_settings_object', sql`jsonb_typeof(${table.settings}) = 'object'`),
     // Twice PLUGIN_SETTINGS_MAX_BYTES (`@toppo-tracker/shared`): PostgreSQL writes JSON looser.
     check('plugins_settings_size', sql`octet_length(${table.settings}::text) <= 32768`),
