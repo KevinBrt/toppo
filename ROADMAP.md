@@ -48,7 +48,6 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] `@toppo-tracker/plugin-ui`: components, `useActionQuery`, `useActionMutation`, `useScreen`, `usePeople`, `useT`;
     - [x] pages in the main sidebar, the settings and a project's settings, and panels on an issue;
     - [x] `plugins/time-tracking`: the issue panel, and a page of the time spent by project against its budget;
-    - [ ] the `project` zone, with a project's home page;
     - [ ] pages with typed parameters, several entries of one page;
     - [ ] dialogs, menus and side panels opened by Toppo outside the frame; pickers of people and issues; charts.
   - [ ] **4. Beyond the instance**:
@@ -80,5 +79,6 @@ Known compromises to revisit, not blocking:
 - Lost passwords without email: no way back in for now, the only administrator's included (decided 2026-10-25). Proposed for later: a one-time reset link an administrator creates from the members list (like an invitation), and a recovery code printed in the logs on demand for the last administrator.
 - Invitations are not rate limited (decided 2026-10-27): a limit per recipient would stop one address from being flooded without slowing a large wave of invitations.
 - Markdown: long runs of `*` and `_` still cost the parser more than they should; past a size, a description could be shown as plain text with a button to format it.
+- A project's home page, and a `project` zone where plugins add to it: left out for now (decided 2026-10-29); a project opens on its issues.
 - Commands that give access are tested with a custom role by rule only: a check could require it, as `route-permissions.test.ts` does for the routes that send email.
 - Vitest's browser mode uses port 63315, which Windows sometimes reserves (Hyper-V): `npm run check` then fails until a restart, unless the port is set in `apps/web/vitest.config.ts`.
