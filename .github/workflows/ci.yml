@@ -32,6 +32,8 @@ jobs:
       - run: npm run check:dependencies
       - run: npm audit --omit=dev --audit-level=moderate
       - run: npm run typecheck
+      # The documentation site: a dead link fails it.
+      - run: npm run build --workspace=@toppo-tracker/docs
 
   dependency-review:
     name: Dependency review

@@ -48,6 +48,7 @@ export const ALLOWED_WORKSPACE_DEPENDENCIES: Readonly<Record<string, readonly st
   '@toppo-tracker/cli': ['@toppo-tracker/plugin-sdk'],
   '@toppo-tracker/e2e': [],
   '@toppo-tracker/scripts': [],
+  '@toppo-tracker/docs': [],
 };
 
 /** Workspaces allowed only as devDependencies: test tooling never ships. */

@@ -1,0 +1,20 @@
+/*
+ * Toppo's look for the documentation: the app's fonts and brand colors
+ * (packages/ui/src/theme.css), over VitePress's default theme.
+ */
+:root {
+  --vp-font-family-base: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --vp-font-family-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+
+  --vp-c-brand-1: #0f766e;
+  --vp-c-brand-2: #0d655e;
+  --vp-c-brand-3: #0f766e;
+  --vp-c-brand-soft: #e9f3f2;
+
+  --vp-c-bg-alt: #f5f6f8;
+  --vp-c-text-1: #111418;
+  --vp-c-text-2: #5b6270;
+  --vp-c-divider: #e6e8ec;
+
+  --vp-home-hero-name-color: #0f766e;
+}
