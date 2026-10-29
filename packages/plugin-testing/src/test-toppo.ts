@@ -15,6 +15,7 @@ import {
   type RunAnswer,
   runAnswerSchema,
 } from '@toppo-tracker/plugin-sdk/protocol';
+import { createTestRecords } from './test-records.ts';
 
 /** Why a run was refused: the plugin's own code (a message key), or one of Toppo's. */
 export class PluginRunError extends Error {
@@ -88,6 +89,7 @@ export function createTestToppo(
   if (!isApiCompatible(manifest.apiVersion)) {
     throw new Error(`The plugin asks for API ${manifest.apiVersion}, which this Toppo lacks`);
   }
+  const records = createTestRecords(manifest, issues, nextId);
 
   function visible(issueId: string): IssueDetails | undefined {
     const issue = issues.get(issueId);
@@ -101,6 +103,10 @@ export function createTestToppo(
       : undefined;
     if (!(call && (call.needs === null || manifest.needs.includes(call.needs)))) {
       return Promise.reject(new Error(call ? 'FORBIDDEN' : 'UNKNOWN_METHOD'));
+    }
+    if (method.startsWith('entities.')) {
+      const reader = runningFor && { id: runningFor.id, sees: runningFor.sees };
+      return Promise.resolve().then(() => records.answer(method, args, reader));
     }
     switch (method) {
       case 'issues.get':
@@ -204,6 +210,8 @@ export function createTestToppo(
     manifest,
     /** What the plugin commented, in order. */
     comments: comments as readonly TestComment[],
+    /** What the plugin kept of one of its entities, oldest first, whoever sees it. */
+    records: (entity: string) => records.of(entity),
 
     createIssue(input: TestIssueInput = {}): IssueDetails {
       const id = nextId();

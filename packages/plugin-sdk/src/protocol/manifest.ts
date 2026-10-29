@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
+import { checkEntities, entitiesSchema } from './entities.ts';
 import { EVENT_TYPES } from './events.ts';
 import { PLUGIN_LOGO_FILES } from './package.ts';
 import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './settings.ts';
@@ -96,6 +97,8 @@ export const manifestSchema = z
     settings: settingsSchema,
     /** What each project it acts in sets for itself; none for a plugin uploaded before them. */
     projectSettings: settingsSchema.default(NO_SETTINGS_SCHEMA),
+    /** What it keeps, by name; none for a plugin uploaded before entities. */
+    entities: entitiesSchema.default({}),
     messages: z.strictObject({ en: messagesSchema, fr: messagesSchema }),
     actions: z
       .array(z.strictObject({ name: nameSchema, access: accessSchema, input: jsonSchema }))
@@ -103,6 +106,7 @@ export const manifestSchema = z
     events: z.array(z.enum(EVENT_TYPES)).max(EVENT_TYPES.length),
   })
   .superRefine(checkIssueActions)
-  .superRefine(checkSettings);
+  .superRefine(checkSettings)
+  .superRefine(checkEntities);
 
 export type Manifest = z.infer<typeof manifestSchema>;

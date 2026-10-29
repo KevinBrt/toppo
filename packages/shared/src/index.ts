@@ -366,6 +366,8 @@ export {
   projectPluginsResponseSchema,
   type SavePluginSettingsRequest,
   savePluginSettingsRequestSchema,
+  type UninstallPluginQuery,
+  uninstallPluginQuerySchema,
 } from './plugins/plugins.ts';
 export {
   PROJECT_KEY_MAX_LENGTH,

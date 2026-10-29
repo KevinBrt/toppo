@@ -116,13 +116,16 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   // It runs, in its sandbox, for whoever asks, in the projects it was approved in only.
   const logged = await page.request.post(LOG_TIME, {
     headers: { origin },
-    data: { issueId, minutes: 90 },
+    data: { issueId, minutes: 90, spentOn: '2026-10-28' },
   });
   expect(logged.status()).toBe(200);
-  expect(await logged.json()).toMatchObject({ result: { issueId, minutes: 90 } });
+  // Kept by Toppo, as the entry of whoever logged it.
+  expect(await logged.json()).toMatchObject({
+    result: { issueId, minutes: 90, spentOn: '2026-10-28', createdBy: expect.any(String) },
+  });
   const outside = await page.request.post(LOG_TIME, {
     headers: { origin },
-    data: { issueId: elsewhere, minutes: 90 },
+    data: { issueId: elsewhere, minutes: 90, spentOn: '2026-10-28' },
   });
   expect(outside.status()).toBe(404);
 
@@ -139,6 +142,7 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   await page.getByRole('button', { name: 'Uninstall' }).click();
   const confirm = page.getByRole('dialog', { name: 'Uninstall Time tracking?' });
   await expectAccessible(page);
+  await confirm.getByRole('radio', { name: 'Delete it, for good' }).check();
   await confirm.getByRole('button', { name: 'Uninstall the plugin' }).click();
   await expect(page.getByText('No plugin installed')).toBeVisible();
 
@@ -148,7 +152,7 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   await expect(logTime).toHaveCount(0);
   const gone = await page.request.post(LOG_TIME, {
     headers: { origin },
-    data: { issueId, minutes: 90 },
+    data: { issueId, minutes: 90, spentOn: '2026-10-28' },
   });
   expect(gone.status()).toBe(404);
 });

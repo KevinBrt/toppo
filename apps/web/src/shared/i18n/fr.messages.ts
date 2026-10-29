@@ -1228,6 +1228,9 @@ export const fr: Messages = {
     uninstallConfirmDescription:
       'Ses permissions quittent les rôles. Ce qu’il a écrit dans Toppo reste, signé de son nom.',
     uninstallConfirm: 'Désinstaller le plugin',
+    uninstallData: 'Ce qu’il a gardé',
+    keepData: 'Le garder : le plugin le retrouve s’il revient',
+    deleteData: 'Le supprimer, définitivement',
     cancel: 'Annuler',
     close: 'Fermer',
     stopped:

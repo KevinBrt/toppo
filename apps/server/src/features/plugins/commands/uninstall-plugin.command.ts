@@ -1,25 +1,32 @@
 import { schema } from '@toppo-tracker/db';
-import { pluginSlugParamsSchema } from '@toppo-tracker/shared';
+import { pluginSlugParamsSchema, uninstallPluginQuerySchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
 import { lockPlugin } from '../utils/plugin-rows.util.ts';
 
-const { plugins } = schema;
+const { pluginRecords, plugins } = schema;
 
 /**
  * Removes a plugin: its approval, its projects, its settings, and its permissions from every
- * role. Its zip is swept from the disk within the hour (`plugins.packages.sweep`), once this has
+ * role; what it kept too, unless the administrator keeps it, to be found again if it comes back.
+ * Its zip is swept from the disk within the hour (`plugins.packages.sweep`), once this has
  * committed. Its user stays, so that what it wrote keeps its author.
  */
 export const uninstallPlugin = defineCommand({
   name: 'plugin.uninstall',
   access: { permission: 'instance.plugins.manage' },
-  input: pluginSlugParamsSchema,
-  async handler({ tx, actor, log }, { pluginSlug }): Promise<void> {
+  input: pluginSlugParamsSchema.extend(uninstallPluginQuerySchema.shape),
+  async handler({ tx, actor, log }, { pluginSlug, data }): Promise<void> {
     const plugin = await lockPlugin(tx, pluginSlug);
     await forgetPluginPermissions(tx, pluginSlug, []);
     await tx.delete(plugins).where(eq(plugins.id, plugin.id));
-    log.info({ plugin: pluginSlug, version: plugin.version, by: actor.id }, 'Plugin uninstalled');
+    if (data === 'delete') {
+      await tx.delete(pluginRecords).where(eq(pluginRecords.pluginSlug, pluginSlug));
+    }
+    log.info(
+      { plugin: pluginSlug, version: plugin.version, data, by: actor.id },
+      'Plugin uninstalled',
+    );
   },
 });

@@ -18,6 +18,9 @@ describe('the time tracking plugin', () => {
       projectSettings: {
         properties: { budgetDays: { type: 'number', exclusiveMinimum: 0, maximum: 100_000 } },
       },
+      entities: {
+        timeEntry: { attachedTo: 'issue', fields: { required: ['minutes', 'spentOn'] } },
+      },
       events: [],
       actions: [{ name: 'timeEntry.log' }],
     });
@@ -33,7 +36,7 @@ describe('the time tracking plugin', () => {
     await expect(
       toppo
         .createUser({ permissions: ['entries.log'] })
-        .run(logTime, { issueId: issue.id, minutes: 30 }),
+        .run(logTime, { issueId: issue.id, minutes: 30, spentOn: '2026-10-28' }),
     ).resolves.toMatchObject({ minutes: 30 });
   });
 
@@ -47,7 +50,7 @@ describe('the time tracking plugin', () => {
     await expect(
       toppo
         .createUser({ permissions: ['entries.log'] })
-        .run(logTime, { issueId: issue.id, minutes: 30 }),
+        .run(logTime, { issueId: issue.id, minutes: 30, spentOn: '2026-10-28' }),
     ).rejects.toMatchObject({ code: 'INVALID_SETTINGS' });
   });
 

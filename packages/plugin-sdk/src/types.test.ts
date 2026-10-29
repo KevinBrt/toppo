@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { definePlugin, z } from './index.ts';
+import { defineEntity, definePlugin, z } from './index.ts';
 
 /**
  * Mistakes a plugin's author could make, each of which TypeScript must refuse: were one accepted,
@@ -110,5 +110,48 @@ describe('the types of a plugin', () => {
     });
 
     expect(plugin.id).toBe('time-tracking');
+  });
+
+  it('refuse records that do not fit their entity', () => {
+    const name = { name: 'Time tracking' } as const;
+    const timeEntry = defineEntity({
+      attachedTo: 'issue',
+      fields: z.object({ minutes: z.int(), note: z.string().max(500).optional() }),
+      // @ts-expect-error records on issues are bounded by issue, not by project
+      limits: { perProject: 10 },
+    });
+    const budget = defineEntity({ attachedTo: 'project', fields: z.object({ days: z.number() }) });
+    const plugin = definePlugin({
+      id: 'time-tracking',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.0',
+      needs: ['issue.read'],
+      entities: { timeEntry, budget },
+      messages: { en: name, fr: name },
+    });
+
+    plugin.defineEventHandler({
+      event: 'issue.statusChanged',
+      async handler(ctx, { issue }) {
+        // @ts-expect-error a record on an issue names its issue
+        await ctx.entities.timeEntry.create({ minutes: 30 });
+        // @ts-expect-error a field the entity does not have
+        await ctx.entities.timeEntry.create({ issueId: issue.id, minutes: 30, hours: 1 });
+        // @ts-expect-error a record on a project names its project
+        await ctx.entities.budget.create({ issueId: issue.id, days: 20 });
+        // @ts-expect-error only a number is summed
+        await ctx.entities.timeEntry.sum('note');
+        const entry = await ctx.entities.timeEntry.create({ issueId: issue.id, minutes: 30 });
+        const plan = await ctx.entities.budget.create({ projectId: issue.projectId, days: 20 });
+        // @ts-expect-error a record on a project hangs on no issue
+        plan.issueId.length;
+        // @ts-expect-error an entity the plugin does not keep
+        ctx.entities.estimate;
+        expect(entry.issueId.length + entry.minutes).toBeGreaterThan(0);
+      },
+    });
+
+    expect(plugin.entities.timeEntry.attachedTo).toBe('issue');
   });
 });

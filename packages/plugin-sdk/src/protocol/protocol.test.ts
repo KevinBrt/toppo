@@ -16,6 +16,7 @@ const manifest: Manifest = {
   permissions: { 'reports.read': { scope: 'project', label: 'permissions.reportsRead' } },
   settings: { type: 'object', properties: {} },
   projectSettings: { type: 'object', properties: {} },
+  entities: {},
   messages: { en: { permissions: { reportsRead: 'See reports' } }, fr: {} },
   actions: [{ name: 'timeEntry.log', access: { issue: 'issueId' }, input: { type: 'object' } }],
   events: ['issue.created'],

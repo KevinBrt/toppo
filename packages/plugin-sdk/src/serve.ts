@@ -33,6 +33,7 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
       locale: context.locale,
       settings: settings.data,
       projectSettings: definition.projectSettings,
+      entities: definition.entities,
     });
     return kind === 'event'
       ? await runEvent(definition, ctx, name, payload)
@@ -71,10 +72,11 @@ function manifestOf({
   config,
   settings,
   projectSettings,
+  entities,
   actions,
   events,
-}: PluginDefinition): Omit<Manifest, 'settings' | 'projectSettings'> &
-  Record<'settings' | 'projectSettings', Record<string, unknown>> {
+}: PluginDefinition): Omit<Manifest, 'settings' | 'projectSettings' | 'entities'> &
+  Record<'settings' | 'projectSettings' | 'entities', Record<string, unknown>> {
   return {
     id: config.id,
     name: config.name,
@@ -85,6 +87,12 @@ function manifestOf({
     permissions: config.permissions ?? {},
     settings: jsonSchemaOf(settings),
     projectSettings: jsonSchemaOf(projectSettings),
+    entities: Object.fromEntries(
+      Object.entries(entities).map(([name, { attachedTo, fields, limits }]) => [
+        name,
+        { attachedTo, fields: jsonSchemaOf(fields), limits },
+      ]),
+    ),
     messages: config.messages,
     actions: [...actions].map(([name, action]) => ({
       name,

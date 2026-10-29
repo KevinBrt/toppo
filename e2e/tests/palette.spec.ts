@@ -8,10 +8,12 @@ test('the palette finds an issue of any project and opens it', async ({
   baseURL,
   isMobile,
 }) => {
-  const suffix = randomInt(36 ** 5)
+  // A letter first: PostgreSQL reads "8E0O7" as the number 8e0 and the word o7, so no typo of it
+  // would ever be corrected to it.
+  const suffix = `${String.fromCharCode(65 + randomInt(26))}${randomInt(36 ** 4)
     .toString(36)
     .toUpperCase()
-    .padStart(5, '0');
+    .padStart(4, '0')}`;
   const key = `S${suffix}`;
   const headers = { origin: baseURL ?? '' };
   expect(
