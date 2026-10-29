@@ -235,6 +235,11 @@ export const pluginDetailsResponseSchema = pluginSummarySchema.extend({
   privateHosts: z.array(z.string()),
   /** Its last calls outside Toppo, the latest first. */
   httpCalls: z.array(pluginHttpCallSchema),
+  /**
+   * Where services outside Toppo call it, open to anyone (the plugin checks who): each route's
+   * name, and its address, to give the service.
+   */
+  routes: z.array(z.object({ name: z.string(), url: z.string() })),
   /** It acts in every project, present and future; otherwise in `projects` only. */
   allProjects: z.boolean(),
   projects: z.array(z.object({ id: z.uuid(), key: z.string(), name: z.string() })),
@@ -278,6 +283,12 @@ const actionNameSchema = z
 export const pluginActionParamsSchema = z.object({
   pluginSlug: pluginSlugSchema,
   action: actionNameSchema,
+});
+
+/** `push.receive`: a route, named as an action is. */
+export const pluginRouteParamsSchema = z.object({
+  pluginSlug: pluginSlugSchema,
+  route: actionNameSchema,
 });
 
 /** What an action's input may weigh, as JSON: what a screen sends, not files. */

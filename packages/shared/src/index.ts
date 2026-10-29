@@ -381,6 +381,7 @@ export {
   pluginActionRequestSchema,
   pluginActionResponseSchema,
   pluginDetailsResponseSchema,
+  pluginRouteParamsSchema,
   pluginSettingFieldSchema,
   pluginSettingValueSchema,
   pluginSettingValuesSchema,

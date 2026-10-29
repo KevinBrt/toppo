@@ -74,8 +74,8 @@ Le schéma du plugin vérifie lui-même ce qui est enregistré, dans son bac à 
 | `entities`, `properties` | [Données et propriétés](./data)    |
 | `http`                   | [Sortir de Toppo](./outside-toppo) |
 
-Actions, gestionnaires d’événements, jobs et écrans se déclarent par les appels du plugin lui-même (`plugin.defineAction`…), chacun dans son fichier : voir les pages suivantes.
+Actions, gestionnaires d’événements, jobs, routes et écrans se déclarent par les appels du plugin lui-même (`plugin.defineAction`…), chacun dans son fichier : voir les pages suivantes.
 
 ## Demander plus
 
-Une nouvelle version qui demande plus que ce qui a été approuvé attend une nouvelle approbation, et s’arrête d’ici là : un besoin, une permission ou une portée plus large, un événement, une propriété ou un job de plus, plus à joindre hors de Toppo ; ou un code qui refuse les réglages déjà enregistrés. Une version qui ne demande pas plus remplace aussitôt la version approuvée. Les permissions qu’une version ne déclare plus quittent tous les rôles.
+Une nouvelle version qui demande plus que ce qui a été approuvé attend une nouvelle approbation, et s’arrête d’ici là : un besoin, une permission ou une portée plus large, un événement, une propriété, un job ou une route de plus, plus à joindre hors de Toppo ; ou un code qui refuse les réglages déjà enregistrés. Une version qui ne demande pas plus remplace aussitôt la version approuvée. Les permissions qu’une version ne déclare plus quittent tous les rôles.

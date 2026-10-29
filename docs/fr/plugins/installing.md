@@ -22,7 +22,7 @@ L’approbation crée l’utilisateur du plugin et les propriétés qu’il ajou
 
 ## Mettre à jour
 
-**Installer une nouvelle version** envoie son zip suivant. Une version qui demande plus que ce qui a été approuvé (un besoin, une permission, un événement, une propriété, un job, plus à joindre), ou dont le code refuse les réglages déjà enregistrés, attend une nouvelle approbation, et le plugin s’arrête d’ici là. Une version qui ne demande pas plus prend aussitôt la place de la version approuvée.
+**Installer une nouvelle version** envoie son zip suivant. Une version qui demande plus que ce qui a été approuvé (un besoin, une permission, un événement, une propriété, un job, une route, plus à joindre), ou dont le code refuse les réglages déjà enregistrés, attend une nouvelle approbation, et le plugin s’arrête d’ici là. Une version qui ne demande pas plus prend aussitôt la place de la version approuvée.
 
 ## Désactiver et désinstaller
 

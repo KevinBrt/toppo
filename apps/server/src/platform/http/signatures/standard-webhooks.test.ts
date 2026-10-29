@@ -1,60 +1,72 @@
-import { createHmac } from 'node:crypto';
+import { signedHeaders, verifySignature } from '@toppo-tracker/plugin-sdk/host';
 import { describe, expect, it } from 'vitest';
-import { newWebhookSecret, signWebhook, verifyWebhook } from './standard-webhooks.ts';
+import { nodeCrypto } from './node-crypto.ts';
+import { newWebhookSecret } from './standard-webhooks.ts';
 
-const NOW = 1_761_800_000;
+const NOW = 1_793_299_743;
 const BODY = '{"type":"issue.created"}';
 
-describe('a webhook’s signature', () => {
-  it('is the specification’s: an HMAC SHA-256 of id.timestamp.body under the decoded key', () => {
+describe('the signatures Toppo writes and checks', () => {
+  it('makes keys of 32 random bytes, as Standard Webhooks writes them', () => {
     const secret = newWebhookSecret();
-    const headers = signWebhook(secret, { id: 'msg_1', timestamp: NOW, body: BODY });
-    const key = Buffer.from(secret.slice('whsec_'.length), 'base64');
 
     expect(secret).toMatch(/^whsec_[A-Za-z0-9+/]{43}=$/);
-    expect(headers).toStrictEqual({
-      'webhook-id': 'msg_1',
-      'webhook-timestamp': String(NOW),
-      'webhook-signature': `v1,${createHmac('sha256', key).update(`msg_1.${NOW}.${BODY}`).digest('base64')}`,
-    });
+    expect(Buffer.from(secret.slice('whsec_'.length), 'base64')).toHaveLength(32);
+    expect(newWebhookSecret()).not.toBe(secret);
   });
 
-  it('is checked against the body, the id, the time and the key', () => {
-    const secret = newWebhookSecret();
-    const headers = signWebhook(secret, { id: 'msg_1', timestamp: NOW, body: BODY });
-
-    expect(verifyWebhook(secret, headers, BODY, NOW)).toBe(true);
-    expect(verifyWebhook(secret, headers, `${BODY} `, NOW)).toBe(false);
-    expect(verifyWebhook(secret, { ...headers, 'webhook-id': 'msg_2' }, BODY, NOW)).toBe(false);
-    expect(verifyWebhook(newWebhookSecret(), headers, BODY, NOW)).toBe(false);
-    expect(verifyWebhook(secret, { ...headers, 'webhook-signature': undefined }, BODY, NOW)).toBe(
-      false,
+  it('signs as the specification signs its example', () => {
+    // github.com/standard-webhooks/standard-webhooks, the specification's example.
+    const headers = signedHeaders(
+      nodeCrypto,
+      { scheme: 'standard-webhooks', secret: 'whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw' },
+      '{"test": 2432232314}',
+      { id: 'msg_p5jXN8AQM9LWM0D4loKWxJek', timestamp: 1614265330 },
     );
+
+    expect(headers['webhook-signature']).toBe('v1,g0hM9SsE+OTPJTGt/tmIKtSyZlE3uFJELVlNIOLJ1OE=');
   });
 
-  it('is refused five minutes away from its timestamp, against a replay', () => {
-    const secret = newWebhookSecret();
-    const headers = signWebhook(secret, { id: 'msg_1', timestamp: NOW, body: BODY });
+  it('checks GitHub’s as its documentation signs its example', () => {
+    // docs.github.com, "Validating webhook deliveries".
+    const request = {
+      headers: {
+        'x-hub-signature-256':
+          'sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17',
+      },
+      body: 'Hello, World!',
+    };
 
-    expect(verifyWebhook(secret, headers, BODY, NOW + 300)).toBe(true);
-    expect(verifyWebhook(secret, headers, BODY, NOW + 301)).toBe(false);
-    expect(verifyWebhook(secret, headers, BODY, NOW - 301)).toBe(false);
-  });
-
-  it('takes any of several signatures, as when a key is replaced', () => {
-    const secret = newWebhookSecret();
-    const signed = signWebhook(secret, { id: 'msg_1', timestamp: NOW, body: BODY });
-    const other = signWebhook(newWebhookSecret(), { id: 'msg_1', timestamp: NOW, body: BODY });
-    const both = `${other['webhook-signature']} ${signed['webhook-signature']}`;
-
-    expect(verifyWebhook(secret, { ...signed, 'webhook-signature': both }, BODY, NOW)).toBe(true);
     expect(
-      verifyWebhook(
-        secret,
-        { ...signed, 'webhook-signature': signed['webhook-signature'].replace('v1,', 'v2,') },
-        BODY,
+      verifySignature(
+        nodeCrypto,
+        request,
+        { scheme: 'github', secret: "It's a Secret to Everybody" },
+        NOW,
+      ),
+    ).toBe(true);
+  });
+
+  it('checks a request it signed, with its own key only, its body unchanged', () => {
+    const secret = newWebhookSecret();
+    const check = { scheme: 'standard-webhooks', secret } as const;
+    const headers = signedHeaders(nodeCrypto, check, BODY, { id: 'msg_1', timestamp: NOW });
+
+    expect(verifySignature(nodeCrypto, { headers, body: BODY }, check, NOW)).toBe(true);
+    expect(verifySignature(nodeCrypto, { headers, body: `${BODY} ` }, check, NOW)).toBe(false);
+    expect(
+      verifySignature(
+        nodeCrypto,
+        { headers, body: BODY },
+        { ...check, secret: newWebhookSecret() },
         NOW,
       ),
     ).toBe(false);
+  });
+
+  it('compares texts in constant time, whatever their lengths', () => {
+    expect(nodeCrypto.equal('sha256=abc', 'sha256=abc')).toBe(true);
+    expect(nodeCrypto.equal('sha256=abc', 'sha256=abd')).toBe(false);
+    expect(nodeCrypto.equal('sha256=abc', 'sha256=abcd')).toBe(false);
   });
 });

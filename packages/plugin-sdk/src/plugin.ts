@@ -5,11 +5,13 @@ import type { MessageKey, MessagesOf } from './messages.ts';
 import type { Properties, PropertyNames } from './property.ts';
 import type { PluginNeed } from './protocol/calls.ts';
 import type { JobEvery } from './protocol/declarations/jobs.ts';
+import type { RouteAnswer } from './protocol/declarations/routes.ts';
 import type { ScreenIcon } from './protocol/declarations/screens.ts';
 import type { EventPayload, EventType } from './protocol/events.ts';
 import type { Messages } from './protocol/manifest.ts';
 import type { PluginLogo } from './protocol/package.ts';
 import { HOST_GLOBAL, type HostGlobal, PLUGIN_GLOBAL } from './protocol/sandbox.ts';
+import type { Route, RouteRequest } from './routes/route.ts';
 import { provideUrl } from './sandbox/url.ts';
 import { type Page, type Panel, type ScreenComponent, serveScreens } from './screens/screens.ts';
 import { servePlugin } from './serve.ts';
@@ -177,6 +179,17 @@ export interface Plugin<
     label: MessageKey<M>;
     handler(ctx: Context<S, M, PS, E, Pr>): Promise<void>;
   }): Job;
+  /**
+   * Where a service outside Toppo calls the plugin, a GitHub webhook say:
+   * `POST /api/v1/plugins/<id>/routes/<name>`, shown to who approves it. It answers as the plugin
+   * itself, within 10 seconds. Anyone may send a request there: check it is the service's
+   * (`ctx.crypto.verify`) before trusting it, and answer 401 otherwise.
+   */
+  defineRoute(definition: {
+    /** `push.receive`: the last part of its address. */
+    name: string;
+    handler(ctx: Context<S, M, PS, E, Pr>, request: RouteRequest): Promise<RouteAnswer>;
+  }): Route;
 }
 
 /**
@@ -206,6 +219,7 @@ export function definePlugin<
     pages: new Map(),
     panels: new Map(),
     jobs: new Map(),
+    routes: new Map(),
   };
   const assertNewScreen = (name: string) => {
     if (definition.pages.has(name) || definition.panels.has(name)) {
@@ -271,6 +285,16 @@ export function definePlugin<
         handler: (ctx) => handler(ctx as unknown as Context<S, M, PS, E, Pr>),
       });
       return { name, every };
+    },
+    defineRoute({ name, handler }) {
+      if (definition.routes.has(name)) {
+        throw new Error(`The route ${name} is defined twice`);
+      }
+      // Toppo runs it with the request as it came, and a context of this plugin.
+      definition.routes.set(name, {
+        handler: (ctx, request) => handler(ctx as unknown as Context<S, M, PS, E, Pr>, request),
+      });
+      return { name };
     },
   };
   register(plugin, definition);

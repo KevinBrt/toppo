@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Database } from '@toppo-tracker/db';
+import { verifySignature } from '@toppo-tracker/plugin-sdk/host';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerAccountRoutes } from './features/account/account.routes.ts';
 import { registerAttachmentRoutes } from './features/attachments/attachments.routes.ts';
@@ -65,6 +66,8 @@ import { registerOriginCheck } from './platform/http/origin-check.ts';
 import { pruneRateLimitsJob, registerRateLimit } from './platform/http/rate-limit.ts';
 import { enforceRouteContracts } from './platform/http/route-contracts.ts';
 import { registerSecurityHeaders } from './platform/http/security-headers.ts';
+import { nodeCrypto } from './platform/http/signatures/node-crypto.ts';
+import { registerTextBodyRoutes } from './platform/http/text-body-routes.ts';
 import { registerWebApp } from './platform/http/web-app.ts';
 import { serializerCompiler, validatorCompiler } from './platform/http/zod.ts';
 import type { RunnableJob } from './platform/jobs/jobs.ts';
@@ -167,6 +170,12 @@ export function createHostCalls(): HostCalls {
     'entities.list': (context, args) => listRecords.execute(context, args),
     'entities.aggregate': (context, args) => aggregateRecords.execute(context, args),
     'http.fetch': (context, args) => sendPluginRequest.execute(context, args),
+    // Computations the sandbox lacks: pure, they take no need.
+    'crypto.hmac': (_context, { algorithm, key, data, encoding }) =>
+      Promise.resolve(nodeCrypto.hmac(algorithm, key, data, encoding)),
+    'crypto.equal': (_context, { a, b }) => Promise.resolve(nodeCrypto.equal(a, b)),
+    'crypto.verify': (_context, { request, check }) =>
+      Promise.resolve(verifySignature(nodeCrypto, request, check, Math.floor(Date.now() / 1000))),
   };
 }
 
@@ -302,6 +311,7 @@ export async function buildApp({
   registerFileRoutes(app, { files });
   registerScreenRoutes(app, plugins.screens);
   registerPackageRoutes(app);
+  registerTextBodyRoutes(app);
   app.addHook('onClose', () => plugins.runtime.close());
   app.addHook('onRequest', (request, reply, done) => {
     reply.header('x-request-id', request.id);

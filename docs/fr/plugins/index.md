@@ -4,15 +4,16 @@ Un plugin ajoute à ce que fait Toppo : les champs et les écrans propres à une
 
 ## Ce qu’un plugin peut faire
 
-| Avec                                           | Un plugin                                                                        |
-| ---------------------------------------------- | -------------------------------------------------------------------------------- |
-| [Des actions](./actions)                       | Répond à ce que lui demandent ses écrans, ou toute personne connectée, pour elle |
-| [Des événements](./events-and-jobs#evenements) | Est prévenu de ce qui change sur les tickets de ses projets, et y réagit         |
-| [Des jobs](./events-and-jobs#jobs)             | Travaille seul, chaque heure, jour ou semaine                                    |
-| [Des entités](./data#entites)                  | Garde ses propres enregistrements, sur un ticket ou un projet, que Toppo vérifie |
-| [Des propriétés](./data#proprietes)            | Ajoute des champs aux tickets, remplis par les gens ou par lui-même              |
-| [Des écrans](./screens)                        | Affiche des pages et des panneaux, dessinés avec les composants de Toppo         |
-| [Des requêtes sortantes](./outside-toppo)      | Joint les sites qu’il déclare : une messagerie, un service                       |
+| Avec                                                | Un plugin                                                                               |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| [Des actions](./actions)                            | Répond à ce que lui demandent ses écrans, ou toute personne connectée, pour elle        |
+| [Des événements](./events-and-jobs#evenements)      | Est prévenu de ce qui change sur les tickets de ses projets, et y réagit                |
+| [Des jobs](./events-and-jobs#jobs)                  | Travaille seul, chaque heure, jour ou semaine                                           |
+| [Des routes](./outside-toppo#recevoir-des-requetes) | Reçoit ce que lui envoient des services hors de Toppo, une fois leur signature vérifiée |
+| [Des entités](./data#entites)                       | Garde ses propres enregistrements, sur un ticket ou un projet, que Toppo vérifie        |
+| [Des propriétés](./data#proprietes)                 | Ajoute des champs aux tickets, remplis par les gens ou par lui-même                     |
+| [Des écrans](./screens)                             | Affiche des pages et des panneaux, dessinés avec les composants de Toppo                |
+| [Des requêtes sortantes](./outside-toppo)           | Joint les sites qu’il déclare : une messagerie, un service                              |
 
 ## Comment Toppo le fait tourner
 
@@ -26,7 +27,7 @@ Avant qu’un plugin tourne, un administrateur lit ce qu’il déclare et l’ap
 
 - **Ses besoins** : ce qu’il lit et écrit de Toppo (`issue.read`, `comment.create`).
 - **Les permissions qu’il ajoute**, que les rôles peuvent ensuite avoir, comme celles de Toppo.
-- **Les événements qu’il écoute**, **les propriétés qu’il ajoute**, **ses jobs**, **ce qu’il joint hors de Toppo**.
+- **Les événements qu’il écoute**, **les propriétés qu’il ajoute**, **ses jobs**, **ce qu’il joint hors de Toppo**, **où des services hors de Toppo l’appellent**.
 - **Où il agit** : tous les projets, ou ceux choisis ; et les hôtes du réseau interne qu’il peut joindre.
 
 Une nouvelle version qui demande plus attend une nouvelle approbation, et s’arrête d’ici là. Voir [installer et faire tourner](./installing).

@@ -4,6 +4,7 @@ import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
 import { ISSUE_EVENT_MESSAGES } from '../../../../shared/i18n/issue-events.constants.ts';
 import type { NeedLabel } from '../../models/plugin-page.model.ts';
 import { DetailsSection } from './details-section.tsx';
+import { PluginRoutes } from './plugin-routes.tsx';
 
 /**
  * What a plugin declares, in plain words, for an administrator to approve it knowingly: what it
@@ -95,6 +96,7 @@ export function PluginDeclarations({
       >
         <Sentences sentences={reached(plugin.http, locale, t)} empty={t('plugins.httpNone')} />
       </DetailsSection>
+      <PluginRoutes routes={plugin.routes} />
       <DetailsSection
         title={t('plugins.jobsTitle')}
         description={plugin.jobs.length > 0 ? t('plugins.jobsDescription') : undefined}

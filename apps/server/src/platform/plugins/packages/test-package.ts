@@ -30,6 +30,7 @@ export function testManifest(overrides: Partial<Manifest> = {}): Manifest {
     panels: [],
     jobs: [],
     http: null,
+    routes: [],
     ...overrides,
   };
 }

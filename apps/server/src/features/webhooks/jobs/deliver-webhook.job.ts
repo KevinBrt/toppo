@@ -1,4 +1,5 @@
 import { type Db, schema } from '@toppo-tracker/db';
+import { signedHeaders } from '@toppo-tracker/plugin-sdk/host';
 import { WEBHOOK_FAILURES_BEFORE_DISABLING } from '@toppo-tracker/shared';
 import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
@@ -8,7 +9,7 @@ import {
   OutboundError,
   outboundFetch,
 } from '../../../platform/http/outbound/outbound-fetch.ts';
-import { signWebhook } from '../../../platform/http/signatures/standard-webhooks.ts';
+import { nodeCrypto } from '../../../platform/http/signatures/node-crypto.ts';
 import { defineJob, enqueue } from '../../../platform/jobs/jobs.ts';
 import { emailWebhookDisabledJob } from './email-webhook-disabled.job.ts';
 
@@ -67,10 +68,9 @@ export const deliverWebhookJob = defineJob({
           method: 'POST',
           headers: {
             'content-type': 'application/json',
-            ...signWebhook(secret, {
+            ...signedHeaders(nodeCrypto, { scheme: 'standard-webhooks', secret }, body, {
               id: delivery.messageId,
               timestamp: Math.floor(Date.now() / 1000),
-              body,
             }),
           },
           body,

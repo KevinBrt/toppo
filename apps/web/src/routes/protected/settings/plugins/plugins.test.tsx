@@ -206,6 +206,31 @@ describe('installing a plugin', () => {
 });
 
 describe('a plugin’s page', () => {
+  it('gives the address of each route, for its service, to copy', async () => {
+    vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+    const url = 'http://localhost:3000/api/v1/plugins/time-tracking/routes/timer.stopped';
+    const { screen } = await openPlugin({
+      ...TIME_TRACKING,
+      routes: [{ name: 'timer.stopped', url }],
+    });
+    const routes = screen.getByRole('region', { name: 'What calls it from outside Toppo' });
+
+    await expect
+      .element(routes.getByRole('textbox', { name: 'Address of timer.stopped' }))
+      .toHaveValue(url);
+    await routes.getByRole('button', { name: /Copy/ }).click();
+    await expect.element(routes.getByRole('button', { name: /Copied/ })).toBeVisible();
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(url);
+  });
+
+  it('says when no service calls it', async () => {
+    const { screen } = await openPlugin(TIME_TRACKING);
+
+    await expect
+      .element(screen.getByText('Nothing: no service outside Toppo calls it.'))
+      .toBeVisible();
+  });
+
   it('tells what the plugin declares in plain words, not its actions', async () => {
     const { screen } = await openPlugin(TIME_TRACKING);
 

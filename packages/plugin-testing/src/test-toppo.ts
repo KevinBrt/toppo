@@ -1,5 +1,5 @@
-import { type Action, type EventType, type Job, z } from '@toppo-tracker/plugin-sdk';
-import { servePlugin } from '@toppo-tracker/plugin-sdk/host';
+import { type Action, type EventType, type Job, type Route, z } from '@toppo-tracker/plugin-sdk';
+import { servePlugin, verifySignature } from '@toppo-tracker/plugin-sdk/host';
 import {
   type DeletedIssue,
   type EventPayload,
@@ -14,11 +14,14 @@ import {
   type Locale,
   type Manifest,
   manifestSchema,
+  type RouteAnswer,
   type RunAnswer,
+  routeAnswerSchema,
   runAnswerSchema,
 } from '@toppo-tracker/plugin-sdk/protocol';
 import { createTestProperties } from './test-properties.ts';
 import { createTestRecords } from './test-records.ts';
+import { nodeCrypto, type TestRouteRequest } from './test-signatures.ts';
 
 /** Why a run was refused: the plugin's own code (a message key), or one of Toppo's. */
 export class PluginRunError extends Error {
@@ -140,6 +143,10 @@ export function createTestToppo(
         return Promise.resolve().then(() => properties.set(args));
       case 'http.fetch':
         return fetchOutside(args);
+      case 'crypto.hmac':
+      case 'crypto.equal':
+      case 'crypto.verify':
+        return Promise.resolve().then(() => compute(method, args));
       default:
         return comment(args);
     }
@@ -179,6 +186,27 @@ export function createTestToppo(
       throw new Error(reply);
     }
     return { status: 200, headers: {}, body: '', ...reply };
+  }
+
+  /** What the plugin's sandbox lacks, computed with Node, as Toppo does. */
+  function compute(
+    method: 'crypto.hmac' | 'crypto.equal' | 'crypto.verify',
+    args: unknown,
+  ): string | boolean {
+    switch (method) {
+      case 'crypto.hmac': {
+        const { algorithm, key, data, encoding } = HOST_CALLS[method].args.parse(args);
+        return nodeCrypto.hmac(algorithm, key, data, encoding);
+      }
+      case 'crypto.equal': {
+        const { a, b } = HOST_CALLS[method].args.parse(args);
+        return nodeCrypto.equal(a, b);
+      }
+      case 'crypto.verify': {
+        const { request, check } = HOST_CALLS[method].args.parse(args);
+        return verifySignature(nodeCrypto, request, check, Math.floor(Date.now() / 1000));
+      }
+    }
   }
 
   /**
@@ -223,7 +251,7 @@ export function createTestToppo(
   }
 
   async function run(
-    kind: 'action' | 'event' | 'job',
+    kind: 'action' | 'event' | 'job' | 'route',
     name: string,
     payload: unknown,
     user: { id: string } | null,
@@ -357,6 +385,29 @@ export function createTestToppo(
     /** Runs one of the plugin's jobs, as Toppo does when its time comes: as the plugin itself. */
     async runJob(job: Job): Promise<void> {
       await run('job', job.name, null, null);
+    },
+
+    /**
+     * Sends one of its routes a request from outside Toppo, as the plugin itself, and answers
+     * what Toppo would send back: `signed()` signs it as a service would.
+     */
+    async receive(route: Route, request: TestRouteRequest = {}): Promise<RouteAnswer> {
+      const headers = Object.fromEntries(
+        Object.entries(request.headers ?? {}).map(([name, value]) => [name.toLowerCase(), value]),
+      );
+      const answered = routeAnswerSchema.safeParse(
+        await run(
+          'route',
+          route.name,
+          { method: 'POST', headers, query: request.query ?? {}, body: request.body ?? '' },
+          null,
+        ),
+      );
+      if (!answered.success) {
+        throw new Error(`Toppo would refuse what ${route.name} answers:
+${z.prettifyError(answered.error)}`);
+      }
+      return answered.data;
     },
   };
 }

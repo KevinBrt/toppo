@@ -4,6 +4,7 @@
  */
 export { z } from 'zod';
 export type { ActionContext, Context, Entities, IssueOf } from './context.ts';
+export type { CryptoClient } from './crypto/crypto.ts';
 export {
   type Attachment,
   defineEntity,
@@ -42,9 +43,19 @@ export type { RecordGroup } from './protocol/declarations/entities.ts';
 export type { HttpFailureCode, HttpMethod } from './protocol/declarations/http.ts';
 export type { JobEvery } from './protocol/declarations/jobs.ts';
 export type { PluginPropertyType, PropertyDisplay } from './protocol/declarations/properties.ts';
+export type {
+  HmacAlgorithm,
+  HmacEncoding,
+  HmacKey,
+  RouteAnswer,
+  RouteStatus,
+  SignatureCheck,
+  SignatureScheme,
+} from './protocol/declarations/routes.ts';
 export type { PageZone, PanelPlace, ScreenIcon } from './protocol/declarations/screens.ts';
 export type { DeletedIssue, EventPayload, EventType, IssueSnapshot } from './protocol/events.ts';
 export type { Messages } from './protocol/manifest.ts';
 export type { Locale } from './protocol/run.ts';
+export type { Route, RouteRequest } from './routes/route.ts';
 export type { Page, Panel, ScreenComponent, ServedScreens } from './screens/screens.ts';
 export { secret } from './settings/secret.ts';

@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import { type CryptoClient, createCryptoClient } from './crypto/crypto.ts';
 import { createEntityClient, type Entity, type EntityClient } from './entity.ts';
 import { PluginFailure } from './failure.ts';
 import { createHttpClient, type HttpClient } from './http/http.ts';
@@ -70,6 +71,8 @@ export interface Context<
   readonly entities: { readonly [K in keyof E]: EntityClient<E[K]> };
   /** Requests outside Toppo, where it declared it may go (`http` in `definePlugin`). */
   readonly http: HttpClient;
+  /** Checks that a request its routes received comes from the service it says. */
+  readonly crypto: CryptoClient;
 }
 
 /** What an action is given besides: who it runs for. */
@@ -149,5 +152,10 @@ export function createContext<
       ]),
     ),
     http: createHttpClient((request) => callToppo(host, 'http.fetch', request)),
+    crypto: createCryptoClient({
+      'crypto.verify': (args) => callToppo(host, 'crypto.verify', args),
+      'crypto.hmac': (args) => callToppo(host, 'crypto.hmac', args),
+      'crypto.equal': (args) => callToppo(host, 'crypto.equal', args),
+    }),
   };
 }

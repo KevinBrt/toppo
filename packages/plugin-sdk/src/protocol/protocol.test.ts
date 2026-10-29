@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { secret } from '../settings/secret.ts';
 import { PLUGIN_NEEDS } from './calls.ts';
+import {
+  ROUTE_LIMITS,
+  ROUTES_MAX,
+  routeAnswerSchema,
+  routeRequestSchema,
+  signatureCheckSchema,
+} from './declarations/routes.ts';
 import { PLUGIN_SETTINGS_MAX } from './declarations/settings.ts';
 import { EVENT_TYPES, eventPayloadSchema } from './events.ts';
 import { type Manifest, manifestSchema, PLUGIN_LIMITS } from './manifest.ts';
@@ -26,6 +33,7 @@ const manifest: Manifest = {
   events: ['issue.created'],
   jobs: [],
   http: null,
+  routes: [],
 };
 
 describe('the API version a plugin asks for', () => {
@@ -90,6 +98,18 @@ describe('the manifest Toppo accepts', () => {
       },
     ],
     ['words in one language only', { ...manifest, messages: { en: {} } }],
+    ['a route named otherwise than resource.action', { ...manifest, routes: [{ name: 'push' }] }],
+    [
+      'two routes of one name',
+      { ...manifest, routes: [{ name: 'push.receive' }, { name: 'push.receive' }] },
+    ],
+    [
+      'too many routes',
+      {
+        ...manifest,
+        routes: Array.from({ length: ROUTES_MAX + 1 }, (_, i) => ({ name: `push.receive${i}` })),
+      },
+    ],
   ])('refuses %s', (_, declared) => {
     expect(manifestSchema.safeParse(declared).success).toBe(false);
   });
@@ -250,6 +270,71 @@ describe('the protocol', () => {
       expect(eventPayloadSchema(type).shape.change).toBeDefined();
     }
     expect(EVENT_TYPES).toHaveLength(16);
+  });
+});
+
+describe('a route’s requests and answers', () => {
+  it('reads the routes of a plugin uploaded before them as none', () => {
+    const { routes: _, ...before } = manifest;
+
+    expect(manifestSchema.parse(before).routes).toStrictEqual([]);
+    expect(
+      manifestSchema.parse({ ...manifest, routes: [{ name: 'push.receive' }] }).routes,
+    ).toStrictEqual([{ name: 'push.receive' }]);
+  });
+
+  it('answers a status HTTP names for done or refused, with JSON', () => {
+    const answers = (answer: unknown) => routeAnswerSchema.safeParse(answer).success;
+
+    expect(answers({ status: 202 })).toBe(true);
+    expect(answers({ status: 200, body: { received: [1, 'two', null] } })).toBe(true);
+    expect(answers({ status: 401 })).toBe(true);
+    expect(answers({ status: 302 })).toBe(false);
+    expect(answers({ status: 500 })).toBe(false);
+    expect(answers({ status: 200, body: { at: new Date() } })).toBe(false);
+    expect(answers({ status: 200, headers: { 'set-cookie': 'a' } })).toBe(false);
+  });
+
+  it('bounds a request handed to a route', () => {
+    const request = { method: 'POST', headers: {}, query: {}, body: '' };
+    const takes = (changes: object) =>
+      routeRequestSchema.safeParse({ ...request, ...changes }).success;
+
+    expect(takes({})).toBe(true);
+    expect(takes({ body: 'x'.repeat(ROUTE_LIMITS.bodyBytes) })).toBe(true);
+    expect(takes({ body: 'x'.repeat(ROUTE_LIMITS.bodyBytes + 1) })).toBe(false);
+    expect(takes({ method: 'GET' })).toBe(false);
+    expect(
+      takes({
+        headers: Object.fromEntries(
+          Array.from({ length: ROUTE_LIMITS.fields + 1 }, (_, i) => [`x-${i}`, '1']),
+        ),
+      }),
+    ).toBe(false);
+  });
+
+  it('checks signatures in the schemes it knows, with what each needs', () => {
+    const checks = (check: unknown) => signatureCheckSchema.safeParse(check).success;
+
+    expect(checks({ scheme: 'github', secret: 's' })).toBe(true);
+    expect(checks({ scheme: 'standard-webhooks', secret: 'whsec_c2VjcmV0' })).toBe(true);
+    expect(checks({ scheme: 'token', header: 'x-gitlab-token', secret: 's' })).toBe(true);
+    expect(
+      checks({
+        scheme: 'hmac',
+        header: 'x-gitea-signature',
+        algorithm: 'sha256',
+        encoding: 'hex',
+        secret: 's',
+      }),
+    ).toBe(true);
+    expect(checks({ scheme: 'github', secret: '' })).toBe(false);
+    expect(checks({ scheme: 'token', header: 'X-Gitlab-Token', secret: 's' })).toBe(false);
+    expect(checks({ scheme: 'token', secret: 's' })).toBe(false);
+    expect(
+      checks({ scheme: 'hmac', header: 'x-sig', algorithm: 'md5', encoding: 'hex', secret: 's' }),
+    ).toBe(false);
+    expect(checks({ scheme: 'stripe', secret: 's' })).toBe(false);
   });
 });
 

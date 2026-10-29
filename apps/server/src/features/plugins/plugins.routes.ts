@@ -1,3 +1,4 @@
+import { ROUTE_LIMITS, ROUTE_STATUSES } from '@toppo-tracker/plugin-sdk/protocol';
 import {
   approvePluginRequestSchema,
   installPluginResponseSchema,
@@ -10,6 +11,7 @@ import {
   pluginActionResponseSchema,
   pluginDetailsResponseSchema,
   pluginPlacedScreensResponseSchema,
+  pluginRouteParamsSchema,
   pluginScreensResponseSchema,
   pluginSlugParamsSchema,
   pluginsResponseSchema,
@@ -30,6 +32,7 @@ import { approvePlugin } from './commands/approve-plugin.command.ts';
 import { disablePlugin } from './commands/disable-plugin.command.ts';
 import { enablePlugin } from './commands/enable-plugin.command.ts';
 import { installPlugin } from './commands/install-plugin.command.ts';
+import { receivePluginRequest } from './commands/receive-plugin-request.command.ts';
 import { runPluginAction } from './commands/run-plugin-action.command.ts';
 import { savePluginSettings } from './commands/settings/save-plugin-settings.command.ts';
 import { saveProjectPluginSettings } from './commands/settings/save-project-plugin-settings.command.ts';
@@ -43,6 +46,7 @@ import { getScreenFrame } from './queries/screens/get-screen-frame.query.ts';
 import { listIssuePanels } from './queries/screens/list-issue-panels.query.ts';
 import { listPluginScreens } from './queries/screens/list-plugin-screens.query.ts';
 import { listProjectScreens } from './queries/screens/list-project-screens.query.ts';
+import { routeRequestOf } from './utils/route-request.util.ts';
 
 /** Commands answer `204 No Content`: the client refetches what it shows. */
 const NO_CONTENT = { 204: z.void() };
@@ -52,6 +56,14 @@ const NO_CONTENT = { 204: z.void() };
  * it from everyone else. Its screens read through its actions as they show, a few at a time.
  */
 const ACTION_RATE_LIMIT = { max: 300, windowSeconds: 60 };
+
+/** Requests a minute from one client to plugins' routes: a service's webhooks, in bursts. */
+const ROUTE_RATE_LIMIT = { max: 120, windowSeconds: 60 };
+
+/** What a route answers: JSON of the plugin's, or nothing, with a status it chose. */
+const ROUTE_RESPONSES = Object.fromEntries(
+  ROUTE_STATUSES.map((status) => [status, status === 204 ? z.void() : z.json().optional()]),
+);
 
 /**
  * Screens' bundles are public, and read from their package when not kept in memory. Browsers keep
@@ -251,6 +263,28 @@ export function registerPluginRoutes(app: FastifyInstance): void {
         input: request.body,
       }),
   );
+
+  // Open to anyone: the plugin checks the request is the service's. Bounded per client here, and
+  // per plugin whoever sends them, by the command.
+  app.textBodyRoutes((scope) => {
+    scope.withTypeProvider<ZodTypeProvider>().post(
+      '/api/v1/plugins/:pluginSlug/routes/:route',
+      {
+        config: { access: receivePluginRequest.access, rateLimit: ROUTE_RATE_LIMIT },
+        bodyLimit: ROUTE_LIMITS.bodyBytes,
+        schema: { params: pluginRouteParamsSchema, response: ROUTE_RESPONSES },
+      },
+      async (request, reply) => {
+        const { status, body } = await receivePluginRequest.execute(request.executionContext, {
+          ...request.params,
+          request: routeRequestOf(request),
+        });
+        return body === undefined || status === 204
+          ? reply.status(status).send()
+          : reply.status(status).send(body);
+      },
+    );
+  });
 
   registerProjectRoutes(app);
 

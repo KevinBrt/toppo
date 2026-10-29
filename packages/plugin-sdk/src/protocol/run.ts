@@ -7,7 +7,7 @@ export type Locale = (typeof LOCALES)[number];
 /** What Toppo tells a plugin with each run, beside its payload. */
 export const runContextSchema = z.object({
   locale: z.enum(LOCALES),
-  /** Who an action runs for; none for an event or a job, which the plugin runs as itself. */
+  /** Who an action runs for; none for an event, a job or a route: the plugin runs as itself. */
   user: z.object({ id: z.uuid() }).nullable(),
   /** As the administrator saved them: the plugin parses them with its own schema. */
   settings: z.unknown(),
@@ -47,5 +47,6 @@ export const RUN_FAILURES = [
   'UNKNOWN_ACTION',
   'UNKNOWN_EVENT',
   'UNKNOWN_JOB',
+  'UNKNOWN_ROUTE',
   'PLUGIN_ERROR',
 ] as const;

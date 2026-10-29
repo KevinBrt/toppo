@@ -597,3 +597,145 @@ describe('a plugin served to Toppo', () => {
     expect(() => definitionOf({})).toThrow('Not a plugin');
   });
 });
+
+/** A plugin that receives a service's requests, signed as GitHub signs them. */
+function receiver() {
+  const plugin = definePlugin({
+    id: 'push-hooks',
+    name: 'name',
+    description: 'name',
+    apiVersion: '^1.0',
+    settings: z.object({ secret: z.string().default('s3cret') }),
+    messages: {
+      en: {
+        name: 'Push hooks',
+        settings: { secret: { label: 'Webhook secret' } },
+        errors: { unknownRef: 'Nothing is done with {ref}.' },
+      },
+      fr: {
+        name: 'Push hooks',
+        settings: { secret: { label: 'Secret du webhook' } },
+        errors: { unknownRef: 'Rien n’est fait de {ref}.' },
+      },
+    },
+  });
+  plugin.defineRoute({
+    name: 'push.receive',
+    async handler(ctx, request) {
+      if (!(await ctx.crypto.verify(request, { scheme: 'github', secret: ctx.settings.secret }))) {
+        return { status: 401 };
+      }
+      const { ref } = z.object({ ref: z.string() }).parse(request.json());
+      if (ref.startsWith('refs/tags/')) {
+        throw ctx.fail('errors.unknownRef', { ref });
+      }
+      return {
+        status: 202,
+        body: {
+          ref,
+          event: request.headers['x-github-event'] ?? null,
+          query: request.query,
+          digest: await ctx.crypto.hmac('sha256', { base64: 'a2V5' }, request.body),
+          same: await ctx.crypto.equal('a', 'b'),
+        },
+      };
+    },
+  });
+  return plugin;
+}
+
+const PUSH = {
+  method: 'POST',
+  headers: { 'x-github-event': 'push', 'x-hub-signature-256': 'sha256=abc' },
+  query: { team: 'web' },
+  body: '{"ref":"refs/heads/main"}',
+};
+
+describe('a route of a plugin', () => {
+  const receive = (host: HostGlobal, request: unknown, name = 'push.receive') =>
+    servePlugin(receiver(), host)
+      .run('route', name, JSON.stringify(request), context({ user: null }))
+      .then((answer) => JSON.parse(answer));
+
+  it('is declared to Toppo by its name', () => {
+    const manifest = manifestSchema.parse(
+      JSON.parse(servePlugin(receiver(), fakeHost().host).manifest()),
+    );
+
+    expect(manifest.routes).toStrictEqual([{ name: 'push.receive' }]);
+  });
+
+  it('answers a request it checked, as it came, with Toppo’s cryptography', async () => {
+    const { host, call } = fakeHost({
+      'crypto.verify': true,
+      'crypto.hmac': 'c0ffee',
+      'crypto.equal': false,
+    });
+
+    expect(await receive(host, PUSH)).toStrictEqual({
+      ok: true,
+      result: {
+        status: 202,
+        body: {
+          ref: 'refs/heads/main',
+          event: 'push',
+          query: { team: 'web' },
+          digest: 'c0ffee',
+          same: false,
+        },
+      },
+    });
+    expect(call).toHaveBeenCalledWith(
+      'crypto.verify',
+      JSON.stringify({ request: PUSH, check: { scheme: 'github', secret: 's3cret' } }),
+    );
+    expect(call).toHaveBeenCalledWith(
+      'crypto.hmac',
+      JSON.stringify({
+        algorithm: 'sha256',
+        key: { base64: 'a2V5' },
+        data: PUSH.body,
+        encoding: 'hex',
+      }),
+    );
+    expect(call).toHaveBeenCalledWith('crypto.equal', JSON.stringify({ a: 'a', b: 'b' }));
+  });
+
+  it('refuses a request not signed, and says why it does nothing in its words', async () => {
+    expect(await receive(fakeHost({ 'crypto.verify': false }).host, PUSH)).toStrictEqual({
+      ok: true,
+      result: { status: 401 },
+    });
+    expect(
+      await receive(fakeHost({ 'crypto.verify': true }).host, {
+        ...PUSH,
+        body: '{"ref":"refs/tags/v1"}',
+      }),
+    ).toStrictEqual({
+      ok: false,
+      error: { code: 'errors.unknownRef', params: { ref: 'refs/tags/v1' } },
+    });
+  });
+
+  it('runs only the routes it defines, on a request as Toppo hands it', async () => {
+    const { host } = fakeHost({ 'crypto.verify': true });
+
+    expect(await receive(host, PUSH, 'pull.receive')).toStrictEqual({
+      ok: false,
+      error: { code: 'UNKNOWN_ROUTE' },
+    });
+    expect(await receive(host, { ...PUSH, method: 'GET' })).toMatchObject({
+      ok: false,
+      error: { code: 'VALIDATION_FAILED' },
+    });
+  });
+
+  it('is defined once', () => {
+    expect(() =>
+      receiver().defineRoute({
+        name: 'push.receive',
+        handler: () => Promise.resolve({ status: 204 }),
+      }),
+    ).toThrow('The route push.receive is defined twice');
+  });
+});

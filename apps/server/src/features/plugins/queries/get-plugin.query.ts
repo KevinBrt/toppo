@@ -25,7 +25,7 @@ export const getPlugin = defineQuery({
   name: 'plugin.get',
   access: { permission: 'instance.plugins.manage' },
   input: pluginSlugParamsSchema,
-  async handler({ db }, { pluginSlug }): Promise<PluginDetailsResponse> {
+  async handler({ db, services }, { pluginSlug }): Promise<PluginDetailsResponse> {
     const [plugin] = await db
       .select({
         ...PLUGIN_IDENTITY,
@@ -115,6 +115,13 @@ export const getPlugin = defineQuery({
       http: httpOf(manifest),
       privateHosts: plugin.privateHosts,
       httpCalls: httpCalls.map(({ at, ...call }) => ({ ...call, at: at.toISOString() })),
+      routes: manifest.routes.map(({ name }) => ({
+        name,
+        url: new URL(
+          `/api/v1/plugins/${encodeURIComponent(pluginSlug)}/routes/${name}`,
+          services.publicUrl,
+        ).href,
+      })),
       allProjects: plugin.allProjects,
       projects: chosen,
       approval:
