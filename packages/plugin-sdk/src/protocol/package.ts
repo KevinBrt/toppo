@@ -4,6 +4,11 @@ export const PLUGIN_PACKAGE_FILES = {
   server: 'server.js',
   /** `{ "version": "1.2.0" }`, from the plugin's `package.json`. */
   metadata: 'plugin.json',
+  /**
+   * The screens' bundle, for a plugin that has pages or panels: a classic script run in their
+   * frames, after Toppo's runtime.
+   */
+  web: 'web.js',
 } as const;
 
 /**
@@ -26,6 +31,8 @@ export const PLUGIN_PACKAGE_LIMITS = {
   unpackedBytes: 100 * MEBIBYTE,
   /** The server bundle, read whole into the plugin's memory in the sandbox. */
   serverBytes: 10 * MEBIBYTE,
+  /** The screens' bundle, downloaded by each person who opens one. */
+  webBytes: 5 * MEBIBYTE,
   /** `plugin.json`. */
   metadataBytes: 1024,
   /** Its logo, shown small. */

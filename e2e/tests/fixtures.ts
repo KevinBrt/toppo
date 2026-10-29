@@ -45,6 +45,10 @@ export async function expectAccessible(page: Page): Promise<void> {
     await Promise.all(ending.map((animation) => animation.finished.catch(() => animation)));
   });
   const results = await new AxeBuilder({ page })
+    // Axe would fetch the stylesheets it cannot read through the page, as a plugin's frame (of
+    // no origin) holds Toppo's: the frame refuses any request (`connect-src 'none'`), as it must.
+    // Set first: it replaces the options, which the tags below add to.
+    .options({ preload: false })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();
   expect(results.violations).toStrictEqual([]);

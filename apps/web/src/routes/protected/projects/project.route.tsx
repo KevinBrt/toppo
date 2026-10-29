@@ -4,6 +4,7 @@ import { can } from '@toppo-tracker/core';
 import { EmptyState } from '@toppo-tracker/ui';
 import { FolderXIcon } from 'lucide-react';
 import { PluginsQueries } from '../../../features/plugins/queries/plugins.queries.ts';
+import { pluginNavSections } from '../../../features/plugins/utils/plugin-nav.util.ts';
 import { ProjectIdentity } from '../../../features/projects/components/settings/project-identity.tsx';
 import {
   PROJECT_ADMIN_NAV,
@@ -64,13 +65,21 @@ function withPluginsTab(sections: NavSection[], shown: boolean): NavSection[] {
 }
 
 function ProjectLayout() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { projectKey } = projectRoute.useParams();
   const project = useQuery(ProjectsQueries.detail(projectKey));
   const plugins = useQuery({
     ...PluginsQueries.inProject(projectKey),
     enabled: Boolean(project.data && can(project.data.permissions, 'project.settings.manage')),
   });
+  const { data: pluginScreens } = useQuery({
+    ...PluginsQueries.projectScreens(projectKey),
+    enabled: project.isSuccess,
+  });
+  const pluginSections = pluginNavSections(pluginScreens ?? [], locale, (screen) => ({
+    to: '/projects/$projectKey/p/$pluginSlug/$screen',
+    params: { projectKey, pluginSlug: screen.pluginSlug, screen: screen.name },
+  }));
 
   if (project.isPending) {
     return (
@@ -95,7 +104,7 @@ function ProjectLayout() {
     visibleSections(PROJECT_ADMIN_NAV, { permissions: project.data.permissions }),
     (plugins.data?.length ?? 0) > 0,
   );
-  if (sections.length === 0) {
+  if (sections.length === 0 && pluginSections.length === 0) {
     return (
       <Page title={project.data.name}>
         <AccessDenied />
@@ -107,6 +116,7 @@ function ProjectLayout() {
       label={t('projectAdmin.navLabel')}
       header={<ProjectIdentity project={project.data} />}
       sections={sections}
+      addedSections={pluginSections}
     >
       <Outlet />
     </SectionLayout>

@@ -18,6 +18,8 @@ const manifest: Manifest = {
   projectSettings: { type: 'object', properties: {} },
   entities: {},
   properties: {},
+  pages: [],
+  panels: [],
   messages: { en: { permissions: { reportsRead: 'See reports' } }, fr: {} },
   actions: [{ name: 'timeEntry.log', access: { issue: 'issueId' }, input: { type: 'object' } }],
   events: ['issue.created'],

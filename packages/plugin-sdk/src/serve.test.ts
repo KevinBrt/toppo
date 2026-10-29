@@ -3,8 +3,10 @@ import { definitionOf } from './definition.ts';
 import { z } from './index.ts';
 import { definePlugin } from './plugin.ts';
 import { defineProperty } from './property.ts';
+import { SCREEN_RUNTIME_GLOBAL } from './protocol/bridge.ts';
 import { manifestSchema } from './protocol/manifest.ts';
 import type { HostGlobal } from './protocol/sandbox.ts';
+import type { ServedScreens } from './screens/screens.ts';
 import { servePlugin } from './serve.ts';
 
 const ADA = '01a1569b-9900-7000-8000-000000000001';
@@ -122,6 +124,21 @@ function timeTracking() {
       }
     },
   });
+  plugin.definePage({
+    name: 'report',
+    zone: 'main',
+    access: 'authenticated',
+    title: 'plugin.name',
+    nav: { label: 'plugin.name', icon: 'clock' },
+    component: () => Promise.resolve('ReportPage'),
+  });
+  plugin.definePanel({
+    name: 'entries',
+    on: 'issue',
+    access: { permission: 'entries.log' },
+    title: 'properties.timeSpent',
+    component: () => Promise.resolve('EntriesPanel'),
+  });
   plugin.defineEventHandler({
     event: 'issue.statusChanged',
     async handler(ctx, { event, issue }) {
@@ -195,7 +212,50 @@ describe('a plugin served to Toppo', () => {
         { name: 'oddities.run', access: 'authenticated' },
       ],
       events: ['issue.statusChanged'],
+      pages: [
+        {
+          name: 'report',
+          zone: 'main',
+          access: 'authenticated',
+          title: 'plugin.name',
+          nav: { label: 'plugin.name', icon: 'clock' },
+        },
+      ],
+      panels: [
+        {
+          name: 'entries',
+          on: 'issue',
+          access: { permission: 'entries.log' },
+          title: 'properties.timeSpent',
+        },
+      ],
     });
+  });
+
+  it('hands its screens to Toppo’s runtime in a frame, each drawn by its own component', async () => {
+    const served: ServedScreens[] = [];
+    Reflect.set(globalThis, SCREEN_RUNTIME_GLOBAL, {
+      serve: (screens: ServedScreens) => served.push(screens),
+    });
+    try {
+      timeTracking();
+    } finally {
+      Reflect.deleteProperty(globalThis, SCREEN_RUNTIME_GLOBAL);
+    }
+
+    expect(served.map(({ id }) => id)).toStrictEqual(['time-tracking']);
+    expect(await served[0]?.component('report')?.()).toBe('ReportPage');
+    expect(await served[0]?.component('entries')?.()).toBe('EntriesPanel');
+    expect(served[0]?.component('elsewhere')).toBeUndefined();
+    expect(() =>
+      timeTracking().definePanel({
+        name: 'report',
+        on: 'issue',
+        access: 'authenticated',
+        title: 'plugin.name',
+        component: () => Promise.resolve(null),
+      }),
+    ).toThrow('The screen report is defined twice');
   });
 
   it('checks settings typed for the instance or a project, by its own schemas, whatever is saved', async () => {

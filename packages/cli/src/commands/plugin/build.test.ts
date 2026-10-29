@@ -2,7 +2,8 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PLUGIN_PACKAGE_LIMITS } from '@toppo-tracker/plugin-sdk/protocol';
+import vm from 'node:vm';
+import { PLUGIN_PACKAGE_LIMITS, SCREEN_RUNTIME_GLOBAL } from '@toppo-tracker/plugin-sdk/protocol';
 import { strFromU8, unzipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildPlugin, checkLogo, packagePlugin } from './build.ts';
@@ -51,6 +52,11 @@ describe('toppo plugin build', () => {
       /Toppo would refuse its manifest:[\s\S]*id[\s\S]*timeEntry\.log acts on an issue: the plugin needs issue\.read\s+→ at actions\[0\]\.access/,
     ],
     ['fails as it loads', 'throws', /The plugin fails as it loads: .*Broken on purpose/],
+    [
+      'imports React outside its screens',
+      'server-react',
+      /src[\\/]plugin\.ts imports react: a screen's code goes in its \.tsx files/,
+    ],
     ['has no version', 'no-version', /needs a version, such as 1\.2\.0/],
     ['has no src/plugin.ts', 'no-entry', /No src\/plugin\.ts in .*: a plugin starts there/],
     ['is not there', 'missing', /No package\.json in/],
@@ -62,6 +68,45 @@ describe('toppo plugin build', () => {
     ],
   ])('refuses a plugin that %s', async (_, fixture, message) => {
     await expect(buildPlugin(join(FIXTURES, fixture), out)).rejects.toThrow(message);
+  });
+
+  it('bundles its screens apart, for their frames, React left to Toppo’s runtime', async () => {
+    const built = await buildPlugin(join(FIXTURES, 'screens'), out);
+    const files = unzipSync(await readFile(built.file));
+    const server = strFromU8(files['server.js'] ?? new Uint8Array());
+    const web = strFromU8(files['web.js'] ?? new Uint8Array());
+
+    expect(Object.keys(files).sort()).toStrictEqual(['plugin.json', 'server.js', 'web.js']);
+    expect(built.manifest.pages).toStrictEqual([
+      {
+        name: 'report',
+        zone: 'main',
+        access: 'authenticated',
+        title: 'report',
+        nav: { label: 'report', icon: 'clock' },
+      },
+    ]);
+    expect(server).not.toContain('Hours spent on the screen');
+    expect(web).toContain('Hours spent on the screen');
+    // Served to anyone with its address: what actions and event handlers do stays on the server.
+    expect(server).toContain('secret ways');
+    expect(server).toContain('Told of the issue');
+    expect(web).not.toContain('secret ways');
+    expect(web).not.toContain('Told of the issue');
+
+    // In a frame, after Toppo's runtime: the page it hands over draws with the runtime's React.
+    const served: { component(name: string): (() => Promise<unknown>) | undefined }[] = [];
+    const runtime = {
+      React: { useState: (value: unknown) => [value] },
+      jsxRuntime: {
+        jsx: (type: unknown, props: unknown) => ({ type, props }),
+        jsxs: (type: unknown, props: unknown) => ({ type, props }),
+      },
+      serve: (screens: (typeof served)[number]) => served.push(screens),
+    };
+    vm.runInContext(web, vm.createContext({ [SCREEN_RUNTIME_GLOBAL]: runtime }));
+    const Page = (await served[0]?.component('report')?.()) as () => unknown;
+    expect(JSON.stringify(Page())).toContain('logged by ","hours.log');
   });
 
   it('refuses a server bundle heavier than Toppo takes, in bytes, before zipping it', () => {

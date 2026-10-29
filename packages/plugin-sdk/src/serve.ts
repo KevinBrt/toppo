@@ -76,6 +76,8 @@ function manifestOf({
   properties,
   actions,
   events,
+  pages,
+  panels,
 }: PluginDefinition): Omit<Manifest, 'settings' | 'projectSettings' | 'entities'> &
   Record<'settings' | 'projectSettings' | 'entities', Record<string, unknown>> {
   return {
@@ -109,6 +111,14 @@ function manifestOf({
       input: jsonSchemaOf(action.input),
     })),
     events: [...events.keys()],
+    pages: [...pages].map(([name, { zone, access, title, nav }]) => ({
+      name,
+      zone,
+      access,
+      title,
+      ...(nav === undefined ? {} : { nav }),
+    })),
+    panels: [...panels].map(([name, { on, access, title }]) => ({ name, on, access, title })),
   };
 }
 

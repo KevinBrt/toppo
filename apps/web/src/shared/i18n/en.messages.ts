@@ -1125,6 +1125,9 @@ export const en = {
     permissionsDescription:
       'Roles give them to their members like Toppo’s own, in Roles and permissions.',
     permissionsNone: 'It adds no permission.',
+    screenLeft: 'This plugin’s screen tried to leave Toppo: it was closed.',
+    screenNotFound: 'This plugin page does not exist, or you cannot open it.',
+    screensLoading: 'Loading…',
     propertiesTitle: 'Properties it adds',
     propertiesDescription:
       'Fields of the issues, in the projects where it acts, named so once it is approved: rename them at will in Issue properties.',

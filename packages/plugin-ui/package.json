@@ -1,0 +1,27 @@
+{
+  "name": "@toppo-tracker/plugin-ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "What a Toppo plugin's screens are drawn with: Toppo's components and hooks, from the runtime Toppo serves in their frames.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@toppo-tracker/plugin-sdk": "0.0.0"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@vitest/coverage-v8": "5.0.5",
+    "react": "19.3.1",
+    "vitest": "5.0.5"
+  }
+}

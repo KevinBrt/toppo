@@ -10,10 +10,12 @@ import { myIssuesRoute } from './routes/protected/issues/my-issues.route.tsx';
 import { newIssueRoute } from './routes/protected/issues/new-issue.route.tsx';
 import { notFoundRoute } from './routes/protected/not-found.route.tsx';
 import { notificationsRoute } from './routes/protected/notifications/notifications.route.tsx';
+import { pluginPageRoute } from './routes/protected/plugins/plugin-page.route.tsx';
 import { projectsIndexRoute } from './routes/protected/projects/index.route.tsx';
 import { projectRoute } from './routes/protected/projects/project.route.tsx';
 import { projectAccessRoute } from './routes/protected/projects/project-access.route.tsx';
 import { projectGeneralRoute } from './routes/protected/projects/project-general.route.tsx';
+import { projectPluginPageRoute } from './routes/protected/projects/project-plugin-page.route.tsx';
 import { projectPluginsRoute } from './routes/protected/projects/project-plugins.route.tsx';
 import { projectPropertiesRoute } from './routes/protected/projects/project-properties.route.tsx';
 import { projectStatusesRoute } from './routes/protected/projects/project-statuses.route.tsx';
@@ -24,6 +26,7 @@ import { settingsIndexRoute } from './routes/protected/settings/index.route.tsx'
 import { membersRoute } from './routes/protected/settings/members.route.tsx';
 import { pluginsIndexRoute } from './routes/protected/settings/plugins/index.route.tsx';
 import { pluginRoute } from './routes/protected/settings/plugins/plugin.route.tsx';
+import { pluginSettingsPageRoute } from './routes/protected/settings/plugins/plugin-settings-page.route.tsx';
 import { pluginsRoute } from './routes/protected/settings/plugins/plugins.route.tsx';
 import { propertiesRoute } from './routes/protected/settings/properties.route.tsx';
 import { rolesRoute } from './routes/protected/settings/roles.route.tsx';
@@ -51,6 +54,7 @@ const routeTree = rootRoute.addChildren([
     issuesRoute.addChildren([issuesIndexRoute, newIssueRoute, issueRoute]),
     myIssuesRoute,
     notificationsRoute,
+    pluginPageRoute,
     projectsRoute.addChildren([
       projectsIndexRoute,
       projectRoute.addChildren([
@@ -59,6 +63,7 @@ const routeTree = rootRoute.addChildren([
         projectStatusesRoute,
         projectPropertiesRoute,
         projectPluginsRoute,
+        projectPluginPageRoute,
       ]),
     ]),
     settingsRoute.addChildren([
@@ -69,6 +74,7 @@ const routeTree = rootRoute.addChildren([
       propertiesRoute,
       emailRoute,
       pluginsRoute.addChildren([pluginsIndexRoute, pluginRoute]),
+      pluginSettingsPageRoute,
     ]),
     accountRoute,
     notFoundRoute,

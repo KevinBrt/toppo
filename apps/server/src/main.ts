@@ -11,6 +11,7 @@ import { startJobWorker } from './platform/jobs/job-worker.ts';
 import { scheduleRecurringJobs } from './platform/jobs/jobs.ts';
 import { createPackageStore } from './platform/plugins/packages/package-store.ts';
 import { createPluginRuntime } from './platform/plugins/runtime/plugin-runtime.ts';
+import { createScreenBundles, loadScreenRuntime } from './platform/plugins/screens/screen-files.ts';
 import { createFileStorage } from './platform/uploads/file-storage.ts';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -22,6 +23,10 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 const WEB_ROOT = fileURLToPath(new URL('../../web/dist', import.meta.url));
 const MIGRATIONS_FOLDER = fileURLToPath(
   new URL('../../../packages/db/migrations', import.meta.url),
+);
+/** The runtime of plugins' screens, built beside the web app's packages. */
+const SCREEN_RUNTIME_ROOT = fileURLToPath(
+  new URL('../../../packages/plugin-runtime/dist', import.meta.url),
 );
 /** Run by Node from the sources in development (`src/main.ts`), bundled beside `dist/main.js`. */
 const SANDBOX_WORKER = new URL(
@@ -57,6 +62,10 @@ const plugins = {
   packages,
   workerUrl: SANDBOX_WORKER,
   runtime: createPluginRuntime({ packages, workerUrl: SANDBOX_WORKER }),
+  screens: {
+    bundles: createScreenBundles(packages),
+    runtime: loadScreenRuntime(SCREEN_RUNTIME_ROOT),
+  },
 };
 const app = await buildApp({
   config,

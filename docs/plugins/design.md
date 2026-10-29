@@ -306,44 +306,51 @@ Settings may hold secrets: `secret()` marks a field that Toppo seals with its in
 
 ### Screens: React in a sandboxed frame
 
-A plugin's panels and pages are **real React**, bundled by the build, shown in an `<iframe sandbox="allow-scripts">` served by Toppo under a CSP of its own:
+A plugin's panels and pages are **real React**, bundled by the build, shown in an `<iframe sandbox="allow-scripts allow-forms">` served by Toppo under a CSP of its own:
 
 ```
-sandbox allow-scripts; default-src 'none'; script-src 'self'; style-src 'self';
-img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'
+sandbox allow-scripts allow-forms; default-src 'none'; script-src 'self'; style-src 'self';
+img-src 'self' data:; font-src data:; connect-src 'none'; form-action 'none';
+base-uri 'none'; frame-src 'none'; frame-ancestors 'self'
 ```
+
+`allow-forms` lets a screen's forms submit to its own code (`form-action 'none'` keeps them from going anywhere).
 
 - The frame has no origin: it cannot read Toppo's page, the user's cookies or storage, call Toppo's API or any site, open windows or navigate the tab. Its only way out is the bridge (`postMessage`), checked by Toppo like a request from the browser.
+- It can navigate itself, though, and carry what it shows in an address: Toppo answers a frame only while it holds the document Toppo served (origin `'null'`), and takes away a frame that loads another one.
 - Toppo's own CSP stays as strict as today.
-- `@toppo-tracker/plugin-ui` gives Toppo's components, its theme as CSS variables, the user's language, and hooks built on TanStack Query: `useList`, `useSum`, `useGet`, `useAction`, `useT`, `usePanel`, `usePage`, `usePageParams`, `usePageSearch`, `PluginLink`. Plain HTML, CSS and any bundled React library work too; then accessibility and phone widths are the author's to keep.
-- `useAction(logTime)` imports the action into the browser bundle; the build replaces its handler with a reference, so server code never reaches the browser.
+- `@toppo-tracker/plugin-ui` (MIT) gives Toppo's components, its theme, the user's language, and hooks built on TanStack Query: `useActionQuery`, `useActionMutation`, `useScreen` (the user, the issue or project shown, the page's search, `open()`), `usePeople`, `useT`, `formatDuration`. It holds only types and relays: their code is Toppo's runtime (`packages/plugin-runtime`, AGPL), which Toppo serves in the frame before the plugin's bundle, with one React for every plugin. Plain HTML, CSS and any bundled React library work too; then accessibility and phone widths are the author's to keep.
+- A screen reads and writes through its plugin's actions only: `useActionQuery(listEntries, { issueId })` imports the action into the browser bundle, whose build leaves out the handlers of actions and event handlers, so server code never reaches the browser. `useActionMutation` checks the input with the action's own schema before sending it, then asks again what the screen shows.
 - Found in the prototype: the bundle must be a classic script (an origin-less frame refuses module scripts; never answer that with `Access-Control-Allow-Origin: null`); the frame is sized to its content's height, which the frame reports. A screen with React weighs 220 KB minified; Toppo serves one shared React runtime so plugins leave it out.
 
-Components of the first version:
+Components, with props of their own that stay stable whatever `packages/ui` becomes:
 
-| Kind                               | Components                                                                                                                                                                                                                   |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| From `packages/ui`, as they are    | Button, Avatar, Badge, StatusBadge, PriorityIcon, Alert, EmptyState, Field, Input, Textarea, Select, BadgeSelect, Switch, SortableList                                                                                       |
-| Added for plugins                  | Page (title, actions), Section, Tabs, DataTable (sorted and paged by the server), Stat, DateInput, NumberInput, DurationInput, PersonPicker and IssuePicker (only what the user sees), PersonName and IssueLink (from an id) |
-| Opened by Toppo, outside the frame | Dialog, DropdownMenu, SidePanel, through `openDialog()`, `openMenu()`, `openSidePanel()`: a frame cuts what overflows it                                                                                                     |
-| Later                              | Charts (bars, lines), a board of draggable columns                                                                                                                                                                           |
+| Kind                                       | Components                                                                                                                                                                                     |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First version (step 3), from `packages/ui` | Button, Badge, Alert, EmptyState, Field, Input, Textarea, Select, Switch                                                                                                                       |
+| First version (step 3), added for plugins  | Page (its one title, actions), Section, Stat, Table (rows given by the screen, a page at a time), DurationInput, PersonName (from an id), IssueLink, PageLink                                  |
+| Next, as plugins need them                 | Avatar, StatusBadge, PriorityIcon, BadgeSelect, SortableList, Tabs, DataTable (sorted and paged by the server), DateInput, NumberInput, PersonPicker and IssuePicker (only what the user sees) |
+| Opened by Toppo, outside the frame, next   | Dialog, DropdownMenu, SidePanel, through `openDialog()`, `openMenu()`, `openSidePanel()`: a frame cuts what overflows it                                                                       |
+| Later                                      | Charts (bars, lines), a board of draggable columns                                                                                                                                             |
 
 ### Where a plugin shows
 
 Small contributions are data, drawn by Toppo in its own page: a menu entry, a label, an icon from Toppo's set (Lucide).
 
-| Zone               | Where                                                               | URL of its pages                        |
-| ------------------ | ------------------------------------------------------------------- | --------------------------------------- |
-| `main`             | the main sidebar, under Toppo's entries                             | `/p/<plugin>/…`                         |
-| `settings`         | the settings sidebar: a section named after the plugin              | `/settings/p/<plugin>/…`                |
-| `project`          | a project's home page (new: it shows the project's latest activity) | `/projects/<key>/p/<plugin>/…`          |
-| `project.settings` | a tab in a project's settings                                       | `/projects/<key>/settings/p/<plugin>/…` |
-| panels             | `issue`: a panel on the issue page                                  | (none)                                  |
+| Zone               | Where                                                                   | URL of its pages               |
+| ------------------ | ----------------------------------------------------------------------- | ------------------------------ |
+| `main`             | the main sidebar, under Toppo's entries                                 | `/p/<plugin>/…`                |
+| `settings`         | the settings sidebar: a section named after the plugin                  | `/settings/p/<plugin>/…`       |
+| `project.settings` | a tab in a project's settings, in a section named after the plugin      | `/projects/<key>/p/<plugin>/…` |
+| `project`, next    | a project's home page (new: it shows the project's latest activity)     | (chosen with that page)        |
+| panels             | `issue`: a panel on the issue page, under its title, before the history | (none)                         |
+
+A project's settings live at `/projects/<key>`, so their plugin tabs do too. The `project` zone waits for a project's home page, which Toppo does not have yet.
 
 - A plugin never sits between the core's entries, reorders them or takes a core URL: its URLs start with its id.
-- In the settings sidebar, each plugin with settings or settings pages gets **its own section**, after the core's, with a "Settings" entry Toppo adds for its generated form. A plugin shows at most 8 entries.
+- In the settings sidebar, each plugin with settings pages gets **its own section**, after the core's; its generated settings form stays on its page in Settings → Plugins. A plugin shows at most 8 entries in a zone, 20 pages and 5 panels in all; an entry's icon is one of 16 of Toppo's set.
 - A page's `access` protects the page and decides who sees its link: they cannot diverge. Toppo checks it before serving the frame; without it, a 404.
-- Pages take typed parameters and search, TanStack Router's way (`/entries/$entryId`). A page whose parameter is an enum may list one entry per value: an imports plugin shows Mantis, Redmine and Jira as three entries of one page. Entries are declared in code, never made from data: what a plugin adds to the interface is known when it is approved.
+- In the first version, a page has a name and a search kept in Toppo's address (20 short terms at most), and one entry at most. Next, pages take typed parameters, TanStack Router's way (`/entries/$entryId`). A page whose parameter is an enum may list one entry per value: an imports plugin shows Mantis, Redmine and Jira as three entries of one page. Entries are declared in code, never made from data: what a plugin adds to the interface is known when it is approved.
 
 ```ts
 export const sourcePage = plugin.definePage({

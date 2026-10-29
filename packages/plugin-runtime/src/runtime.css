@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@import "@toppo-tracker/ui/theme.css";
+
+/* Tailwind scans this runtime by default; the design system lives in another workspace. */
+@source "../../ui/src";
+
+/* A screen sits in Toppo's page, on its surface: nothing of its own around it. */
+html,
+body {
+  background: transparent;
+  margin: 0;
+}

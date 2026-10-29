@@ -1,7 +1,11 @@
+import type { ServedScreens } from '@toppo-tracker/plugin-sdk';
+import { SCREEN_RUNTIME_GLOBAL } from '@toppo-tracker/plugin-sdk/protocol';
 import { createTestToppo } from '@toppo-tracker/plugin-testing';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { logTime } from './actions/log-time.action.ts';
 import { plugin } from './plugin.ts';
+import { issueTimePanel } from './screens/issue-time.panel.ts';
+import { timeReportPage } from './screens/time-report.page.ts';
 
 describe('the time tracking plugin', () => {
   it('declares what is approved and set: reading issues, a permission, its settings, the time spent it writes', () => {
@@ -32,6 +36,47 @@ describe('the time tracking plugin', () => {
       events: [],
       actions: [{ name: 'timeEntry.log' }],
     });
+  });
+
+  it('shows its time beside each issue, and across its projects in a page of the main sidebar', () => {
+    const { manifest } = createTestToppo(plugin);
+
+    expect([timeReportPage, issueTimePanel]).toStrictEqual([
+      { name: 'report', zone: 'main' },
+      { name: 'issueTime', on: 'issue' },
+    ]);
+    expect(manifest.pages).toStrictEqual([
+      {
+        name: 'report',
+        zone: 'main',
+        access: 'authenticated',
+        title: 'pages.report.title',
+        nav: { label: 'pages.report.nav', icon: 'clock' },
+      },
+    ]);
+    expect(manifest.panels).toStrictEqual([
+      { name: 'issueTime', on: 'issue', access: 'authenticated', title: 'panels.issueTime.title' },
+    ]);
+  });
+
+  it('hands each screen’s component to Toppo’s runtime, in a screen’s frame', async () => {
+    const served: ServedScreens[] = [];
+    vi.stubGlobal(SCREEN_RUNTIME_GLOBAL, {
+      serve: (screens: ServedScreens) => served.push(screens),
+    });
+    vi.resetModules();
+    try {
+      await import('./screens/time-report.page.ts');
+      await import('./screens/issue-time.panel.ts');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    const [screens] = served;
+    expect(screens?.id).toBe('time-tracking');
+    expect(await screens?.component('report')?.()).toHaveProperty('name', 'TimeReportPage');
+    expect(await screens?.component('issueTime')?.()).toHaveProperty('name', 'IssueTimePanel');
+    expect(screens?.component('elsewhere')).toBeUndefined();
   });
 
   it.each([

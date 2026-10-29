@@ -150,6 +150,13 @@ describe("a plugin's own user", () => {
     expect(listed.body).not.toContain(PLUGIN_ADDRESS);
   });
 
+  it('is not named to plugins’ screens, which ask for people by id', async () => {
+    const named = await call('GET', `/api/v1/people?ids=${pluginUserId}`);
+
+    expect(named.statusCode).toBe(200);
+    expect(named.json()).toStrictEqual({ people: [] });
+  });
+
   it.each([
     ['its projects listed', 'GET', '/projects', undefined],
     ['every project opened to it', 'PUT', '/projects', { allProjects: true }],

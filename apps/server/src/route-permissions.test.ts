@@ -62,6 +62,10 @@ const OPEN_API_ROUTES = [
   // Each action checks the access its plugin declares, through what both the plugin and the
   // caller hold; a plugin not enabled, or an action it does not declare, answers 404.
   'POST /api/v1/plugins/:pluginSlug/actions/:action',
+  // The names of people who share a project with the caller, filtered in the query.
+  'GET /api/v1/people',
+  // The pages of enabled plugins the caller may open, each checked as its frame is.
+  'GET /api/v1/plugin-screens',
   // Lists only the projects the caller reaches, filtered in the query.
   'GET /api/v1/projects',
   'GET /api/v1/setup',

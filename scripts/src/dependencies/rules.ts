@@ -26,11 +26,25 @@ export const ALLOWED_WORKSPACE_DEPENDENCIES: Readonly<Record<string, readonly st
     // The protocol plugins speak: one definition for the SDK and the server that checks it.
     '@toppo-tracker/plugin-sdk',
   ],
-  '@toppo-tracker/web': ['@toppo-tracker/shared', '@toppo-tracker/core', '@toppo-tracker/ui'],
+  '@toppo-tracker/web': [
+    '@toppo-tracker/shared',
+    '@toppo-tracker/core',
+    '@toppo-tracker/ui',
+    // The bridge plugins' screens speak: one definition for their runtime and the page holding them.
+    '@toppo-tracker/plugin-sdk',
+  ],
   // Published under MIT: nothing of Toppo's own, AGPL code.
   '@toppo-tracker/plugin-sdk': [],
   // Published under MIT with the SDK: what plugin authors build and test with.
   '@toppo-tracker/plugin-testing': ['@toppo-tracker/plugin-sdk'],
+  // Published under MIT with the SDK: the screens' components and hooks, relayed to the runtime.
+  '@toppo-tracker/plugin-ui': ['@toppo-tracker/plugin-sdk'],
+  // Toppo's own, AGPL: the runtime served in screens' frames, drawn with Toppo's components.
+  '@toppo-tracker/plugin-runtime': [
+    '@toppo-tracker/ui',
+    '@toppo-tracker/plugin-sdk',
+    '@toppo-tracker/plugin-ui',
+  ],
   '@toppo-tracker/cli': ['@toppo-tracker/plugin-sdk'],
   '@toppo-tracker/e2e': [],
   '@toppo-tracker/scripts': [],
@@ -39,7 +53,7 @@ export const ALLOWED_WORKSPACE_DEPENDENCIES: Readonly<Record<string, readonly st
 /** Workspaces allowed only as devDependencies: test tooling never ships. */
 const DEV_ONLY_WORKSPACES = new Set(['@toppo-tracker/testing']);
 
-const PLUGIN_ALLOWED = ['@toppo-tracker/plugin-sdk'];
+const PLUGIN_ALLOWED = ['@toppo-tracker/plugin-sdk', '@toppo-tracker/plugin-ui'];
 
 /**
  * What an official plugin builds and tests itself with, as any author would: never shipped with

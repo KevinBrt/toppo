@@ -39,6 +39,22 @@ export interface NavSection {
   items: readonly NavItem[];
 }
 
+/** An entry added as the app runs, its words already in the reader's language: a plugin's. */
+export interface AddedNavItem {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  to: NonNullable<LinkProps['to']>;
+  params: Record<string, string>;
+}
+
+/** Entries added as the app runs, after the app's own, under their own heading. */
+export interface AddedNavSection {
+  key: string;
+  label: string;
+  items: readonly AddedNavItem[];
+}
+
 /** Each of these opens a part of the settings: instance settings, members, roles, plugins. */
 export const SETTINGS_PERMISSIONS: readonly Permission[] = [
   'instance.settings.manage',

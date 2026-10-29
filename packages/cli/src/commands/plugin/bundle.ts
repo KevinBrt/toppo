@@ -9,8 +9,9 @@ import {
   type Manifest,
   manifestSchema,
   PLUGIN_GLOBAL,
+  SCREEN_RUNTIME_GLOBAL,
 } from '@toppo-tracker/plugin-sdk/protocol';
-import { rolldown } from 'rolldown';
+import { type Plugin, rolldown } from 'rolldown';
 
 /** What stops a build: told to the plugin's author as it is, without a stack. */
 export class BuildError extends Error {
@@ -23,19 +24,82 @@ export class BuildError extends Error {
 /** Where a plugin starts: `definePlugin()`. */
 export const ENTRY = 'src/plugin.ts';
 const VIRTUAL_ENTRY = '\0toppo-plugin-entry';
+/** What the server bundle holds in place of a screen's file: nothing, never loaded there. */
+const SCREEN_STUB = '\0toppo-screen-stub';
 /** Loading a bundle defines its functions: nothing that should take long, as in the sandbox. */
 const LOAD_TIMEOUT_MS = 2000;
 
 /**
- * The plugin's server files: every TypeScript file of `src/` but its tests and declarations, its
- * entry first. Each registers what it defines (`plugin.defineAction`) as it runs: nothing to list.
+ * What Toppo's runtime gives every screen in its frame: one React for all plugins, cached once by
+ * the browser, which their bundles leave out.
  */
-export async function serverFilesOf(directory: string): Promise<string[]> {
+const SCREEN_GLOBALS = {
+  react: `${SCREEN_RUNTIME_GLOBAL}.React`,
+  'react/jsx-runtime': `${SCREEN_RUNTIME_GLOBAL}.jsxRuntime`,
+} as const;
+
+/** What only a screen may import: React, and the components Toppo's runtime draws. */
+const SCREEN_ONLY = /^(react|react-dom|@toppo-tracker\/plugin-ui)(\/|$)/;
+
+/** What a bundle is for: Toppo's sandbox on the server, or the screens' frames in a browser. */
+type Target = 'server' | 'screens';
+
+/** The definitions whose `handler` runs in Toppo's sandbox only, never in a screen. */
+const SERVER_DEFINITIONS = new Set(['defineAction', 'defineEventHandler']);
+
+/** A property of an AST node, read without trusting its shape. */
+const field = (node: unknown, key: string): unknown =>
+  typeof node === 'object' && node !== null ? Reflect.get(node, key) : undefined;
+
+/** Where `plugin.defineAction({ …, handler })` holds its handler, if `node` is such a call. */
+function handlerRange(node: unknown): [number, number] | undefined {
+  const callee = field(node, 'callee');
+  const [definition] = (field(node, 'arguments') ?? []) as unknown[];
+  if (
+    field(node, 'type') !== 'CallExpression' ||
+    !SERVER_DEFINITIONS.has(String(field(field(callee, 'property'), 'name'))) ||
+    field(definition, 'type') !== 'ObjectExpression'
+  ) {
+    return undefined;
+  }
+  const handler = ((field(definition, 'properties') ?? []) as unknown[]).find(
+    (property) => field(field(property, 'key'), 'name') === 'handler',
+  );
+  const range = field(handler, 'range');
+  return Array.isArray(range) ? [Number(range[0]), Number(range[1])] : undefined;
+}
+
+/** The handlers of the actions and event handlers a module defines, last first. */
+function serverHandlersIn(program: unknown): [number, number][] {
+  const found: [number, number][] = [];
+  const visit = (node: unknown): void => {
+    if (typeof node !== 'object' || node === null) {
+      return;
+    }
+    const range = handlerRange(node);
+    if (range) {
+      found.push(range);
+    }
+    for (const child of Object.values(node)) {
+      visit(child);
+    }
+  };
+  visit(program);
+  return found.sort(([left], [right]) => right - left);
+}
+
+/**
+ * The plugin's files: every TypeScript file of `src/` but its tests and declarations, its entry
+ * first, with its screens' `.tsx` files for the screens' bundle. Each registers what it defines
+ * (`plugin.defineAction`) as it runs: nothing to list.
+ */
+export async function sourceFilesOf(directory: string, target: Target): Promise<string[]> {
   const entry = join(directory, ENTRY);
+  const kept = target === 'screens' ? /(?<!\.test|\.d)\.tsx?$/ : /(?<!\.test|\.d)\.ts$/;
   let found: string[];
   try {
     found = (await readdir(join(directory, 'src'), { recursive: true, withFileTypes: true }))
-      .filter((file) => file.isFile() && /(?<!\.test|\.d)\.ts$/.test(file.name))
+      .filter((file) => file.isFile() && kept.test(file.name))
       .map((file) => join(file.parentPath, file.name));
   } catch {
     throw new BuildError(`No src/ folder in ${directory}`);
@@ -47,48 +111,104 @@ export async function serverFilesOf(directory: string): Promise<string[]> {
 }
 
 /**
- * Bundles the plugin's server files, the SDK and their packages into one classic script, as Toppo
- * loads it: nothing left to import, since the sandbox has no module to import from.
+ * Refuses what a target cannot run: Node's modules anywhere; React and the screens' components on
+ * the server, where a screen's `.tsx` file is nothing, never loaded.
  */
-export async function bundle(directory: string): Promise<string> {
-  const files = await serverFilesOf(directory);
+function targetPlugin(
+  directory: string,
+  files: readonly string[],
+  target: Target,
+  fail: (error: BuildError) => never,
+): Plugin {
+  return {
+    name: 'toppo-plugin',
+    resolveId(id, importer) {
+      if (id === VIRTUAL_ENTRY) {
+        return id;
+      }
+      const from = importer ? relative(directory, importer) : 'The plugin';
+      if (id.startsWith('node:') || builtinModules.includes(id)) {
+        fail(
+          new BuildError(
+            `${from} imports ${id}: plugins run in Toppo's sandbox, without Node's modules`,
+          ),
+        );
+      }
+      if (target === 'server' && id.endsWith('.tsx')) {
+        return SCREEN_STUB;
+      }
+      if (target === 'server' && SCREEN_ONLY.test(id)) {
+        fail(new BuildError(`${from} imports ${id}: a screen's code goes in its .tsx files`));
+      }
+      return null;
+    },
+    // The screens' bundle is served to anyone with its address: a screen needs an action's name
+    // and input, never what it does on the server, nor what only that uses.
+    transform(code, id) {
+      if (target !== 'screens' || !/\.ts$/.test(id) || relative(directory, id).startsWith('..')) {
+        return null;
+      }
+      return serverHandlersIn(this.parse(code, { lang: 'ts', range: true })).reduce(
+        (kept, [start, end]) => `${kept.slice(0, start)}handler: undefined${kept.slice(end)}`,
+        code,
+      );
+    },
+    load(id) {
+      if (id === SCREEN_STUB) {
+        return 'export {};';
+      }
+      return id === VIRTUAL_ENTRY
+        ? files.map((file) => `import ${JSON.stringify(file)};`).join('\n')
+        : null;
+    },
+  };
+}
+
+async function bundleFor(directory: string, target: Target): Promise<string> {
+  const files = await sourceFilesOf(directory, target);
   /** Rolldown wraps a plugin's errors in its own, stack and all: this one is told as it is. */
   let refused: BuildError | undefined;
+  const fail = (error: BuildError): never => {
+    refused = error;
+    throw error;
+  };
+  const screens = target === 'screens';
   try {
     const build = await rolldown({
       input: VIRTUAL_ENTRY,
-      platform: 'neutral',
+      platform: screens ? 'browser' : 'neutral',
       logLevel: 'silent',
-      plugins: [
-        {
-          name: 'toppo-plugin',
-          resolveId(id, importer) {
-            if (id === VIRTUAL_ENTRY) {
-              return id;
-            }
-            if (id.startsWith('node:') || builtinModules.includes(id)) {
-              const from = importer ? relative(directory, importer) : 'The plugin';
-              refused = new BuildError(
-                `${from} imports ${id}: plugins run in Toppo's sandbox, without Node's modules`,
-              );
-              throw refused;
-            }
-            return null;
-          },
-          load(id) {
-            return id === VIRTUAL_ENTRY
-              ? files.map((file) => `import ${JSON.stringify(file)};`).join('\n')
-              : null;
-          },
-        },
-      ],
+      ...(screens ? { external: Object.keys(SCREEN_GLOBALS) } : {}),
+      transform: { jsx: { runtime: 'automatic' } },
+      plugins: [targetPlugin(directory, files, target, fail)],
     });
-    const { output } = await build.generate({ format: 'iife', minify: true });
+    const { output } = await build.generate({
+      format: 'iife',
+      minify: true,
+      codeSplitting: false,
+      ...(screens ? { globals: SCREEN_GLOBALS } : {}),
+    });
     await build.close();
     return output[0].code;
   } catch (error) {
     throw refused ?? new BuildError(error instanceof Error ? error.message : String(error));
   }
+}
+
+/**
+ * Bundles the plugin's server files, the SDK and their packages into one classic script, as Toppo
+ * loads it: nothing left to import, since the sandbox has no module to import from.
+ */
+export async function bundle(directory: string): Promise<string> {
+  return await bundleFor(directory, 'server');
+}
+
+/**
+ * Bundles the plugin with its screens into one classic script for their frames, which have no
+ * origin and load no module: React left to Toppo's runtime, which runs before it.
+ */
+export async function bundleScreens(directory: string): Promise<string> {
+  return await bundleFor(directory, 'screens');
 }
 
 /**
