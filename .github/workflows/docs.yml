@@ -1,6 +1,6 @@
 name: Documentation
 
-# Publishes docs/ to GitHub Pages at each change of main. Pull requests build it in CI already,
+# Publishes docs/ to GitHub Pages (toppo-tracker.app) at each change of main. Pull requests build it in CI already,
 # where a dead link fails it.
 on:
   push:

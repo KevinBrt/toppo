@@ -46,7 +46,7 @@ docker compose logs toppo | grep "setup code"
 
 Open <http://localhost:3000>, enter the setup code from the logs and create the administrator account. [Self-hosting Toppo](docs/self-hosting.md) covers email, HTTPS behind a reverse proxy, backups and restores, and upgrades.
 
-The [documentation](https://kevinbrt.github.io/toppo/), in English and French, covers using, hosting and building Toppo.
+The [documentation](https://toppo-tracker.app), in English and French, covers using, hosting and building Toppo.
 
 ## Built to be trusted
 

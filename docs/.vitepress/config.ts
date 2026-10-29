@@ -59,10 +59,10 @@ const FRENCH: DefaultTheme.Config = {
 
 /**
  * Toppo's documentation: what people, administrators and contributors need, in English and in
- * French, every page in both. Served by GitHub Pages under `/toppo/`. Light only, as the app is.
+ * French, every page in both. Served by GitHub Pages at toppo-tracker.app. Light only, as the
+ * app is.
  */
 export default defineConfig({
-  base: '/toppo/',
   title: 'Toppo',
   description: 'Modern issue tracking. Self-hosted. Free forever, no strings attached.',
   cleanUrls: true,
@@ -73,7 +73,7 @@ export default defineConfig({
   srcExclude: ['plugins/**', 'README.md'],
   // The README's screenshots, served as they are.
   vite: { publicDir: 'images' },
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/toppo/logo.svg' }]],
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
   locales: {
     root: { label: 'English', lang: 'en', themeConfig: ENGLISH },
     fr: {
