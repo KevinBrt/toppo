@@ -82,6 +82,18 @@ async function dispatch(
       return HOST_CALLS[method].result.parse(
         await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
       );
+    case 'crypto.hmac':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
+    case 'crypto.equal':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
+    case 'crypto.verify':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
   }
 }
 

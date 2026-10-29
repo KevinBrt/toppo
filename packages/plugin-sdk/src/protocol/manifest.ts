@@ -4,6 +4,7 @@ import { checkEntities, entitiesSchema } from './declarations/entities.ts';
 import { checkHttp, httpDeclarationSchema } from './declarations/http.ts';
 import { jobsSchema } from './declarations/jobs.ts';
 import { checkProperties, propertiesSchema } from './declarations/properties.ts';
+import { routesSchema } from './declarations/routes.ts';
 import { checkScreens, pagesSchema, panelsSchema } from './declarations/screens.ts';
 import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './declarations/settings.ts';
 import { EVENT_TYPES } from './events.ts';
@@ -117,6 +118,8 @@ export const manifestSchema = z
     jobs: jobsSchema.default([]),
     /** What it may reach outside Toppo; nothing for a plugin uploaded before. */
     http: httpDeclarationSchema.nullable().default(null),
+    /** Where services outside Toppo call it; none for a plugin uploaded before routes. */
+    routes: routesSchema.default([]),
   })
   .superRefine(checkIssueActions)
   .superRefine(checkSettings)

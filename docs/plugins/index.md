@@ -4,15 +4,16 @@ A plugin adds to what Toppo does: a team's own fields and screens, a tool it con
 
 ## What a plugin can do
 
-| With                                 | A plugin                                                                     |
-| ------------------------------------ | ---------------------------------------------------------------------------- |
-| [Actions](./actions)                 | Answers what its screens, or anyone signed in, ask it, for the person asking |
-| [Events](./events-and-jobs#events)   | Hears of what changes on the issues of its projects, and acts on it          |
-| [Jobs](./events-and-jobs#jobs)       | Works on its own, every hour, day or week                                    |
-| [Entities](./data#entities)          | Keeps records of its own, on an issue or a project, that Toppo checks        |
-| [Properties](./data#properties)      | Adds fields to issues, written by people or by itself                        |
-| [Screens](./screens)                 | Shows pages and panels, drawn with Toppo's components                        |
-| [Outbound requests](./outside-toppo) | Reaches the sites it declares: a chat, a service                             |
+| With                                         | A plugin                                                                     |
+| -------------------------------------------- | ---------------------------------------------------------------------------- |
+| [Actions](./actions)                         | Answers what its screens, or anyone signed in, ask it, for the person asking |
+| [Events](./events-and-jobs#events)           | Hears of what changes on the issues of its projects, and acts on it          |
+| [Jobs](./events-and-jobs#jobs)               | Works on its own, every hour, day or week                                    |
+| [Routes](./outside-toppo#receiving-requests) | Receives what services outside Toppo send it, once it checked they signed it |
+| [Entities](./data#entities)                  | Keeps records of its own, on an issue or a project, that Toppo checks        |
+| [Properties](./data#properties)              | Adds fields to issues, written by people or by itself                        |
+| [Screens](./screens)                         | Shows pages and panels, drawn with Toppo's components                        |
+| [Outbound requests](./outside-toppo)         | Reaches the sites it declares: a chat, a service                             |
 
 ## How Toppo runs it
 
@@ -26,7 +27,7 @@ Before a plugin runs, an administrator reads what it declares and approves it:
 
 - **Its needs**: what it reads and writes of Toppo's (`issue.read`, `comment.create`).
 - **The permissions it adds**, which roles may then hold, like Toppo's own.
-- **The events it hears of**, **the properties it adds**, **its jobs**, **what it reaches outside Toppo**.
+- **The events it hears of**, **the properties it adds**, **its jobs**, **what it reaches outside Toppo**, **where services outside Toppo call it**.
 - **Where it acts**: every project, or those chosen; and the hosts inside the network it may reach.
 
 A new version that asks for more waits for a new approval, and stops meanwhile. See [installing and running](./installing).

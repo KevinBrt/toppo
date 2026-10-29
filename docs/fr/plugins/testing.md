@@ -26,16 +26,17 @@ describe('timeEntry.log', () => {
 
 `createTestToppo(plugin, options?)` vérifie le manifeste du plugin comme le ferait Toppo, puis répond :
 
-| Membre                                         | Ce qu’il fait                                                                   |
-| ---------------------------------------------- | ------------------------------------------------------------------------------- |
-| `createIssue(champs?)`                         | Un ticket d’un projet de test, `WEB-1`, `WEB-2`…                                |
-| `createUser({ sees?, permissions? })`          | Quelqu’un qui voit ces tickets (tous par défaut) et a ces permissions du plugin |
-| `user.run(action, input)`                      | Lance une action pour cette personne, et répond son résultat                    |
-| `emit(événement, { issue, change, actorId? })` | Transmet un événement au plugin                                                 |
-| `runJob(job)`                                  | Lance l’un de ses jobs                                                          |
-| `records(entité)`, `properties(issueId)`       | Ce qu’il a écrit                                                                |
-| `comments`, `requests`                         | Les commentaires qu’il a écrits, les requêtes qu’il a envoyées hors de Toppo    |
-| `manifest`                                     | Ce qu’il déclare, tel que Toppo le lit                                          |
+| Membre                                         | Ce qu’il fait                                                                                                                                          |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createIssue(champs?)`                         | Un ticket d’un projet de test, `WEB-1`, `WEB-2`…                                                                                                       |
+| `createUser({ sees?, permissions? })`          | Quelqu’un qui voit ces tickets (tous par défaut) et a ces permissions du plugin                                                                        |
+| `user.run(action, input)`                      | Lance une action pour cette personne, et répond son résultat                                                                                           |
+| `emit(événement, { issue, change, actorId? })` | Transmet un événement au plugin                                                                                                                        |
+| `runJob(job)`                                  | Lance l’un de ses jobs                                                                                                                                 |
+| `receive(route, request?)`                     | Envoie une requête de l’extérieur à l’une de ses routes, et répond `{ status, body? }` : `signed(check, body)` en signe une comme le service le ferait |
+| `records(entité)`, `properties(issueId)`       | Ce qu’il a écrit                                                                                                                                       |
+| `comments`, `requests`                         | Les commentaires qu’il a écrits, les requêtes qu’il a envoyées hors de Toppo                                                                           |
+| `manifest`                                     | Ce qu’il déclare, tel que Toppo le lit                                                                                                                 |
 
 `options` lui donne des `settings`, les `projectSettings` d’un projet (par identifiant de projet), la `locale` (`'en'` par défaut), et `http` : une fonction qui répond aux requêtes du plugin, ou un code d’échec. Sans elle, chaque requête échoue avec `NETWORK_ERROR`.
 

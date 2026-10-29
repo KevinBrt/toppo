@@ -10,12 +10,13 @@ export const PLUGIN_GLOBAL = '__toppo';
 export const HOST_GLOBAL = '__host';
 
 /**
- * What Toppo asks a plugin to run: an action, an event, one of its jobs, or a check of settings
+ * What Toppo asks a plugin to run: an action, an event, one of its jobs, a request one of its
+ * routes received, or a check of settings
  * before Toppo saves them: `instance`, `project` (each answers what did not fit), or `projects`
  * (those saved for each project, by its id, as an upgrade checks them: it answers the ids it
  * refuses).
  */
-export type RunKind = 'action' | 'event' | 'job' | 'settings';
+export type RunKind = 'action' | 'event' | 'job' | 'route' | 'settings';
 
 /** `__toppo`: what the plugin answers Toppo. */
 export interface PluginGlobal {

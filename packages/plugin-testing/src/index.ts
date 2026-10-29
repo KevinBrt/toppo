@@ -4,6 +4,7 @@
  */
 
 export { TEST_PLUGIN_USER_ID } from './test-records.ts';
+export { signed, type TestRouteRequest } from './test-signatures.ts';
 export {
   createTestToppo,
   PluginRunError,

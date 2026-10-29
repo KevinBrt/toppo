@@ -1,6 +1,7 @@
 import { createServer, type IncomingHttpHeaders, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { schema } from '@toppo-tracker/db';
+import { verifySignature } from '@toppo-tracker/plugin-sdk/host';
 import { EVENT_TYPES } from '@toppo-tracker/plugin-sdk/protocol';
 import { ISSUE_DESCRIPTION_MAX_LENGTH } from '@toppo-tracker/shared';
 import { startSmtpServer, type TestSmtpServer } from '@toppo-tracker/testing';
@@ -8,7 +9,7 @@ import { eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createJobs } from './app.ts';
-import { verifyWebhook } from './platform/http/signatures/standard-webhooks.ts';
+import { nodeCrypto } from './platform/http/signatures/node-crypto.ts';
 import { runNextJob, type WorkerContext } from './platform/jobs/job-worker.ts';
 import {
   buildTestApp,
@@ -34,6 +35,21 @@ let mail: TestSmtpServer;
 let adminCookie: string;
 let receiver: Server;
 let base = '';
+/** Whether a request was signed with `secret`, as a receiver of Toppo's webhooks checks it. */
+function verifyWebhook(
+  secret: string,
+  headers: Record<string, string>,
+  body: string,
+  now: number,
+): boolean {
+  return verifySignature(
+    nodeCrypto,
+    { headers, body },
+    { scheme: 'standard-webhooks', secret },
+    now,
+  );
+}
+
 /** What the receiver was sent, oldest first. */
 let received: { path: string; headers: IncomingHttpHeaders; body: string }[] = [];
 

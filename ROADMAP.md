@@ -48,14 +48,13 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] `@toppo-tracker/plugin-ui`: components, `useActionQuery`, `useActionMutation`, `useScreen`, `usePeople`, `useT`;
     - [x] pages in the main sidebar, the settings and a project's settings, and panels on an issue;
     - [x] `plugins/time-tracking`: the issue panel, and a page of the time spent by project against its budget;
-    - [ ] pages with typed parameters, several entries of one page;
     - [ ] dialogs, menus and side panels opened by Toppo outside the frame; pickers of people and issues; charts.
-  - [ ] **4. Beyond the instance**:
+  - [x] **4. Beyond the instance**:
     - [x] the core's guard of outbound requests, and `ctx.http.fetch` where a plugin declares, inside the network only as its approval names;
     - [x] secret settings, sealed once typed;
     - [x] recurring jobs, every hour, day or week;
     - [x] `plugins/time-tracking`: the time of each week sent to a chat;
-    - [ ] routes and `ctx.crypto`, opened to plugins once the core's webhooks and GitHub integration build them.
+    - [x] routes, where services outside Toppo call a plugin, and `ctx.crypto` to check they signed what they send.
   - [ ] Publish the packages to npm: ready (`publish-plugin-packages.yml`, trusted publishing, `npm create @toppo-tracker/plugin`, proven outside the repository in CI), first published with the Toppo release that ships plugins.
 - [ ] The core's integrations, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature:
   - [x] webhooks, signed as Standard Webhooks writes them, in **Settings → Webhooks**;
@@ -77,6 +76,7 @@ Known compromises to revisit, not blocking:
 - The Docker image weighs about 210 MB, largely Better Auth adapters Toppo does not use (MongoDB, Prisma, Kysely): try the `better-auth/minimal` entry point.
 - OpenAPI description of `/api/v1`, generated from the Zod schemas (`z.toJSONSchema`), is not published yet.
 - Dark theme: possible later by redefining the tokens in `packages/ui/src/theme.css`.
+- Plugins' pages with typed parameters (a Zod schema of their search, links checked), and several entries of one page: comfort for authors, nothing asks for them yet.
 - Statuses on phones: the “Closes the issue” column has no visible header (its boxes are labelled for screen readers only).
 - Lost passwords without email: no way back in for now, the only administrator's included (decided 2026-10-25). Proposed for later: a one-time reset link an administrator creates from the members list (like an invitation), and a recovery code printed in the logs on demand for the last administrator.
 - Invitations are not rate limited (decided 2026-10-27): a limit per recipient would stop one address from being flooded without slowing a large wave of invitations.

@@ -7,6 +7,7 @@ import {
   z,
 } from '@toppo-tracker/plugin-sdk';
 import { describe, expect, it } from 'vitest';
+import { signed } from './test-signatures.ts';
 import { createTestToppo, PluginRunError } from './test-toppo.ts';
 
 /** A plugin as an author writes one, defined anew for each test. */
@@ -383,5 +384,77 @@ describe('the world outside a fake Toppo', () => {
       'HOST_NOT_DECLARED',
       'ADDRESS_NOT_ALLOWED',
     ]);
+  });
+});
+
+/** A plugin that comments on the issue a service names, once it checked the service signed it. */
+function linker() {
+  const plugin = definePlugin({
+    id: 'commit-links',
+    name: 'name',
+    description: 'name',
+    apiVersion: '^1.0',
+    needs: ['issue.read', 'comment.create'],
+    settings: z.object({ secret: secret(z.string()).optional() }),
+    messages: {
+      en: { name: 'Commit links', settings: { secret: { label: 'Secret' } }, linked: 'Linked.' },
+      fr: { name: 'Commit links', settings: { secret: { label: 'Secret' } }, linked: 'Lié.' },
+    },
+  });
+  const route = plugin.defineRoute({
+    name: 'push.receive',
+    async handler(ctx, request) {
+      const { secret: key } = ctx.settings;
+      if (!(key && (await ctx.crypto.verify(request, { scheme: 'github', secret: key })))) {
+        return { status: 401 };
+      }
+      const { issueId } = z.object({ issueId: z.uuid() }).parse(request.json());
+      await ctx.issues.comment(issueId, ctx.t('linked'), {
+        once: request.headers['x-github-delivery'] ?? issueId,
+      });
+      return { status: request.query['quiet'] ? 204 : 202, body: { issueId } };
+    },
+  });
+  const odd = plugin.defineRoute({
+    name: 'odd.receive',
+    handler: () => Promise.resolve({ status: 302 as 202 }),
+  });
+  return { plugin, route, odd };
+}
+
+describe('the routes of a plugin, in a fake Toppo', () => {
+  it('receives a request a service signed, as the plugin itself', async () => {
+    const { plugin, route } = linker();
+    const toppo = createTestToppo(plugin, { settings: { secret: 's3cret' } });
+    const issue = toppo.createIssue();
+    const request = signed({ scheme: 'github', secret: 's3cret' }, { issueId: issue.id });
+
+    expect(
+      await toppo.receive(route, {
+        ...request,
+        headers: { ...request.headers, 'X-GitHub-Delivery': 'd-1' },
+      }),
+    ).toStrictEqual({ status: 202, body: { issueId: issue.id } });
+    expect(await toppo.receive(route, { ...request, query: { quiet: '1' } })).toStrictEqual({
+      status: 204,
+      body: { issueId: issue.id },
+    });
+    expect(toppo.comments.map(({ body }) => body)).toStrictEqual(['Linked.', 'Linked.']);
+  });
+
+  it('refuses what the service did not sign, and what Toppo would not send back', async () => {
+    const { plugin, route, odd } = linker();
+    const toppo = createTestToppo(plugin, { settings: { secret: 's3cret' } });
+    const issue = toppo.createIssue();
+
+    expect(
+      await toppo.receive(
+        route,
+        signed({ scheme: 'github', secret: 'guessed' }, { issueId: issue.id }),
+      ),
+    ).toStrictEqual({ status: 401 });
+    expect(await toppo.receive(route)).toStrictEqual({ status: 401 });
+    await expect(toppo.receive(odd)).rejects.toThrow('Toppo would refuse what odd.receive answers');
+    expect(toppo.comments).toStrictEqual([]);
   });
 });

@@ -40,6 +40,8 @@ export interface PluginGrants {
   jobs: readonly { name: string }[];
   /** What it may reach outside Toppo: hosts it names, the address in some settings, any site. */
   http: PluginReach;
+  /** Where services outside Toppo call it, by name: each an address open to anyone. */
+  routes: readonly { name: string }[];
 }
 
 /** Where a plugin may send requests; `null` for nowhere. */
@@ -71,6 +73,7 @@ export function asksForMore(approved: PluginGrants, upgrade: PluginGrants): bool
     upgrade.needs.some(isNew(approved.needs)) ||
     upgrade.events.some(isNew(approved.events)) ||
     upgrade.jobs.some(({ name }) => !approved.jobs.some((job) => job.name === name)) ||
+    upgrade.routes.some(({ name }) => !approved.routes.some((route) => route.name === name)) ||
     reachesMore(approved.http, upgrade.http) ||
     Object.keys(upgrade.properties).some(isNew(Object.keys(approved.properties))) ||
     Object.entries(upgrade.permissions).some(

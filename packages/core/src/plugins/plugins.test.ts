@@ -29,6 +29,7 @@ describe('a plugin upgrade', () => {
     properties: { timeSpent: {} },
     jobs: [{ name: 'weeklySummary' }],
     http: ['hooks.slack.com'],
+    routes: [{ name: 'push.receive' }],
   };
 
   it('asks for nothing more with the same grants, in another order, or fewer', () => {
@@ -41,6 +42,7 @@ describe('a plugin upgrade', () => {
         properties: { timeSpent: { type: 'number' } },
         jobs: [{ name: 'weeklySummary' }],
         http: ['hooks.slack.com'],
+        routes: [{ name: 'push.receive' }],
       }),
     ).toBe(false);
     expect(
@@ -51,6 +53,7 @@ describe('a plugin upgrade', () => {
         properties: {},
         jobs: [],
         http: null,
+        routes: [],
       }),
     ).toBe(false);
   });
@@ -90,6 +93,7 @@ describe('a plugin upgrade', () => {
     ['an event', { ...approved, events: [...approved.events, 'issue.created'] }],
     ['a property', { ...approved, properties: { ...approved.properties, estimate: {} } }],
     ['a job', { ...approved, jobs: [...approved.jobs, { name: 'dailyCheck' }] }],
+    ['a route', { ...approved, routes: [...approved.routes, { name: 'pull.receive' }] }],
     [
       'a permission',
       {

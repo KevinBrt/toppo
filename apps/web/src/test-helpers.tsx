@@ -558,6 +558,7 @@ export function fakePlugin(
     http: null,
     privateHosts: [],
     httpCalls: [],
+    routes: [],
     allProjects: false,
     projects: [],
     approval: null,

@@ -2,10 +2,12 @@ import { z } from 'zod';
 import { type Context, createContext } from './context.ts';
 import { definitionOf, type PluginDefinition } from './definition.ts';
 import { PluginFailure } from './failure.ts';
+import { routeRequestSchema } from './protocol/declarations/routes.ts';
 import { EVENT_TYPES, type EventType, eventPayloadSchema } from './protocol/events.ts';
 import type { Manifest, Messages } from './protocol/manifest.ts';
 import { type RunAnswer, type RunContext, runContextSchema } from './protocol/run.ts';
 import type { HostGlobal, PluginGlobal, RunKind } from './protocol/sandbox.ts';
+import { routeRequestOf } from './routes/route.ts';
 
 /** The most characters of an error's detail kept for Toppo's log. */
 const DETAIL_MAX_LENGTH = 500;
@@ -37,6 +39,9 @@ export function servePlugin(plugin: object, host: HostGlobal): PluginGlobal {
     });
     if (kind === 'job') {
       return await runJob(definition, ctx, name);
+    }
+    if (kind === 'route') {
+      return await runRoute(definition, ctx, name, payload);
     }
     return kind === 'event'
       ? await runEvent(definition, ctx, name, payload)
@@ -82,6 +87,7 @@ function manifestOf({
   pages,
   panels,
   jobs,
+  routes,
 }: PluginDefinition): Omit<Manifest, 'settings' | 'projectSettings' | 'entities'> &
   Record<'settings' | 'projectSettings' | 'entities', Record<string, unknown>> {
   return {
@@ -125,6 +131,7 @@ function manifestOf({
     panels: [...panels].map(([name, { on, access, title }]) => ({ name, on, access, title })),
     jobs: [...jobs].map(([name, { every, label }]) => ({ name, every, label })),
     http: httpOf(config.http),
+    routes: [...routes.keys()].map((name) => ({ name })),
   };
 }
 
@@ -170,6 +177,23 @@ async function runJob(
   }
   await job.handler(ctx);
   return { ok: true, result: null };
+}
+
+async function runRoute(
+  definition: PluginDefinition,
+  ctx: PluginContext,
+  name: string,
+  payload: unknown,
+): Promise<RunAnswer> {
+  const route = definition.routes.get(name);
+  if (!route) {
+    return failure('UNKNOWN_ROUTE');
+  }
+  const request = routeRequestSchema.safeParse(payload);
+  if (!request.success) {
+    return invalid(request.error);
+  }
+  return { ok: true, result: await route.handler(ctx, routeRequestOf(request.data)) };
 }
 
 async function runAction(

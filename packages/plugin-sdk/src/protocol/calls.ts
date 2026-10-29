@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { ENTITY_INDEXES_TOTAL, ENTITY_NAME } from './declarations/entities.ts';
 import { httpAnswerSchema, httpRequestSchema } from './declarations/http.ts';
+import {
+  HMAC_ALGORITHMS,
+  HMAC_ENCODINGS,
+  hmacKeySchema,
+  ROUTE_LIMITS,
+  routeRequestSchema,
+  signatureCheckSchema,
+} from './declarations/routes.ts';
 import { issueSnapshotSchema } from './events.ts';
 
 /** The value of one of a plugin's properties: a number, a text, a day, a box ticked (`true`). */
@@ -199,6 +207,32 @@ export const HOST_CALLS = {
     needs: null,
     args: httpRequestSchema,
     result: httpAnswerSchema,
+  },
+  /** An HMAC of `data` under `key`: the sandbox has no cryptography of its own. */
+  'crypto.hmac': {
+    needs: null,
+    args: z.object({
+      algorithm: z.enum(HMAC_ALGORITHMS),
+      key: hmacKeySchema,
+      data: z.string().max(ROUTE_LIMITS.bodyBytes),
+      encoding: z.enum(HMAC_ENCODINGS),
+    }),
+    result: z.string(),
+  },
+  /** Whether two texts are the same, compared in a time that does not tell where they differ. */
+  'crypto.equal': {
+    needs: null,
+    args: z.object({
+      a: z.string().max(ROUTE_LIMITS.fieldLength),
+      b: z.string().max(ROUTE_LIMITS.fieldLength),
+    }),
+    result: z.boolean(),
+  },
+  /** Whether a request a route received is signed as `check` says, by Toppo's own code. */
+  'crypto.verify': {
+    needs: null,
+    args: z.object({ request: routeRequestSchema, check: signatureCheckSchema }),
+    result: z.boolean(),
   },
 } as const;
 

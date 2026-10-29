@@ -22,7 +22,7 @@ Approving creates the plugin's own user and the properties it adds.
 
 ## Upgrading
 
-**Install a new version** uploads its next zip. A version that asks for more than was approved (a need, a permission, an event, a property, a job, more to reach), or whose code refuses the settings already saved, waits for a new approval, and the plugin stops meanwhile. One that asks for no more takes the approved version's place at once.
+**Install a new version** uploads its next zip. A version that asks for more than was approved (a need, a permission, an event, a property, a job, a route, more to reach), or whose code refuses the settings already saved, waits for a new approval, and the plugin stops meanwhile. One that asks for no more takes the approved version's place at once.
 
 ## Disabling and uninstalling
 

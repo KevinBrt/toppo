@@ -74,8 +74,8 @@ The plugin's own schema checks what is saved, in its sandbox, field by field. It
 | `entities`, `properties` | [Records and properties](./data)          |
 | `http`                   | [Reaching outside Toppo](./outside-toppo) |
 
-Actions, event handlers, jobs and screens are declared by the plugin's own calls (`plugin.defineAction`…), each in its own file: see the next pages.
+Actions, event handlers, jobs, routes and screens are declared by the plugin's own calls (`plugin.defineAction`…), each in its own file: see the next pages.
 
 ## Asking for more
 
-A new version that asks for more than was approved waits for a new approval, and stops meanwhile: a new need, permission or wider scope, event, property or job, more to reach outside Toppo; or code that refuses the settings already saved. One that asks for no more replaces the approved version at once. Permissions a version no longer declares leave every role.
+A new version that asks for more than was approved waits for a new approval, and stops meanwhile: a new need, permission or wider scope, event, property, job or route, more to reach outside Toppo; or code that refuses the settings already saved. One that asks for no more replaces the approved version at once. Permissions a version no longer declares leave every role.

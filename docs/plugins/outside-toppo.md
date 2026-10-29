@@ -39,6 +39,40 @@ Requests are http or https only, without cookies, 64 KB of body and 30 headers a
 
 The plugin's page shows its last 50 requests to administrators: the host, the method, the status or why there was none, never the path, query or body.
 
+## Receiving requests
+
+A route is where a service outside Toppo calls the plugin: GitHub, GitLab, a CI script. It answers as the plugin itself, with its needs, in the projects it acts in, as an event or a job does.
+
+<<< @/../apps/server/src/platform/plugins/fixtures/commit-links.fixture.ts#github
+
+Its address is `/api/v1/plugins/<id>/routes/<name>`: the plugin's page gives it whole, to copy into the service's settings, and who approves the plugin sees its routes. An upgrade that adds one asks for an approval again.
+
+**Anyone may send a request there**: check it is the service's before anything else, and answer `401` otherwise. `ctx.crypto.verify(request, check)` checks it as the service signs it, computed by Toppo, since the sandbox has no cryptography of its own:
+
+| `check`                                                            | The service                                                                                                                     |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `{ scheme: 'github', secret }`                                     | GitHub, Bitbucket Cloud: `x-hub-signature-256`                                                                                  |
+| `{ scheme: 'standard-webhooks', secret, toleranceSeconds? }`       | [Standard Webhooks](https://www.standardwebhooks.com/), Toppo's own webhooks among them: dated, five minutes at most by default |
+| `{ scheme: 'token', header, secret }`                              | A header holding the secret itself: GitLab's `x-gitlab-token`                                                                   |
+| `{ scheme: 'hmac', header, algorithm, encoding, prefix?, secret }` | Any HMAC of the body: Gitea's `x-gitea-signature` (`sha256`, `hex`)                                                             |
+
+<<< @/../apps/server/src/platform/plugins/fixtures/commit-links.fixture.ts#gitlab
+
+For a service that signs its own way, `ctx.crypto.hmac(algorithm, key, data, encoding?)` and `ctx.crypto.equal(a, b)`, which compares in constant time, do the same by hand. Keep the secret a `secret()` setting.
+
+The request is `{ method, headers, query, body, json() }`: the body as it came, unparsed, since a signature is of these very characters; the headers in lowercase, never a cookie. The route answers `{ status, body? }`: `200`, `201`, `202` or `204`, or `400`, `401`, `403`, `404`, `409` or `422`, with JSON. A `ctx.fail` answers `422`.
+
+A service sends a delivery again when it got no answer in time: comment with `once` and its delivery's id (`x-github-delivery`, `webhook-id`), as an event handler does.
+
+| Bound    |                                                        |
+| -------- | ------------------------------------------------------ |
+| Body     | 256 KB, of text: JSON, a form, or `text/*`             |
+| Answer   | 64 KB of JSON                                          |
+| Time     | 10 seconds                                             |
+| Requests | 120 a minute from one client, 600 a minute to a plugin |
+
+A route that throws, takes too long or answers otherwise answers `502` to its caller, and counts no failure toward disabling the plugin: anyone may send it what makes it fail. The server's log says why.
+
 ## Secrets
 
 A token or a webhook address is a setting declared `secret()`: sealed with the instance's key once saved, never shown again, opened for the plugin's sandbox only, as `ctx.settings.<name>`. See [settings](./manifest#settings).

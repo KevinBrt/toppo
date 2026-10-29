@@ -4,9 +4,11 @@ import type { MessagesOf } from './messages.ts';
 import type { Properties } from './property.ts';
 import type { PluginNeed } from './protocol/calls.ts';
 import type { JobEvery } from './protocol/declarations/jobs.ts';
+import type { RouteAnswer } from './protocol/declarations/routes.ts';
 import type { EventType } from './protocol/events.ts';
 import type { accessSchema, Messages } from './protocol/manifest.ts';
 import type { PluginLogo } from './protocol/package.ts';
+import type { RouteRequest } from './routes/route.ts';
 import type { PageDefinition, PanelDefinition } from './screens/screens.ts';
 
 /** What `definePlugin` keeps of a plugin, for `servePlugin` to answer Toppo with. */
@@ -44,6 +46,11 @@ export interface PluginDefinition {
   jobs: Map<
     string,
     { every: JobEvery; label: string; handler(ctx: Context<z.ZodType, Messages>): Promise<void> }
+  >;
+  /** Where services outside Toppo call it, by name. */
+  routes: Map<
+    string,
+    { handler(ctx: Context<z.ZodType, Messages>, request: RouteRequest): Promise<RouteAnswer> }
   >;
 }
 
