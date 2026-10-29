@@ -234,7 +234,7 @@ When a plugin is uninstalled, the administrator chooses: keep its data (it comes
 
 ## Properties
 
-A plugin may add **properties** to issues, which then behave as any other: a column of the issue list, a filter, a sort, a grouping, shown or hidden project by project. Time tracking adds an estimate people type in, and the time spent it computes:
+A plugin may add **properties** to issues, which then behave as any other: a column of the issue list, a filter, a sort, a grouping, shown or hidden project by project. For instance an estimate people type in, and the time spent it computes (time tracking writes the latter, counted again from all of an issue's entries each time one is logged):
 
 ```ts
 export const estimate = defineProperty({
