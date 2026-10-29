@@ -27,7 +27,7 @@ export interface Context<
 > {
   /** As the administrator saved them, parsed with the plugin's schema: its defaults applied. */
   readonly settings: z.output<S>;
-  /** The language of whoever the plugin acts for; the instance's for an event. */
+  /** The language of whoever the plugin acts for; English for an event or a job. */
   readonly locale: Locale;
   /** One of the plugin's messages, in that language. */
   t(key: MessageKey<M>, params?: MessageParams): string;

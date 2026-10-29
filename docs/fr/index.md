@@ -7,7 +7,7 @@ hero:
   tagline: Une seule édition avec toutes les fonctionnalités, sans limite d’utilisateurs, installée en une commande.
   image:
     src: /logo.svg
-    alt: ""
+    alt: ''
   actions:
     - theme: brand
       text: Découvrir Toppo
@@ -23,6 +23,9 @@ features:
   - title: L’héberger
     details: Docker, e-mail, HTTPS derrière un reverse proxy, sauvegardes, restaurations et mises à jour.
     link: /fr/self-hosting
+  - title: L’étendre
+    details: Des plugins avec leurs propres champs, écrans et jobs, écrits en TypeScript et testés sans serveur.
+    link: /fr/plugins/
   - title: Le construire
     details: Comment le code est organisé, les vérifications qu’il passe, et comment contribuer.
     link: /fr/contributing

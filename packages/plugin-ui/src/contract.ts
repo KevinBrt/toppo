@@ -80,6 +80,30 @@ export interface SwitchProps {
   disabled?: boolean;
 }
 
+/** Room between what a stack or a row holds. */
+export type Gap = 'small' | 'medium' | 'large';
+
+/**
+ * What it holds, one under the other: a screen lays itself out with stacks and rows, never with
+ * classes of its own, which Toppo's stylesheet may not have.
+ */
+export interface StackProps {
+  children: ReactNode;
+  /** `medium` by default. */
+  gap?: Gap;
+}
+
+/** What it holds, side by side, going to the next line when the screen is narrow. */
+export interface RowProps {
+  children: ReactNode;
+  /** `medium` by default. */
+  gap?: Gap;
+  /** Across the row: `center` by default. */
+  align?: 'start' | 'center' | 'end' | 'baseline';
+  /** Along the row: `start` by default; `between` pushes the first and last to each end. */
+  justify?: 'start' | 'end' | 'between';
+}
+
 /** A page's frame: its one title, what may be done on it, then its content. */
 export interface PageProps {
   title: string;
@@ -192,6 +216,8 @@ export interface ScreenUi {
   Section: ComponentType<SectionProps>;
   Stat: ComponentType<StatProps>;
   Table: ComponentType<TableProps>;
+  Stack: ComponentType<StackProps>;
+  Row: ComponentType<RowProps>;
   DurationInput: ComponentType<DurationInputProps>;
   PersonName: ComponentType<PersonNameProps>;
   IssueLink: ComponentType<IssueLinkProps>;

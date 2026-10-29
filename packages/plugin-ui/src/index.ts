@@ -28,10 +28,12 @@ import type {
   PageLinkProps,
   PageProps,
   PersonNameProps,
+  RowProps,
   ScreenState,
   ScreenUi,
   SectionProps,
   SelectProps,
+  StackProps,
   StatProps,
   SwitchProps,
   TableProps,
@@ -95,6 +97,8 @@ export const Page = relayed<PageProps>('Page');
 export const Section = relayed<SectionProps>('Section');
 export const Stat = relayed<StatProps>('Stat');
 export const Table = relayed<TableProps>('Table');
+export const Stack = relayed<StackProps>('Stack');
+export const Row = relayed<RowProps>('Row');
 export const DurationInput = relayed<DurationInputProps>('DurationInput');
 export const PersonName = relayed<PersonNameProps>('PersonName');
 export const IssueLink = relayed<IssueLinkProps>('IssueLink');

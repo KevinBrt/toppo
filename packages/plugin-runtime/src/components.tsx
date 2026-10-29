@@ -10,8 +10,10 @@ import type {
   PageLinkProps,
   PageProps,
   PersonNameProps,
+  RowProps,
   SectionProps,
   SelectProps,
+  StackProps,
   StatProps,
   SwitchProps,
   TableProps,
@@ -131,6 +133,34 @@ export function Section({ title, description, actions, children }: SectionProps)
       </div>
       {children}
     </section>
+  );
+}
+
+/** Room between what a stack or a row holds: Toppo's own spacing, whatever its stylesheet. */
+const GAPS = { small: 'gap-2', medium: 'gap-4', large: 'gap-6' } as const;
+
+export function Stack({ children, gap = 'medium' }: StackProps) {
+  return <div className={`flex min-w-0 flex-col ${GAPS[gap]}`}>{children}</div>;
+}
+
+const ALIGNS = {
+  start: 'items-start',
+  center: 'items-center',
+  end: 'items-end',
+  baseline: 'items-baseline',
+} as const;
+
+const JUSTIFIES = {
+  start: 'justify-start',
+  end: 'justify-end',
+  between: 'justify-between',
+} as const;
+
+export function Row({ children, gap = 'medium', align = 'center', justify = 'start' }: RowProps) {
+  return (
+    <div className={`flex min-w-0 flex-wrap ${GAPS[gap]} ${ALIGNS[align]} ${JUSTIFIES[justify]}`}>
+      {children}
+    </div>
   );
 }
 
