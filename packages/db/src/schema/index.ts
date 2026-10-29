@@ -33,4 +33,5 @@ export { pluginRecords } from './plugins/plugin-records.ts';
 export { pluginProjects, plugins } from './plugins/plugins.ts';
 export { projectMembers, projects } from './projects.ts';
 export { roles } from './roles.ts';
+export { webhookDeliveries, webhookProjects, webhooks } from './webhooks/webhooks.ts';
 export { statuses, workflowStatuses, workflows, workflowTransitions } from './workflows.ts';

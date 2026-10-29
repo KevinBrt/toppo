@@ -12,6 +12,7 @@ import {
   SlidersHorizontalIcon,
   UserIcon,
   UsersIcon,
+  WebhookIcon,
 } from 'lucide-react';
 import type { PlainMessageKey } from '../i18n/i18n.types.ts';
 
@@ -55,13 +56,14 @@ export interface AddedNavSection {
   items: readonly AddedNavItem[];
 }
 
-/** Each of these opens a part of the settings: instance settings, members, roles, plugins. */
+/** Each of these opens a part of the settings, from the instance's settings to its webhooks. */
 export const SETTINGS_PERMISSIONS: readonly Permission[] = [
   'instance.settings.manage',
   'instance.mail.manage',
   'instance.users.manage',
   'instance.roles.manage',
   'instance.plugins.manage',
+  'instance.webhooks.manage',
 ];
 
 export const NAV_SECTIONS: readonly NavSection[] = [
@@ -140,6 +142,12 @@ export const SETTINGS_NAV: readonly NavSection[] = [
         labelKey: 'plugins.title',
         icon: PuzzleIcon,
         requiresAnyOf: ['instance.plugins.manage'],
+      },
+      {
+        to: '/settings/webhooks',
+        labelKey: 'webhooks.title',
+        icon: WebhookIcon,
+        requiresAnyOf: ['instance.webhooks.manage'],
       },
     ],
   },

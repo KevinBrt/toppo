@@ -43,6 +43,9 @@ export const PERMISSIONS = {
   // A plugin runs code inside Toppo and reads what its approval opens to it, in every project it
   // is given: only administrators may install, approve or remove one.
   'instance.plugins.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
+  // A webhook sends what changes on issues, their words included, to an address outside Toppo:
+  // what leaves the instance is its administrators' to choose.
+  'instance.webhooks.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
 } as const satisfies Record<string, PermissionDefinition>;
 
 export type Permission = keyof typeof PERMISSIONS;

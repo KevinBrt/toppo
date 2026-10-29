@@ -400,6 +400,13 @@
       "when": 1793278815099,
       "tag": "0056_plugin_outbound",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1793299743026,
+      "tag": "0057_webhooks",
+      "breakpoints": true
     }
   ]
 }

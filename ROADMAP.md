@@ -58,7 +58,9 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] `plugins/time-tracking`: the time of each week sent to a chat;
     - [ ] routes and `ctx.crypto`, opened to plugins once the core's webhooks and GitHub integration build them.
   - [ ] Publish the packages to npm from GitHub Actions, once steps 1 to 3 are done.
-- [ ] Webhooks, then the GitHub integration, in the core, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature.
+- [ ] The core's integrations, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature:
+  - [x] webhooks, signed as Standard Webhooks writes them, in **Settings → Webhooks**;
+  - [ ] the GitHub integration.
 - [ ] OIDC, SAML and LDAP, free (Better Auth plugins, added to the endpoint allowlist).
 - [ ] Imports from Mantis, Redmine and Jira (CSV first); inbound email.
 - [ ] Kanban board, in the core.

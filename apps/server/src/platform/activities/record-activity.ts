@@ -4,7 +4,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Transaction } from '../cqrs/cqrs.ts';
 
-const { activities, jobs, plugins } = schema;
+const { activities, jobs, plugins, webhooks } = schema;
 
 /** Rows written at once: far below PostgreSQL's limit of parameters per statement. */
 const BATCH = 1000;
@@ -24,6 +24,15 @@ export const ACTIVITY_RECORDED = {
  */
 export const PLUGINS_TOLD = {
   type: 'plugin.eventsRecorded',
+  payload: z.object({ activityIds: z.array(z.uuid()).min(1).max(BATCH) }),
+} as const;
+
+/**
+ * The job that hands recorded activities to the webhooks told of them, run by
+ * `features/webhooks`: every change, a plugin's included, bulk ones in batches.
+ */
+export const WEBHOOKS_TOLD = {
+  type: 'webhook.eventsRecorded',
   payload: z.object({ activityIds: z.array(z.uuid()).min(1).max(BATCH) }),
 } as const;
 
@@ -90,22 +99,45 @@ export async function recordActivities(
         })),
       );
     }
-    if (await anyPluginHears(tx, [...new Set(batch.map(({ type }) => type))])) {
+    const types = [...new Set(batch.map(({ type }) => type))];
+    const activityIds = ids.slice(start, start + BATCH);
+    if (await anyPluginHears(tx, types)) {
       await tx.insert(jobs).values({
         type: PLUGINS_TOLD.type,
-        payload: PLUGINS_TOLD.payload.parse({ activityIds: ids.slice(start, start + BATCH) }),
+        payload: PLUGINS_TOLD.payload.parse({ activityIds }),
+      });
+    }
+    if (await anyWebhookHears(tx, types)) {
+      await tx.insert(jobs).values({
+        type: WEBHOOKS_TOLD.type,
+        payload: WEBHOOKS_TOLD.payload.parse({ activityIds }),
       });
     }
   }
   return ids;
 }
 
-/** Whether an enabled plugin hears of one of `types`: most changes queue nothing for plugins. */
-async function anyPluginHears(tx: Transaction, types: readonly string[]): Promise<boolean> {
-  const heard = sql`array[${sql.join(
+/** `types` as a PostgreSQL array of text, each a parameter. */
+function textArray(types: readonly string[]) {
+  return sql`array[${sql.join(
     types.map((type) => sql`${type}`),
     sql`, `,
   )}]::text[]`;
+}
+
+/** Whether an enabled webhook is told of one of `types`: most instances have none. */
+async function anyWebhookHears(tx: Transaction, types: readonly string[]): Promise<boolean> {
+  const [listening] = await tx
+    .select({ id: webhooks.id })
+    .from(webhooks)
+    .where(and(eq(webhooks.enabled, true), sql`${webhooks.events} && ${textArray(types)}`))
+    .limit(1);
+  return listening !== undefined;
+}
+
+/** Whether an enabled plugin hears of one of `types`: most changes queue nothing for plugins. */
+async function anyPluginHears(tx: Transaction, types: readonly string[]): Promise<boolean> {
+  const heard = textArray(types);
   const [listening] = await tx
     .select({ id: plugins.id })
     .from(plugins)

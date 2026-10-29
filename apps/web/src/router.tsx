@@ -32,6 +32,10 @@ import { propertiesRoute } from './routes/protected/settings/properties.route.ts
 import { rolesRoute } from './routes/protected/settings/roles.route.tsx';
 import { settingsRoute } from './routes/protected/settings/settings.route.tsx';
 import { statusesRoute } from './routes/protected/settings/statuses.route.tsx';
+import { webhooksIndexRoute } from './routes/protected/settings/webhooks/index.route.tsx';
+import { newWebhookRoute } from './routes/protected/settings/webhooks/new-webhook.route.tsx';
+import { webhookRoute } from './routes/protected/settings/webhooks/webhook.route.tsx';
+import { webhooksRoute } from './routes/protected/settings/webhooks/webhooks.route.tsx';
 import { forgotPasswordRoute } from './routes/public/forgot-password.route.tsx';
 import { invitationRoute } from './routes/public/invitation.route.tsx';
 import { loginRoute } from './routes/public/login.route.tsx';
@@ -74,6 +78,7 @@ const routeTree = rootRoute.addChildren([
       propertiesRoute,
       emailRoute,
       pluginsRoute.addChildren([pluginsIndexRoute, pluginRoute]),
+      webhooksRoute.addChildren([webhooksIndexRoute, newWebhookRoute, webhookRoute]),
       pluginSettingsPageRoute,
     ]),
     accountRoute,
