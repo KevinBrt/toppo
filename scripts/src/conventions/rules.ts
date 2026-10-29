@@ -138,6 +138,15 @@ export const RULES: readonly ConventionRule[] = [
     },
   },
   {
+    id: 'plugin-screens-without-classes',
+    message:
+      "A plugin's screen lays itself out with Stack and Row from @toppo-tracker/plugin-ui: Toppo's stylesheet may not have its classes",
+    appliesTo: (path) => /^plugins\/.+\.tsx$/.test(path),
+    check(path, source) {
+      return lineMatches(this, path, source, [/\bclassName\s*=/]);
+    },
+  },
+  {
     id: 'design-tokens-only',
     message: 'Use design tokens from packages/ui/src/theme.css instead of raw colors',
     appliesTo: (path) => FRONTEND_CODE.test(path) && path.endsWith('.tsx'),

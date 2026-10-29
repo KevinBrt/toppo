@@ -27,22 +27,22 @@ A plugin is TypeScript built by `toppo plugin build` into one zip: a server bund
 
 ```ts
 // src/plugin.ts
-import { definePlugin, z } from "@toppo-tracker/plugin-sdk";
+import { definePlugin, z } from '@toppo-tracker/plugin-sdk';
 
 export const plugin = definePlugin({
-  id: "slack",
-  apiVersion: "^1.0",
-  needs: ["issue.read"],
-  http: ["hooks.slack.com"],
+  id: 'slack',
+  apiVersion: '^1.0',
+  needs: ['issue.read'],
+  http: ['hooks.slack.com'],
   settings: z.object({ webhookUrl: z.url() }),
   messages: { en: {}, fr: {} },
 });
 
 plugin.defineEventHandler({
-  event: "issue.created",
+  event: 'issue.created',
   async handler(ctx, { issue }) {
     await ctx.http.fetch(ctx.settings.webhookUrl, {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify({ text: `New issue ${issue.key}: ${issue.title}` }),
     });
   },
@@ -69,7 +69,7 @@ src/
 ```ts
 // src/entities/time-entry.entity.ts
 export const timeEntry = defineEntity({
-  attachedTo: "issue",
+  attachedTo: 'issue',
   fields: z.object({
     minutes: z
       .int()
@@ -78,18 +78,18 @@ export const timeEntry = defineEntity({
     spentOn: z.iso.date(),
     note: z.string().trim().max(500).optional(),
   }),
-  indexes: ["spentOn"],
+  indexes: ['spentOn'],
   limits: { perIssue: 1000 },
 });
 
 // src/plugin.ts
 export const plugin = definePlugin({
-  id: "time-tracking",
-  apiVersion: "^1.0",
-  needs: ["issue.read", "comment.create"],
+  id: 'time-tracking',
+  apiVersion: '^1.0',
+  needs: ['issue.read', 'comment.create'],
   permissions: {
-    "entries.log": { scope: "project", label: "permissions.log" },
-    "reports.read": { scope: "project", label: "permissions.reportsRead" },
+    'entries.log': { scope: 'project', label: 'permissions.log' },
+    'reports.read': { scope: 'project', label: 'permissions.reportsRead' },
   },
   settings: z.object({
     maxMinutesPerDay: z
@@ -104,16 +104,16 @@ export const plugin = definePlugin({
 
 // src/actions/log-time.action.ts
 export const logTime = plugin.defineAction({
-  name: "timeEntry.log",
-  access: { issue: "issueId" },
+  name: 'timeEntry.log',
+  access: { issue: 'issueId' },
   input: plugin.entities.timeEntry.fields.extend({ issueId: z.uuid() }),
   async handler(ctx, input) {
-    const loggedThatDay = await ctx.entities.timeEntry.sum("minutes", {
+    const loggedThatDay = await ctx.entities.timeEntry.sum('minutes', {
       where: { createdBy: ctx.user.id, spentOn: input.spentOn },
     });
     const limit = ctx.settings.maxMinutesPerDay;
     if (loggedThatDay + input.minutes > limit) {
-      throw ctx.fail("errors.dailyLimit", { limit });
+      throw ctx.fail('errors.dailyLimit', { limit });
     }
     return await ctx.entities.timeEntry.create(input);
   },
@@ -121,14 +121,14 @@ export const logTime = plugin.defineAction({
 
 // src/events/summarize-on-close.event.ts
 export const summarizeOnClose = plugin.defineEventHandler({
-  event: "issue.statusChanged",
+  event: 'issue.statusChanged',
   async handler(ctx, { event, issue }) {
     if (issue.closedAt === null) {
       return;
     }
-    const total = await ctx.entities.timeEntry.sum("minutes", { where: { issueId: issue.id } });
+    const total = await ctx.entities.timeEntry.sum('minutes', { where: { issueId: issue.id } });
     if (total > 0) {
-      const text = ctx.t("comment.closedAfter", { duration: ctx.format.duration(total) });
+      const text = ctx.t('comment.closedAfter', { duration: ctx.format.duration(total) });
       // An event may be handled twice: its id keeps the comment single.
       await ctx.issues.comment(issue.id, text, { once: event.id });
     }
@@ -138,26 +138,26 @@ export const summarizeOnClose = plugin.defineEventHandler({
 
 ```tsx
 // src/web/issue-panel.tsx: real React, in a sandboxed frame
-import { DataTable, Stat, useList, usePanel, useSum, useT } from "@toppo-tracker/plugin-ui";
-import { plugin } from "../plugin.ts";
-import { TimeEntryForm } from "./components/time-entry-form.tsx";
+import { DataTable, Stat, useList, usePanel, useSum, useT } from '@toppo-tracker/plugin-ui';
+import { plugin } from '../plugin.ts';
+import { TimeEntryForm } from './components/time-entry-form.tsx';
 
 const { timeEntry } = plugin.entities;
 
 export function IssuePanel() {
-  const { issue } = usePanel("issue");
+  const { issue } = usePanel('issue');
   const t = useT(plugin);
   const where = { issueId: issue.id };
   const entries = useList(timeEntry, {
     where,
-    orderBy: "spentOn",
-    direction: "desc",
+    orderBy: 'spentOn',
+    direction: 'desc',
     pageSize: 20,
   });
-  const total = useSum(timeEntry, "minutes", { where });
+  const total = useSum(timeEntry, 'minutes', { where });
   return (
     <>
-      <Stat label={t("panel.total")} value={total.data ?? 0} format="duration" />
+      <Stat label={t('panel.total')} value={total.data ?? 0} format="duration" />
       <TimeEntryForm issueId={issue.id} />
       <DataTable rows={entries.data?.items ?? []} columns={[/* … */]} />
     </>
@@ -238,21 +238,21 @@ A plugin may add **properties** to issues, which then behave as any other: a col
 
 ```ts
 export const estimate = defineProperty({
-  name: "properties.estimate",
-  type: "number",
-  display: "duration",
-  writtenBy: "people",
+  name: 'properties.estimate',
+  type: 'number',
+  display: 'duration',
+  writtenBy: 'people',
 });
 
 export const timeSpent = defineProperty({
-  name: "properties.timeSpent",
-  type: "number",
-  display: "duration",
-  writtenBy: "plugin",
+  name: 'properties.timeSpent',
+  type: 'number',
+  display: 'duration',
+  writtenBy: 'plugin',
 });
 
 // definePlugin({ …, properties: { estimate, timeSpent } }), then, in the action that logs time:
-await ctx.issues.setProperty(input.issueId, "timeSpent", total);
+await ctx.issues.setProperty(input.issueId, 'timeSpent', total);
 ```
 
 - A number, a text, a date or a box: the core's types but those with options or people, which would need options a plugin declares. `display` formats a number: `duration` shows minutes as "6 h 40".
@@ -355,17 +355,17 @@ A project's settings live at `/projects/<key>`, so their plugin tabs do too. The
 
 ```ts
 export const sourcePage = plugin.definePage({
-  zone: "settings",
-  path: "/$source",
-  params: z.object({ source: z.enum(["mantis", "redmine", "jira"]) }),
-  access: { permission: "imports.run" },
-  title: "source.title",
+  zone: 'settings',
+  path: '/$source',
+  params: z.object({ source: z.enum(['mantis', 'redmine', 'jira']) }),
+  access: { permission: 'imports.run' },
+  title: 'source.title',
   nav: [
-    { params: { source: "mantis" }, label: "sources.mantis", icon: "database" },
-    { params: { source: "redmine" }, label: "sources.redmine", icon: "database" },
-    { params: { source: "jira" }, label: "sources.jira", icon: "database" },
+    { params: { source: 'mantis' }, label: 'sources.mantis', icon: 'database' },
+    { params: { source: 'redmine' }, label: 'sources.redmine', icon: 'database' },
+    { params: { source: 'jira' }, label: 'sources.jira', icon: 'database' },
   ],
-  component: () => import("../web/source-page.tsx").then((m) => m.SourcePage),
+  component: () => import('../web/source-page.tsx').then((m) => m.SourcePage),
 });
 ```
 

@@ -6,8 +6,10 @@ import {
   formatDuration,
   Input,
   PersonName,
+  Row,
   type ScreenFailure,
   Section,
+  Stack,
   Stat,
   Table,
   Textarea,
@@ -62,7 +64,7 @@ export function IssueTimePanel() {
   const failureText = failure === null ? null : t(FAILURES[failure.code] ?? 'errors.failed');
 
   return (
-    <div className="flex flex-col gap-4">
+    <Stack>
       <Stat label={t('panels.issueTime.total')} value={formatDuration(entries.data?.total ?? 0)} />
       <Table
         caption={t('panels.issueTime.caption')}
@@ -82,28 +84,34 @@ export function IssueTimePanel() {
         }))}
       />
       <Section title={t('panels.issueTime.log')}>
-        <form onSubmit={submit} className="flex flex-col gap-4">
-          {failureText ? <Alert tone="danger">{failureText}</Alert> : null}
-          {logged ? <Alert>{t('panels.issueTime.logged')}</Alert> : null}
-          <DurationInput
-            label={t('panels.issueTime.time')}
-            value={minutes}
-            onChange={setMinutes}
-            required
-          />
-          <Field label={t('panels.issueTime.day')} required>
-            {(control) => <Input {...control} type="date" value={spentOn} onChange={setSpentOn} />}
-          </Field>
-          <Field label={t('panels.issueTime.note')}>
-            {(control) => <Textarea {...control} value={note} onChange={setNote} maxLength={500} />}
-          </Field>
-          <div>
-            <Button type="submit" disabled={log.isPending}>
-              {t('panels.issueTime.log')}
-            </Button>
-          </div>
+        <form onSubmit={submit}>
+          <Stack>
+            {failureText ? <Alert tone="danger">{failureText}</Alert> : null}
+            {logged ? <Alert>{t('panels.issueTime.logged')}</Alert> : null}
+            <DurationInput
+              label={t('panels.issueTime.time')}
+              value={minutes}
+              onChange={setMinutes}
+              required
+            />
+            <Field label={t('panels.issueTime.day')} required>
+              {(control) => (
+                <Input {...control} type="date" value={spentOn} onChange={setSpentOn} />
+              )}
+            </Field>
+            <Field label={t('panels.issueTime.note')}>
+              {(control) => (
+                <Textarea {...control} value={note} onChange={setNote} maxLength={500} />
+              )}
+            </Field>
+            <Row>
+              <Button type="submit" disabled={log.isPending}>
+                {t('panels.issueTime.log')}
+              </Button>
+            </Row>
+          </Stack>
         </form>
       </Section>
-    </div>
+    </Stack>
   );
 }

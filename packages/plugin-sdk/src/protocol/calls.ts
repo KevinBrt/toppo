@@ -121,7 +121,7 @@ export const HOST_CALLS = {
     needs: null,
     args: z.object({ projectId: z.uuid() }),
     /**
-     * As the project saved them, the plugin's defaults applied by the SDK. Refused (`NOT_FOUND`)
+     * As the project saved them, the plugin's defaults applied by the SDK. Refused (`PROJECT_NOT_FOUND`)
      * for a project the plugin, or whoever it acts for, does not reach.
      */
     result: z.record(z.string(), z.unknown()),

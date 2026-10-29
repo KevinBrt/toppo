@@ -7,6 +7,7 @@ const ENGLISH: DefaultTheme.Config = {
   nav: [
     { text: 'Guide', link: '/guide/' },
     { text: 'Self-hosting', link: '/self-hosting' },
+    { text: 'Plugins', link: '/plugins/' },
     { text: 'Contributing', link: '/contributing' },
   ],
   sidebar: [
@@ -40,6 +41,22 @@ const ENGLISH: DefaultTheme.Config = {
       ],
     },
     {
+      text: 'Plugins',
+      items: [
+        { text: 'Writing plugins', link: '/plugins/' },
+        { text: 'Getting started', link: '/plugins/getting-started' },
+        { text: 'The manifest', link: '/plugins/manifest' },
+        { text: 'Actions', link: '/plugins/actions' },
+        { text: 'The context', link: '/plugins/context' },
+        { text: 'Events and jobs', link: '/plugins/events-and-jobs' },
+        { text: 'Records and properties', link: '/plugins/data' },
+        { text: 'Reaching outside Toppo', link: '/plugins/outside-toppo' },
+        { text: 'Screens', link: '/plugins/screens' },
+        { text: 'Testing', link: '/plugins/testing' },
+        { text: 'Installing and running', link: '/plugins/installing' },
+      ],
+    },
+    {
       text: 'Contributing',
       items: [
         { text: 'Working on Toppo', link: '/contributing' },
@@ -54,6 +71,7 @@ const FRENCH: DefaultTheme.Config = {
   nav: [
     { text: 'Guide', link: '/fr/guide/' },
     { text: 'Auto-hébergement', link: '/fr/self-hosting' },
+    { text: 'Plugins', link: '/fr/plugins/' },
     { text: 'Contribuer', link: '/fr/contributing' },
   ],
   sidebar: [
@@ -84,6 +102,22 @@ const FRENCH: DefaultTheme.Config = {
         { text: 'HTTPS derrière un reverse proxy', link: '/fr/self-hosting/reverse-proxy' },
         { text: 'Sauvegardes et mises à jour', link: '/fr/self-hosting/backups-and-upgrades' },
         { text: 'Dépannage', link: '/fr/self-hosting/troubleshooting' },
+      ],
+    },
+    {
+      text: 'Plugins',
+      items: [
+        { text: 'Écrire des plugins', link: '/fr/plugins/' },
+        { text: 'Démarrer', link: '/fr/plugins/getting-started' },
+        { text: 'Le manifeste', link: '/fr/plugins/manifest' },
+        { text: 'Les actions', link: '/fr/plugins/actions' },
+        { text: 'Le contexte', link: '/fr/plugins/context' },
+        { text: 'Événements et jobs', link: '/fr/plugins/events-and-jobs' },
+        { text: 'Données et propriétés', link: '/fr/plugins/data' },
+        { text: 'Sortir de Toppo', link: '/fr/plugins/outside-toppo' },
+        { text: 'Les écrans', link: '/fr/plugins/screens' },
+        { text: 'Tester', link: '/fr/plugins/testing' },
+        { text: 'Installer et faire tourner', link: '/fr/plugins/installing' },
       ],
     },
     {
@@ -120,8 +154,8 @@ export default defineConfig({
   lastUpdated: true,
   appearance: false,
   outDir: 'dist',
-  // The plugins' pages come with the plugin system; its design notes are for contributors.
-  srcExclude: ['plugins/**', 'README.md'],
+  // The plugin system's design notes are for contributors, in the repository.
+  srcExclude: ['plugins/design.md', 'README.md'],
   // The README's screenshots, served as they are.
   vite: { publicDir: 'images' },
   head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
