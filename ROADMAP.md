@@ -22,7 +22,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
 ## After 1.0
 
 - [ ] Plugin system, as designed in [docs/plugins/design.md](docs/plugins/design.md). Built on the integration branch `feat/plugin-system`, one pull request per task, merged into `main` as one change at the end. A security review of its own before it ships: third-party code will run inside Toppo.
-  - [ ] **1. Foundations**:
+  - [x] **1. Foundations**:
     - [x] the design's decisions in `ARCHITECTURE.md`;
     - [x] internal packages renamed `@toppo-tracker/*` (straight into `main`);
     - [x] the sandbox: QuickJS in WebAssembly, a worker per plugin, capped memory, deadlines, the `ctx` bridge;
@@ -36,7 +36,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] **Settings → Plugins**: install, approve in projects, enable, disable, uninstall; a plugin's name, description and logo;
     - [x] a plugin's settings form, generated from the schema it declares;
     - [x] `plugins/time-tracking`, built and installed through the interface in an end-to-end test;
-    - [ ] the plugin author's guide, and `CLAUDE.md`'s rules for plugin code.
+    - [x] the plugin author's guide (`docs/plugins/`, English and French), and `CLAUDE.md`'s rules for plugin code.
   - [x] **2. Data**:
     - [x] what each project sets for itself of a plugin, in its Plugins tab;
     - [x] entities: records on an issue or a project, checked and bounded by Toppo, kept or deleted with their plugin;
@@ -57,7 +57,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] recurring jobs, every hour, day or week;
     - [x] `plugins/time-tracking`: the time of each week sent to a chat;
     - [ ] routes and `ctx.crypto`, opened to plugins once the core's webhooks and GitHub integration build them.
-  - [ ] Publish the packages to npm from GitHub Actions, once steps 1 to 3 are done.
+  - [ ] Publish the packages to npm: ready (`publish-plugin-packages.yml`, trusted publishing, `npm create @toppo-tracker/plugin`, proven outside the repository in CI), first published with the Toppo release that ships plugins.
 - [ ] Webhooks, then the GitHub integration, in the core, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature.
 - [ ] OIDC, SAML and LDAP, free (Better Auth plugins, added to the endpoint allowlist).
 - [ ] Imports from Mantis, Redmine and Jira (CSV first); inbound email.
