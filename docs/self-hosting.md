@@ -53,7 +53,7 @@ Without email, Toppo works, but invitation links must be passed on by hand, noti
 
 ## Configuration
 
-Settings are environment variables, set in `.env` next to `docker-compose.yml`. The full list, with defaults, is in [`.env.example`](../.env.example).
+Settings are environment variables, set in `.env` next to `docker-compose.yml`. The full list, with defaults, is in [`.env.example`](https://github.com/KevinBrt/toppo/blob/main/.env.example).
 
 - `TOPPO_*` variables are read by Toppo. An unknown `TOPPO_*` variable stops the server with an explicit message, so a typo never goes unnoticed.
 - Any `TOPPO_*` variable can be read from a file instead: `TOPPO_DATABASE_URL_FILE=/run/secrets/database_url` (Docker or Kubernetes secrets).
