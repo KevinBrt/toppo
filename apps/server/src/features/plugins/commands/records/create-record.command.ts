@@ -20,6 +20,7 @@ import {
   entityOf,
   pluginOf,
 } from '../../utils/records/plugin-records.util.ts';
+import { slotsToWrite, slotWritesOf } from '../../utils/records/record-slots.util.ts';
 
 const { pluginRecords } = schema;
 
@@ -32,8 +33,9 @@ interface Anchor {
 
 /**
  * Keeps a record of one of the plugin's entities, on an issue or a project it, and whoever it
- * acts for, sees: its fields checked by Toppo as the entity declares them, within its limits.
- * Answers its id; the plugin reads it back as it reads any record.
+ * acts for, sees: its fields checked by Toppo as the entity declares them, within its limits,
+ * those it indexes copied to their slots. Answers its id; the plugin reads it back as it reads
+ * any record.
  */
 export const createRecord = defineCommand({
   name: 'plugin.createRecord',
@@ -50,6 +52,7 @@ export const createRecord = defineCommand({
       throw new HttpError(409, 'PROJECT_ARCHIVED', 'This project is archived: it is read-only');
     }
     const data = checkedFields(entity, fields);
+    const indexed = await slotsToWrite(tx, plugin.slug, name, entity);
     await assertRoom(tx, { plugin: plugin.slug, name, entity }, anchor);
     const [created] = await tx
       .insert(pluginRecords)
@@ -60,6 +63,7 @@ export const createRecord = defineCommand({
         issueId: anchor.issueId,
         createdById: authorOf(actor),
         data,
+        ...slotWritesOf(indexed, data),
       })
       .returning({ id: pluginRecords.id });
     if (!created) {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ENTITY_NAME, RECORD_GROUPS } from './entities.ts';
+import { ENTITY_INDEXES_TOTAL, ENTITY_NAME } from './entities.ts';
 import { issueSnapshotSchema } from './events.ts';
 
 /** An issue with its words, as `ctx.issues.get` answers it. */
@@ -27,16 +27,50 @@ export type RecordData = z.infer<typeof recordSchema>;
 /** At most this many groups in a count or a sum by group: the largest first. */
 export const RECORD_GROUPS_MAX = 1000;
 
+/** At most this many values a field may be one of, in a condition. */
+export const RECORD_IN_MAX = 100;
+
 const entityArg = z.string().regex(ENTITY_NAME);
 
-/** Which records: on an issue, in a project, written by someone; all those it sees otherwise. */
-const recordWhereSchema = z
+/** What an indexed field is compared with: Toppo checks it is of the field's kind. */
+const indexedValueSchema = z.union([z.string().max(320), z.number()]);
+
+/** What an indexed field must be: a value, one of a list, or within bounds. */
+const fieldConditionSchema = z.union([
+  indexedValueSchema,
+  z.strictObject({ in: z.array(indexedValueSchema).min(1).max(RECORD_IN_MAX) }),
+  z
+    .strictObject({
+      gt: indexedValueSchema.optional(),
+      gte: indexedValueSchema.optional(),
+      lt: indexedValueSchema.optional(),
+      lte: indexedValueSchema.optional(),
+    })
+    .refine((bounds) => Object.keys(bounds).length > 0, { message: 'A bound at least' }),
+]);
+
+export type FieldCondition = z.infer<typeof fieldConditionSchema>;
+
+/**
+ * Which records: on an issue, in a project, written by someone, with indexed fields as said; all
+ * those it sees otherwise.
+ */
+export const recordWhereSchema = z
   .strictObject({
     issueId: z.uuid().optional(),
     projectId: z.uuid().optional(),
     createdBy: z.uuid().optional(),
+    fields: z
+      .record(z.string().regex(ENTITY_NAME), fieldConditionSchema)
+      .refine((fields) => Object.keys(fields).length <= ENTITY_INDEXES_TOTAL, {
+        message: `At most ${ENTITY_INDEXES_TOTAL} fields, as many as an entity indexes`,
+      })
+      .optional(),
   })
   .default({});
+
+/** An anchor of records (`createdBy`), or a field the entity indexes. */
+const recordKeyArg = z.string().regex(ENTITY_NAME);
 
 const recordFieldsArg = z.record(z.string(), z.unknown());
 
@@ -108,7 +142,9 @@ export const HOST_CALLS = {
     args: z.object({
       entity: entityArg,
       where: recordWhereSchema,
-      order: z.enum(['newest', 'oldest']).default('newest'),
+      /** When they were written, or a field the entity indexes; the latest first unless said. */
+      orderBy: recordKeyArg.default('createdAt'),
+      direction: z.enum(['asc', 'desc']).default('desc'),
       page: z.int().min(1).max(10_000).default(1),
       pageSize: z.int().min(1).max(100).default(50),
     }),
@@ -122,13 +158,17 @@ export const HOST_CALLS = {
       op: z.enum(['count', 'sum']),
       field: z.string().regex(ENTITY_NAME).optional(),
       where: recordWhereSchema,
-      groupBy: z.enum(RECORD_GROUPS).optional(),
+      /** The issue, the project, the author, or a field the entity indexes. */
+      groupBy: recordKeyArg.optional(),
     }),
     result: z.object({
       total: z.number(),
-      /** By group when asked, the largest first. */
+      /**
+       * By group when asked, the largest first: keyed by an id (`null` for none), or by the
+       * field's value, a date as `2026-10-28`.
+       */
       groups: z
-        .array(z.object({ key: z.uuid().nullable(), value: z.number() }))
+        .array(z.object({ key: indexedValueSchema.nullable(), value: z.number() }))
         .max(RECORD_GROUPS_MAX)
         .optional(),
     }),

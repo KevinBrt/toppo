@@ -379,6 +379,13 @@
       "when": 1793224459698,
       "tag": "0053_plugin_records",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1793261912229,
+      "tag": "0054_plugin_record_slots",
+      "breakpoints": true
     }
   ]
 }

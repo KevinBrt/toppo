@@ -154,4 +154,57 @@ describe('the types of a plugin', () => {
 
     expect(plugin.entities.timeEntry.attachedTo).toBe('issue');
   });
+
+  it('filter, sort and group records on indexed fields only', () => {
+    const name = { name: 'Time tracking' } as const;
+    const fields = z.object({
+      minutes: z.int(),
+      spentOn: z.iso.date(),
+      kind: z.enum(['work', 'meeting']).default('work'),
+      billable: z.boolean(),
+      note: z.string().max(100).optional(),
+    });
+    // @ts-expect-error a field that is not declared
+    defineEntity({ attachedTo: 'issue', fields, indexes: ['hours'] });
+    // @ts-expect-error a yes or no takes no index
+    defineEntity({ attachedTo: 'issue', fields, indexes: ['billable'] });
+    // @ts-expect-error a field a record may lack takes no index
+    defineEntity({ attachedTo: 'issue', fields, indexes: ['note'] });
+    const timeEntry = defineEntity({ attachedTo: 'issue', fields, indexes: ['spentOn', 'kind'] });
+    const plugin = definePlugin({
+      id: 'time-tracking',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.0',
+      needs: ['issue.read'],
+      entities: { timeEntry },
+      messages: { en: name, fr: name },
+    });
+
+    plugin.defineEventHandler({
+      event: 'issue.statusChanged',
+      async handler(ctx) {
+        const entries = ctx.entities.timeEntry;
+        await entries.list({ where: { spentOn: { gte: '2026-10-01' }, kind: { in: ['work'] } } });
+        // @ts-expect-error a field that is not indexed
+        await entries.list({ where: { minutes: 30 } });
+        // @ts-expect-error a value of another type
+        await entries.list({ where: { spentOn: 28 } });
+        // @ts-expect-error a choice the field does not offer
+        await entries.count({ where: { kind: 'sleep' } });
+        await entries.list({ orderBy: 'spentOn', direction: 'asc' });
+        // @ts-expect-error sorted on a field that is not indexed
+        await entries.list({ orderBy: 'minutes' });
+        // @ts-expect-error grouped on a field that is not indexed
+        await entries.countBy('note');
+        const byKind = await entries.sumBy('minutes', 'kind');
+        const byAuthor = await entries.countBy('createdBy');
+        const kind: 'work' | 'meeting' | undefined = byKind[0]?.key;
+        const author: string | null | undefined = byAuthor[0]?.key;
+        expect([kind, author]).toBeDefined();
+      },
+    });
+
+    expect(plugin.entities.timeEntry.indexes).toStrictEqual(['spentOn', 'kind']);
+  });
 });

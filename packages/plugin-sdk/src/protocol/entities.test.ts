@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { ENTITY_FIELDS_MAX, ENTITY_LIMITS, recordFieldsSchemaOf } from './entities.ts';
+import { ENTITY_FIELDS_MAX, ENTITY_LIMITS, indexKindOf, recordFieldsSchemaOf } from './entities.ts';
 import { type Manifest, manifestSchema } from './manifest.ts';
 
 const TIME_ENTRY = z.object({
@@ -94,6 +94,79 @@ describe('the entities Toppo keeps', () => {
     );
     expect(tooMany.success).toBe(false);
     expect(ofProjects.success).toBe(true);
+  });
+});
+
+describe('the indexes of an entity', () => {
+  const INDEXED = z.object({
+    spentOn: z.iso.date(),
+    startedAt: z.iso.datetime(),
+    minutes: z.int(),
+    kind: z.enum(['work', 'meeting']).default('work'),
+    ticket: z.string().max(20).default(''),
+    reviewer: z.uuid(),
+    mail: z.email(),
+    billable: z.boolean(),
+    note: z.string().max(500),
+    rate: z.number().optional(),
+    day1: z.iso.date(),
+    day2: z.iso.date(),
+  });
+  const indexing = (indexes: string[]) =>
+    manifestSchema.safeParse(withEntity({ fields: fieldsOf(INDEXED), indexes }));
+
+  it('take a field of each kind Toppo keeps, and none from a manifest from before them', () => {
+    const indexes = ['spentOn', 'startedAt', 'minutes', 'kind', 'ticket', 'reviewer', 'mail'];
+
+    expect(indexing(indexes).data?.entities['timeEntry']?.indexes).toStrictEqual(indexes);
+    expect(manifestSchema.parse(withEntity({})).entities['timeEntry']?.indexes).toStrictEqual([]);
+  });
+
+  it.each([
+    [['hours'], 'There is no field hours to index'],
+    [['minutes', 'minutes'], 'minutes is indexed twice'],
+    [
+      ['billable'],
+      'billable is not indexed: only a number, a date, an id, a choice or a text of 200 characters at most is',
+    ],
+    [
+      ['note'],
+      'note is not indexed: only a number, a date, an id, a choice or a text of 200 characters at most is',
+    ],
+    [['rate'], 'rate is indexed: make it required, or give it a default'],
+    [['spentOn', 'startedAt', 'day1', 'day2'], 'timeEntry indexes 3 dates at most'],
+  ])('refuse %j, saying why', (indexes, message) => {
+    expect(indexing(indexes).error?.issues).toStrictEqual([
+      expect.objectContaining({
+        path: ['entities', 'timeEntry', 'indexes', indexes.length - 1],
+        message,
+      }),
+    ]);
+  });
+
+  it('take a slot of the kind of their field', () => {
+    const fields = manifestSchema.parse(withEntity({ fields: fieldsOf(INDEXED) })).entities[
+      'timeEntry'
+    ]?.fields.properties;
+
+    expect(
+      Object.fromEntries(
+        Object.entries(fields ?? {}).map(([name, field]) => [name, indexKindOf(field)]),
+      ),
+    ).toStrictEqual({
+      spentOn: 'date',
+      startedAt: 'date',
+      minutes: 'number',
+      kind: 'text',
+      ticket: 'text',
+      reviewer: 'ref',
+      mail: 'text',
+      billable: undefined,
+      note: undefined,
+      rate: 'number',
+      day1: 'date',
+      day2: 'date',
+    });
   });
 });
 

@@ -1,9 +1,13 @@
 import {
+  comparedValueSchemaOf,
   ENTITY_LIMITS,
   type EntityDeclaration,
+  type EntityField,
+  type FieldCondition,
   HOST_CALLS,
   type IssueDetails,
   type Manifest,
+  RECORD_GROUPS,
   RECORD_GROUPS_MAX,
   RECORD_MAX_BYTES,
   type RecordData,
@@ -26,6 +30,67 @@ const GROUP_KEYS = {
   projectId: (record: Kept) => record.projectId,
   createdBy: (record: Kept) => record.createdBy,
 } as const satisfies Record<RecordGroup, (record: Kept) => string | null>;
+
+const isRecordGroup = (key: string): key is RecordGroup =>
+  (RECORD_GROUPS as readonly string[]).includes(key);
+
+/** A field the entity indexes; refused otherwise, as Toppo does. */
+function indexedField(entity: EntityDeclaration, field: string): EntityField {
+  const declared = entity.indexes.includes(field) ? entity.fields.properties[field] : undefined;
+  if (!declared) {
+    throw refusal('RECORD_INVALID');
+  }
+  return declared;
+}
+
+/** A field's value as Toppo answers and compares it: a moment in UTC. */
+function comparableOf(declared: EntityField, value: unknown): string | number {
+  if (typeof value === 'number') {
+    return value;
+  }
+  const text = String(value);
+  return 'format' in declared && declared.format === 'date-time'
+    ? new Date(text).toISOString()
+    : text;
+}
+
+const order = (left: string | number, right: string | number) =>
+  left < right ? -1 : Number(left > right);
+
+const BOUNDS = [
+  ['gt', (compared: number) => compared > 0],
+  ['gte', (compared: number) => compared >= 0],
+  ['lt', (compared: number) => compared < 0],
+  ['lte', (compared: number) => compared <= 0],
+] as const;
+
+/** Whether a field's value meets a condition, its values checked of the field's kind first. */
+function conditionOf(
+  declared: EntityField,
+  field: string,
+  condition: FieldCondition,
+): (record: Kept) => boolean {
+  const checked = (given: string | number) => {
+    if (!comparedValueSchemaOf(declared)?.safeParse(given).success) {
+      throw refusal('RECORD_INVALID');
+    }
+    return comparableOf(declared, given);
+  };
+  const of = (record: Kept) => comparableOf(declared, record.fields[field]);
+  if (typeof condition !== 'object') {
+    const wanted = checked(condition);
+    return (record) => of(record) === wanted;
+  }
+  if ('in' in condition) {
+    const wanted = condition.in.map(checked);
+    return (record) => wanted.includes(of(record));
+  }
+  const bounds = BOUNDS.flatMap(([bound, meets]) => {
+    const given = condition[bound];
+    return given === undefined ? [] : [{ value: checked(given), meets }];
+  });
+  return (record) => bounds.every(({ value, meets }) => meets(order(of(record), value)));
+}
 
 /**
  * A plugin's records, kept in memory with Toppo's rules: checked as each entity declares them,
@@ -165,27 +230,52 @@ export function createTestRecords(
       issueId?: string | undefined;
       projectId?: string | undefined;
       createdBy?: string | undefined;
+      fields?: Record<string, FieldCondition> | undefined;
     },
   ): Kept[] {
-    entityOf(name);
+    const entity = entityOf(name);
+    const conditions = Object.entries(where.fields ?? {}).map(([field, condition]) =>
+      conditionOf(indexedField(entity, field), field, condition),
+    );
     return kept.filter(
       (record) =>
         record.entity === name &&
         seenBy(reader, record) &&
         (where.issueId === undefined || record.issueId === where.issueId) &&
         (where.projectId === undefined || record.projectId === where.projectId) &&
-        (where.createdBy === undefined || record.createdBy === where.createdBy),
+        (where.createdBy === undefined || record.createdBy === where.createdBy) &&
+        conditions.every((meets) => meets(record)),
     );
   }
 
   function list(reader: Reader, args: unknown) {
-    const { entity, where, order, page, pageSize } = HOST_CALLS['entities.list'].args.parse(args);
+    const { entity, where, orderBy, direction, page, pageSize } =
+      HOST_CALLS['entities.list'].args.parse(args);
     const found = matching(reader, entity, where);
-    const ordered = order === 'newest' ? [...found].reverse() : found;
+    // Kept as written: sorted on a field, those written alike stay as they were written.
+    const declared = orderBy === 'createdAt' ? undefined : indexedField(entityOf(entity), orderBy);
+    const sorted = declared
+      ? [...found].sort((left, right) =>
+          order(
+            comparableOf(declared, left.fields[orderBy]),
+            comparableOf(declared, right.fields[orderBy]),
+          ),
+        )
+      : found;
+    const ordered = direction === 'desc' ? [...sorted].reverse() : sorted;
     return {
       items: ordered.slice((page - 1) * pageSize, page * pageSize).map(shown),
       total: found.length,
     };
+  }
+
+  /** What records are grouped by: an anchor, or a field the entity indexes. */
+  function groupKeyOf(name: string, groupBy: string): (record: Kept) => string | number | null {
+    if (isRecordGroup(groupBy)) {
+      return GROUP_KEYS[groupBy];
+    }
+    const declared = indexedField(entityOf(name), groupBy);
+    return (record) => comparableOf(declared, record.fields[groupBy]);
   }
 
   function aggregate(reader: Reader, args: unknown) {
@@ -212,9 +302,10 @@ export function createTestRecords(
     if (groupBy === undefined) {
       return { total };
     }
-    const groups = new Map<string | null, number>();
+    const keyOf = groupKeyOf(name, groupBy);
+    const groups = new Map<string | number | null, number>();
     for (const record of found) {
-      const key = GROUP_KEYS[groupBy](record);
+      const key = keyOf(record);
       groups.set(key, (groups.get(key) ?? 0) + measured(record));
     }
     return {

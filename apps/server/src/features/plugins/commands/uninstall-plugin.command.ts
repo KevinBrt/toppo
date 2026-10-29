@@ -5,7 +5,7 @@ import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
 import { lockPlugin } from '../utils/plugin-rows.util.ts';
 
-const { pluginRecords, plugins } = schema;
+const { pluginRecordSlots, pluginRecords, plugins } = schema;
 
 /**
  * Removes a plugin: its approval, its projects, its settings, and its permissions from every
@@ -23,6 +23,7 @@ export const uninstallPlugin = defineCommand({
     await tx.delete(plugins).where(eq(plugins.id, plugin.id));
     if (data === 'delete') {
       await tx.delete(pluginRecords).where(eq(pluginRecords.pluginSlug, pluginSlug));
+      await tx.delete(pluginRecordSlots).where(eq(pluginRecordSlots.pluginSlug, pluginSlug));
     }
     log.info(
       { plugin: pluginSlug, version: plugin.version, data, by: actor.id },
