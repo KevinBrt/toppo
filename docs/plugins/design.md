@@ -78,7 +78,7 @@ export const timeEntry = defineEntity({
     spentOn: z.iso.date(),
     note: z.string().trim().max(500).optional(),
   }),
-  indexes: ["createdBy", "spentOn"],
+  indexes: ["spentOn"],
   limits: { perIssue: 1000 },
 });
 
@@ -148,7 +148,12 @@ export function IssuePanel() {
   const { issue } = usePanel("issue");
   const t = useT(plugin);
   const where = { issueId: issue.id };
-  const entries = useList(timeEntry, { where, orderBy: { spentOn: "desc" }, pageSize: 20 });
+  const entries = useList(timeEntry, {
+    where,
+    orderBy: "spentOn",
+    direction: "desc",
+    pageSize: 20,
+  });
   const total = useSum(timeEntry, "minutes", { where });
   return (
     <>
@@ -206,11 +211,12 @@ A plugin stores its data as **entities**, declared with Zod and kept by Toppo.
 
 - `attachedTo: 'issue' | 'project'`: who sees the record follows who sees its issue or project, in every query, sums included ("derived data follows the visibility of its source"). Deleting the issue or project deletes its records; backups and restores include them.
 - Toppo adds `id` (UUID v7), `createdBy`, `createdAt`, `updatedAt` to every record.
-- Queries: `get`, `list` (filter, sort, page of at most 100), `sum` and `count` with `groupBy`, `create`, `update`, `delete`. No SQL.
-- **Toppo validates every write itself.** The manifest carries each entity's schema as JSON Schema (`z.toJSONSchema`); Toppo rebuilds a validator from it (`z.fromJSONSchema`) and does not trust the plugin's own validation. `limits` bound what users can grow, with defaults when absent.
+- Queries: `get`, `list` (filter, sort, page of at most 100), `count` and `sum`, by group with `countBy` and `sumBy` (an issue, a project, an author or an indexed field), `create`, `update`, `delete`. No SQL.
+- Records are filtered (a value, one of a list, bounds), sorted and grouped on their issue, project and author, and on the fields their entity `indexes`, those only.
+- **Toppo validates every write itself.** The manifest carries each entity's schema as JSON Schema (`z.toJSONSchema`), within a subset (flat fields, bounded texts); Toppo builds its own validator from it, never running a pattern the plugin wrote, and does not trust the plugin's own validation. `limits` bound what users can grow, with defaults when absent.
 - No plugin schema, table or migration, ever.
 
-**Storage.** One table, `plugin_records`, created by a normal migration: plugin, entity, project, issue, author, timestamps, `data jsonb` holding every field, and **typed slots** for the fields a plugin filters or sorts on: three dates, three numbers, three texts and two references (a person's or an issue's id). The project, the issue and the author have their own columns already. When a plugin is installed, Toppo assigns a slot to each field in its `indexes` and copies the value there on every write; static partial indexes (`WHERE slot IS NOT NULL`) serve them. An entity may declare at most as many indexes as there are slots of each type; its other fields are unlimited, only not indexed. When an upgrade adds an index, a job fills the new slot.
+**Storage.** One table, `plugin_records`, created by a normal migration: plugin, entity, project, issue, author, timestamps, `data jsonb` holding every field, and **typed slots** for the fields a plugin filters or sorts on: three dates, three numbers, three texts and two references (a person's or an issue's id). The project, the issue and the author have their own columns already. When a plugin is installed, Toppo assigns a slot to each field in its `indexes` (`plugin_record_slots`) and copies the value there on every write: a date at midnight UTC, a moment, a number, a text of 200 characters at most or a choice, an id. Each slot has two static partial indexes (`WHERE slot IS NOT NULL`), after the project and after the author; an issue holds few enough records to be read whole. An indexed field is one every record has (required, or given a default), so that sorting or grouping on it leaves none out. An entity may declare at most as many indexes as there are slots of each type; its other fields are unlimited, only not indexed. A field keeps its slot while it stays as declared; when an upgrade adds an index, or changes an indexed field, a job fills its slot a batch at a time, and queries read the field from the records' data meanwhile.
 
 Measured on PostgreSQL 18, among 400,000 rows of another plugin, every query scoped to the 5 projects of 20 a user sees:
 

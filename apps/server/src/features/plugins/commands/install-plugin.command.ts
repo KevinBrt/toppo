@@ -7,13 +7,16 @@ import type { FastifyBaseLogger } from 'fastify';
 import { z } from 'zod';
 import { defineCommand, type Services, type Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import { enqueue } from '../../../platform/jobs/jobs.ts';
 import type { RefusedSettings } from '../../../platform/plugins/packages/manifest-reader.ts';
 import {
   openPluginPackage,
   type PluginPackage,
 } from '../../../platform/plugins/packages/open-package.ts';
+import { fillRecordSlotsJob } from '../jobs/fill-record-slots.job.ts';
 import { declaredLogo, declaredManifest } from '../utils/declared-manifest.util.ts';
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
+import { assignRecordSlots } from '../utils/records/record-slots.util.ts';
 
 const { pluginProjectSettings, plugins } = schema;
 
@@ -66,6 +69,7 @@ export const installPlugin = defineCommand({
 
     if (!installed) {
       await tx.insert(plugins).values(rowOf(manifest, opened, logo));
+      await indexRecords(tx, manifest);
       log.info(plugin, 'Plugin installed, waiting for approval');
       return { slug: manifest.id };
     }
@@ -105,6 +109,7 @@ export const installPlugin = defineCommand({
       manifest.id,
       Object.keys(manifest.permissions).map((name) => `${manifest.id}.${name}`),
     );
+    await indexRecords(tx, manifest);
     log.info(
       { ...plugin, from: installed.version, waitsForApproval, settingsRefused },
       'Plugin upgraded',
@@ -112,6 +117,21 @@ export const installPlugin = defineCommand({
     return { slug: manifest.id };
   },
 });
+
+/**
+ * Gives the fields its entities index their slots, and queues the filling of those that records
+ * kept already (by a version before, or before it was uninstalled) do not have yet.
+ */
+async function indexRecords(tx: Transaction, manifest: Manifest): Promise<void> {
+  for (const { entity, slotIds } of await assignRecordSlots(tx, manifest)) {
+    await enqueue(tx, fillRecordSlotsJob, {
+      pluginSlug: manifest.id,
+      entity,
+      slotIds,
+      after: null,
+    });
+  }
+}
 
 /**
  * What the code of an upgrade refuses of the settings saved for the version it replaces: the

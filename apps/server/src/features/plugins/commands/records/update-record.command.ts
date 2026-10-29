@@ -8,12 +8,13 @@ import {
   pluginOf,
   recordToChange,
 } from '../../utils/records/plugin-records.util.ts';
+import { slotsToWrite, slotWritesOf } from '../../utils/records/record-slots.util.ts';
 
 const { pluginRecords } = schema;
 
 /**
  * Changes a record the plugin, and whoever it acts for, sees: the fields given replace those it
- * had, the whole checked again by Toppo as the entity declares it.
+ * had, the whole checked again by Toppo as the entity declares it, its slots written again.
  */
 export const updateRecord = defineCommand({
   name: 'plugin.updateRecord',
@@ -23,9 +24,11 @@ export const updateRecord = defineCommand({
     const plugin = pluginOf(actor);
     const entity = await entityOf(tx, plugin, name);
     const record = await recordToChange(tx, plugin, name, entity, id);
+    const data = checkedFields(entity, { ...record.fields, ...fields });
+    const indexed = await slotsToWrite(tx, plugin.slug, name, entity);
     await tx
       .update(pluginRecords)
-      .set({ data: checkedFields(entity, { ...record.fields, ...fields }) })
+      .set({ data, ...slotWritesOf(indexed, data) })
       .where(eq(pluginRecords.id, id));
   },
 });

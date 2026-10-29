@@ -88,9 +88,9 @@ function manifestOf({
     settings: jsonSchemaOf(settings),
     projectSettings: jsonSchemaOf(projectSettings),
     entities: Object.fromEntries(
-      Object.entries(entities).map(([name, { attachedTo, fields, limits }]) => [
+      Object.entries(entities).map(([name, { attachedTo, fields, indexes, limits }]) => [
         name,
-        { attachedTo, fields: jsonSchemaOf(fields), limits },
+        { attachedTo, fields: jsonSchemaOf(fields), indexes: [...indexes], limits },
       ]),
     ),
     messages: config.messages,

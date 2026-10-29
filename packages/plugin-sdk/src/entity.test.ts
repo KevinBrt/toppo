@@ -14,6 +14,7 @@ const timeEntry = defineEntity({
     spentOn: z.iso.date(),
     note: z.string().trim().max(500).optional(),
   }),
+  indexes: ['spentOn'],
   limits: { perIssue: 500 },
 });
 
@@ -34,9 +35,16 @@ function client(answers: Record<string, unknown>) {
 }
 
 describe('an entity', () => {
-  it('declares where its records hang, their fields and their bounds', () => {
-    expect(timeEntry).toMatchObject({ attachedTo: 'issue', limits: { perIssue: 500 } });
-    expect(defineEntity({ attachedTo: 'project', fields: z.object({}) }).limits).toStrictEqual({});
+  it('declares where its records hang, their fields, their indexes and their bounds', () => {
+    expect(timeEntry).toMatchObject({
+      attachedTo: 'issue',
+      indexes: ['spentOn'],
+      limits: { perIssue: 500 },
+    });
+    expect(defineEntity({ attachedTo: 'project', fields: z.object({}) })).toMatchObject({
+      indexes: [],
+      limits: {},
+    });
   });
 });
 
@@ -97,7 +105,7 @@ describe('the records of an entity', () => {
     });
 
     expect(await entries.get(one.id)).toMatchObject({ minutes: 30 });
-    expect(await entries.list({ where: { issueId: ISSUE }, order: 'oldest' })).toMatchObject({
+    expect(await entries.list({ where: { issueId: ISSUE }, direction: 'asc' })).toMatchObject({
       items: [{ minutes: 30 }],
       total: 1,
     });
@@ -106,11 +114,49 @@ describe('the records of an entity', () => {
     expect(await entries.countBy('createdBy')).toStrictEqual(groups);
     expect(await entries.sum('minutes', { where: { projectId: PROJECT } })).toBe(90);
     expect(await entries.sumBy('minutes', 'issueId')).toStrictEqual(groups);
-    expect(call.mock.calls.slice(3).map(([, args]) => args)).toStrictEqual([
-      { entity: 'timeEntry', op: 'count' },
-      { entity: 'timeEntry', op: 'count', groupBy: 'createdBy' },
+    expect(call.mock.calls.map(([, args]) => args)).toStrictEqual([
+      { entity: 'timeEntry', id: one.id },
+      { entity: 'timeEntry', where: { issueId: ISSUE }, direction: 'asc' },
+      { entity: 'timeEntry', id: one.id },
+      { entity: 'timeEntry', op: 'count', where: {} },
+      { entity: 'timeEntry', op: 'count', groupBy: 'createdBy', where: {} },
       { entity: 'timeEntry', op: 'sum', field: 'minutes', where: { projectId: PROJECT } },
-      { entity: 'timeEntry', op: 'sum', field: 'minutes', groupBy: 'issueId' },
+      { entity: 'timeEntry', op: 'sum', field: 'minutes', groupBy: 'issueId', where: {} },
+    ]);
+  });
+
+  it('are filtered, sorted and grouped on the fields the entity indexes', async () => {
+    const days = [{ key: '2026-10-28', value: 90 }];
+    const { call, entries } = client({
+      'entities.list': { items: [], total: 0 },
+      'entities.aggregate': { total: 90, groups: days },
+    });
+    const october = { gte: '2026-10-01', lt: '2026-11-01' };
+
+    await entries.list({
+      where: { createdBy: ADA, spentOn: october },
+      orderBy: 'spentOn',
+      direction: 'asc',
+    });
+    const byDay = await entries.sumBy('minutes', 'spentOn', {
+      where: { spentOn: { in: ['2026-10-28'] } },
+    });
+
+    expect(byDay).toStrictEqual(days);
+    expect(call.mock.calls.map(([, args]) => args)).toStrictEqual([
+      {
+        entity: 'timeEntry',
+        where: { createdBy: ADA, fields: { spentOn: october } },
+        orderBy: 'spentOn',
+        direction: 'asc',
+      },
+      {
+        entity: 'timeEntry',
+        op: 'sum',
+        field: 'minutes',
+        groupBy: 'spentOn',
+        where: { fields: { spentOn: { in: ['2026-10-28'] } } },
+      },
     ]);
   });
 

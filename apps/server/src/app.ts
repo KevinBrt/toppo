@@ -24,6 +24,7 @@ import { updateRecord } from './features/plugins/commands/records/update-record.
 import { deliverEventsJob } from './features/plugins/jobs/deliver-events.job.ts';
 import { emailPluginDisabledJob } from './features/plugins/jobs/email-plugin-disabled.job.ts';
 import { fanOutEventsJob } from './features/plugins/jobs/fan-out-events.job.ts';
+import { fillRecordSlotsJob } from './features/plugins/jobs/fill-record-slots.job.ts';
 import { sweepOnceKeysJob } from './features/plugins/jobs/sweep-once-keys.job.ts';
 import { registerPluginRoutes } from './features/plugins/plugins.routes.ts';
 import { readOwnProjectSettings } from './features/plugins/queries/read-own-project-settings.query.ts';
@@ -210,6 +211,7 @@ export function createJobs({
     deliverEventsJob,
     emailPluginDisabledJob,
     sweepOnceKeysJob,
+    fillRecordSlotsJob,
   ];
 }
 

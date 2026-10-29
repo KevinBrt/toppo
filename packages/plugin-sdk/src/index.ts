@@ -10,6 +10,7 @@ export {
   type Entity,
   type EntityClient,
   type EntityRecord,
+  type FieldCondition,
   type RecordGroupTotal,
   type RecordWhere,
 } from './entity.ts';

@@ -3,6 +3,7 @@
  * what a plugin declares and asks, and the SDK answers with them.
  */
 export {
+  type FieldCondition,
   HOST_CALLS,
   type HostCallMethod,
   type IssueDetails,
@@ -10,12 +11,17 @@ export {
   PLUGIN_NEEDS,
   type PluginNeed,
   RECORD_GROUPS_MAX,
+  RECORD_IN_MAX,
   type RecordData,
   recordSchema,
+  recordWhereSchema,
 } from './calls.ts';
 export {
   checkEntities,
+  comparedValueSchemaOf,
   ENTITY_FIELDS_MAX,
+  ENTITY_INDEXES_MAX,
+  ENTITY_INDEXES_TOTAL,
   ENTITY_LIMITS,
   ENTITY_NAME,
   type EntityDeclaration,
@@ -25,6 +31,10 @@ export {
   entityFieldSchema,
   entityFieldsSchema,
   entitySchema,
+  INDEX_KINDS,
+  INDEXED_TEXT_MAX_LENGTH,
+  type IndexKind,
+  indexKindOf,
   PLUGIN_ENTITIES_MAX,
   RECORD_ANCHORS,
   RECORD_GROUPS,

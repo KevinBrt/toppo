@@ -1,4 +1,8 @@
-import { type IssueDetails, manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
+import {
+  type IssueDetails,
+  manifestSchema,
+  type RecordData,
+} from '@toppo-tracker/plugin-sdk/protocol';
 import { describe, expect, it } from 'vitest';
 import { createTestRecords, type Reader, TEST_PLUGIN_USER_ID } from './test-records.ts';
 
@@ -22,9 +26,12 @@ const manifest = manifestSchema.parse({
         properties: {
           minutes: { type: 'integer', minimum: 1 },
           note: { type: 'string', maxLength: 20 },
+          spentOn: { type: 'string', format: 'date', default: '2026-10-28' },
+          kind: { type: 'string', enum: ['work', 'meeting'], default: 'work' },
         },
         required: ['minutes'],
       },
+      indexes: ['spentOn', 'kind', 'minutes'],
       limits: { perIssue: 2 },
     },
     budget: {
@@ -95,7 +102,7 @@ describe('a fake Toppo’s records', () => {
     const id = (kept as { id: string }).id;
     expect(
       ask('entities.update', { entity: 'timeEntry', id, fields: { note: 'Review' } }),
-    ).toMatchObject({ fields: { minutes: 30, note: 'Review' } });
+    ).toMatchObject({ fields: { minutes: 30, note: 'Review', spentOn: '2026-10-28' } });
     expect(ask('entities.get', { entity: 'timeEntry', id })).toMatchObject({ id });
     expect(records.of('timeEntry')).toHaveLength(1);
     expect(ask('entities.delete', { entity: 'timeEntry', id })).toBeNull();
@@ -167,7 +174,7 @@ describe('a fake Toppo’s records', () => {
       total: 2,
     });
     expect(
-      ask('entities.list', { entity: 'timeEntry', order: 'oldest', where: { createdBy: ADA } }),
+      ask('entities.list', { entity: 'timeEntry', direction: 'asc', where: { createdBy: ADA } }),
     ).toMatchObject({ items: [{ fields: { minutes: 10 } }, { fields: { minutes: 20 } }] });
     expect(
       ask('entities.aggregate', { entity: 'timeEntry', op: 'sum', field: 'minutes' }),
@@ -196,6 +203,49 @@ describe('a fake Toppo’s records', () => {
     expect(
       ask('entities.aggregate', { entity: 'timeEntry', op: 'sum', field: 'note' }),
     ).toStrictEqual({ refused: 'RECORD_INVALID' });
+  });
+
+  it('filter, sort and group records on the fields their entity indexes', () => {
+    const { ask } = store();
+    const log = (fields: Record<string, unknown>) =>
+      ask('entities.create', { entity: 'timeEntry', issueId: OURS, fields });
+    log({ minutes: 10, spentOn: '2026-10-28' });
+    log({ minutes: 20, spentOn: '2026-10-27', kind: 'meeting' });
+    const minutesOf = (args: Record<string, unknown>) =>
+      (ask('entities.list', { entity: 'timeEntry', ...args }) as { items: RecordData[] }).items.map(
+        (item) => item.fields['minutes'],
+      );
+
+    expect(minutesOf({ where: { fields: { spentOn: { lt: '2026-10-28' } } } })).toStrictEqual([20]);
+    expect(minutesOf({ where: { fields: { kind: { in: ['work'] }, minutes: 10 } } })).toStrictEqual(
+      [10],
+    );
+    expect(minutesOf({ orderBy: 'spentOn', direction: 'asc' })).toStrictEqual([20, 10]);
+    expect(minutesOf({ orderBy: 'minutes' })).toStrictEqual([20, 10]);
+    expect(
+      ask('entities.aggregate', {
+        entity: 'timeEntry',
+        op: 'sum',
+        field: 'minutes',
+        groupBy: 'spentOn',
+      }),
+    ).toStrictEqual({
+      total: 30,
+      groups: [
+        { key: '2026-10-27', value: 20 },
+        { key: '2026-10-28', value: 10 },
+      ],
+    });
+  });
+
+  it.each([
+    ['a field it does not index', { where: { fields: { note: 'Review' } } }],
+    ['a value of another kind', { where: { fields: { spentOn: 'yesterday' } } }],
+    ['a sort on a field it does not index', { orderBy: 'note' }],
+  ])('refuses %s, as Toppo does', (_, args) => {
+    expect(store().ask('entities.list', { entity: 'timeEntry', ...args })).toStrictEqual({
+      refused: 'RECORD_INVALID',
+    });
   });
 
   it('counts by project the records on projects someone reaches', () => {

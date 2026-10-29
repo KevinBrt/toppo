@@ -298,6 +298,7 @@ describe('a plugin hearing of events', () => {
           note: {
             attachedTo: 'issue',
             fields: { type: 'object', properties: { moved: { type: 'boolean' } } },
+            indexes: [],
             limits: {},
           },
         },
