@@ -1,0 +1,19 @@
+{
+  "name": "@toppo-tracker/docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Toppo's documentation site, in English and French: the guide, self-hosting, plugins.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "serve": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "vitepress": "2.0.0-alpha.20"
+  }
+}
