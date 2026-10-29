@@ -2,6 +2,7 @@ import { lookup } from 'node:dns';
 import { request as httpRequest, type IncomingMessage } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { isIP, type LookupFunction } from 'node:net';
+import { boundedLookups } from './bounded-lookups.ts';
 import { isInternalAddress } from './internal-addresses.ts';
 
 /**
@@ -43,8 +44,11 @@ export interface OutboundRequest {
 export interface OutboundPolicy {
   /** Whether it may reach this address at all: the hosts a plugin declared, for one. */
   mayReach(url: URL): boolean;
-  /** Hosts it may reach although they lie inside the network, as an administrator named them. */
-  privateHosts: readonly string[];
+  /**
+   * Whether it may reach this address although it lies inside the network: its host named by an
+   * administrator, on a port they could see.
+   */
+  mayReachInside(url: URL): boolean;
 }
 
 export interface OutboundLimits {
@@ -87,6 +91,18 @@ const KEPT_HEADERS = new Set([
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 
+/**
+ * Headers a redirect to another origin keeps: none that may carry a secret, whatever its name
+ * (`authorization`, `x-api-key`, `private-token`…).
+ */
+const KEPT_ACROSS_ORIGINS = new Set([
+  'accept',
+  'accept-language',
+  'content-language',
+  'content-type',
+  'user-agent',
+]);
+
 /** Sends a request where its policy allows, following its redirects as a browser would. */
 export async function outboundFetch(
   request: OutboundRequest,
@@ -111,7 +127,7 @@ export async function outboundFetch(
     if (redirects === limits.maxRedirects) {
       throw new OutboundError('TOO_MANY_REDIRECTS', `More than ${limits.maxRedirects} redirects`);
     }
-    const next = addressOf(new URL(reply.location, url).href);
+    const next = redirectTarget(reply.location, url);
     sent = redirected(sent, reply.answer.status, next.origin === url.origin);
     url = next;
   }
@@ -123,15 +139,32 @@ interface Sent {
   body: string | null;
 }
 
-/** What a redirect sends next: a `GET` after a form, never credentials to another origin. */
+/**
+ * Where a redirect leads: an address requests may be sent to, and never from https down to http,
+ * where what is sent would travel in clear.
+ */
+export function redirectTarget(location: string, from: URL): URL {
+  let resolved: string;
+  try {
+    resolved = new URL(location, from).href;
+  } catch {
+    throw new OutboundError('NETWORK_ERROR', 'The redirect leads to no address');
+  }
+  const next = addressOf(resolved);
+  if (from.protocol === 'https:' && next.protocol === 'http:') {
+    throw new OutboundError('ADDRESS_NOT_ALLOWED', 'A redirect may not leave https for http');
+  }
+  return next;
+}
+
+/** What a redirect sends next: a `GET` after a form, no header that may carry a secret elsewhere. */
 function redirected(sent: Sent, status: number, sameOrigin: boolean): Sent {
   const asGet = status === 303 || ((status === 301 || status === 302) && sent.method === 'POST');
-  const dropped = new Set([
-    ...(sameOrigin ? [] : ['authorization']),
-    ...(asGet ? ['content-type'] : []),
-  ]);
   const headers = Object.fromEntries(
-    Object.entries(sent.headers).filter(([name]) => !dropped.has(name)),
+    Object.entries(sent.headers).filter(
+      ([name]) =>
+        (sameOrigin || KEPT_ACROSS_ORIGINS.has(name)) && !(asGet && name === 'content-type'),
+    ),
   );
   return asGet
     ? { method: sent.method === 'HEAD' ? 'HEAD' : 'GET', headers, body: null }
@@ -159,15 +192,21 @@ function headersSent(headers: Readonly<Record<string, string>>): Record<string, 
   return { 'user-agent': 'Toppo', ...Object.fromEntries(kept) };
 }
 
+/** The system resolver, a few lookups at a time for all requests leaving Toppo. */
+const resolveHost = boundedLookups((hostname, options, callback) =>
+  lookup(hostname, options, callback),
+);
+
 /**
  * Resolves a host as the connection asks, and refuses it if any of its addresses lies inside the
  * network, unless an administrator named it: the connection goes to what was checked.
  */
-function guardedLookup(allowInternal: boolean): LookupFunction {
+function guardedLookup(allowInternal: boolean, signal: AbortSignal): LookupFunction {
   return (hostname, options, callback) => {
-    lookup(
+    resolveHost(
       hostname,
       { family: options.family, hints: options.hints, all: true },
+      signal,
       (error, found) => {
         if (error) {
           callback(error, '', 0);
@@ -198,6 +237,11 @@ interface Reply {
   answer: OutboundAnswer;
 }
 
+/** A URL's host as resolved: an IPv6 address without its brackets. */
+export function bareHost(url: URL): string {
+  return url.hostname.replace(/^\[(.*)\]$/, '$1');
+}
+
 /** One request and its answer, on a connection of its own. */
 function exchange(
   url: URL,
@@ -206,8 +250,8 @@ function exchange(
   limits: OutboundLimits,
   signal: AbortSignal,
 ): Promise<Reply> {
-  const hostname = url.hostname.replace(/^\[(.*)\]$/, '$1');
-  const allowInternal = policy.privateHosts.includes(hostname);
+  const hostname = bareHost(url);
+  const allowInternal = policy.mayReachInside(url);
   return new Promise<Reply>((resolve, reject) => {
     const fail = (error: unknown) => reject(failureOf(error, signal));
     // An address written as such is never resolved: checked here instead.
@@ -229,7 +273,7 @@ function exchange(
             'accept-encoding': 'identity',
             ...(body ? { 'content-length': String(body.length) } : {}),
           },
-          lookup: guardedLookup(allowInternal),
+          lookup: guardedLookup(allowInternal, signal),
           // A connection of its own: one kept alive would skip the check of the next request.
           agent: false,
           signal,

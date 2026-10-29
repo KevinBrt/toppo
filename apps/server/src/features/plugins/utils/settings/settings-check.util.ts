@@ -5,6 +5,7 @@ import { HttpError } from '../../../../platform/http/http-error.ts';
 import { SETTINGS_CHECK_DEADLINE_MS } from '../../../../platform/plugins/packages/manifest-reader.ts';
 import { HostCallError } from '../../../../platform/plugins/sandbox/plugin-sandbox.ts';
 import type { SandboxOutcome } from '../../../../platform/plugins/sandbox/sandbox-protocol.ts';
+import { failureOf } from '../plugin-failures.util.ts';
 
 const settingsInvalid = (details: readonly { path: string; message: string }[]) =>
   new HttpError(400, 'PLUGIN_SETTINGS_INVALID', 'The plugin refuses these settings', {
@@ -64,7 +65,11 @@ export async function checkTypedSettings(
     throw settingsInvalid(answer.data.error.issues ?? []);
   }
   if (!(answer.success && answer.data.ok)) {
-    log.warn({ plugin: plugin.slug, scope, outcome }, 'Plugin failed to check its settings');
+    // Its kind only: what the plugin answered may repeat the secrets it was given to check.
+    log.warn(
+      { plugin: plugin.slug, scope, failure: failureOf(outcome) ?? 'INVALID_ANSWER' },
+      'Plugin failed to check its settings',
+    );
     throw new HttpError(502, 'PLUGIN_FAILED', 'The plugin failed to check its settings');
   }
 }

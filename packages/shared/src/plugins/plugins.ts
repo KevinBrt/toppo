@@ -259,6 +259,8 @@ export type PluginDetailsResponse = z.infer<typeof pluginDetailsResponseSchema>;
 
 /** Body of `POST /api/v1/plugins/:pluginSlug/approve`: where it may act. */
 export const approvePluginRequestSchema = z.object({
+  /** The package reviewed, as its details gave it: another one uploaded since is not approved. */
+  packageSha256: z.string().regex(/^[0-9a-f]{64}$/),
   /** Every project, present and future, or these ones. */
   projects: z.union([z.literal('all'), z.array(projectKeySchema).max(PLUGIN_PROJECTS_MAX)]),
   /** Hosts inside the network it may reach (a team's own chat): none unless named. */

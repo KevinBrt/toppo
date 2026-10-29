@@ -3600,6 +3600,9 @@ function approveFakePlugin(state: FakeServerState, plugin: FakePlugin, body: unk
   if (!(parsed.success && state.user)) {
     return apiError(400, 'VALIDATION_FAILED');
   }
+  if (parsed.data.packageSha256 !== plugin.packageSha256) {
+    return apiError(409, 'PLUGIN_CHANGED');
+  }
   if (plugin.settings.refused) {
     return apiError(409, 'PLUGIN_SETTINGS_REFUSED');
   }

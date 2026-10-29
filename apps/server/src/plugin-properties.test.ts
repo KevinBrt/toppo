@@ -10,6 +10,7 @@ import {
   buildTestApp,
   cookieHeader,
   createTestUser,
+  packageSha256Of,
   setupTestDatabase,
   TEST_SETUP_CODE,
 } from './test-helpers.ts';
@@ -117,6 +118,7 @@ async function install(manifest: Manifest = MANIFEST, status = 201) {
 
 async function approve(projects: 'all' | string[] = ['WEB'], status = 204) {
   const approved = await call('ada', 'POST', '/api/v1/plugins/time-tracking/approve', {
+    packageSha256: await packageSha256Of(context.database, 'time-tracking'),
     projects,
   });
   expect(approved.statusCode, approved.body).toBe(status);

@@ -9,6 +9,15 @@ export const PASSWORD_MAX_LENGTH = 128;
 
 export const emailSchema = z.string().trim().toLowerCase().pipe(z.email().max(254));
 
+/** Where plugins' own users have their address: a domain that reaches no one (RFC 2606). */
+export const PLUGIN_EMAIL_DOMAIN = 'plugins.invalid';
+
+/** A person's address: never one of a plugin's user, which it would keep from being approved. */
+export const personEmailSchema = emailSchema.refine(
+  (email) => !email.endsWith(`@${PLUGIN_EMAIL_DOMAIN}`),
+  'This address is kept for plugins',
+);
+
 export const passwordSchema = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH);
 
 export const displayNameSchema = z.string().trim().min(1).max(100);

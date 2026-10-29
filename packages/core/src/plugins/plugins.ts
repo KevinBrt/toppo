@@ -1,3 +1,4 @@
+import { PLUGIN_EMAIL_DOMAIN } from '@toppo-tracker/shared';
 import { ALL_PERMISSIONS } from '../permissions/catalog.ts';
 
 /**
@@ -21,7 +22,7 @@ export function pluginUserOf(id: string): { name: string; email: string } {
   const words = id.split('-').filter(Boolean).join(' ');
   return {
     name: `${words.charAt(0).toUpperCase()}${words.slice(1)}`,
-    email: `${id}@plugins.invalid`,
+    email: `${id}@${PLUGIN_EMAIL_DOMAIN}`,
   };
 }
 

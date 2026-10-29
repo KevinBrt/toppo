@@ -13,6 +13,7 @@ import {
   createTestFileStorage,
   createTestPackageStore,
   createTestUser,
+  packageSha256Of,
   setupTestDatabase,
   TEST_SETUP_CODE,
   testServices,
@@ -146,6 +147,7 @@ async function runJobs(): Promise<void> {
 
 async function approve(projects: 'all' | string[]): Promise<void> {
   const approved = await call('ada', 'POST', '/api/v1/plugins/time-tracking/approve', {
+    packageSha256: await packageSha256Of(context.database, 'time-tracking'),
     projects,
   });
   expect(approved.statusCode, approved.body).toBe(204);

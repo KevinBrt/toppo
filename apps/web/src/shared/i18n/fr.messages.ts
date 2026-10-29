@@ -1216,7 +1216,7 @@ export const fr: Messages = {
     jobEvery: { hour: 'toutes les heures', day: 'tous les jours', week: 'toutes les semaines' },
     privateHosts: 'Hôtes de votre réseau qu’il peut joindre',
     privateHostsHelp:
-      'Un par ligne, par nom ou adresse, sans port : chat.interne, 10.0.0.12. Toute autre adresse de votre réseau lui reste fermée.',
+      'Un par ligne, par nom ou adresse, sans port : chat.interne, 10.0.0.12. Il les joint sur le port de http ou https, ou celui que donnent ses réglages ; toute autre adresse de votre réseau lui reste fermée.',
     callsTitle: 'Ses dernières requêtes hors de Toppo',
     callsDescription: 'Les 50 dernières, par hôte : jamais ce qu’elles portaient.',
     callsNone: 'Aucune pour l’instant.',
@@ -1322,6 +1322,8 @@ export const fr: Messages = {
         'Cette version refuse les paramètres du plugin : corrigez-les d’abord, plus haut.',
       pluginChanged:
         'Une nouvelle version du plugin a été installée entre-temps. Rechargez la page, puis enregistrez à nouveau.',
+      approvalChanged:
+        'Une nouvelle version du plugin a été installée entre-temps. Rechargez la page et examinez-la avant de l’approuver.',
     },
   },
   invitation: {

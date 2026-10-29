@@ -17,6 +17,14 @@ const GRACE_MS = 1000;
 const START_MS = 2000;
 /** The worker's own heap, beside the plugin's WebAssembly memory: messages and their JSON. */
 const WORKER_HEAP_MB = 64;
+/**
+ * The plugin's calls Toppo works on at once, each with a connection of the shared pool: the
+ * others wait their turn, so that a plugin calling without waiting cannot hold up the database.
+ */
+const CALLS_AT_ONCE = 4;
+/** The calls that may wait their turn, and the characters of their arguments, at most. */
+const CALLS_WAITING_MAX = 1000;
+const WAITING_CHARS_MAX = 16 * MESSAGE_MAX_LENGTH;
 /** Failures after which the worker is thrown away, and a new one started for the next call. */
 const DISCARDED_ON: ReadonlySet<SandboxFailure> = new Set([
   'LOAD_FAILED',
@@ -75,6 +83,10 @@ export function createPluginSandbox(options: PluginSandboxOptions): PluginSandbo
   let queue: Promise<unknown> = Promise.resolve();
   let nextId = 0;
   const waiting = new Map<number, (outcome: SandboxOutcome<string>) => void>();
+  /** The plugin's calls under way, and those waiting their turn, oldest first. */
+  let working = 0;
+  const queued: PluginCall[] = [];
+  let queuedChars = 0;
 
   function start(): Worker {
     const data: WorkerData = { code: options.code, memoryMb: options.memoryMb };
@@ -100,6 +112,7 @@ export function createPluginSandbox(options: PluginSandboxOptions): PluginSandbo
     }
     worker = undefined;
     void which.terminate();
+    dropQueued();
     for (const settle of waiting.values()) {
       settle({ ok: false, failure });
     }
@@ -111,18 +124,54 @@ export function createPluginSandbox(options: PluginSandboxOptions): PluginSandbo
       const settle = waiting.get(message.id);
       waiting.delete(message.id);
       settle?.(message.outcome);
+      // Calls the plugin did not wait for end with its run: none is worked on once it is over.
+      dropQueued();
       if (!message.outcome.ok && DISCARDED_ON.has(message.outcome.failure)) {
         discard(from, message.outcome.failure);
       }
       return;
     }
-    void answer(from, message.id, message.method, message.args);
+    take({ to: from, id: message.id, method: message.method, args: message.args });
   }
 
-  async function answer(to: Worker, id: number, method: string, args: string): Promise<void> {
-    const reply = await replyTo(method, args);
-    if (worker === to) {
-      to.postMessage({ id, type: 'answer', ...reply } satisfies ToWorker);
+  function take(call: PluginCall): void {
+    if (working < CALLS_AT_ONCE) {
+      void work(call);
+    } else if (
+      queued.length < CALLS_WAITING_MAX &&
+      queuedChars + call.args.length <= WAITING_CHARS_MAX
+    ) {
+      queued.push(call);
+      queuedChars += call.args.length;
+    } else {
+      answer(call, { error: 'TOO_MANY_CALLS' });
+    }
+  }
+
+  async function work(call: PluginCall): Promise<void> {
+    working += 1;
+    try {
+      answer(call, await replyTo(call.method, call.args));
+    } finally {
+      working -= 1;
+      const next = queued.shift();
+      if (next) {
+        queuedChars -= next.args.length;
+        void work(next);
+      }
+    }
+  }
+
+  function dropQueued(): void {
+    for (const call of queued.splice(0)) {
+      answer(call, { error: 'RUN_OVER' });
+    }
+    queuedChars = 0;
+  }
+
+  function answer(call: PluginCall, reply: { result: string } | { error: string }): void {
+    if (worker === call.to) {
+      call.to.postMessage({ id: call.id, type: 'answer', ...reply } satisfies ToWorker);
     }
   }
 
@@ -168,7 +217,7 @@ export function createPluginSandbox(options: PluginSandboxOptions): PluginSandbo
     });
   }
 
-  /** One call at a time: the sandbox has one deadline, and a plugin one call in flight. */
+  /** One run at a time: the sandbox has one deadline. */
   function serialized<T>(task: () => Promise<T>): Promise<T> {
     const result = queue.then(task);
     queue = result.catch(() => undefined);
@@ -208,6 +257,14 @@ export function createPluginSandbox(options: PluginSandboxOptions): PluginSandbo
         }
       }),
   };
+}
+
+/** A call of the plugin's, from the worker that sent it. */
+interface PluginCall {
+  to: Worker;
+  id: number;
+  method: string;
+  args: string;
 }
 
 /** The plugin's answer, parsed: it must be JSON. */

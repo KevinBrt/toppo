@@ -70,7 +70,7 @@ export async function actingPlugin(
     sha256: plugin.sha256,
     manifest,
     needs,
-    settings: openSettings(plugin.settings, secrets),
+    settings: openSettings(plugin.settings, manifest, secrets),
     privateHosts: plugin.privateHosts,
     actor: {
       id: plugin.userId,

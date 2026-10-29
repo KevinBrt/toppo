@@ -9,7 +9,7 @@ import { answerCalls } from '../../../platform/plugins/host-calls.ts';
 import type { SandboxOutcome } from '../../../platform/plugins/sandbox/sandbox-protocol.ts';
 import { assertActionAccess } from '../utils/action-access.util.ts';
 import { actingFor, actingPlugin } from '../utils/plugin-actor.util.ts';
-import { failureOf, recordFailure, recordSuccess } from '../utils/plugin-failures.util.ts';
+import { failureOf } from '../utils/plugin-failures.util.ts';
 
 const { users } = schema;
 
@@ -25,7 +25,8 @@ const notFound = () =>
  * The plugin acts with what both it and the person hold, and writes as itself. It holds no
  * transaction while it runs: what it writes goes through Toppo's commands, each in its own.
  * Answers the action's result; a refusal of the plugin's comes in its own words, for its screens
- * to translate.
+ * to translate. An action that fails counts no failure toward disabling the plugin: the person
+ * who ran it is told, and anyone signed in may run it with what makes it fail or time out.
  */
 export const runPluginAction = defineDetachedCommand({
   name: 'plugin.runAction',
@@ -77,10 +78,8 @@ export const runPluginAction = defineDetachedCommand({
     const failure = failureOf(outcome);
     if (failure || !answer.success || !answer.data.ok) {
       log.warn({ plugin: plugin.slug, action, failure, outcome }, 'Plugin failed');
-      await recordFailure(db, plugin, failure ?? 'INVALID_ANSWER', `action ${action}`, log);
       throw new HttpError(502, 'PLUGIN_FAILED', 'The plugin failed to run this action');
     }
-    await recordSuccess(db, plugin.id);
     return { result: answer.data.result };
   },
 });

@@ -9,6 +9,7 @@ import {
   buildTestApp,
   cookieHeader,
   createTestUser,
+  packageSha256Of,
   setupTestDatabase,
   TEST_SETUP_CODE,
 } from './test-helpers.ts';
@@ -198,6 +199,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   const approved = await call('ada', 'POST', '/api/v1/plugins/time-tracking/approve', {
+    packageSha256: await packageSha256Of(context.database, 'time-tracking'),
     projects: ['WEB'],
   });
   expect(approved.statusCode, approved.body).toBe(204);
@@ -258,6 +260,7 @@ describe('a plugin action', () => {
 
   it('reads a project’s settings in the projects both the person and the plugin reach', async () => {
     const approved = await call('ada', 'POST', '/api/v1/plugins/time-tracking/approve', {
+      packageSha256: await packageSha256Of(context.database, 'time-tracking'),
       projects: 'all',
     });
     expect(approved.statusCode).toBe(204);
@@ -297,12 +300,15 @@ describe('a plugin action', () => {
     expect(await failures()).toBe(0);
   });
 
-  it('answers 502 when the plugin fails, and counts it', async () => {
+  it('answers 502 when the plugin fails, counting no failure: anyone may make an action fail', async () => {
+    await context.database.db.update(schema.plugins).set({ failures: 9 });
+
     const failed = await act('grace', 'time.crash');
 
     expect(failed.statusCode).toBe(502);
     expect(errorOf(failed).code).toBe('INTERNAL_ERROR');
-    expect(await failures()).toBe(1);
+    expect(await failures()).toBe(9);
+    expect((await act('grace', 'time.whoAsks')).statusCode).toBe(200);
   });
 
   it('is not found when the plugin does not declare it, or is not enabled', async () => {

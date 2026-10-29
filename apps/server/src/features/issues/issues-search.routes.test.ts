@@ -192,7 +192,7 @@ describe('the words a typo is corrected to', () => {
 
     await context.database.db.transaction((tx) =>
       rebuildIssueWordsJob.run(
-        { tx, db: context.database.db, log: app.log, services: testServices() },
+        { tx, db: context.database.db, attempt: 1, log: app.log, services: testServices() },
         {},
       ),
     );

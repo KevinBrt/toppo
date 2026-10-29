@@ -56,6 +56,8 @@ interface SandboxState {
   phase: 'loading' | 'running' | 'idle';
   /** When what is under way must stop. */
   deadline: number;
+  /** Counts Toppo's calls: an answer to the plugin is for the call that asked, and no other. */
+  call: number;
 }
 
 /**
@@ -81,7 +83,12 @@ export async function createQuickJsSandbox(
   );
   const runtime = module.newRuntime();
   runtime.setMaxStackSize(STACK_BYTES);
-  const state: SandboxState = { usable: true, phase: 'idle', deadline: Number.POSITIVE_INFINITY };
+  const state: SandboxState = {
+    usable: true,
+    phase: 'idle',
+    deadline: Number.POSITIVE_INFINITY,
+    call: 0,
+  };
   // Checked by QuickJS as it runs, built-ins included (a regular expression, a sort).
   runtime.setInterruptHandler(() => state.phase !== 'idle' && Date.now() > state.deadline);
   const context = runtime.newContext();
@@ -104,6 +111,7 @@ export async function createQuickJsSandbox(
     }
     state.phase = 'running';
     state.deadline = Date.now() + deadlineMs;
+    state.call += 1;
     try {
       return await call(context, runtime, state, name, args);
     } finally {
@@ -249,19 +257,23 @@ function defineHost(
         error: 'A call takes a method and its arguments in JSON, within the size allowed',
       });
     } else {
+      const askedDuring = state.call;
+      // An answer once its call is over would run the plugin's code with no deadline, or in
+      // another call's time: the plugin's promise is dropped instead, and what waited on it.
+      const settleInTime = (answer: { value: string } | { error: string }) => {
+        if (state.phase === 'running' && state.call === askedDuring) {
+          settle(context, runtime, state, deferred, answer);
+        } else if (state.usable) {
+          deferred.dispose();
+        }
+      };
       callToppo(method, args).then(
         (answer) =>
-          settle(
-            context,
-            runtime,
-            state,
-            deferred,
+          settleInTime(
             answer.length > MESSAGE_MAX_LENGTH ? { error: 'Answer too large' } : { value: answer },
           ),
         (error: unknown) =>
-          settle(context, runtime, state, deferred, {
-            error: error instanceof Error ? error.message : String(error),
-          }),
+          settleInTime({ error: error instanceof Error ? error.message : String(error) }),
       );
     }
     return deferred.handle;

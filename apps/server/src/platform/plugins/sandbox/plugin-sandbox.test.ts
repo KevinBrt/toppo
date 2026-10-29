@@ -106,6 +106,54 @@ describe('a plugin sandbox in a worker thread', () => {
     expect(await run(plugin, 'call-not-json')).toMatchObject({ detail: 'INVALID_ARGUMENTS' });
   });
 
+  describe('a plugin calling Toppo without waiting', () => {
+    let atOnce = 0;
+    let most = 0;
+    let started = 0;
+    let release: () => void = () => undefined;
+    /** Toppo's side: each call holds on until the test lets them all go. */
+    const held = async (): Promise<unknown> => {
+      started += 1;
+      atOnce += 1;
+      most = Math.max(most, atOnce);
+      await new Promise<void>((resolve) => {
+        const before = release;
+        release = () => {
+          before();
+          resolve();
+        };
+      });
+      atOnce -= 1;
+      return null;
+    };
+
+    afterEach(() => {
+      release();
+      [atOnce, most, started, release] = [0, 0, 0, () => undefined];
+    });
+
+    it('has four of its calls worked on at once, and none once its run is over', async () => {
+      const plugin = sandbox({ call: held });
+
+      expect(await run(plugin, 'flood', { calls: 50 })).toStrictEqual({ ok: true, value: null });
+      release();
+      await vi.waitFor(() => expect(atOnce).toBe(0));
+
+      expect(most).toBe(4);
+      expect(started).toBe(4);
+    });
+
+    it('has a thousand wait their turn at most, and refuses the rest', async () => {
+      const plugin = sandbox({ call: held });
+
+      expect(await run(plugin, 'flood-refused', { calls: 1010, refused: 6 })).toStrictEqual({
+        ok: true,
+        value: [1004, 1005, 1006, 1007, 1008, 1009],
+      });
+      expect(started).toBe(4);
+    });
+  });
+
   it('runs one call at a time, all of them', async () => {
     const plugin = sandbox();
 

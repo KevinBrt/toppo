@@ -136,6 +136,16 @@ describe('inviting members', () => {
     expect(errorCode(response)).toBe('INVALID_ROLE');
   });
 
+  it('refuses an address kept for plugins, which would keep one from being approved', async () => {
+    const response = await asAdmin('POST', '/api/v1/invitations', {
+      emails: ['time-tracking@Plugins.Invalid'],
+      roleId: DEFAULT_ROLE_IDS.team,
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(errorCode(response)).toBe('VALIDATION_FAILED');
+  });
+
   it('replaces the pending invitation of an address invited again', async () => {
     const [first] = (await invite(['twice@example.com'])).invitations;
     const [second] = (await invite(['twice@example.com'], DEFAULT_ROLE_IDS.requester)).invitations;

@@ -1174,7 +1174,7 @@ export const en = {
     jobEvery: { hour: 'every hour', day: 'every day', week: 'every week' },
     privateHosts: 'Hosts inside your network it may reach',
     privateHostsHelp:
-      'One per line, by name or address, without a port: chat.internal, 10.0.0.12. Any other address inside your network stays closed to it.',
+      'One per line, by name or address, without a port: chat.internal, 10.0.0.12. It reaches them on the port of http or https, or the one its settings give; any other address inside your network stays closed to it.',
     callsTitle: 'Its last requests outside Toppo',
     callsDescription: 'The 50 last, by host: never what they carried.',
     callsNone: 'None yet.',
@@ -1276,6 +1276,8 @@ export const en = {
       settingsRefused: 'This version refuses the plugin’s settings: correct them first, above.',
       pluginChanged:
         'A new version of the plugin was installed meanwhile. Reload the page, then save again.',
+      approvalChanged:
+        'A new version of the plugin was installed meanwhile. Reload the page and review it before approving it.',
     },
   },
   invitation: {

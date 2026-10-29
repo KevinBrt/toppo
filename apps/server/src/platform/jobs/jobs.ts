@@ -21,6 +21,8 @@ export interface JobScope {
    * as it runs, which must not hold its issue locked until the job ends.
    */
   db: Db;
+  /** Which try this is, from 1: what a job counts once per payload, it counts on the first. */
+  attempt: number;
   log: FastifyBaseLogger;
   services: Services;
 }

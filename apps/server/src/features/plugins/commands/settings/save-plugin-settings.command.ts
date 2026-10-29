@@ -52,7 +52,7 @@ export const savePluginSettings = defineDetachedCommand({
       { services, log },
       { slug: pluginSlug, sha256: plugin.sha256 },
       'instance',
-      openSettings(stored, services.secrets),
+      openSettings(stored, manifest, services.secrets),
     );
     await storePluginSettings.execute(
       { db, actor, log, services },

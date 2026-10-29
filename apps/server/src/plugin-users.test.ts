@@ -10,6 +10,7 @@ import {
   buildTestApp,
   cookieHeader,
   createTestUser,
+  packageSha256Of,
   setupTestDatabase,
   TEST_SECRET,
   TEST_SETUP_CODE,
@@ -52,7 +53,10 @@ async function install(manifest = testManifest()): Promise<void> {
 }
 
 async function approve(slug: string) {
-  return await call('POST', `/api/v1/plugins/${slug}/approve`, { projects: ['WEB'] });
+  return await call('POST', `/api/v1/plugins/${slug}/approve`, {
+    packageSha256: await packageSha256Of(context.database, slug),
+    projects: ['WEB'],
+  });
 }
 
 async function pluginUsers(slug = 'time-tracking') {

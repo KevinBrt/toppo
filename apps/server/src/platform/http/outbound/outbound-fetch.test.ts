@@ -7,6 +7,7 @@ import {
   type OutboundPolicy,
   type OutboundRequest,
   outboundFetch,
+  redirectTarget,
 } from './outbound-fetch.ts';
 
 /** Two servers on the loopback, so that a redirect may change origin. */
@@ -73,8 +74,11 @@ afterAll(async () => {
 });
 
 /** The loopback, allowed by name as an administrator would allow a team's own server. */
-const LOOPBACK: OutboundPolicy = { mayReach: () => true, privateHosts: ['127.0.0.1'] };
-const PUBLIC_ONLY: OutboundPolicy = { mayReach: () => true, privateHosts: [] };
+const LOOPBACK: OutboundPolicy = {
+  mayReach: () => true,
+  mayReachInside: (url) => url.hostname === '127.0.0.1',
+};
+const PUBLIC_ONLY: OutboundPolicy = { mayReach: () => true, mayReachInside: () => false };
 
 function get(url: string, extra: Partial<OutboundRequest> = {}): OutboundRequest {
   return { url, method: 'GET', ...extra };
@@ -140,7 +144,10 @@ describe('a request leaving Toppo', () => {
   });
 
   it('reaches a host inside the network only as named, not another one beside it', async () => {
-    const named: OutboundPolicy = { mayReach: () => true, privateHosts: ['localhost'] };
+    const named: OutboundPolicy = {
+      mayReach: () => true,
+      mayReachInside: (url) => url.hostname === 'localhost',
+    };
 
     expect(await failureOf(outboundFetch(get(`${here}/echo`), named))).toBe('ADDRESS_NOT_ALLOWED');
     expect((await outboundFetch(get(`${here}/echo`), LOOPBACK)).status).toBe(200);
@@ -149,7 +156,7 @@ describe('a request leaving Toppo', () => {
   it('goes only where its policy allows, at each redirect too', async () => {
     const hereOnly: OutboundPolicy = {
       mayReach: (url) => url.origin === here,
-      privateHosts: ['127.0.0.1'],
+      mayReachInside: (url) => url.hostname === '127.0.0.1',
     };
     const to = (target: string) => `${here}/redirect?to=${encodeURIComponent(target)}`;
 
@@ -179,7 +186,12 @@ describe('a request leaving Toppo', () => {
     );
     const moved = await outboundFetch(
       get(`${here}/redirect?status=307&to=${encodeURIComponent(`${elsewhere}/echo`)}`, {
-        headers: { authorization: 'Bearer secret' },
+        headers: {
+          authorization: 'Bearer secret',
+          'x-api-key': 'secret',
+          'private-token': 'secret',
+          accept: 'application/json',
+        },
       }),
       LOOPBACK,
     );
@@ -190,7 +202,28 @@ describe('a request leaving Toppo', () => {
       headers: { authorization: 'Bearer secret' },
     });
     expect(JSON.parse(seeOther.body).headers['content-type']).toBeUndefined();
-    expect(JSON.parse(moved.body).headers.authorization).toBeUndefined();
+    const elsewhereGot = JSON.parse(moved.body).headers;
+    expect(elsewhereGot.authorization).toBeUndefined();
+    expect(elsewhereGot['x-api-key']).toBeUndefined();
+    expect(elsewhereGot['private-token']).toBeUndefined();
+    expect(elsewhereGot.accept).toBe('application/json');
+  });
+
+  it('never follows a redirect from https down to http, nor to no address', () => {
+    const secure = new URL('https://hooks.example.com/send');
+    const refusal = (location: string, from: URL) => {
+      try {
+        redirectTarget(location, from);
+        return 'FOLLOWED';
+      } catch (error) {
+        return error instanceof Error && 'code' in error ? error.code : 'OTHER';
+      }
+    };
+
+    expect(refusal('http://hooks.example.com/send', secure)).toBe('ADDRESS_NOT_ALLOWED');
+    expect(refusal('https://cdn.example.com/send', secure)).toBe('FOLLOWED');
+    expect(refusal('https://cdn.example.com/send', new URL('http://example.com'))).toBe('FOLLOWED');
+    expect(refusal('http://[::1', secure)).toBe('NETWORK_ERROR');
   });
 
   it('stops at its deadline and at its size, whatever the server says', async () => {
