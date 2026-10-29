@@ -35,8 +35,8 @@ const isId = (value: string) => PROPERTY_VALUE_SCHEMAS.list.safeParse(value).suc
 /**
  * What a filter keeps of a property, `me` standing for the caller, or `null` when its type cannot
  * be filtered so: options or people of a list, a multi-select or a person property; `yes` or
- * `no` for a checkbox; a range of numbers or of days. A line of text is never filtered: the
- * search finds words.
+ * `no` for a checkbox; a range of numbers or of days. A line of text is never filtered, nor
+ * searched: the search reads titles and descriptions only.
  */
 export function propertyConditionOf(
   property: { id: string; type: PropertyType },

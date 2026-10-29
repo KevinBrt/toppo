@@ -28,7 +28,7 @@ type Change = (filter: PropertyFilter | null) => void;
  * The filters on the project's properties, in the row of the others: one per property filtered,
  * or just added from the « + Property » menu, which offers the others and opens the one chosen.
  * Options, people and boxes are chosen in a menu; numbers and days as a range in a dialog. A line
- * of text is never offered: the search finds its words.
+ * of text is never offered, nor searched: the search reads titles and descriptions only.
  */
 export function PropertyFilters({
   projectKey,
