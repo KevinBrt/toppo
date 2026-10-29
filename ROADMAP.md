@@ -22,7 +22,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
 ## After 1.0
 
 - [ ] Plugin system, as designed in [docs/plugins/design.md](docs/plugins/design.md). Built on the integration branch `feat/plugin-system`, one pull request per task, merged into `main` as one change at the end. A security review of its own before it ships: third-party code will run inside Toppo.
-  - [ ] **1. Foundations**:
+  - [x] **1. Foundations**:
     - [x] the design's decisions in `ARCHITECTURE.md`;
     - [x] internal packages renamed `@toppo-tracker/*` (straight into `main`);
     - [x] the sandbox: QuickJS in WebAssembly, a worker per plugin, capped memory, deadlines, the `ctx` bridge;
@@ -36,7 +36,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] **Settings → Plugins**: install, approve in projects, enable, disable, uninstall; a plugin's name, description and logo;
     - [x] a plugin's settings form, generated from the schema it declares;
     - [x] `plugins/time-tracking`, built and installed through the interface in an end-to-end test;
-    - [ ] the plugin author's guide, and `CLAUDE.md`'s rules for plugin code.
+    - [x] the plugin author's guide (`docs/plugins/`, English and French), and `CLAUDE.md`'s rules for plugin code.
   - [x] **2. Data**:
     - [x] what each project sets for itself of a plugin, in its Plugins tab;
     - [x] entities: records on an issue or a project, checked and bounded by Toppo, kept or deleted with their plugin;
@@ -48,7 +48,6 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] `@toppo-tracker/plugin-ui`: components, `useActionQuery`, `useActionMutation`, `useScreen`, `usePeople`, `useT`;
     - [x] pages in the main sidebar, the settings and a project's settings, and panels on an issue;
     - [x] `plugins/time-tracking`: the issue panel, and a page of the time spent by project against its budget;
-    - [ ] the `project` zone, with a project's home page;
     - [ ] pages with typed parameters, several entries of one page;
     - [ ] dialogs, menus and side panels opened by Toppo outside the frame; pickers of people and issues; charts.
   - [ ] **4. Beyond the instance**:
@@ -57,7 +56,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] recurring jobs, every hour, day or week;
     - [x] `plugins/time-tracking`: the time of each week sent to a chat;
     - [ ] routes and `ctx.crypto`, opened to plugins once the core's webhooks and GitHub integration build them.
-  - [ ] Publish the packages to npm from GitHub Actions, once steps 1 to 3 are done.
+  - [ ] Publish the packages to npm: ready (`publish-plugin-packages.yml`, trusted publishing, `npm create @toppo-tracker/plugin`, proven outside the repository in CI), first published with the Toppo release that ships plugins.
 - [ ] Webhooks, then the GitHub integration, in the core, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature.
 - [ ] OIDC, SAML and LDAP, free (Better Auth plugins, added to the endpoint allowlist).
 - [ ] Imports from Mantis, Redmine and Jira (CSV first); inbound email.
@@ -80,5 +79,6 @@ Known compromises to revisit, not blocking:
 - Lost passwords without email: no way back in for now, the only administrator's included (decided 2026-10-25). Proposed for later: a one-time reset link an administrator creates from the members list (like an invitation), and a recovery code printed in the logs on demand for the last administrator.
 - Invitations are not rate limited (decided 2026-10-27): a limit per recipient would stop one address from being flooded without slowing a large wave of invitations.
 - Markdown: long runs of `*` and `_` still cost the parser more than they should; past a size, a description could be shown as plain text with a button to format it.
+- A project's home page, and a `project` zone where plugins add to it: left out for now (decided 2026-10-29); a project opens on its issues.
 - Commands that give access are tested with a custom role by rule only: a check could require it, as `route-permissions.test.ts` does for the routes that send email.
 - Vitest's browser mode uses port 63315, which Windows sometimes reserves (Hyper-V): `npm run check` then fails until a restart, unless the port is set in `apps/web/vitest.config.ts`.
