@@ -262,7 +262,7 @@ describe('the list filtered by property', () => {
     const { screen } = await renderApp({ path: '/issues?project=WEB' });
 
     await screen.getByRole('button', { name: 'Filter by Property' }).click();
-    // A line of text is found by the search, never filtered.
+    // A line of text is never filtered.
     await expect
       .element(screen.getByRole('menuitem', { name: 'Reference' }))
       .not.toBeInTheDocument();
