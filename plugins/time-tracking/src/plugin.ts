@@ -1,5 +1,6 @@
 import { definePlugin, z } from '@toppo-tracker/plugin-sdk';
 import { timeEntry } from './entities/time-entry.entity.ts';
+import { timeSpent } from './properties/time-spent.property.ts';
 
 /**
  * Time tracking: who spent how long on which issue. Toppo's reference plugin, built with
@@ -23,6 +24,7 @@ export const plugin = definePlugin({
     budgetDays: z.number().positive().max(100_000).optional(),
   }),
   entities: { timeEntry },
+  properties: { timeSpent },
   messages: {
     en: {
       plugin: {
@@ -30,6 +32,7 @@ export const plugin = definePlugin({
         description: 'Log the time spent on each issue, and see where it went.',
       },
       permissions: { log: 'Log time' },
+      properties: { timeSpent: 'Time spent' },
       settings: {
         hoursPerDay: {
           label: 'Hours in a working day',
@@ -49,6 +52,7 @@ export const plugin = definePlugin({
         description: 'Saisissez le temps passé sur chaque ticket, et voyez où il est allé.',
       },
       permissions: { log: 'Saisir du temps' },
+      properties: { timeSpent: 'Temps passé' },
       settings: {
         hoursPerDay: {
           label: 'Heures dans une journée de travail',

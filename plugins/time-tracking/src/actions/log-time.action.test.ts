@@ -36,6 +36,23 @@ describe('timeEntry.log', () => {
     expect(toppo.records('timeEntry')).toMatchObject([
       { id: entry.id, fields: { minutes: 90, spentOn: DAY, note: 'Review' } },
     ]);
+    expect(toppo.properties(issue.id)).toStrictEqual({ timeSpent: 90 });
+  });
+
+  it('counts the time spent on an issue from all its entries, whoever logged them', async () => {
+    const { toppo, issue, logger } = withIssue();
+    const other = toppo.createIssue();
+    const colleague = toppo.createUser({ permissions: ['entries.log'] });
+
+    await logger.run(logTime, { issueId: issue.id, minutes: 90, spentOn: DAY });
+    await colleague.run(logTime, { issueId: issue.id, minutes: 45, spentOn: '2026-10-29' });
+    await colleague.run(logTime, { issueId: other.id, minutes: 30, spentOn: DAY });
+    await expect(
+      logger.run(logTime, { issueId: issue.id, minutes: 0, spentOn: DAY }),
+    ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+
+    expect(toppo.properties(issue.id)).toStrictEqual({ timeSpent: 135 });
+    expect(toppo.properties(other.id)).toStrictEqual({ timeSpent: 30 });
   });
 
   it('takes up to a whole day at once', async () => {

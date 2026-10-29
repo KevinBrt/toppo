@@ -4,7 +4,7 @@ import { logTime } from './actions/log-time.action.ts';
 import { plugin } from './plugin.ts';
 
 describe('the time tracking plugin', () => {
-  it('declares what is approved and set: reading issues, a permission, its settings', () => {
+  it('declares what is approved and set: reading issues, a permission, its settings, the time spent it writes', () => {
     const { manifest } = createTestToppo(plugin);
 
     expect(manifest).toMatchObject({
@@ -20,6 +20,14 @@ describe('the time tracking plugin', () => {
       },
       entities: {
         timeEntry: { attachedTo: 'issue', fields: { required: ['minutes', 'spentOn'] } },
+      },
+      properties: {
+        timeSpent: {
+          name: 'properties.timeSpent',
+          type: 'number',
+          display: 'duration',
+          writtenBy: 'plugin',
+        },
       },
       events: [],
       actions: [{ name: 'timeEntry.log' }],

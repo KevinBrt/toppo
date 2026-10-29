@@ -14,7 +14,7 @@ const { version } = JSON.parse(readFileSync(new URL('package.json', PLUGIN), 'ut
 const ZIP = fileURLToPath(new URL(`dist/time-tracking-${version}.zip`, PLUGIN));
 const LOG_TIME = '/api/v1/plugins/time-tracking/actions/timeEntry.log';
 
-/** A project of its own with one issue: the id of that issue. */
+/** A project of its own with one issue: that issue's id and key. */
 async function issueInNewProject(request: APIRequestContext, origin: string, key: string) {
   const project = await request.post('/api/v1/projects', {
     headers: { origin },
@@ -26,7 +26,7 @@ async function issueInNewProject(request: APIRequestContext, origin: string, key
     data: { title: 'Search is slow' },
   });
   expect(issue.status()).toBe(201);
-  return ((await issue.json()) as { id: string }).id;
+  return (await issue.json()) as { id: string; key: string };
 }
 
 // A plugin adds its permission to every role, which other tests read: installed alone, once they
@@ -40,8 +40,8 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
     .toUpperCase()
     .padStart(4, '0');
   const key = `TT${suffix}`;
-  const issueId = await issueInNewProject(page.request, origin, key);
-  const elsewhere = await issueInNewProject(page.request, origin, `TO${suffix}`);
+  const { id: issueId, key: issueKey } = await issueInNewProject(page.request, origin, key);
+  const { id: elsewhere } = await issueInNewProject(page.request, origin, `TO${suffix}`);
 
   await page.goto('/settings/plugins');
   await expect(page.getByRole('heading', { level: 1, name: 'Plugins' })).toBeVisible();
@@ -65,8 +65,9 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   await expect(
     page
       .getByRole('region', { name: 'Properties it adds' })
-      .getByText('It adds no property to issues.'),
-  ).toBeVisible();
+      .getByRole('listitem')
+      .filter({ hasText: 'Time spent' }),
+  ).toContainText('Duration, written by the plugin');
   const logo = page.getByRole('main').locator('img');
   await expect(logo).toHaveJSProperty('naturalWidth', 256);
   await expectAccessible(page);
@@ -128,6 +129,13 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   expect(await logged.json()).toMatchObject({
     result: { issueId, minutes: 90, spentOn: '2026-10-28', createdBy: expect.any(String) },
   });
+  // The issue's time spent, written by the plugin, for no one to type in.
+  await page.goto(`/issues/${issueKey}`);
+  const sidebar = page.getByRole('complementary', { name: 'Properties' });
+  await expect(sidebar.getByText('Time spent')).toBeVisible();
+  await expect(sidebar.getByText('1 h 30')).toBeVisible();
+  await expect(sidebar.getByRole('spinbutton', { name: 'Time spent' })).toHaveCount(0);
+
   const outside = await page.request.post(LOG_TIME, {
     headers: { origin },
     data: { issueId: elsewhere, minutes: 90, spentOn: '2026-10-28' },
@@ -151,7 +159,10 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   await confirm.getByRole('button', { name: 'Uninstall the plugin' }).click();
   await expect(page.getByText('No plugin installed')).toBeVisible();
 
-  // Gone with its permission.
+  // Gone with its permission, and its property with what it wrote.
+  await page.goto('/settings/properties');
+  await expect(page.getByRole('heading', { level: 1, name: 'Issue properties' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Time spent/ })).toHaveCount(0);
   await page.goto('/settings/roles');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(logTime).toHaveCount(0);
