@@ -185,6 +185,19 @@ shared/<area>/                code used by several features: api/, i18n/, layout
 - Every list query filters, searches and sorts in SQL and returns one page (at most 100 rows); no endpoint returns an unbounded collection. Search goes through `containsText()` (`@toppo-tracker/db`), which escapes `LIKE` wildcards. Checks that need "all of X" count or select only what they need in SQL.
 - Server integration tests call `setupTestDatabase()`: one migrated database per test file, never shared, never mocked.
 
+## Plugins
+
+Official plugins (`plugins/*`) are written as any author would write theirs, and the packages authors use (`plugin-sdk`, `plugin-ui`, `plugin-testing`, `cli`, `create-plugin`, MIT, published at one version) are a public API. The guide for authors is `docs/plugins/`.
+
+- **No privilege**: a plugin imports `@toppo-tracker/plugin-sdk` and `@toppo-tracker/plugin-ui` only (checked), is built by `toppo plugin build`, tested with `@toppo-tracker/plugin-testing`, and installed through **Settings › Plugins** like any other. What it needs that the SDK lacks goes into the SDK, for every author.
+- **Ask for the least**: only the needs it uses; `http` naming hosts or settings rather than `'any'`; every setting optional or with a default; tokens and webhook addresses through `secret()`.
+- **Every word is a message**, in English and French: name, description, permission, setting and property labels, screens (`useT`), refusals (`ctx.fail`). No text hard-coded in a screen.
+- **Screens draw with `plugin-ui` only**: layout with `Stack` and `Row`, never `className` (checked: Toppo's stylesheet holds Toppo's classes, not a plugin's); data through the plugin's own actions; forms call `preventDefault()`.
+- **Server code bears being run twice and bounds what it asks**: an event or a job may run again, so comments take `once: event.id` and records are looked for before being created; Toppo's calls are awaited, or sent a few at a time (four are worked on at once, a thousand wait, past that `TOO_MANY_CALLS`).
+- **Tested through `createTestToppo`**: every action, event handler and job, its refusals included (`FORBIDDEN`, `NOT_FOUND`, `ctx.fail`), at the coverage threshold of the plugin (90 %).
+- **The contract does not break**: within an `apiVersion` major (`API_VERSION`), nothing a plugin uses changes or goes; once a Toppo with plugins has shipped, a capability older Toppos lack raises the minor. A change of the SDK, `plugin-ui` or what Toppo does with a plugin updates `docs/plugins/` (English and French) in the same pull request; examples are imported from `plugins/time-tracking`, never copied.
+- **On Toppo's side**, a plugin's call is a feature's command or query (wired in `app.ts`, `platform/plugins/host-calls.ts`), checked as a person's request is: never SQL of its own, never a check that forgets the plugin actor (see the security rules).
+
 ## Dependencies
 
 - Prefer the platform and what we already have. A new dependency needs a reason in the PR: maintained, small, MIT/Apache/BSD/ISC-compatible (`check:dependencies` enforces licenses), and not replaceable by ~50 lines of our own.
