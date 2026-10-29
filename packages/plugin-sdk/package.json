@@ -1,6 +1,6 @@
 {
   "name": "@toppo-tracker/plugin-sdk",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "What a Toppo plugin is written with: definePlugin, its actions and event handlers, and the protocol Toppo speaks with it.",
   "license": "MIT",
@@ -11,6 +11,7 @@
     "./protocol": "./src/protocol/index.ts"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --coverage"
   },

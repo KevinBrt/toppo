@@ -4,22 +4,23 @@ Toppo is an open-source (AGPL-3.0), self-hosted issue tracker. The code is publi
 
 ## Commands
 
-| Command                      | What it does                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------------- |
-| `npm run setup`              | Once after cloning: enables the git hooks in `.githooks/`                                         |
-| `npm run dev`                | Dev PostgreSQL (Docker) + server on :3000 + Vite on :5173                                         |
-| `npm run check`              | **Everything CI runs** except e2e. Must pass before calling a task done                           |
-| `npm test`                   | Unit, integration (real PostgreSQL) and browser component tests                                   |
-| `npm run test:e2e`           | Builds, then runs Playwright (desktop + phone) against the built server                           |
-| `npm run lint` / `lint:fix`  | Biome (code) + Prettier (Markdown, YAML)                                                          |
-| `npm run typecheck`          | TypeScript 7 (`tsc`) in every workspace                                                           |
-| `npm run check:conventions`  | Project rules the linter cannot express (`scripts/src/conventions`)                               |
-| `npm run check:dependencies` | Package boundaries, exact versions, lockfile, licenses                                            |
-| `npm run db:up` / `db:down`  | Start or stop the dev database and the in-memory test server                                      |
-| `npm run perf:issues`        | Query plans of the issue list and search on 100,000 issues (docs/performance.md)                  |
-| `npm run db:snapshot`        | At each release adding a migration, `-- <version>`: the database it leaves, for the upgrade tests |
-| `npm run docs:screenshots`   | Rebuilds the README's screenshots (`docs/images/`) from a filled instance                         |
-| `npm run docs:dev`           | The documentation site (`docs/`, VitePress), English and French, as you write it                  |
+| Command                       | What it does                                                                                         |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `npm run setup`               | Once after cloning: enables the git hooks in `.githooks/`                                            |
+| `npm run dev`                 | Dev PostgreSQL (Docker) + server on :3000 + Vite on :5173                                            |
+| `npm run check`               | **Everything CI runs** except e2e. Must pass before calling a task done                              |
+| `npm test`                    | Unit, integration (real PostgreSQL) and browser component tests                                      |
+| `npm run test:e2e`            | Builds, then runs Playwright (desktop + phone) against the built server                              |
+| `npm run lint` / `lint:fix`   | Biome (code) + Prettier (Markdown, YAML)                                                             |
+| `npm run typecheck`           | TypeScript 7 (`tsc`) in every workspace                                                              |
+| `npm run check:conventions`   | Project rules the linter cannot express (`scripts/src/conventions`)                                  |
+| `npm run check:dependencies`  | Package boundaries, exact versions, lockfile, licenses                                               |
+| `npm run db:up` / `db:down`   | Start or stop the dev database and the in-memory test server                                         |
+| `npm run perf:issues`         | Query plans of the issue list and search on 100,000 issues (docs/performance.md)                     |
+| `npm run db:snapshot`         | At each release adding a migration, `-- <version>`: the database it leaves, for the upgrade tests    |
+| `npm run docs:screenshots`    | Rebuilds the README's screenshots (`docs/images/`) from a filled instance                            |
+| `npm run docs:dev`            | The documentation site (`docs/`, VitePress), English and French, as you write it                     |
+| `npm run plugin-packages:try` | Packs the plugin packages as npm will publish them, then starts, tests and builds a plugin with them |
 
 Run one workspace: `npm test --workspace=@toppo-tracker/core`, or `npx vitest run src/foo.test.ts` inside it. Node 24 (`.nvmrc`) and Docker are required.
 

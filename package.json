@@ -36,6 +36,9 @@
     "check:dependencies": "node scripts/src/check-dependencies.ts",
     "perf:issues": "npm run build --workspace=@toppo-tracker/server && node scripts/src/perf/explain-issues.ts",
     "docs:dev": "npm run serve --workspace=@toppo-tracker/docs",
+    "plugin-packages:pack": "node scripts/src/packages/pack-plugin-packages.ts",
+    "plugin-packages:try": "node scripts/src/packages/try-plugin-packages.ts",
+    "plugin-packages:publish": "node scripts/src/packages/publish-plugin-packages.ts",
     "docs:screenshots": "npm run build && npm run screenshots --workspace=@toppo-tracker/e2e",
     "db:snapshot": "npm run build --workspace=@toppo-tracker/server && node scripts/src/upgrades/capture-snapshot.ts",
     "check": "npm run lint && npm run check:conventions && npm run check:dependencies && npm run typecheck && npm run test && npm run build"

@@ -46,6 +46,8 @@ export const ALLOWED_WORKSPACE_DEPENDENCIES: Readonly<Record<string, readonly st
     '@toppo-tracker/plugin-ui',
   ],
   '@toppo-tracker/cli': ['@toppo-tracker/plugin-sdk'],
+  // Published under MIT: starts a plugin, of the SDK's version.
+  '@toppo-tracker/create-plugin': ['@toppo-tracker/plugin-sdk'],
   '@toppo-tracker/e2e': [],
   '@toppo-tracker/scripts': [],
   '@toppo-tracker/docs': [],

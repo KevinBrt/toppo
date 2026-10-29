@@ -1,6 +1,6 @@
 {
   "name": "@toppo-tracker/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "The toppo command: Toppo's tools for the command line, starting with building plugins.",
   "license": "MIT",
@@ -9,11 +9,12 @@
     "toppo": "./src/main.ts"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@toppo-tracker/plugin-sdk": "0.0.0",
+    "@toppo-tracker/plugin-sdk": "0.1.0",
     "fflate": "0.8.3",
     "rolldown": "1.2.15"
   },

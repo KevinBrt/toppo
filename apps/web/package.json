@@ -20,7 +20,7 @@
     "@tiptap/react": "3.32.0",
     "@tiptap/starter-kit": "3.32.0",
     "@toppo-tracker/core": "0.0.0",
-    "@toppo-tracker/plugin-sdk": "0.0.0",
+    "@toppo-tracker/plugin-sdk": "0.1.0",
     "@toppo-tracker/shared": "0.0.0",
     "@toppo-tracker/ui": "0.0.0",
     "get-nonce": "1.0.1",
