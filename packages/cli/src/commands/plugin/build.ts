@@ -13,7 +13,7 @@ import {
 } from '@toppo-tracker/plugin-sdk/protocol';
 import { strToU8, zipSync } from 'fflate';
 import type { CliCommand } from '../../command.ts';
-import { BuildError, bundle, manifestOf } from './bundle.ts';
+import { BuildError, bundle, bundleScreens, manifestOf } from './bundle.ts';
 
 const versionSchema = z.string().regex(PLUGIN_VERSION, 'a version such as 1.2.0');
 
@@ -65,25 +65,41 @@ export function checkLogo(name: PluginLogo, bytes: Uint8Array): void {
   }
 }
 
+/** A bundle's bytes, refused past what Toppo takes. */
+function sized(what: string, code: string, max: number): Uint8Array {
+  const bytes = strToU8(code);
+  if (bytes.length > max) {
+    throw new BuildError(
+      `The ${what} weighs ${Math.ceil(bytes.length / 1024)} KB: Toppo takes at most ${max / 1024} KB`,
+    );
+  }
+  return bytes;
+}
+
 /**
- * The zip of a server bundle, its version and its logo, if it has one, refused if Toppo would
- * refuse its size.
+ * The zip of a server bundle, its version, its screens' bundle and its logo, if it has them,
+ * refused if Toppo would refuse their size.
  */
 export function packagePlugin(
   code: string,
   version: string,
   logo?: { name: PluginLogo; bytes: Uint8Array },
+  screens?: string,
 ): Uint8Array {
-  const server = strToU8(code);
-  if (server.length > PLUGIN_PACKAGE_LIMITS.serverBytes) {
-    throw new BuildError(
-      `The server bundle weighs ${Math.ceil(server.length / 1024)} KB: Toppo takes at most ${PLUGIN_PACKAGE_LIMITS.serverBytes / 1024} KB`,
-    );
-  }
+  const server = sized('server bundle', code, PLUGIN_PACKAGE_LIMITS.serverBytes);
   return zipSync(
     {
       [PLUGIN_PACKAGE_FILES.server]: server,
       [PLUGIN_PACKAGE_FILES.metadata]: strToU8(JSON.stringify({ version })),
+      ...(screens === undefined
+        ? {}
+        : {
+            [PLUGIN_PACKAGE_FILES.web]: sized(
+              'screens’ bundle',
+              screens,
+              PLUGIN_PACKAGE_LIMITS.webBytes,
+            ),
+          }),
       // Already compressed: zipping it again would only cost time.
       ...(logo ? { [logo.name]: [logo.bytes, { level: 0 }] } : {}),
     },
@@ -93,8 +109,8 @@ export function packagePlugin(
 
 /**
  * Bundles a plugin, checks it as Toppo will, and writes the zip an administrator uploads: its
- * server bundle, its version, and its logo. Nothing in it says what the plugin may do: Toppo asks
- * its code.
+ * server bundle, its version, its screens' bundle when it has pages or panels, and its logo.
+ * Nothing in it says what the plugin may do: Toppo asks its code.
  */
 export async function buildPlugin(
   directory: string,
@@ -106,7 +122,9 @@ export async function buildPlugin(
   const logo = manifest.logo
     ? { name: manifest.logo, bytes: await logoOf(directory, manifest.logo) }
     : undefined;
-  const archive = packagePlugin(code, version, logo);
+  const screens =
+    manifest.pages.length + manifest.panels.length > 0 ? await bundleScreens(directory) : undefined;
+  const archive = packagePlugin(code, version, logo, screens);
   await mkdir(outDirectory, { recursive: true });
   const file = join(outDirectory, `${manifest.id}-${version}.zip`);
   await writeFile(file, archive);
@@ -146,6 +164,12 @@ export const buildCommand: CliCommand = {
       io.out(`  adds permissions: ${listed(Object.keys(manifest.permissions))}`);
       io.out(`  actions: ${listed(manifest.actions.map((action) => action.name))}`);
       io.out(`  events: ${listed(manifest.events)}`);
+      io.out(
+        `  screens: ${listed([
+          ...manifest.pages.map((page) => `${page.name} (${page.zone})`),
+          ...manifest.panels.map((panel) => `${panel.name} (${panel.on})`),
+        ])}`,
+      );
       return 0;
     } catch (error) {
       if (error instanceof BuildError) {

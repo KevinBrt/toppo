@@ -20,12 +20,15 @@ export interface PluginPackage {
   code: string;
   /** Its logo, as the package holds it: what it is, its manifest is to say (`logoOf`). */
   logo?: { name: PluginLogo; bytes: Uint8Array };
+  /** Whether it holds its screens' bundle, which its pages and panels need. */
+  hasScreens: boolean;
 }
 
 /** Each file a zip may hold, with its size once unpacked, at most. */
 const FILE_LIMITS: ReadonlyMap<string, number> = new Map([
   [PLUGIN_PACKAGE_FILES.server, PLUGIN_PACKAGE_LIMITS.serverBytes],
   [PLUGIN_PACKAGE_FILES.metadata, PLUGIN_PACKAGE_LIMITS.metadataBytes],
+  [PLUGIN_PACKAGE_FILES.web, PLUGIN_PACKAGE_LIMITS.webBytes],
   ...PLUGIN_LOGO_FILES.map((name) => [name, PLUGIN_PACKAGE_LIMITS.logoBytes] as const),
 ]);
 
@@ -42,7 +45,8 @@ function invalid(reason: string): HttpError {
 }
 
 /**
- * Opens a zip uploaded as a plugin: `server.js` and `plugin.json`, perhaps a logo, nothing else,
+ * Opens a zip uploaded as a plugin: `server.js` and `plugin.json`, perhaps a logo and its screens'
+ * `web.js`, nothing else,
  * none twice, each within its limit once unpacked. Paths are compared whole, so none can lead
  * elsewhere.
  */
@@ -66,7 +70,14 @@ export function openPluginPackage(zip: Uint8Array): PluginPackage {
     version: versionOf(metadata),
     code: textOf(server, PLUGIN_PACKAGE_FILES.server),
     ...(logo ? { logo } : {}),
+    hasScreens: files.has(PLUGIN_PACKAGE_FILES.web),
   };
+}
+
+/** The screens' bundle of a package kept, as its frames load it; `undefined` when it has none. */
+export function screensOf(zip: Uint8Array): string | undefined {
+  const web = unpack(zip).get(PLUGIN_PACKAGE_FILES.web);
+  return web === undefined ? undefined : textOf(web, PLUGIN_PACKAGE_FILES.web);
 }
 
 function unpack(zip: Uint8Array): Map<string, Uint8Array> {

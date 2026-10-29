@@ -3,7 +3,7 @@ import { PLUGIN_PACKAGE_LIMITS } from '@toppo-tracker/plugin-sdk/protocol';
 import { strToU8, Zip, ZipPassThrough, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { HttpError } from '../../http/http-error.ts';
-import { openPluginPackage } from './open-package.ts';
+import { openPluginPackage, screensOf } from './open-package.ts';
 import { testBundle, testManifest, testPackage } from './test-package.ts';
 
 const VERSION = strToU8('{"version":"1.2.0"}');
@@ -48,7 +48,20 @@ describe('a plugin package', () => {
       sha256: createHash('sha256').update(zip).digest('hex'),
       version: '1.2.0',
       code: testBundle(testManifest()),
+      hasScreens: false,
     });
+    expect(screensOf(zip)).toBeUndefined();
+  });
+
+  it('keeps its screens’ bundle, within its weight', () => {
+    const zip = testPackage({ screens: '/* screens */' });
+
+    expect(openPluginPackage(zip).hasScreens).toBe(true);
+    expect(screensOf(zip)).toBe('/* screens */');
+    const heavy = new Uint8Array(PLUGIN_PACKAGE_LIMITS.webBytes + 1);
+    expect(
+      refusalOf(zipSync({ 'server.js': BUNDLE, 'plugin.json': VERSION, 'web.js': heavy })),
+    ).toMatch(/web\.js unpacks to more than 5242880 bytes/);
   });
 
   it.each([

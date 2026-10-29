@@ -327,6 +327,22 @@ export {
   unreadNotificationsResponseSchema,
 } from './notifications.ts';
 export {
+  type IssuePanelsResponse,
+  issuePanelsResponseSchema,
+  type PeopleResponse,
+  type PluginPlacedScreensResponse,
+  type PluginScreen,
+  type PluginScreensResponse,
+  peopleQuerySchema,
+  peopleResponseSchema,
+  pluginPlacedScreensResponseSchema,
+  pluginScreenSchema,
+  pluginScreensResponseSchema,
+  screenFrameParamsSchema,
+  screenFrameQuerySchema,
+  screenNameSchema,
+} from './plugins/plugin-screens.ts';
+export {
   type ApprovePluginRequest,
   approvePluginRequestSchema,
   FAILURES_BEFORE_DISABLING,

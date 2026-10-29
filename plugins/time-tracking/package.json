@@ -11,12 +11,18 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@toppo-tracker/plugin-sdk": "0.0.0"
+    "@toppo-tracker/plugin-sdk": "0.0.0",
+    "@toppo-tracker/plugin-ui": "0.0.0"
   },
   "devDependencies": {
     "@toppo-tracker/cli": "0.0.0",
     "@toppo-tracker/plugin-testing": "0.0.0",
+    "@types/react": "19.3.0",
     "@vitest/coverage-v8": "5.0.5",
+    "react": "19.3.1",
     "vitest": "5.0.5"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
   }
 }

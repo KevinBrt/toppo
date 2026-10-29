@@ -136,6 +136,28 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   await expect(sidebar.getByText('1 h 30')).toBeVisible();
   await expect(sidebar.getByRole('spinbutton', { name: 'Time spent' })).toHaveCount(0);
 
+  // Beside the issue, the plugin's panel, in a frame of its own: its entries, and a form to log more.
+  const panel = page.getByRole('region', { name: 'Time spent' }).frameLocator('iframe');
+  await expect(panel.getByText('1 h 30').first()).toBeVisible();
+  await panel.getByRole('spinbutton', { name: 'Minutes' }).fill('45');
+  await panel.getByRole('button', { name: 'Log time' }).click();
+  await expect(panel.getByText('Time logged.')).toBeVisible();
+  await expect(panel.getByText('2 h 15')).toBeVisible();
+  await expect(sidebar.getByText('2 h 15')).toBeVisible();
+  await expectAccessible(page);
+
+  // Across its projects, a page of its own in the main sidebar: the time against each budget.
+  await page
+    .getByRole('navigation', { name: 'Main navigation' })
+    .getByRole('link', { name: 'Time', exact: true })
+    .click();
+  const report = page.frameLocator('iframe[title="Time"]');
+  await expect(report.getByRole('heading', { level: 1, name: 'Time' })).toBeVisible();
+  await expect(report.getByRole('row', { name: new RegExp(key) })).toContainText('Within budget');
+  await report.getByRole('combobox', { name: 'Project' }).selectOption({ label: key });
+  await expect(page).toHaveURL(/project=/);
+  await expectAccessible(page);
+
   const outside = await page.request.post(LOG_TIME, {
     headers: { origin },
     data: { issueId: elsewhere, minutes: 90, spentOn: '2026-10-28' },

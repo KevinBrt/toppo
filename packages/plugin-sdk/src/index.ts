@@ -15,7 +15,7 @@ export {
   type RecordWhere,
 } from './entity.ts';
 export type { PluginFailure } from './failure.ts';
-export type { MessageKey, MessageParams, MessagesOf } from './messages.ts';
+export { type MessageKey, type MessageParams, type MessagesOf, translate } from './messages.ts';
 export {
   type Access,
   type Action,
@@ -24,6 +24,7 @@ export {
   type PermissionDefinitions,
   type Plugin,
   type PluginConfig,
+  type ScreenAccess,
 } from './plugin.ts';
 export {
   defineProperty,
@@ -36,6 +37,8 @@ export {
 export type { IssueDetails, PluginNeed } from './protocol/calls.ts';
 export type { RecordGroup } from './protocol/declarations/entities.ts';
 export type { PluginPropertyType, PropertyDisplay } from './protocol/declarations/properties.ts';
+export type { PageZone, PanelPlace, ScreenIcon } from './protocol/declarations/screens.ts';
 export type { DeletedIssue, EventPayload, EventType, IssueSnapshot } from './protocol/events.ts';
 export type { Messages } from './protocol/manifest.ts';
 export type { Locale } from './protocol/run.ts';
+export type { Page, Panel, ScreenComponent, ServedScreens } from './screens/screens.ts';

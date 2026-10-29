@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
 import { checkEntities, entitiesSchema } from './declarations/entities.ts';
 import { checkProperties, propertiesSchema } from './declarations/properties.ts';
+import { checkScreens, pagesSchema, panelsSchema } from './declarations/screens.ts';
 import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './declarations/settings.ts';
 import { EVENT_TYPES } from './events.ts';
 import { PLUGIN_LOGO_FILES } from './package.ts';
@@ -106,11 +107,15 @@ export const manifestSchema = z
     actions: z
       .array(z.strictObject({ name: nameSchema, access: accessSchema, input: jsonSchema }))
       .max(PLUGIN_LIMITS.actions),
+    /** Its pages and panels, drawn in frames of their own; none for a plugin before screens. */
+    pages: pagesSchema.default([]),
+    panels: panelsSchema.default([]),
     events: z.array(z.enum(EVENT_TYPES)).max(EVENT_TYPES.length),
   })
   .superRefine(checkIssueActions)
   .superRefine(checkSettings)
   .superRefine(checkEntities)
-  .superRefine(checkProperties);
+  .superRefine(checkProperties)
+  .superRefine(checkScreens);
 
 export type Manifest = z.infer<typeof manifestSchema>;

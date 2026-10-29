@@ -71,6 +71,8 @@ import { registerPackageRoutes } from './platform/plugins/packages/package-route
 import type { PackageStore } from './platform/plugins/packages/package-store.ts';
 import { packageSweepJob } from './platform/plugins/packages/package-sweeper.ts';
 import type { PluginRuntime } from './platform/plugins/runtime/plugin-runtime.ts';
+import type { ScreenBundles, ScreenRuntime } from './platform/plugins/screens/screen-files.ts';
+import { registerScreenRoutes } from './platform/plugins/screens/screen-routes.ts';
 import { createReleaseFeed } from './platform/updates/release-feed.ts';
 import { registerFileRoutes } from './platform/uploads/file-routes.ts';
 import type { FileStorage } from './platform/uploads/file-storage.ts';
@@ -93,6 +95,8 @@ export interface AppDependencies {
     workerUrl: URL;
     /** The sandboxes of this server process, closed with the app. */
     runtime: PluginRuntime;
+    /** Plugins' screens: their bundles, and the runtime that draws them, when it is built. */
+    screens: { bundles: ScreenBundles; runtime: ScreenRuntime | undefined };
   };
   /** Directory of the compiled web app. Not configurable: it ships inside the image. */
   webRoot: string;
@@ -195,6 +199,10 @@ export function createServices({
       checkSettings: createSettingsChecker(plugins.workerUrl),
       runtime: plugins.runtime,
       calls: createHostCalls(),
+      screens: {
+        bundles: plugins.screens.bundles,
+        runtimeVersion: plugins.screens.runtime?.version ?? null,
+      },
     },
   };
 }
@@ -279,6 +287,7 @@ export async function buildApp({
     }),
   });
   registerFileRoutes(app, { files });
+  registerScreenRoutes(app, plugins.screens);
   registerPackageRoutes(app);
   app.addHook('onClose', () => plugins.runtime.close());
   app.addHook('onRequest', (request, reply, done) => {

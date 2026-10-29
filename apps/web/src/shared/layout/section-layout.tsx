@@ -1,17 +1,21 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { useI18n } from '../i18n/i18n-provider.tsx';
-import type { NavSection } from './navigation.constants.ts';
+import type { AddedNavSection, NavSection } from './navigation.constants.ts';
 
 /**
  * A part of the app with its own navigation, like the settings or a project's: a column beside
  * the page on wide screens, a row of links above it on smaller ones. Links keep the current path
  * parameters, so a project's sections stay in that project.
  */
+const LINK_CLASS =
+  'flex min-h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground pointer-coarse:min-h-11 data-[status=active]:bg-primary-subtle data-[status=active]:text-primary-subtle-foreground';
+
 export function SectionLayout({
   label,
   header,
   sections,
+  addedSections = [],
   children,
 }: {
   /** Accessible name of the navigation. */
@@ -19,11 +23,13 @@ export function SectionLayout({
   /** Shown above the links in the column, e.g. what the section is about; hidden on small screens. */
   header?: ReactNode;
   sections: readonly NavSection[];
+  /** Entries after the part's own: plugins' pages. */
+  addedSections?: readonly AddedNavSection[];
   children: ReactNode;
 }) {
   const { t } = useI18n();
 
-  if (sections.length === 0) {
+  if (sections.length === 0 && addedSections.length === 0) {
     return children;
   }
   return (
@@ -50,9 +56,25 @@ export function SectionLayout({
                       to={to}
                       params={true}
                       activeOptions={{ exact: exact === true }}
-                      className="flex min-h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground pointer-coarse:min-h-11 data-[status=active]:bg-primary-subtle data-[status=active]:text-primary-subtle-foreground"
+                      className={LINK_CLASS}
                     >
                       {t(labelKey)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          {addedSections.map((section) => (
+            <div key={section.key} className="lg:mb-5">
+              <p className="hidden px-3 pb-2 text-xs font-medium text-muted-foreground lg:block">
+                {section.label}
+              </p>
+              <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+                {section.items.map(({ key, label: entry, to, params }) => (
+                  <li key={key} className="shrink-0">
+                    <Link to={to} params={params} className={LINK_CLASS}>
+                      {entry}
                     </Link>
                   </li>
                 ))}

@@ -6,6 +6,7 @@ import type { PluginNeed } from './protocol/calls.ts';
 import type { EventType } from './protocol/events.ts';
 import type { accessSchema, Messages } from './protocol/manifest.ts';
 import type { PluginLogo } from './protocol/package.ts';
+import type { PageDefinition, PanelDefinition } from './screens/screens.ts';
 
 /** What `definePlugin` keeps of a plugin, for `servePlugin` to answer Toppo with. */
 export interface PluginDefinition {
@@ -34,6 +35,9 @@ export interface PluginDefinition {
     }
   >;
   events: Map<EventType, (ctx: Context<z.ZodType, Messages>, payload: unknown) => Promise<void>>;
+  /** Its screens, by name, in the order they were defined. */
+  pages: Map<string, PageDefinition>;
+  panels: Map<string, PanelDefinition>;
 }
 
 const definitions = new WeakMap<object, PluginDefinition>();

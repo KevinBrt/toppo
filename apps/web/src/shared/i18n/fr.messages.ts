@@ -1167,6 +1167,9 @@ export const fr: Messages = {
     permissionsDescription:
       'Les rôles les donnent à leurs membres comme celles de Toppo, dans Rôles et permissions.',
     permissionsNone: 'Il n’ajoute aucune permission.',
+    screenLeft: 'Cet écran du plugin a tenté de quitter Toppo : il a été fermé.',
+    screenNotFound: 'Cette page de plugin n’existe pas, ou vous ne pouvez pas l’ouvrir.',
+    screensLoading: 'Chargement…',
     propertiesTitle: 'Propriétés qu’il ajoute',
     propertiesDescription:
       'Des champs des tickets, dans les projets où il agit, nommés ainsi une fois approuvé : renommez-les à votre guise dans Propriétés des tickets.',

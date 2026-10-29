@@ -8,6 +8,8 @@ import { PaletteButton } from '../../features/issues/components/palette/palette-
 import type { PaletteCommand } from '../../features/issues/models/palette.model.ts';
 import { lastProject } from '../../features/issues/utils/last-project.util.ts';
 import { NotificationBell } from '../../features/notifications/components/notification-bell.tsx';
+import { PluginsQueries } from '../../features/plugins/queries/plugins.queries.ts';
+import { pluginNavSections } from '../../features/plugins/utils/plugin-nav.util.ts';
 import { AccountFooter } from '../../features/session/components/account-footer.tsx';
 import { loadSession, SessionQueries } from '../../features/session/queries/session.queries.ts';
 import { AppVersion } from '../../features/updates/components/app-version.tsx';
@@ -38,10 +40,15 @@ export const protectedRoute = createRoute({
 
 function ProtectedLayout() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   // From the cache rather than the route context, so a refreshed role shows without navigating.
   const { data: user } = useQuery(SessionQueries.currentUser);
   const audience = user ?? { permissions: [] };
+  const { data: screens } = useQuery(PluginsQueries.screens);
+  const pluginSections = pluginNavSections(screens?.main ?? [], locale, (screen) => ({
+    to: '/p/$pluginSlug/$screen',
+    params: { pluginSlug: screen.pluginSlug, screen: screen.name },
+  }));
   const [searching, setSearching] = useState(false);
 
   // ⌘K or Ctrl K, wherever the focus is: the one shortcut of the application.
@@ -83,6 +90,7 @@ function ProtectedLayout() {
     <>
       <AppShell
         audience={audience}
+        addedSections={pluginSections}
         sidebarFooter={({ onNavigate }) => (
           <>
             <UpdateNotice enabled={can(audience.permissions, 'instance.settings.manage')} />

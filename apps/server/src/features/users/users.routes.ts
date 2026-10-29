@@ -3,6 +3,8 @@ import {
   changeUserRoleRequestSchema,
   membersQuerySchema,
   membersResponseSchema,
+  peopleQuerySchema,
+  peopleResponseSchema,
   pickerQuerySchema,
   userIdParamsSchema,
   userProjectAccessRequestSchema,
@@ -21,12 +23,13 @@ import { setUserProjectAccess } from './commands/projects/set-user-project-acces
 import { reactivateUser } from './commands/reactivate-user.command.ts';
 import { listAssignableRoles } from './queries/list-assignable-roles.query.ts';
 import { listMembers } from './queries/list-members.query.ts';
+import { listPeople } from './queries/list-people.query.ts';
 import { listUserProjects } from './queries/list-user-projects.query.ts';
 
 /** Commands answer `204 No Content`: the client refetches what it shows. */
 const NO_CONTENT = { 204: z.void() };
 
-/** Members of the instance, managed by holders of `instance.users.manage`. */
+/** Members of the instance, managed by holders of `instance.users.manage`; people by name. */
 export function registerUserRoutes(app: FastifyInstance): void {
   const routes = app.withTypeProvider<ZodTypeProvider>();
 
@@ -37,6 +40,15 @@ export function registerUserRoutes(app: FastifyInstance): void {
       schema: { querystring: membersQuerySchema, response: { 200: membersResponseSchema } },
     },
     (request) => listMembers.execute(request.executionContext, request.query),
+  );
+
+  routes.get(
+    '/api/v1/people',
+    {
+      config: { access: listPeople.access },
+      schema: { querystring: peopleQuerySchema, response: { 200: peopleResponseSchema } },
+    },
+    (request) => listPeople.execute(request.executionContext, request.query),
   );
 
   routes.get(

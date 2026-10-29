@@ -43,7 +43,14 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] indexes: typed slots to filter, sort and sum on a record's own fields;
     - [x] properties of issues, typed in or computed by a plugin;
     - [x] `plugins/time-tracking` keeps time entries and writes each issue's time spent.
-  - [ ] **3. Interface**: plugins' screens in sandboxed frames, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page.
+  - [ ] **3. Interface**:
+    - [x] screens in frames without an origin, served by Toppo with its runtime, and the bridge;
+    - [x] `@toppo-tracker/plugin-ui`: components, `useActionQuery`, `useActionMutation`, `useScreen`, `usePeople`, `useT`;
+    - [x] pages in the main sidebar, the settings and a project's settings, and panels on an issue;
+    - [x] `plugins/time-tracking`: the issue panel, and a page of the time spent by project against its budget;
+    - [ ] the `project` zone, with a project's home page;
+    - [ ] pages with typed parameters, several entries of one page;
+    - [ ] dialogs, menus and side panels opened by Toppo outside the frame; pickers of people and issues; charts.
   - [ ] **4. Beyond the instance**: routes, `ctx.crypto`, outbound HTTP, recurring jobs.
   - [ ] Publish the packages to npm from GitHub Actions, once steps 1 to 3 are done.
 - [ ] Webhooks, then the GitHub integration, in the core, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature.

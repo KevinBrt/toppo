@@ -2,6 +2,20 @@
  * The protocol Toppo and a plugin speak, defined once for both: Toppo checks with these schemas
  * what a plugin declares and asks, and the SDK answers with them.
  */
+
+export {
+  type FrameMessage,
+  frameMessageSchema,
+  type HostMessage,
+  hostMessageSchema,
+  SCREEN_RUNTIME_GLOBAL,
+  type ScreenContext,
+  type ScreenFailure,
+  type ScreenSearch,
+  type ScreenTarget,
+  screenFailureSchema,
+  screenSearchSchema,
+} from './bridge.ts';
 export {
   type FieldCondition,
   HOST_CALLS,
@@ -54,6 +68,25 @@ export {
   pluginPropertySchema,
   propertiesSchema,
 } from './declarations/properties.ts';
+export {
+  checkScreens,
+  PAGE_ZONES,
+  PANEL_PLACES,
+  type PageDeclaration,
+  type PageZone,
+  type PanelDeclaration,
+  type PanelPlace,
+  pageSchema,
+  pagesSchema,
+  panelSchema,
+  panelsSchema,
+  SCREEN_ICONS,
+  SCREEN_LIMITS,
+  SCREEN_NAME,
+  type ScreenAccess,
+  type ScreenIcon,
+  screenAccessSchema,
+} from './declarations/screens.ts';
 export {
   NO_SETTINGS_SCHEMA,
   PLUGIN_SETTINGS_MAX,

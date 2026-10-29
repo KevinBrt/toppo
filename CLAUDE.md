@@ -34,10 +34,13 @@ Run one workspace: `npm test --workspace=@toppo-tracker/core`, or `npx vitest ru
 
 ```
 apps/server  → core, shared, db          apps/web → core, shared, ui
+             (+ plugin-sdk: the protocol)           (+ plugin-sdk: the screens' bridge)
 packages/core → shared only (pure: no I/O, no framework, no Date.now() without injection)
 packages/db   → shared, core             packages/ui → shared
-plugins/*     → plugin-sdk only          packages/testing → devDependency only
+plugins/*     → plugin-sdk, plugin-ui    packages/testing → devDependency only
                 (cli, plugin-testing: dev)
+packages/plugin-ui → plugin-sdk (MIT: types and relays to the runtime)
+packages/plugin-runtime → ui, plugin-sdk, plugin-ui (AGPL: served in screens' frames)
 ```
 
 Enforced by `check:dependencies` (allowed graph in `scripts/src/dependencies/rules.ts`) and Biome `noUndeclaredDependencies`. Import other workspaces by package name (`@toppo-tracker/core`), never by relative path.

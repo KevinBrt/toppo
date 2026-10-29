@@ -14,7 +14,11 @@ import {
   type PluginPackage,
 } from '../../../platform/plugins/packages/open-package.ts';
 import { fillRecordSlotsJob } from '../jobs/fill-record-slots.job.ts';
-import { declaredLogo, declaredManifest } from '../utils/declared-manifest.util.ts';
+import {
+  assertScreensBundled,
+  declaredLogo,
+  declaredManifest,
+} from '../utils/declared-manifest.util.ts';
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
 import { keepPluginProperties } from '../utils/properties/plugin-properties.util.ts';
 import { assignRecordSlots } from '../utils/records/record-slots.util.ts';
@@ -46,6 +50,7 @@ export const installPlugin = defineCommand({
     const opened = openPluginPackage(zip);
     const manifest = declaredManifest(await services.plugins.readManifest(opened.code, log), log);
     const logo = declaredLogo(manifest, opened);
+    assertScreensBundled(manifest, opened);
     const [installed] = await tx
       .select({
         id: plugins.id,

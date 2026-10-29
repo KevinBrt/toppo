@@ -91,6 +91,8 @@ import {
   type PendingInvitation,
   type PluginDetailsResponse,
   type PluginPermissionSection,
+  type PluginScreen,
+  type PluginScreensResponse,
   type PluginSettingValues,
   type PluginSummary,
   PROJECT_ACCESS_PAGE_SIZE,
@@ -206,6 +208,14 @@ export interface FakeServerState {
   refusedSettings: string[];
   /** The plugins at work in each project that take settings of it, by project key: none. */
   projectPlugins: Record<string, ProjectPlugin[]>;
+  /** The plugins' pages the signed-in user may open, in the sidebar and the settings: none. */
+  pluginScreens: PluginScreensResponse;
+  /** The tabs plugins add to each project's settings, by project key: none. */
+  projectScreens: Record<string, PluginScreen[]>;
+  /** The panels plugins show beside each issue, by issue key: none. */
+  issuePanels: Record<string, PluginScreen[]>;
+  /** What plugins' actions answer, by `slug/action`: none unless a test sets some. */
+  pluginActions: Record<string, FakeActionAnswer>;
   invitations: PendingInvitation[];
   /** The links the fake server made, by token, and what opening them shows. */
   invitationLinks: Map<string, InvitationLinkState>;
@@ -502,6 +512,11 @@ export function invitationToken(seed: number): string {
 /** A plugin as the fake server keeps it: as its page shows it. */
 export type FakePlugin = PluginDetailsResponse;
 
+/** What a plugin's action answers: its result, or a refusal in the plugin's own words. */
+export type FakeActionAnswer =
+  | { result: unknown }
+  | { refused: { code: string; params?: Record<string, string | number> } };
+
 /** How the server refuses a zip: `{ status: 422, code: 'PLUGIN_MANIFEST_INVALID' }`. */
 export interface FakePackageRefusal {
   status: number;
@@ -567,6 +582,10 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       pluginPackage: null,
       refusedSettings: [],
       projectPlugins: {},
+      pluginScreens: { main: [], settings: [] },
+      projectScreens: {},
+      issuePanels: {},
+      pluginActions: {},
       invitations: [],
       invitationLinks: new Map(),
       projects: [],
@@ -814,6 +833,8 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       );
     },
     'GET /api/v1/projects': (_body, search) => asSignedIn(state) ?? listProjects(state, search),
+    'GET /api/v1/plugin-screens': () => asSignedIn(state) ?? json(state.pluginScreens),
+    'GET /api/v1/people': (_body, search) => asSignedIn(state) ?? peopleNamed(state, search),
     'GET /api/v1/issues/assigned': (_body, search) =>
       asSignedIn(state) ?? listAssignedIssues(state, search),
     'GET /api/v1/issues/search': (_body, search) =>
@@ -848,7 +869,9 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
     const handler = routes[`${method} ${url.pathname}`];
     const answer = handler
       ? handler((body ?? {}) as Record<string, unknown>, url.searchParams)
-      : (attachmentRequest(state, method, url.pathname, body, new Headers(init?.headers)) ??
+      : // Before the projects': their paths would read `plugin-screens` as a project's part.
+        (pluginScreenRequest(state, method, url.pathname) ??
+        attachmentRequest(state, method, url.pathname, body, new Headers(init?.headers)) ??
         projectRequest(state, method, url.pathname, url.searchParams, body) ??
         issueRequest(state, method, url.pathname, url.searchParams, body) ??
         userProjects(state, method, url.pathname, url.searchParams, body) ??
@@ -3569,4 +3592,67 @@ function approveFakePlugin(state: FakeServerState, plugin: FakePlugin, body: unk
     approval: { by: { id: state.user.id, name: state.user.name }, at: requestTime },
   });
   return NO_CONTENT();
+}
+
+const PLUGIN_SCREENS_PATH =
+  /^\/api\/v1\/(?:projects\/([^/]+)\/plugin-screens|issues\/([^/]+)\/plugin-panels|plugins\/([^/]+)\/actions\/([^/]+))$/;
+
+/**
+ * `GET /api/v1/projects/:key/plugin-screens`, `GET /api/v1/issues/:key/plugin-panels` and
+ * `POST /api/v1/plugins/:slug/actions/:action`: what plugins' screens show and run, as the test
+ * set it, in what the signed-in user sees.
+ */
+function pluginScreenRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+): Response | undefined {
+  const match = PLUGIN_SCREENS_PATH.exec(path);
+  if (!match) {
+    return undefined;
+  }
+  const [, projectKey, issueKey, slug, action] = match;
+  if (issueKey !== undefined && method === 'GET') {
+    const seen = seenIssue(state, issueKey);
+    return seen instanceof Response
+      ? seen
+      : json({
+          screens: state.issuePanels[issueKey] ?? [],
+          issue: {
+            id: '01a1569b-9900-7000-8000-000000000700',
+            key: issueKey,
+            projectId: seen.project.id,
+            projectKey: seen.project.key,
+          },
+        });
+  }
+  if (projectKey !== undefined && method === 'GET') {
+    return state.projects.some((project) => project.key === projectKey)
+      ? json({ screens: state.projectScreens[projectKey] ?? [] })
+      : apiError(404, 'PROJECT_NOT_FOUND');
+  }
+  return method === 'POST' ? runFakeAction(state, `${slug}/${action}`) : undefined;
+}
+
+/** A plugin's action, run as the test said it answers. */
+function runFakeAction(state: FakeServerState, action: string): Response {
+  const answer = state.pluginActions[action];
+  if (!answer) {
+    return asSignedIn(state) ?? apiError(404, 'PLUGIN_ACTION_NOT_FOUND');
+  }
+  if ('refused' in answer) {
+    return json(
+      { error: { code: 'PLUGIN_REFUSED', message: 'The plugin refused', plugin: answer.refused } },
+      422,
+    );
+  }
+  return json({ result: answer.result });
+}
+
+/** `GET /api/v1/people?ids=`: the names of the accounts asked for that the fake server knows. */
+function peopleNamed(state: FakeServerState, search: URLSearchParams): Response {
+  const ids = (search.get('ids') ?? '').split(',');
+  return json({
+    people: state.users.filter(({ id }) => ids.includes(id)).map(({ id, name }) => ({ id, name })),
+  });
 }

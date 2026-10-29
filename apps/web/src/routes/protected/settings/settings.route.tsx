@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Outlet } from '@tanstack/react-router';
 import { canAny } from '@toppo-tracker/core';
+import { PluginsQueries } from '../../../features/plugins/queries/plugins.queries.ts';
+import { pluginNavSections } from '../../../features/plugins/utils/plugin-nav.util.ts';
 import { SessionQueries } from '../../../features/session/queries/session.queries.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';
 import { AccessDenied } from '../../../shared/layout/access-denied.tsx';
@@ -19,11 +21,17 @@ export const settingsRoute = createRoute({
 });
 
 function SettingsLayout() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { data: user } = useQuery(SessionQueries.currentUser);
   const permissions = user?.permissions ?? [];
+  const { data: screens } = useQuery(PluginsQueries.screens);
+  // A section per plugin with pages here, named after it, after Toppo's own.
+  const pluginSections = pluginNavSections(screens?.settings ?? [], locale, (screen) => ({
+    to: '/settings/p/$pluginSlug/$screen',
+    params: { pluginSlug: screen.pluginSlug, screen: screen.name },
+  }));
 
-  if (!canAny(permissions, SETTINGS_PERMISSIONS)) {
+  if (!canAny(permissions, SETTINGS_PERMISSIONS) && pluginSections.length === 0) {
     return (
       <Page title={t('nav.settings')}>
         <AccessDenied />
@@ -34,6 +42,7 @@ function SettingsLayout() {
     <SectionLayout
       label={t('settings.navLabel')}
       sections={visibleSections(SETTINGS_NAV, { permissions })}
+      addedSections={pluginSections}
     >
       <Outlet />
     </SectionLayout>

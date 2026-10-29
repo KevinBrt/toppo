@@ -23,6 +23,7 @@ import type { HostCalls } from '../plugins/host-calls.ts';
 import type { ManifestReader, SettingsChecker } from '../plugins/packages/manifest-reader.ts';
 import type { PackageStore } from '../plugins/packages/package-store.ts';
 import type { PluginRuntime } from '../plugins/runtime/plugin-runtime.ts';
+import type { ScreenBundles } from '../plugins/screens/screen-files.ts';
 import type { ReleaseFeed } from '../updates/release-feed.ts';
 import type { FileStorage } from '../uploads/file-storage.ts';
 
@@ -57,6 +58,12 @@ export interface Services {
     runtime: Pick<PluginRuntime, 'run'>;
     /** What a plugin may ask Toppo, answered by the features that own each thing. */
     calls: HostCalls;
+    /** Plugins' screens: their bundles, read from their zips, and the runtime drawing them. */
+    screens: {
+      bundles: ScreenBundles;
+      /** The runtime's version, in its address; `null` when it is not built (some tests). */
+      runtimeVersion: string | null;
+    };
   };
 }
 

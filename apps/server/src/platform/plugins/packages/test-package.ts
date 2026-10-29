@@ -26,6 +26,8 @@ export function testManifest(overrides: Partial<Manifest> = {}): Manifest {
     },
     actions: [{ name: 'timeEntry.log', access: 'authenticated', input: {} }],
     events: ['issue.statusChanged'],
+    pages: [],
+    panels: [],
     ...overrides,
   };
 }
@@ -54,6 +56,7 @@ export function testPackage({
   version = '1.2.0',
   run,
   logo,
+  screens,
   files,
 }: {
   manifest?: unknown;
@@ -62,6 +65,8 @@ export function testPackage({
   run?: string;
   /** A file beside its bundle, which its manifest names `logo`, or not. */
   logo?: { name: PluginLogo; bytes: Uint8Array };
+  /** Its screens' bundle, `web.js`, if it has one. */
+  screens?: string;
   files?: Zippable;
 } = {}): Buffer {
   return Buffer.from(
@@ -70,6 +75,7 @@ export function testPackage({
         'server.js': strToU8(testBundle(manifest, run)),
         'plugin.json': strToU8(JSON.stringify({ version })),
         ...(logo ? { [logo.name]: logo.bytes } : {}),
+        ...(screens === undefined ? {} : { 'web.js': strToU8(screens) }),
       },
     ),
   );

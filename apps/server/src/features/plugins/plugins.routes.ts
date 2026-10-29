@@ -1,18 +1,24 @@
 import {
   approvePluginRequestSchema,
   installPluginResponseSchema,
+  issueKeyParamsSchema,
+  issuePanelsResponseSchema,
   PLUGIN_ACTION_INPUT_MAX_BYTES,
   PLUGIN_SETTINGS_MAX_BYTES,
   pluginActionParamsSchema,
   pluginActionRequestSchema,
   pluginActionResponseSchema,
   pluginDetailsResponseSchema,
+  pluginPlacedScreensResponseSchema,
+  pluginScreensResponseSchema,
   pluginSlugParamsSchema,
   pluginsResponseSchema,
   projectKeyParamsSchema,
   projectPluginParamsSchema,
   projectPluginsResponseSchema,
   savePluginSettingsRequestSchema,
+  screenFrameParamsSchema,
+  screenFrameQuerySchema,
   uninstallPluginQuerySchema,
 } from '@toppo-tracker/shared';
 import type { FastifyInstance } from 'fastify';
@@ -32,15 +38,20 @@ import { getPlugin } from './queries/get-plugin.query.ts';
 import { getPluginLogo } from './queries/get-plugin-logo.query.ts';
 import { listPlugins } from './queries/list-plugins.query.ts';
 import { listProjectPlugins } from './queries/list-project-plugins.query.ts';
+import { getScreenBundle } from './queries/screens/get-screen-bundle.query.ts';
+import { getScreenFrame } from './queries/screens/get-screen-frame.query.ts';
+import { listIssuePanels } from './queries/screens/list-issue-panels.query.ts';
+import { listPluginScreens } from './queries/screens/list-plugin-screens.query.ts';
+import { listProjectScreens } from './queries/screens/list-project-screens.query.ts';
 
 /** Commands answer `204 No Content`: the client refetches what it shows. */
 const NO_CONTENT = { 204: z.void() };
 
 /**
  * A plugin runs one thing at a time on a server: a client running actions without end would keep
- * it from everyone else.
+ * it from everyone else. Its screens read through its actions as they show, a few at a time.
  */
-const ACTION_RATE_LIMIT = { max: 60, windowSeconds: 60 };
+const ACTION_RATE_LIMIT = { max: 300, windowSeconds: 60 };
 
 /**
  * The plugins of the instance, named by their id: uploaded as a zip (`application/zip`), set up,
@@ -65,6 +76,67 @@ export function registerPluginRoutes(app: FastifyInstance): void {
       schema: { params: pluginSlugParamsSchema, response: { 200: pluginDetailsResponseSchema } },
     },
     (request) => getPlugin.execute(request.executionContext, request.params),
+  );
+
+  routes.get(
+    '/api/v1/plugin-screens',
+    {
+      config: { access: listPluginScreens.access },
+      schema: { response: { 200: pluginScreensResponseSchema } },
+    },
+    (request) => listPluginScreens.execute(request.executionContext, {}),
+  );
+
+  routes.get(
+    '/api/v1/projects/:projectKey/plugin-screens',
+    {
+      config: { access: listProjectScreens.access },
+      schema: {
+        params: projectKeyParamsSchema,
+        response: { 200: pluginPlacedScreensResponseSchema },
+      },
+    },
+    (request) => listProjectScreens.execute(request.executionContext, request.params),
+  );
+
+  routes.get(
+    '/api/v1/issues/:issueKey/plugin-panels',
+    {
+      config: { access: listIssuePanels.access },
+      schema: {
+        params: issueKeyParamsSchema,
+        response: { 200: issuePanelsResponseSchema },
+      },
+    },
+    (request) => listIssuePanels.execute(request.executionContext, request.params),
+  );
+
+  // A screen's frame, then its bundle: documents for the browser, outside the API.
+  routes.get(
+    '/plugin-screens/:pluginSlug/web.js',
+    {
+      config: { access: getScreenBundle.access },
+      schema: { params: pluginSlugParamsSchema },
+    },
+    async (request, reply) =>
+      reply.sendScreenBundle(
+        await getScreenBundle.execute(request.executionContext, request.params),
+      ),
+  );
+
+  routes.get(
+    '/plugin-screens/:pluginSlug/:screen',
+    {
+      config: { access: getScreenFrame.access },
+      schema: { params: screenFrameParamsSchema, querystring: screenFrameQuerySchema },
+    },
+    async (request, reply) =>
+      reply.sendScreenFrame(
+        await getScreenFrame.execute(request.executionContext, {
+          ...request.params,
+          ...request.query,
+        }),
+      ),
   );
 
   routes.get(

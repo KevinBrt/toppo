@@ -64,6 +64,7 @@ COPY --from=runtime-deps /src/node_modules ./node_modules
 COPY --from=runtime-deps /src/apps/server/node_modules ./apps/server/node_modules
 COPY --from=build /src/apps/server/dist ./apps/server/dist
 COPY --from=build /src/apps/web/dist ./apps/web/dist
+COPY --from=build /src/packages/plugin-runtime/dist ./packages/plugin-runtime/dist
 COPY --from=build /src/packages/db/migrations ./packages/db/migrations
 COPY --from=build --chown=65532:65532 /data-skeleton /data
 

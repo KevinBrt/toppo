@@ -112,6 +112,64 @@ describe('the types of a plugin', () => {
     expect(plugin.id).toBe('time-tracking');
   });
 
+  it('refuse screens Toppo could not place, title or open', () => {
+    const words = { name: 'Time', pages: { report: 'Time' }, panels: { time: 'Time spent' } };
+    const plugin = definePlugin({
+      id: 'time-tracking',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.0',
+      messages: { en: words, fr: words },
+      permissions: { 'reports.read': { scope: 'instance', label: 'pages.report' } },
+    });
+    const component = () => Promise.resolve(null);
+
+    plugin.definePage({
+      name: 'report',
+      // @ts-expect-error a place Toppo has no pages in
+      zone: 'sidebar',
+      access: 'authenticated',
+      title: 'pages.report',
+      component,
+    });
+    plugin.definePage({
+      name: 'audit',
+      zone: 'settings',
+      // @ts-expect-error a permission the plugin neither adds nor needs
+      access: { permission: 'reports.reed' },
+      title: 'pages.report',
+      component,
+    });
+    plugin.definePage({
+      name: 'budgets',
+      zone: 'main',
+      access: { permission: 'reports.read' },
+      // @ts-expect-error a title that is no message key
+      title: 'pages.reports',
+      // @ts-expect-error an icon Toppo does not draw
+      nav: { label: 'pages.report', icon: 'rocket' },
+      component,
+    });
+    plugin.definePanel({
+      name: 'time',
+      // @ts-expect-error a screen of Toppo's that has no panels
+      on: 'project',
+      access: 'authenticated',
+      title: 'panels.time',
+      component,
+    });
+
+    expect(
+      plugin.definePanel({
+        name: 'entries',
+        on: 'issue',
+        access: 'authenticated',
+        title: 'panels.time',
+        component,
+      }),
+    ).toStrictEqual({ name: 'entries', on: 'issue' });
+  });
+
   it('refuse records that do not fit their entity', () => {
     const name = { name: 'Time tracking' } as const;
     const timeEntry = defineEntity({

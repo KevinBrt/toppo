@@ -33,6 +33,49 @@ export const plugin = definePlugin({
       },
       permissions: { log: 'Log time' },
       properties: { timeSpent: 'Time spent' },
+      pages: {
+        report: {
+          title: 'Time',
+          nav: 'Time',
+          description:
+            'The time logged in the projects you see, in days of {hours} hours, against each project’s budget.',
+          project: 'Project',
+          allProjects: 'All projects',
+          caption: 'Time by project',
+          empty: 'No time logged yet.',
+          columns: {
+            project: 'Project',
+            spent: 'Spent',
+            budget: 'Budget',
+            closed: 'Closed issues',
+            open: 'Other issues',
+            status: 'Budget',
+          },
+          days: '{days} d',
+          overBudget: 'Over budget',
+          withinBudget: 'Within budget',
+          noBudget: 'No budget',
+        },
+      },
+      panels: {
+        issueTime: {
+          title: 'Time spent',
+          total: 'Total',
+          caption: 'Time logged on this issue',
+          empty: 'No time logged on this issue yet.',
+          columns: { who: 'Who', day: 'Day', time: 'Time', note: 'Note' },
+          time: 'Time spent',
+          day: 'Day',
+          note: 'Note',
+          log: 'Log time',
+          logged: 'Time logged.',
+        },
+      },
+      errors: {
+        forbidden: 'You may not log time on this issue.',
+        invalid: 'Check the time and the day.',
+        failed: 'This could not be done. Try again.',
+      },
       settings: {
         hoursPerDay: {
           label: 'Hours in a working day',
@@ -53,6 +96,49 @@ export const plugin = definePlugin({
       },
       permissions: { log: 'Saisir du temps' },
       properties: { timeSpent: 'Temps passé' },
+      pages: {
+        report: {
+          title: 'Temps',
+          nav: 'Temps',
+          description:
+            'Le temps saisi dans les projets que vous voyez, en journées de {hours} heures, face au budget de chaque projet.',
+          project: 'Projet',
+          allProjects: 'Tous les projets',
+          caption: 'Temps par projet',
+          empty: 'Aucun temps saisi pour l’instant.',
+          columns: {
+            project: 'Projet',
+            spent: 'Passé',
+            budget: 'Budget',
+            closed: 'Tickets fermés',
+            open: 'Autres tickets',
+            status: 'Budget',
+          },
+          days: '{days} j',
+          overBudget: 'Budget dépassé',
+          withinBudget: 'Dans le budget',
+          noBudget: 'Pas de budget',
+        },
+      },
+      panels: {
+        issueTime: {
+          title: 'Temps passé',
+          total: 'Total',
+          caption: 'Temps saisi sur ce ticket',
+          empty: 'Aucun temps saisi sur ce ticket pour l’instant.',
+          columns: { who: 'Qui', day: 'Jour', time: 'Temps', note: 'Note' },
+          time: 'Temps passé',
+          day: 'Jour',
+          note: 'Note',
+          log: 'Saisir du temps',
+          logged: 'Temps saisi.',
+        },
+      },
+      errors: {
+        forbidden: 'Vous ne pouvez pas saisir de temps sur ce ticket.',
+        invalid: 'Vérifiez le temps et le jour.',
+        failed: 'Cela n’a pas pu se faire. Réessayez.',
+      },
       settings: {
         hoursPerDay: {
           label: 'Heures dans une journée de travail',

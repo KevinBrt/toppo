@@ -22,6 +22,10 @@ import {
   type PackageStore,
 } from './platform/plugins/packages/package-store.ts';
 import { createPluginRuntime } from './platform/plugins/runtime/plugin-runtime.ts';
+import {
+  createScreenBundles,
+  type ScreenRuntime,
+} from './platform/plugins/screens/screen-files.ts';
 import { createFileStorage, type FileStorage } from './platform/uploads/file-storage.ts';
 
 export const TEST_SECRET = 'test-secret-that-is-long-enough-to-be-accepted';
@@ -54,8 +58,21 @@ export async function testPlugins(packages?: PackageStore) {
     packages: store,
     workerUrl: TEST_SANDBOX_WORKER,
     runtime: createPluginRuntime({ packages: store, workerUrl: TEST_SANDBOX_WORKER }),
+    screens: { bundles: createScreenBundles(store), runtime: TEST_SCREEN_RUNTIME },
   };
 }
+
+/** The screens' runtime of tests: its files stand for the built ones. */
+export const TEST_SCREEN_RUNTIME: ScreenRuntime = {
+  version: 'test-runtime',
+  file: (name) =>
+    name === 'runtime.js' || name === 'runtime.css'
+      ? {
+          body: Buffer.from(`/* ${name} */`),
+          type: name.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/css; charset=utf-8',
+        }
+      : undefined,
+};
 
 /** An empty store of plugins' zips, of its own, in the temporary directory. */
 export function createTestPackageStore(): Promise<PackageStore> {
@@ -126,6 +143,10 @@ export function testServices(overrides: Partial<Services> = {}): Services {
       checkSettings: createSettingsChecker(TEST_SANDBOX_WORKER),
       runtime: { run: () => Promise.reject(new Error('No plugin runs in this test')) },
       calls: createHostCalls(),
+      screens: {
+        bundles: { read: () => Promise.reject(new Error('No package store in this test')) },
+        runtimeVersion: TEST_SCREEN_RUNTIME.version,
+      },
     },
     ...overrides,
   };

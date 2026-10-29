@@ -99,3 +99,17 @@ export function declaredLogo(
   }
   return { logo: Buffer.from(opened.logo.bytes), logoType };
 }
+
+/**
+ * Refuses a package whose code declares pages or panels without the bundle that draws them, as
+ * `toppo plugin build` writes it.
+ */
+export function assertScreensBundled(manifest: Manifest, opened: PluginPackage): void {
+  if (manifest.pages.length + manifest.panels.length > 0 && !opened.hasScreens) {
+    throw new HttpError(
+      422,
+      'PLUGIN_PACKAGE_INVALID',
+      "This is not a plugin's zip: its code declares screens, it holds no web.js to draw them",
+    );
+  }
+}
