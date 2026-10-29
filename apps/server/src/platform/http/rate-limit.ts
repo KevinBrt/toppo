@@ -34,31 +34,44 @@ export function registerRateLimit(app: FastifyInstance, { db }: { db: Db }): voi
     if (!limit) {
       return;
     }
-    const expired = sql`${rateLimitCounters.expiresAt} <= now()`;
-    const windowEnd = sql`now() + make_interval(secs => ${limit.windowSeconds})`;
-    const [counter] = await db
-      .insert(rateLimitCounters)
-      .values({
-        key: `${request.method} ${request.routeOptions.url}:${clientOf(request.ip)}`,
-        count: 1,
-        expiresAt: windowEnd,
-      })
-      .onConflictDoUpdate({
-        target: rateLimitCounters.key,
-        set: {
-          count: sql`case when ${expired} then 1 else ${rateLimitCounters.count} + 1 end`,
-          expiresAt: sql`case when ${expired} then ${windowEnd} else ${rateLimitCounters.expiresAt} end`,
-        },
-      })
-      .returning({
-        count: rateLimitCounters.count,
-        secondsLeft: sql<number>`ceil(extract(epoch from ${rateLimitCounters.expiresAt} - now()))::int`,
-      });
-    if (counter && counter.count > limit.max) {
+    const counter = await countOnce(
+      db,
+      `${request.method} ${request.routeOptions.url}:${clientOf(request.ip)}`,
+      limit.windowSeconds,
+    );
+    if (counter.count > limit.max) {
       reply.header('retry-after', String(Math.max(counter.secondsLeft, 1)));
       throw new HttpError(429, 'TOO_MANY_REQUESTS', 'Too many requests, try again later');
     }
   });
+}
+
+/**
+ * Counts once more what `key` names, in a window of `windowSeconds` that starts with its first
+ * count: the count so far, this one included, and the seconds left in the window.
+ */
+export async function countOnce(
+  db: Db,
+  key: string,
+  windowSeconds: number,
+): Promise<{ count: number; secondsLeft: number }> {
+  const expired = sql`${rateLimitCounters.expiresAt} <= now()`;
+  const windowEnd = sql`now() + make_interval(secs => ${windowSeconds})`;
+  const [counter] = await db
+    .insert(rateLimitCounters)
+    .values({ key, count: 1, expiresAt: windowEnd })
+    .onConflictDoUpdate({
+      target: rateLimitCounters.key,
+      set: {
+        count: sql`case when ${expired} then 1 else ${rateLimitCounters.count} + 1 end`,
+        expiresAt: sql`case when ${expired} then ${windowEnd} else ${rateLimitCounters.expiresAt} end`,
+      },
+    })
+    .returning({
+      count: rateLimitCounters.count,
+      secondsLeft: sql<number>`ceil(extract(epoch from ${rateLimitCounters.expiresAt} - now()))::int`,
+    });
+  return counter ?? { count: 1, secondsLeft: windowSeconds };
 }
 
 /**

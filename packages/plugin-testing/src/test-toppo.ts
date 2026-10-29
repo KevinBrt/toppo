@@ -1,4 +1,4 @@
-import { type Action, type EventType, z } from '@toppo-tracker/plugin-sdk';
+import { type Action, type EventType, type Job, z } from '@toppo-tracker/plugin-sdk';
 import { servePlugin } from '@toppo-tracker/plugin-sdk/host';
 import {
   type DeletedIssue,
@@ -6,6 +6,8 @@ import {
   HOST_CALLS,
   type HostCallMethod,
   type HostGlobal,
+  type HttpAnswer,
+  type HttpFailureCode,
   type IssueDetails,
   type IssueSnapshot,
   isApiCompatible,
@@ -50,6 +52,17 @@ export interface TestUser {
   run<I extends z.ZodType, R>(action: Action<I, R>, input: z.input<I>): Promise<R>;
 }
 
+/** A request the plugin sent outside Toppo, as Toppo checked it. */
+export interface TestHttpRequest {
+  url: string;
+  method: string;
+  headers: Readonly<Record<string, string>>;
+  body: string | null;
+}
+
+/** What the test's outside world answers: a response, or why there was none. */
+export type TestHttpReply = Partial<HttpAnswer> | HttpFailureCode;
+
 /** An issue to start from: anything left out takes a plausible value. */
 export type TestIssueInput = Partial<Omit<IssueDetails, 'id' | 'key'>>;
 
@@ -68,6 +81,11 @@ export function createTestToppo(
     /** What projects set for themselves, by project id: the projects the plugin acts in. */
     projectSettings?: Readonly<Record<string, unknown>>;
     locale?: Locale;
+    /**
+     * The world outside Toppo, as the plugin's requests reach it: where its manifest says it may
+     * go, by name (Toppo's own checks of addresses run in Toppo). Nothing answers by default.
+     */
+    http?: (request: TestHttpRequest) => TestHttpReply | Promise<TestHttpReply>;
   } = {},
 ) {
   let lastId = 0;
@@ -75,6 +93,7 @@ export function createTestToppo(
   const issues = new Map<string, IssueDetails>();
   const comments: TestComment[] = [];
   const written = new Map<string, string>();
+  const sent: TestHttpRequest[] = [];
   /** Who the run under way is for: `null` for an event, which the plugin handles as itself. */
   let runningFor: { id: string; sees: (issueId: string | undefined) => boolean } | null = null;
   const locale = options.locale ?? 'en';
@@ -119,9 +138,47 @@ export function createTestToppo(
         return projectSettings(args);
       case 'issues.setProperty':
         return Promise.resolve().then(() => properties.set(args));
+      case 'http.fetch':
+        return fetchOutside(args);
       default:
         return comment(args);
     }
+  }
+
+  /** Whether the manifest lets the plugin reach this host: named, in its settings, or any. */
+  function declares(url: URL): boolean {
+    const { http } = manifest;
+    if (http === null || http === 'any') {
+      return http === 'any';
+    }
+    const hosts = Array.isArray(http)
+      ? http
+      : http.fromSettings.flatMap((name) => {
+          const value: unknown =
+            typeof options.settings === 'object' && options.settings !== null
+              ? Reflect.get(options.settings, name)
+              : undefined;
+          return typeof value === 'string' && URL.canParse(value) ? [new URL(value).hostname] : [];
+        });
+    return hosts.includes(url.hostname);
+  }
+
+  /** A request outside Toppo, where the plugin declared it may go, answered by the test. */
+  async function fetchOutside(args: unknown): Promise<HttpAnswer> {
+    const request = HOST_CALLS['http.fetch'].args.parse(args);
+    const url = URL.canParse(request.url) ? new URL(request.url) : undefined;
+    if (!(url && ['http:', 'https:'].includes(url.protocol))) {
+      throw new Error('ADDRESS_NOT_ALLOWED');
+    }
+    if (!declares(url)) {
+      throw new Error('HOST_NOT_DECLARED');
+    }
+    sent.push(request);
+    const reply = options.http ? await options.http(request) : 'NETWORK_ERROR';
+    if (typeof reply === 'string') {
+      throw new Error(reply);
+    }
+    return { status: 200, headers: {}, body: '', ...reply };
   }
 
   /**
@@ -166,7 +223,7 @@ export function createTestToppo(
   }
 
   async function run(
-    kind: 'action' | 'event',
+    kind: 'action' | 'event' | 'job',
     name: string,
     payload: unknown,
     user: { id: string } | null,
@@ -216,6 +273,8 @@ export function createTestToppo(
     manifest,
     /** What the plugin commented, in order. */
     comments: comments as readonly TestComment[],
+    /** The requests the plugin sent outside Toppo, in order. */
+    requests: sent as readonly TestHttpRequest[],
     /** What the plugin kept of one of its entities, oldest first, whoever sees it. */
     records: (entity: string) => records.of(entity),
     /** The values of the plugin's properties an issue has, by their names. */
@@ -293,6 +352,11 @@ export function createTestToppo(
         actorId: happened.actorId ?? '00000000-0000-4000-8000-000000000001',
       };
       await run('event', type, { event, issue, change: happened.change }, null);
+    },
+
+    /** Runs one of the plugin's jobs, as Toppo does when its time comes: as the plugin itself. */
+    async runJob(job: Job): Promise<void> {
+      await run('job', job.name, null, null);
     },
   };
 }

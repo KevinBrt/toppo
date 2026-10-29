@@ -22,6 +22,7 @@ import {
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
 import { keepPluginProperties } from '../utils/properties/plugin-properties.util.ts';
 import { assignRecordSlots } from '../utils/records/record-slots.util.ts';
+import { openSettings } from '../utils/settings/secret-settings.util.ts';
 
 const { pluginProjectSettings, plugins } = schema;
 
@@ -162,7 +163,7 @@ async function refusedSettings(
   return await services.plugins.checkSettings(
     code,
     {
-      instance: installed.settings,
+      instance: openSettings(installed.settings, services.secrets),
       projects: Object.fromEntries(
         projects.map(({ projectId, settings }) => [projectId, settings]),
       ),

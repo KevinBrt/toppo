@@ -393,6 +393,13 @@
       "when": 1793264151326,
       "tag": "0055_plugin_properties",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1793278815099,
+      "tag": "0056_plugin_outbound",
+      "breakpoints": true
     }
   ]
 }

@@ -128,6 +128,7 @@ export {
   asksForMore,
   isReservedPluginId,
   type PluginGrants,
+  type PluginReach,
   pluginUserOf,
 } from './plugins/plugins.ts';
 export { projectColorFor } from './projects/project-color.ts';

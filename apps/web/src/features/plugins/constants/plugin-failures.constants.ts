@@ -11,3 +11,14 @@ export const PLUGIN_FAILURE_MESSAGES: Readonly<Record<PluginFailure, PlainMessag
   CRASHED: 'plugins.failures.crashed',
   ANSWERED_ERROR: 'plugins.failures.answeredError',
 };
+
+/** Why a request a plugin sent got no answer, as its page says it. Mirrors HTTP_FAILURES. */
+export const HTTP_FAILURE_MESSAGES: ReadonlyMap<string, PlainMessageKey> = new Map([
+  ['HOST_NOT_DECLARED', 'plugins.callFailures.hostNotDeclared'],
+  ['ADDRESS_NOT_ALLOWED', 'plugins.callFailures.addressNotAllowed'],
+  ['TOO_MANY_CALLS', 'plugins.callFailures.tooManyCalls'],
+  ['TIMEOUT', 'plugins.callFailures.timeout'],
+  ['RESPONSE_TOO_LARGE', 'plugins.callFailures.responseTooLarge'],
+  ['TOO_MANY_REDIRECTS', 'plugins.callFailures.tooManyRedirects'],
+  ['NETWORK_ERROR', 'plugins.callFailures.networkError'],
+]);

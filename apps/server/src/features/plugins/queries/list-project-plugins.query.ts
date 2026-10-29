@@ -39,7 +39,7 @@ export const listProjectPlugins = defineQuery({
       plugins: rows.flatMap((row) => {
         // Checked as it was installed: a manifest Toppo kept is one it accepted.
         const manifest = manifestSchema.parse(row.manifest);
-        const fields = settingFieldsOf(manifest, 'projectSettings');
+        const fields = settingFieldsOf(manifest, 'projectSettings', row.settings ?? {});
         if (fields.length === 0) {
           return [];
         }

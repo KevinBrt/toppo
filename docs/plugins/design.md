@@ -175,7 +175,7 @@ export function IssuePanel() {
 | An action                         | `plugin.defineAction({ name, access, input, handler })`                                                           |
 | A reaction to an event            | `plugin.defineEventHandler({ event, handler })`                                                                   |
 | A recurring job                   | `plugin.defineJob({ name, every, handler })`                                                                      |
-| An inbound HTTP route             | `plugin.defineRoute({ method, path, access, input, handler })`                                                    |
+| An inbound HTTP route (later)     | `plugin.defineRoute({ method, path, access, input, handler })`                                                    |
 | A page                            | `plugin.definePage({ zone, path, params?, search?, access, title, nav?, component })`                             |
 | A panel in one of Toppo's screens | `plugin.definePanel({ on, access, title, component })`                                                            |
 | In the browser                    | React's conventions: `useX` hooks, PascalCase components                                                          |
@@ -267,8 +267,8 @@ await ctx.issues.setProperty(input.issueId, "timeSpent", total);
 
 - **Events are Toppo's activity types**, one vocabulary: `issue.created`, `issue.statusChanged`, `issue.commented`… (`ISSUE_ACTIVITY_PAYLOADS`). A handler receives the event (id, type, time, actor), the change, and the issue as the plugin may see it (`closedAt` included). The job each recorded activity queues fans out one job per subscribed plugin, so a slow or failing plugin is retried alone, with backoff, and never delays the change itself. A job may run twice: `{ once: event.id }` makes the plugin's writes single. Changes made in bulk and recorded without telling people (`notify: false`) reach plugins too, in batches: a label removed from 10,000 issues stays bounded work.
 - **Actions** are what a plugin's screens call. Toppo checks `access` (a 404 for an issue the user cannot see, as for routes), validates `input`, then runs the handler under a deadline. They answer at most a small result, like a command.
-- **Jobs** (`every`) run on a schedule through Toppo's job queue, one per instance whatever the number of servers.
-- **Routes** are mounted under `/api/plugins/<id>/…`, for services calling Toppo (a GitHub webhook). Each declares `access` (`'public'` for a webhook, which then checks a signature with `ctx.crypto`) and a Zod input; Toppo applies its rate limits to them.
+- **Jobs** (`every`: `'hour'`, `'day'` or `'week'`, from their last run, since Toppo keeps no time zone) run through Toppo's job queue, one per instance whatever the number of servers, as the plugin itself, under a minute each.
+- **Routes**, later: mounted under `/api/plugins/<id>/…`, for services calling Toppo (a GitHub webhook). Each declares `access` (`'public'` for a webhook, which then checks a signature with `ctx.crypto`) and a Zod input; Toppo applies its rate limits to them. They come with the core's webhooks and GitHub integration, which need routes that check a signature first.
 
 ## Where the server code runs
 
@@ -294,13 +294,14 @@ A Node process with the permission model was tried first and is not enough: Node
 | `http: { fromSettings: ['url'] }` | an address the administrator types in its settings | "Can reach the address in its settings (now: https://…)" |
 | `http: 'any'`                     | addresses that are data (a webhook per project)    | ⚠ "Can reach any public site"                            |
 
-Whatever the declaration, Toppo enforces, in a guard of the core (`platform/http/`) that does not exist yet, built once for the core's webhooks and GitHub integration and for plugins:
+The settings named are text settings of the instance's; the request may go to the host of what they hold now. Whatever the declaration, Toppo enforces, in a guard of the core (`platform/http/outbound/`), built once for the core's webhooks and GitHub integration and for plugins:
 
-- **No internal address**: loopback, private networks, link-local (the cloud metadata address `169.254.169.254`), checked after DNS resolution and again on each redirect. An administrator may allow a private address for one plugin, explicitly.
-- A total deadline, a response size cap, no cookies, a number of calls per minute.
-- A log of the plugin's outgoing calls and their errors, on its admin page.
+- **No internal address**: loopback, private networks, link-local (the cloud metadata address `169.254.169.254`), carriers' NAT, multicast, reserved ranges, IPv6's own and the IPv4 an IPv6 address carries, checked as the connection resolves the host, which then goes to the very address checked, and again on each redirect. The approval may name hosts inside the network a plugin reaches (a team's own chat), ten at most.
+- 10 seconds in all, 256 KB of answer, 64 KB sent, five redirects, no cookies, 60 requests a minute per plugin.
+- A log of the plugin's last 50 requests and how each went, by host, on its admin page: never their path, query or body.
+- A request that gets no answer rejects with an `HttpFailure` and its code; an answer, whatever its status, is not one.
 
-Settings may hold secrets: `secret()` marks a field that Toppo seals with its instance key (`services.secrets`), never shows again, and gives only to the plugin's sandbox. `ctx.crypto` offers what plugins need without Node: HMAC signatures, constant-time comparison, random ids.
+Settings may hold secrets: `secret(z.url())` marks a text of the instance's, without a default, that Toppo seals with its instance key (`services.secrets`), never shows again, and gives only to the plugin's sandbox: its form says whether it holds one, keeps it when left empty, and removes it when asked. `ctx.crypto`, later with routes, offers what plugins need without Node: HMAC signatures, constant-time comparison, random ids.
 
 ## The interface
 
@@ -441,7 +442,7 @@ The core's own features do not go through the SDK, so a **reference plugin**, ke
 1. **Foundations**: packages, upload and validation, approval, the sandbox runtime and its resources, `needs` and `permissions` in the catalog, settings and secrets, actions, event handlers, `ctx.issues`, the CLI and testing kit. _Time tracking: its name, logo and permission, the hours of a working day in its settings (8 by default), an action that checks an entry without storing it yet, built with the CLI, installed and set up through the interface in an end-to-end test._
 2. **Data**: entities (`plugin_records`, slots, queries, limits, uninstall choices) and properties. _Time tracking: time entries, the time spent on each issue as a property, and a budget in days that each project may set for itself, in project settings plugins declare. The budget refuses nothing._
 3. **Interface**: the frame host and its bridge, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page. _Time tracking: the issue panel, and a page across the projects it acts in, filtered by project: the days spent against each project's budget, those over it marked, the time of closed issues apart from that of issues in progress or to come._
-4. **Beyond the instance**: routes, `ctx.crypto`, the outbound guard and `ctx.http`, recurring jobs. _Time tracking: entries received from Clockify or Toggl by signed webhook, a weekly summary sent to an address set in its settings._
+4. **Beyond the instance**: the outbound guard and `ctx.http`, secrets, recurring jobs. _Time tracking: each week, the time of the week by project against its budget, sent to a chat whose webhook is a secret of its settings._ Routes and `ctx.crypto` come with the core's webhooks and GitHub integration, which need routes that check a signature: they are opened to plugins then, tested with a plugin of the tests, since time tracking receives nothing from outside.
 5. **Imports**, if they become a plugin: an `issue.import` capability (`systemOnly`: issues with their original dates, authors and history).
 
 ## Open questions

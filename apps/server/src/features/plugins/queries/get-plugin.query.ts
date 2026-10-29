@@ -1,18 +1,19 @@
 import { schema } from '@toppo-tracker/db';
-import { manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
+import { type Manifest, manifestSchema } from '@toppo-tracker/plugin-sdk/protocol';
 import {
+  PLUGIN_HTTP_CALLS_KEPT,
   PLUGIN_PROJECTS_MAX,
   type PluginDetailsResponse,
   pluginSlugParamsSchema,
 } from '@toppo-tracker/shared';
-import { and, asc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { translated } from '../../../platform/plugins/plugin-words.ts';
 import { lastFailureOf } from '../models/plugin-failure.model.ts';
 import { identityOf, PLUGIN_IDENTITY, pluginNotFound } from '../utils/plugin-rows.util.ts';
 import { savedValuesOf, settingFieldsOf } from '../utils/settings/plugin-settings.util.ts';
 
-const { pluginProjectSettings, pluginProjects, plugins, projects, users } = schema;
+const { pluginHttpCalls, pluginProjectSettings, pluginProjects, plugins, projects, users } = schema;
 
 /** `null` once their account is deleted. */
 const approverName = sql<
@@ -34,6 +35,7 @@ export const getPlugin = defineQuery({
         manifest: plugins.manifest,
         packageSha256: plugins.packageSha256,
         allProjects: plugins.allProjects,
+        privateHosts: plugins.privateHosts,
         settings: plugins.settings,
         settingsRefused: plugins.settingsRefused,
         approvedAt: plugins.approvedAt,
@@ -66,6 +68,20 @@ export const getPlugin = defineQuery({
       )
       .orderBy(asc(projects.key))
       .limit(PLUGIN_PROJECTS_MAX);
+    const httpCalls = await db
+      .select({
+        id: pluginHttpCalls.id,
+        method: pluginHttpCalls.method,
+        host: pluginHttpCalls.host,
+        status: pluginHttpCalls.status,
+        error: pluginHttpCalls.error,
+        durationMs: pluginHttpCalls.durationMs,
+        at: pluginHttpCalls.createdAt,
+      })
+      .from(pluginHttpCalls)
+      .where(eq(pluginHttpCalls.pluginId, plugin.id))
+      .orderBy(desc(pluginHttpCalls.createdAt), desc(pluginHttpCalls.id))
+      .limit(PLUGIN_HTTP_CALLS_KEPT);
     // Checked as it was installed: a manifest Toppo kept is one it accepted.
     const manifest = manifestSchema.parse(plugin.manifest);
     return {
@@ -91,6 +107,14 @@ export const getPlugin = defineQuery({
       ),
       events: manifest.events,
       actions: manifest.actions.map((action) => action.name),
+      jobs: manifest.jobs.map(({ name, every, label }) => ({
+        name,
+        every,
+        label: translated(manifest.messages, label, name),
+      })),
+      http: httpOf(manifest),
+      privateHosts: plugin.privateHosts,
+      httpCalls: httpCalls.map(({ at, ...call }) => ({ ...call, at: at.toISOString() })),
       allProjects: plugin.allProjects,
       projects: chosen,
       approval:
@@ -106,7 +130,7 @@ export const getPlugin = defineQuery({
       failures: plugin.failures,
       lastFailure: lastFailureOf(plugin.lastError),
       settings: {
-        fields: settingFieldsOf(manifest, 'settings'),
+        fields: settingFieldsOf(manifest, 'settings', plugin.settings),
         values: savedValuesOf(manifest, 'settings', plugin.settings),
         refused: plugin.settingsRefused,
         refusedProjects,
@@ -116,3 +140,18 @@ export const getPlugin = defineQuery({
     };
   },
 });
+
+/** Where it may send requests, its settings named by their labels. */
+function httpOf({ http, messages }: Manifest): PluginDetailsResponse['http'] {
+  if (http === null || http === 'any') {
+    return http === null ? null : { kind: 'any' };
+  }
+  return Array.isArray(http)
+    ? { kind: 'hosts', hosts: http }
+    : {
+        kind: 'settings',
+        settings: http.fromSettings.map((name) =>
+          translated(messages, `settings.${name}.label`, name),
+        ),
+      };
+}

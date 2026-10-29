@@ -27,6 +27,8 @@ export const settingSchema = z.union(
       minLength: z.int().nonnegative().optional(),
       maxLength: z.int().nonnegative().optional(),
       default: z.string().max(1000).optional(),
+      /** A secret (`secret()`): sealed by Toppo once typed, never shown again. */
+      writeOnly: z.literal(true).optional(),
     }),
     z.strictObject({
       type: z.enum(['number', 'integer']),
@@ -79,10 +81,32 @@ function wordsAt(messages: Messages, path: readonly string[]): string | undefine
   return typeof found === 'string' ? found : undefined;
 }
 
+/** Refuses a secret a project would set, or a default would fill: it is the instance's, typed in. */
+function checkSecret(
+  scope: (typeof SCOPES)[number],
+  name: string,
+  setting: Setting,
+  ctx: z.RefinementCtx,
+): void {
+  if (isSecretSetting(setting) && (scope === 'projectSettings' || 'default' in setting)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: [scope, 'properties', name],
+      message: `The secret ${name} is the instance's, typed in: no project sets it, no default fills it`,
+    });
+  }
+}
+
+/** Whether a setting is a secret, sealed once typed (`secret()`). */
+export function isSecretSetting(setting: Setting): boolean {
+  return 'writeOnly' in setting && setting.writeOnly === true;
+}
+
 /**
  * Refuses settings Toppo could not offer, the instance's or a project's: one the plugin cannot run
  * without, since it runs before anyone sets it, and one without a label in each language, which
- * its form shows (`settings.<name>.label`, `projectSettings.<name>.label`).
+ * its form shows (`settings.<name>.label`, `projectSettings.<name>.label`). A secret is the
+ * instance's, typed in, never given by default.
  */
 export function checkSettings(
   manifest: Readonly<Record<(typeof SCOPES)[number], SettingsSchema>> & {
@@ -98,7 +122,8 @@ export function checkSettings(
         message: `The setting ${name} needs a default, or .optional(): the plugin runs before anyone sets it`,
       });
     }
-    for (const name of Object.keys(manifest[scope].properties)) {
+    for (const [name, setting] of Object.entries(manifest[scope].properties)) {
+      checkSecret(scope, name, setting, ctx);
       for (const locale of ['en', 'fr'] as const) {
         if (wordsAt(manifest.messages[locale], [scope, name, 'label']) === undefined) {
           ctx.addIssue({

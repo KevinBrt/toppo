@@ -276,7 +276,7 @@ describe('a plugin’s page', () => {
     expect(server.requests).toContainEqual({
       method: 'POST',
       path: '/api/v1/plugins/time-tracking/approve',
-      body: { projects: ['WEB'] },
+      body: { projects: ['WEB'], privateHosts: [] },
     });
     await expect.element(badge('Enabled')).toBeVisible();
     await expect.element(screen.getByText(/^Approved by Ada Lovelace on /)).toBeVisible();
@@ -299,7 +299,7 @@ describe('a plugin’s page', () => {
     expect(server.requests).toContainEqual({
       method: 'POST',
       path: '/api/v1/plugins/time-tracking/approve',
-      body: { projects: 'all' },
+      body: { projects: 'all', privateHosts: [] },
     });
   });
 
@@ -431,6 +431,7 @@ const SET_UP: FakePlugin = {
         format: 'text',
         maxLength: 80,
         default: 'Support',
+        secret: null,
       },
       {
         name: 'webhookUrl',
@@ -440,6 +441,7 @@ const SET_UP: FakePlugin = {
         format: 'url',
         maxLength: null,
         default: null,
+        secret: null,
       },
       {
         name: 'replyTo',
@@ -449,6 +451,7 @@ const SET_UP: FakePlugin = {
         format: 'email',
         maxLength: null,
         default: null,
+        secret: null,
       },
       {
         name: 'billable',
@@ -505,7 +508,10 @@ describe('a plugin’s settings', () => {
     expect(server.requests).toContainEqual({
       method: 'PUT',
       path: '/api/v1/plugins/time-tracking/settings',
-      body: { values: { reminderDays: 12, team: 'Billing', billable: false, period: 'month' } },
+      body: {
+        values: { reminderDays: 12, team: 'Billing', billable: false, period: 'month' },
+        clearSecrets: [],
+      },
     });
   });
 
@@ -592,7 +598,7 @@ describe('a plugin’s settings', () => {
     expect(server.requests).toContainEqual(
       expect.objectContaining({
         method: 'PUT',
-        body: { values: expect.objectContaining({ rate: 2.5 }) },
+        body: { values: expect.objectContaining({ rate: 2.5 }), clearSecrets: [] },
       }),
     );
   });

@@ -327,6 +327,15 @@ export {
   unreadNotificationsResponseSchema,
 } from './notifications.ts';
 export {
+  PLUGIN_HTTP_CALLS_KEPT,
+  PLUGIN_JOB_EVERY,
+  PLUGIN_PRIVATE_HOSTS_MAX,
+  type PluginHttpCall,
+  PRIVATE_HOST,
+  pluginHttpCallSchema,
+  privateHostSchema,
+} from './plugins/plugin-outbound.ts';
+export {
   type IssuePanelsResponse,
   issuePanelsResponseSchema,
   type PeopleResponse,

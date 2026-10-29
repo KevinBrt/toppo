@@ -11,6 +11,12 @@ import type { Translate } from '../../../shared/i18n/i18n.types.ts';
 /** What the settings form holds: what was typed or chosen. A setting left empty takes its default. */
 export type SettingsForm = Readonly<Record<string, string | boolean>>;
 
+/** What a save sends: the settings typed, and the secrets to clear; a secret left empty is kept. */
+export interface SettingsRequest {
+  values: PluginSettingValues;
+  clearSecrets: readonly string[];
+}
+
 type Read = { value: PluginSettingValue } | { error: string };
 
 /** The form as the settings saved leave it: a yes or no is never empty, its default shown. */

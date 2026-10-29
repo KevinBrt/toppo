@@ -1,7 +1,7 @@
 import { type Db, schema } from '@toppo-tracker/db';
 import { sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
-import type { z } from 'zod';
+import { z } from 'zod';
 import type { Services, Transaction } from '../cqrs/cqrs.ts';
 
 const { jobs } = schema;
@@ -25,6 +25,15 @@ export interface JobScope {
   services: Services;
 }
 
+/**
+ * What a job run once may ask once done: to run again, with the same payload, this many
+ * milliseconds later, as a recurring job does. For work queued per payload, each at its own pace
+ * (a plugin's jobs).
+ */
+export interface JobOutcome {
+  runAgainInMs: number;
+}
+
 /** A job as the worker runs it, whatever its payload. */
 export interface RunnableJob {
   /** `resource.action`: `files.sweep`, `notification.email`. */
@@ -35,7 +44,7 @@ export interface RunnableJob {
   /** How long between two runs of a recurring job, in milliseconds; `null` for a job run once. */
   readonly every: number | null;
   /** Checks the stored payload, then does the work. */
-  run(scope: JobScope, payload: unknown): Promise<void>;
+  run(scope: JobScope, payload: unknown): Promise<JobOutcome | undefined>;
 }
 
 export interface Job<Payload extends z.ZodObject> extends RunnableJob {
@@ -54,8 +63,11 @@ interface JobDefinition<Payload extends z.ZodObject> {
   priority?: number;
   /** Makes the job recurring: one job of its type, run again this many milliseconds later. */
   every?: number;
-  handler(scope: JobScope, payload: z.output<Payload>): Promise<void>;
+  /** Answers nothing, or a `JobOutcome` to run again later. */
+  handler(scope: JobScope, payload: z.output<Payload>): Promise<unknown>;
 }
+
+const jobOutcomeSchema = z.object({ runAgainInMs: z.number().positive() });
 
 /** Work for the background, queued with `enqueue` and run by the worker of any server process. */
 export function defineJob<Payload extends z.ZodObject>(
@@ -68,7 +80,10 @@ export function defineJob<Payload extends z.ZodObject>(
     priority: definition.priority ?? 0,
     every: definition.every ?? null,
     async run(scope, payload) {
-      await definition.handler(scope, definition.payload.parse(payload));
+      const outcome = jobOutcomeSchema.safeParse(
+        await definition.handler(scope, definition.payload.parse(payload)),
+      );
+      return outcome.success ? outcome.data : undefined;
     },
   };
 }

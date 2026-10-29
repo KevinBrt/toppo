@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defineEntity, definePlugin, defineProperty, z } from './index.ts';
+import { defineEntity, definePlugin, defineProperty, secret, z } from './index.ts';
 
 /**
  * Mistakes a plugin's author could make, each of which TypeScript must refuse: were one accepted,
@@ -110,6 +110,62 @@ describe('the types of a plugin', () => {
     });
 
     expect(plugin.id).toBe('time-tracking');
+  });
+
+  it('refuse an address from a setting that holds none, and jobs that act for someone', () => {
+    const words = {
+      name: 'Time',
+      settings: { summaryUrl: { label: 'Chat' }, hoursPerDay: { label: 'Hours' } },
+      jobs: { summary: 'Weekly summary' },
+    };
+    const declared = {
+      id: 'time-tracking',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.0',
+      messages: { en: words, fr: words },
+      settings: z.object({
+        summaryUrl: secret(z.url()).optional(),
+        hoursPerDay: z.number().default(8),
+      }),
+    } as const;
+
+    // @ts-expect-error a setting that holds a number, not an address
+    definePlugin({ ...declared, http: { fromSettings: ['hoursPerDay'] } });
+    // @ts-expect-error a setting it does not have
+    definePlugin({ ...declared, http: { fromSettings: ['webhookUrl'] } });
+    // @ts-expect-error a secret is a text
+    secret(z.int());
+    const plugin = definePlugin({ ...declared, http: { fromSettings: ['summaryUrl'] } });
+
+    plugin.defineJob({
+      name: 'monthly',
+      // @ts-expect-error a job runs every hour, day or week
+      every: 'month',
+      label: 'jobs.summary',
+      handler: () => Promise.resolve(),
+    });
+    plugin.defineJob({
+      name: 'mislabelled',
+      every: 'week',
+      // @ts-expect-error a label that is no message key
+      label: 'jobs.sumary',
+      handler: () => Promise.resolve(),
+    });
+    const job = plugin.defineJob({
+      name: 'weekly',
+      every: 'week',
+      label: 'jobs.summary',
+      async handler(ctx) {
+        // @ts-expect-error a job runs as the plugin, for nobody
+        ctx.user;
+        await ctx.http.fetch(ctx.settings.summaryUrl ?? '', { method: 'POST', body: '{}' });
+        // @ts-expect-error a method it does not send
+        await ctx.http.fetch('https://hooks.slack.com', { method: 'CONNECT' });
+      },
+    });
+
+    expect(job).toStrictEqual({ name: 'weekly', every: 'week' });
   });
 
   it('refuse screens Toppo could not place, title or open', () => {

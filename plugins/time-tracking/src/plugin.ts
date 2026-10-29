@@ -1,4 +1,4 @@
-import { definePlugin, z } from '@toppo-tracker/plugin-sdk';
+import { definePlugin, secret, z } from '@toppo-tracker/plugin-sdk';
 import { timeEntry } from './entities/time-entry.entity.ts';
 import { timeSpent } from './properties/time-spent.property.ts';
 
@@ -18,7 +18,11 @@ export const plugin = definePlugin({
   settings: z.object({
     // Time is logged in minutes and counted in days, as projects' budgets are.
     hoursPerDay: z.number().min(1).max(24).default(8),
+    // A chat's incoming webhook: anyone who has its address may post there.
+    summaryUrl: secret(z.url()).optional(),
+    summaryLanguage: z.enum(['en', 'fr']).default('en'),
   }),
+  http: { fromSettings: ['summaryUrl'] },
   projectSettings: z.object({
     // The whole project's, all issues together. A mark, not a limit: no time is refused.
     budgetDays: z.number().positive().max(100_000).optional(),
@@ -81,6 +85,21 @@ export const plugin = definePlugin({
           label: 'Hours in a working day',
           help: 'The time logged counts in days of this many hours, as projects’ budgets do.',
         },
+        summaryUrl: {
+          label: 'Weekly summary, to a chat',
+          help: 'The address of an incoming webhook (Slack, Mattermost, Rocket.Chat): each week, the time of the week by project. Kept secret.',
+        },
+        summaryLanguage: {
+          label: 'Language of the summary',
+          options: { en: 'English', fr: 'French' },
+        },
+      },
+      jobs: { weeklySummary: 'Sends the time of the week to a chat' },
+      summary: {
+        title: 'Time logged from {from} to {to}:',
+        line: '• {project}: {week} h this week, {spent} d in all',
+        lineBudget: '• {project}: {week} h this week, {spent} d of {budget} d',
+        lineOver: '• {project}: {week} h this week, {spent} d of {budget} d, over budget',
       },
       projectSettings: {
         budgetDays: {
@@ -144,6 +163,21 @@ export const plugin = definePlugin({
           label: 'Heures dans une journée de travail',
           help: 'Le temps saisi se compte en journées de ce nombre d’heures, comme les budgets des projets.',
         },
+        summaryUrl: {
+          label: 'Résumé de la semaine, vers un chat',
+          help: 'L’adresse d’un webhook entrant (Slack, Mattermost, Rocket.Chat) : chaque semaine, le temps de la semaine par projet. Gardée secrète.',
+        },
+        summaryLanguage: {
+          label: 'Langue du résumé',
+          options: { en: 'Anglais', fr: 'Français' },
+        },
+      },
+      jobs: { weeklySummary: 'Envoie le temps de la semaine à un chat' },
+      summary: {
+        title: 'Temps saisi du {from} au {to} :',
+        line: '• {project} : {week} h cette semaine, {spent} j en tout',
+        lineBudget: '• {project} : {week} h cette semaine, {spent} j sur {budget} j',
+        lineOver: '• {project} : {week} h cette semaine, {spent} j sur {budget} j, budget dépassé',
       },
       projectSettings: {
         budgetDays: {

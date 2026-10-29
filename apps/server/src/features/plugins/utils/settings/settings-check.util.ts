@@ -15,8 +15,14 @@ const settingsInvalid = (details: readonly { path: string; message: string }[]) 
 export function assertSettingsDeclared(
   declared: SettingsSchema,
   values: PluginSettingValues,
+  /** Its secrets to clear: settings it has, which are secrets. */
+  cleared: readonly string[] = [],
+  secrets: ReadonlySet<string> = new Set(),
 ): void {
-  const unknown = Object.keys(values).filter((name) => !Object.hasOwn(declared.properties, name));
+  const unknown = [
+    ...Object.keys(values).filter((name) => !Object.hasOwn(declared.properties, name)),
+    ...cleared.filter((name) => !secrets.has(name)),
+  ];
   if (unknown.length > 0) {
     throw settingsInvalid(
       unknown.map((path) => ({ path, message: 'The plugin has no such setting' })),
@@ -33,7 +39,7 @@ export async function checkTypedSettings(
   { services, log }: Pick<ExecutionContext, 'services' | 'log'>,
   plugin: { slug: string; sha256: string },
   scope: 'instance' | 'project',
-  values: PluginSettingValues,
+  values: Readonly<Record<string, unknown>>,
 ): Promise<void> {
   let outcome: SandboxOutcome<unknown>;
   try {

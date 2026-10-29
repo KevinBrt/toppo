@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PLUGIN_PROJECTS_MAX, type PluginDetailsResponse } from '@toppo-tracker/shared';
-import { Alert, Button } from '@toppo-tracker/ui';
+import { Alert, Button, Field, Textarea } from '@toppo-tracker/ui';
 import { type FormEvent, useState } from 'react';
 import { requestErrorMessage } from '../../../../shared/forms/form-errors.util.ts';
 import type { PlainMessageKey } from '../../../../shared/i18n/i18n.types.ts';
@@ -22,9 +22,17 @@ const REACH_LABELS = {
   chosen: 'plugins.chosenProjects',
 } as const satisfies Record<PluginReach, PlainMessageKey>;
 
+/** The hosts typed, one per line, as an approval names them. */
+const hostsOf = (typed: string) =>
+  typed
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '');
+
 /**
- * Where a plugin acts: every project, present and future, or those chosen. Approves what it
- * declares and enables it; once approved, saves its projects the same way, which enables it too.
+ * Where a plugin acts: every project, present and future, or those chosen, and, for one that
+ * reaches outside Toppo, the hosts inside the network it may reach. Approves what it declares
+ * and enables it; once approved, saves the same way, which enables it too.
  */
 export function PluginReachForm({
   plugin,
@@ -39,11 +47,12 @@ export function PluginReachForm({
   const [projects, setProjects] = useState<readonly PickedProject[]>(() =>
     plugin.projects.map(({ key, name }) => ({ key, name })),
   );
+  const [privateHosts, setPrivateHosts] = useState(() => plugin.privateHosts.join('\n'));
   const [problem, setProblem] = useState<string>();
 
   const approve = useMutation({
     mutationFn: ({ chosen }: { chosen: 'all' | readonly string[]; done: PlainMessageKey }) =>
-      Plugins.approve(plugin.slug, chosen),
+      Plugins.approve(plugin.slug, chosen, hostsOf(privateHosts)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: PluginsQueries.all });
     },
@@ -121,6 +130,22 @@ export function PluginReachForm({
             : null}
           {problem ? <p className="text-xs font-medium text-danger">{problem}</p> : null}
         </fieldset>
+        {plugin.http === null ? null : (
+          <Field label={t('plugins.privateHosts')} description={t('plugins.privateHostsHelp')}>
+            {(control) => (
+              <Textarea
+                {...control}
+                rows={3}
+                spellCheck={false}
+                value={privateHosts}
+                onChange={(event) => {
+                  setPrivateHosts(event.target.value);
+                  approve.reset();
+                }}
+              />
+            )}
+          </Field>
+        )}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
           {approve.isSuccess ? (
             <p role="status" className="text-sm text-muted-foreground">

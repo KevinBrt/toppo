@@ -8,6 +8,8 @@ export {
   createTestToppo,
   PluginRunError,
   type TestComment,
+  type TestHttpReply,
+  type TestHttpRequest,
   type TestIssueInput,
   type TestToppo,
   type TestUser,

@@ -48,7 +48,7 @@ export function ProjectPluginSettings({ projectKey }: { projectKey: string }) {
             fields={plugin.fields}
             values={plugin.values}
             refused={plugin.refused ? t('projectPlugins.refused') : null}
-            save={(values) => Plugins.saveProjectSettings(projectKey, plugin.slug, values)}
+            save={({ values }) => Plugins.saveProjectSettings(projectKey, plugin.slug, values)}
           />
         </DetailsSection>
       ))}

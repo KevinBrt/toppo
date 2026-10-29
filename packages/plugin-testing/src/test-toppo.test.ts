@@ -1,4 +1,11 @@
-import { definePlugin, defineProperty, z } from '@toppo-tracker/plugin-sdk';
+import {
+  definePlugin,
+  defineProperty,
+  HttpFailure,
+  type HttpReach,
+  secret,
+  z,
+} from '@toppo-tracker/plugin-sdk';
 import { describe, expect, it } from 'vitest';
 import { createTestToppo, PluginRunError } from './test-toppo.ts';
 
@@ -278,5 +285,103 @@ describe('a fake Toppo for a plugin’s tests', () => {
     });
 
     expect(() => createTestToppo(plugin)).toThrow('asks for API ^2.0');
+  });
+});
+
+/** A plugin that tells a chat, at the address in its settings or where it says. */
+function notifier(http?: HttpReach<z.ZodObject<{ chatUrl: z.ZodOptional<z.ZodURL> }>>) {
+  const words = {
+    name: 'Notifier',
+    settings: { chatUrl: { label: 'Chat' } },
+    jobs: { tell: 'Tell' },
+  };
+  const plugin = definePlugin({
+    id: 'notifier',
+    name: 'name',
+    description: 'name',
+    apiVersion: '^1.0',
+    settings: z.object({ chatUrl: secret(z.url()).optional() }),
+    ...(http === undefined ? {} : { http }),
+    messages: { en: words, fr: words },
+  });
+  const tell = plugin.defineJob({
+    name: 'tell',
+    every: 'week',
+    label: 'jobs.tell',
+    async handler(ctx) {
+      if (ctx.settings.chatUrl !== undefined) {
+        await ctx.http.fetch(ctx.settings.chatUrl, { method: 'POST', body: 'Week 44' });
+      }
+    },
+  });
+  const ping = plugin.defineAction({
+    name: 'chat.ping',
+    access: 'authenticated',
+    input: z.object({ url: z.string() }),
+    async handler(ctx, { url }) {
+      try {
+        return (await ctx.http.fetch(url)).status;
+      } catch (error) {
+        return error instanceof HttpFailure ? error.code : 'not an HttpFailure';
+      }
+    },
+  });
+  return { plugin, tell, ping };
+}
+
+const CHAT = 'https://chat.example.com/hooks/T0';
+
+describe('the world outside a fake Toppo', () => {
+  it('hears a job’s requests, sent where its settings say, as the test answers them', async () => {
+    const { plugin, tell } = notifier({ fromSettings: ['chatUrl'] });
+    const toppo = createTestToppo(plugin, {
+      settings: { chatUrl: CHAT },
+      http: () => ({ status: 204 }),
+    });
+
+    await toppo.runJob(tell);
+
+    expect(toppo.requests).toStrictEqual([
+      { url: CHAT, method: 'POST', headers: {}, body: 'Week 44' },
+    ]);
+  });
+
+  it('refuses what the plugin did not declare, and answers nothing unless the test does', async () => {
+    const pings = async (
+      http: Parameters<typeof notifier>[0],
+      answer?: () => 'TIMEOUT' | { status: number },
+    ) => {
+      const { plugin, ping } = notifier(http);
+      const someone = createTestToppo(plugin, {
+        settings: { chatUrl: CHAT },
+        ...(answer ? { http: answer } : {}),
+      }).createUser();
+      return await Promise.all(
+        [CHAT, 'https://elsewhere.example.com/', 'ftp://chat.example.com/'].map((url) =>
+          someone.run(ping, { url }),
+        ),
+      );
+    };
+
+    expect(await pings(undefined)).toStrictEqual([
+      'HOST_NOT_DECLARED',
+      'HOST_NOT_DECLARED',
+      'ADDRESS_NOT_ALLOWED',
+    ]);
+    expect(await pings(['chat.example.com'])).toStrictEqual([
+      'NETWORK_ERROR',
+      'HOST_NOT_DECLARED',
+      'ADDRESS_NOT_ALLOWED',
+    ]);
+    expect(await pings('any', () => 'TIMEOUT')).toStrictEqual([
+      'TIMEOUT',
+      'TIMEOUT',
+      'ADDRESS_NOT_ALLOWED',
+    ]);
+    expect(await pings({ fromSettings: ['chatUrl'] }, () => ({ status: 201 }))).toStrictEqual([
+      201,
+      'HOST_NOT_DECLARED',
+      'ADDRESS_NOT_ALLOWED',
+    ]);
   });
 });
