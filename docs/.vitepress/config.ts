@@ -11,7 +11,19 @@ const ENGLISH: DefaultTheme.Config = {
   ],
   sidebar: [
     { text: 'Guide', items: [{ text: 'What Toppo is', link: '/guide/' }] },
-    { text: 'Self-hosting', items: [{ text: 'Install and run Toppo', link: '/self-hosting' }] },
+    {
+      text: 'Self-hosting',
+      items: [
+        { text: 'Overview', link: '/self-hosting' },
+        { text: 'Install', link: '/self-hosting/install' },
+        { text: 'First run', link: '/self-hosting/first-run' },
+        { text: 'Configuration', link: '/self-hosting/configuration' },
+        { text: 'Email', link: '/self-hosting/email' },
+        { text: 'HTTPS behind a reverse proxy', link: '/self-hosting/reverse-proxy' },
+        { text: 'Backups and upgrades', link: '/self-hosting/backups-and-upgrades' },
+        { text: 'Troubleshooting', link: '/self-hosting/troubleshooting' },
+      ],
+    },
     {
       text: 'Contributing',
       items: [
@@ -33,7 +45,16 @@ const FRENCH: DefaultTheme.Config = {
     { text: 'Guide', items: [{ text: 'Ce qu’est Toppo', link: '/fr/guide/' }] },
     {
       text: 'Auto-hébergement',
-      items: [{ text: 'Installer et faire tourner Toppo', link: '/fr/self-hosting' }],
+      items: [
+        { text: 'Vue d’ensemble', link: '/fr/self-hosting' },
+        { text: 'Installer', link: '/fr/self-hosting/install' },
+        { text: 'Premier démarrage', link: '/fr/self-hosting/first-run' },
+        { text: 'Configuration', link: '/fr/self-hosting/configuration' },
+        { text: 'E-mail', link: '/fr/self-hosting/email' },
+        { text: 'HTTPS derrière un reverse proxy', link: '/fr/self-hosting/reverse-proxy' },
+        { text: 'Sauvegardes et mises à jour', link: '/fr/self-hosting/backups-and-upgrades' },
+        { text: 'Dépannage', link: '/fr/self-hosting/troubleshooting' },
+      ],
     },
     {
       text: 'Contribuer',
