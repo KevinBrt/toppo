@@ -41,7 +41,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] what each project sets for itself of a plugin, in its Plugins tab;
     - [x] entities: records on an issue or a project, checked and bounded by Toppo, kept or deleted with their plugin;
     - [x] indexes: typed slots to filter, sort and sum on a record's own fields;
-    - [ ] properties of issues, typed in or computed by a plugin.
+    - [x] properties of issues, typed in or computed by a plugin.
   - [ ] **3. Interface**: plugins' screens in sandboxed frames, `@toppo-tracker/plugin-ui`, pages, panels, zones, the project home page.
   - [ ] **4. Beyond the instance**: routes, `ctx.crypto`, outbound HTTP, recurring jobs.
   - [ ] Publish the packages to npm from GitHub Actions, once steps 1 to 3 are done.

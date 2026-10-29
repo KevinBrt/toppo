@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { ActionContext, Context, Entities } from './context.ts';
 import { type PluginDefinition, register } from './definition.ts';
 import type { MessageKey, MessagesOf } from './messages.ts';
+import type { Properties, PropertyNames } from './property.ts';
 import type { PluginNeed } from './protocol/calls.ts';
 import type { EventPayload, EventType } from './protocol/events.ts';
 import type { Messages } from './protocol/manifest.ts';
@@ -34,12 +35,17 @@ type NoEntities = Record<never, never>;
 
 const NO_ENTITIES: NoEntities = {};
 
+type NoProperties = Record<never, never>;
+
+const NO_PROPERTIES: NoProperties = {};
+
 export interface PluginConfig<
   M extends Messages,
   P extends PermissionDefinitions<M>,
   S extends z.ZodType,
   PS extends z.ZodType,
   E extends Entities,
+  Pr extends Properties,
 > {
   /** `time-tracking`: lowercase words joined by dashes. */
   id: string;
@@ -60,6 +66,8 @@ export interface PluginConfig<
   projectSettings?: PS;
   /** What it keeps, by name, each declared with `defineEntity`: Toppo stores it. */
   entities?: E;
+  /** What it adds to issues, by name, each declared with `defineProperty`: 5 at most. */
+  properties?: Pr & PropertyNames<M, Pr>;
   messages: { en: M; fr: MessagesOf<M> };
 }
 
@@ -80,11 +88,13 @@ export interface Plugin<
   S extends z.ZodType,
   PS extends z.ZodType = typeof NO_SETTINGS,
   E extends Entities = NoEntities,
+  Pr extends Properties = NoProperties,
 > {
   readonly id: string;
   readonly settings: S;
   readonly projectSettings: PS;
   readonly entities: E;
+  readonly properties: Pr;
   readonly messages: { readonly en: M; readonly fr: MessagesOf<M> };
   /** What the plugin's screens call: Toppo checks `access`, the SDK the input, then it runs. */
   defineAction<I extends z.ZodType, R>(definition: {
@@ -92,12 +102,12 @@ export interface Plugin<
     name: string;
     access: Access<P, z.input<I>>;
     input: I;
-    handler(ctx: ActionContext<S, M, PS, E>, input: z.output<I>): Promise<R>;
+    handler(ctx: ActionContext<S, M, PS, E, Pr>, input: z.output<I>): Promise<R>;
   }): Action<I, R>;
   /** What the plugin does when something happens to an issue, in the background. */
   defineEventHandler<T extends EventType>(definition: {
     event: T;
-    handler(ctx: Context<S, M, PS, E>, payload: EventPayload<T>): Promise<void>;
+    handler(ctx: Context<S, M, PS, E, Pr>, payload: EventPayload<T>): Promise<void>;
   }): EventHandler<T>;
 }
 
@@ -111,25 +121,29 @@ export function definePlugin<
   S extends z.ZodType = typeof NO_SETTINGS,
   PS extends z.ZodType = typeof NO_SETTINGS,
   E extends Entities = NoEntities,
->(config: PluginConfig<M, P, S, PS, E>): Plugin<M, P, S, PS, E> {
+  Pr extends Properties = NoProperties,
+>(config: PluginConfig<M, P, S, PS, E, Pr>): Plugin<M, P, S, PS, E, Pr> {
   const settings = config.settings ?? NO_SETTINGS;
   const projectSettings = config.projectSettings ?? NO_SETTINGS;
   const entities = config.entities ?? NO_ENTITIES;
+  const properties = config.properties ?? NO_PROPERTIES;
   const definition: PluginDefinition = {
     config,
     settings,
     projectSettings,
     entities,
+    properties,
     actions: new Map(),
     events: new Map(),
   };
-  const plugin: Plugin<M, P, S, PS, E> = {
+  const plugin: Plugin<M, P, S, PS, E, Pr> = {
     id: config.id,
     // Its own schemas, or none (an empty object) when it has no settings, which is then `S`.
     settings: settings as S,
     projectSettings: projectSettings as PS,
-    // Its entities, or none when it keeps nothing, which is then `E`.
+    // Its entities, or none when it keeps nothing, which is then `E`; its properties likewise.
     entities: entities as E,
+    properties: properties as Pr,
     messages: config.messages,
     defineAction(action) {
       if (definition.actions.has(action.name)) {
@@ -141,7 +155,7 @@ export function definePlugin<
         // Toppo runs it with an input parsed by this very schema, and a context of this plugin.
         handler: (ctx, input) =>
           action.handler(
-            ctx as unknown as ActionContext<S, M, PS, E>,
+            ctx as unknown as ActionContext<S, M, PS, E, Pr>,
             input as z.output<typeof action.input>,
           ),
       });
@@ -154,7 +168,7 @@ export function definePlugin<
       // Toppo runs it with a payload checked against this event, and a context of this plugin.
       definition.events.set(handler.event, (ctx, payload) =>
         handler.handler(
-          ctx as unknown as Context<S, M, PS, E>,
+          ctx as unknown as Context<S, M, PS, E, Pr>,
           payload as EventPayload<typeof handler.event>,
         ),
       );

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Messages } from './manifest.ts';
+import type { Messages } from '../manifest.ts';
 
 /** At most this many settings in a plugin: one form, read at a glance. */
 export const PLUGIN_SETTINGS_MAX = 30;

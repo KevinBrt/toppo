@@ -8,6 +8,7 @@ import {
   type UserRef,
 } from '@toppo-tracker/shared';
 import { sql } from 'drizzle-orm';
+import { shownFromInstance } from '../../../platform/plugins/plugin-properties.ts';
 
 const { issueLabels, issues, labels, projectProperties, properties, propertyOptions, users } =
   schema;
@@ -65,7 +66,7 @@ end`;
 /**
  * The values of the properties of the issue a row is about, oldest property first, as a column
  * of the query itself: those shown in the list, or all of them, of the properties its project
- * takes (not one it hides).
+ * takes (not one it hides, nor a plugin's where it no longer acts).
  */
 export function propertyValuesOfIssue({ listedOnly }: { listedOnly: boolean }) {
   return sql<IssuePropertyValue[]>`coalesce((
@@ -74,6 +75,7 @@ export function propertyValuesOfIssue({ listedOnly }: { listedOnly: boolean }) {
         'id', ${properties.id},
         'name', ${properties.name},
         'type', ${properties.type},
+        'display', ${properties.display},
         'value', shown.value
       )
       order by ${properties.createdAt}, ${properties.id}
@@ -83,7 +85,7 @@ export function propertyValuesOfIssue({ listedOnly }: { listedOnly: boolean }) {
     cross join lateral (select ${shownValue} as value) as shown
     where shown.value is not null
     and (${properties.projectId} = ${issues.projectId} or (
-      ${properties.projectId} is null and not exists (
+      ${properties.projectId} is null and ${shownFromInstance(issues.projectId)} and not exists (
         select 1 from ${projectProperties}
         where ${projectProperties.projectId} = ${issues.projectId}
           and ${projectProperties.propertyId} = ${properties.id}

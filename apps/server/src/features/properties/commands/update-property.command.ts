@@ -6,13 +6,14 @@ import {
 import { defineCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import { assertSuitsType, saveFields, saveOptions } from '../utils/property-saving.util.ts';
-import { lockedProperty } from '../utils/property-values.util.ts';
+import { lockedProperty, writingOf } from '../utils/property-values.util.ts';
 
 /**
  * Saves a property of the instance and all its options at once, as the settings edit it:
  * renamed, switched, its options renamed, recolored, reordered, added to, and deleted when named
  * so. A deleted option leaves its issues, each told in its history, which keeps its name. The
- * projects' own options of the property stay theirs. Its type stays as it was created.
+ * projects' own options of the property stay theirs. Its type stays as it was created; what a
+ * plugin writes is asked of no one.
  */
 export const updateProperty = defineCommand({
   name: 'property.update',
@@ -24,6 +25,13 @@ export const updateProperty = defineCommand({
       throw new HttpError(404, 'PROPERTY_NOT_FOUND', 'This property does not exist');
     }
     assertSuitsType(property.type, { required: fields.required, options, removed });
+    if (fields.askedAtCreation && (await writingOf(tx, propertyId)).writtenBy === 'plugin') {
+      throw new HttpError(
+        400,
+        'PROPERTY_WRITTEN_BY_PLUGIN',
+        'Its plugin writes this property: no one is asked for it',
+      );
+    }
     await saveFields(tx, propertyId, null, fields);
     const takenOff = hasOptions(property.type)
       ? await saveOptions(tx, actor.id, property, null, options, removed)

@@ -53,7 +53,13 @@ describe('applyEdit', () => {
 
   it('gives a property its value, or takes it away, keeping the others', () => {
     const due = { id: 'due', name: 'Due', type: 'date', value: '2026-11-02' } as const;
-    const estimate = { id: 'estimate', name: 'Estimate', type: 'number', value: 3 } as const;
+    const estimate = {
+      id: 'estimate',
+      name: 'Estimate',
+      type: 'number',
+      value: 3,
+      display: null,
+    } as const;
     const issue = { ...ISSUE, properties: [estimate] };
 
     expect(

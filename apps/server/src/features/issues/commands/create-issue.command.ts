@@ -22,6 +22,7 @@ import {
   fieldSettingsOf,
   lockedPropertyRules,
   propertyRefusal,
+  writtenByPlugin,
 } from '../utils/issue-properties.util.ts';
 import { rememberWords } from '../utils/issue-search.util.ts';
 import { assertAssignable } from './assign-issue.command.ts';
@@ -59,6 +60,9 @@ export const createIssue = defineCommand({
     const all = await lockedPropertyRules(tx, project.id);
     if (!mayName && all.some(({ id, type }) => type === 'user' && id in input.properties)) {
       throw new HttpError(403, 'FORBIDDEN', 'You do not have permission to name people here');
+    }
+    if (all.some(({ id, writtenBy }) => writtenBy === 'plugin' && id in input.properties)) {
+      throw writtenByPlugin();
     }
     const rules = all.filter(({ type }) => mayName || type !== 'user');
     const given = creationValuesOf(rules, input.properties);

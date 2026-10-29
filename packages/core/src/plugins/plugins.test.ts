@@ -26,6 +26,7 @@ describe('a plugin upgrade', () => {
     needs: ['issue.read', 'comment.create'],
     permissions: { 'entries.log': { scope: 'project' }, 'reports.read': { scope: 'instance' } },
     events: ['issue.statusChanged'],
+    properties: { timeSpent: {} },
   };
 
   it('asks for nothing more with the same grants, in another order, or fewer', () => {
@@ -35,9 +36,12 @@ describe('a plugin upgrade', () => {
         needs: ['comment.create', 'issue.read'],
         permissions: { 'reports.read': { scope: 'instance' }, 'entries.log': { scope: 'project' } },
         events: ['issue.statusChanged'],
+        properties: { timeSpent: { type: 'number' } },
       }),
     ).toBe(false);
-    expect(asksForMore(approved, { needs: [], permissions: {}, events: [] })).toBe(false);
+    expect(asksForMore(approved, { needs: [], permissions: {}, events: [], properties: {} })).toBe(
+      false,
+    );
   });
 
   it('asks for no more when a permission narrows to projects', () => {
@@ -52,6 +56,7 @@ describe('a plugin upgrade', () => {
   it.each([
     ['a need', { ...approved, needs: [...approved.needs, 'issue.update'] }],
     ['an event', { ...approved, events: [...approved.events, 'issue.created'] }],
+    ['a property', { ...approved, properties: { ...approved.properties, estimate: {} } }],
     [
       'a permission',
       {

@@ -1,11 +1,16 @@
 import { z } from 'zod';
-import { ENTITY_INDEXES_TOTAL, ENTITY_NAME } from './entities.ts';
+import { ENTITY_INDEXES_TOTAL, ENTITY_NAME } from './declarations/entities.ts';
 import { issueSnapshotSchema } from './events.ts';
+
+/** The value of one of a plugin's properties: a number, a text, a day, a box ticked (`true`). */
+const propertyValueSchema = z.union([z.number(), z.string(), z.boolean()]);
 
 /** An issue with its words, as `ctx.issues.get` answers it. */
 export const issueDetailsSchema = issueSnapshotSchema.extend({
   /** Markdown. */
   description: z.string(),
+  /** The values of the plugin's own properties it has, by their names in the plugin. */
+  properties: z.record(z.string(), propertyValueSchema).default({}),
 });
 
 export type IssueDetails = z.infer<typeof issueDetailsSchema>;
@@ -98,6 +103,18 @@ export const HOST_CALLS = {
       once: z.string().min(1).max(200).optional(),
     }),
     result: z.object({ commentId: z.uuid() }),
+  },
+  'issues.setProperty': {
+    // One of its own properties, which it alone writes: no core permission, on an issue it sees.
+    needs: null,
+    args: z.object({
+      issueId: z.uuid(),
+      /** As the plugin names it: `timeSpent`. */
+      property: z.string().regex(ENTITY_NAME),
+      /** Checked by Toppo against the property's type; `null`, or `false` for a box, for none. */
+      value: propertyValueSchema.nullable(),
+    }),
+    result: z.null(),
   },
   'projects.settings': {
     needs: null,

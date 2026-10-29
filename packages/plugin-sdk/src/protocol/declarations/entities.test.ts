@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { type Manifest, manifestSchema } from '../manifest.ts';
 import { ENTITY_FIELDS_MAX, ENTITY_LIMITS, indexKindOf, recordFieldsSchemaOf } from './entities.ts';
-import { type Manifest, manifestSchema } from './manifest.ts';
 
 const TIME_ENTRY = z.object({
   minutes: z

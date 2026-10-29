@@ -7,13 +7,15 @@ import { HttpError } from '../../../platform/http/http-error.ts';
 import { pluginNameOf } from '../../../platform/plugins/plugin-words.ts';
 import { assertSettingsAccepted, lockPlugin } from '../utils/plugin-rows.util.ts';
 import { ensurePluginUser } from '../utils/plugin-user.util.ts';
+import { addPluginProperties } from '../utils/properties/plugin-properties.util.ts';
 
-const { pluginProjects, plugins, projects } = schema;
+const { pluginProjects, plugins, projects, users } = schema;
 
 /**
  * Approves what a plugin declares, as it is now, in the projects chosen (or all of them), and
- * enables it, with a user of its own, once its code takes its settings. Approving again changes its projects; an upgrade that asks
- * for more is approved so.
+ * enables it, with a user of its own and the properties it adds to issues, named in the language
+ * of whoever approves it, once its code takes its settings. Approving again changes its
+ * projects; an upgrade that asks for more is approved so.
  */
 export const approvePlugin = defineCommand({
   name: 'plugin.approve',
@@ -29,6 +31,11 @@ export const approvePlugin = defineCommand({
       .where(eq(plugins.id, plugin.id));
     const manifest = manifestSchema.parse(declared?.manifest);
     await ensurePluginUser(tx, pluginSlug, pluginNameOf(manifest).en);
+    const [approver] = await tx
+      .select({ locale: users.locale })
+      .from(users)
+      .where(eq(users.id, actor.id));
+    await addPluginProperties(tx, manifest, approver?.locale ?? 'en');
     await tx.delete(pluginProjects).where(eq(pluginProjects.pluginId, plugin.id));
     if (projectIds.length > 0) {
       await tx

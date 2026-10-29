@@ -6,7 +6,8 @@ import { DetailsSection } from './details-section.tsx';
 
 /**
  * What a plugin declares, in plain words, for an administrator to approve it knowingly: what it
- * does in Toppo, the permissions it adds, and the events it listens to.
+ * does in Toppo, the permissions it adds, the properties it adds to issues, and the events it
+ * listens to.
  */
 export function PluginDeclarations({
   plugin,
@@ -41,6 +42,34 @@ export function PluginDeclarations({
                 <span className="text-sm text-foreground">{permission.label[locale]}</span>
                 <span className="text-xs text-muted-foreground">
                   {t(`plugins.scope.${permission.scope}`)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DetailsSection>
+      <DetailsSection
+        title={t('plugins.propertiesTitle')}
+        description={plugin.properties.length > 0 ? t('plugins.propertiesDescription') : undefined}
+      >
+        {plugin.properties.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t('plugins.propertiesNone')}</p>
+        ) : (
+          <ul className="divide-y divide-border rounded-lg border border-border">
+            {plugin.properties.map((property) => (
+              <li
+                key={property.name.en}
+                className="flex flex-col gap-0.5 px-3 py-2.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
+              >
+                <span className="text-sm text-foreground">{property.name[locale]}</span>
+                <span className="text-xs text-muted-foreground">
+                  {t('plugins.propertyKind', {
+                    type:
+                      property.display === 'duration'
+                        ? t('plugins.durationType')
+                        : t(`properties.types.${property.type}`),
+                    writer: t(`plugins.propertyWrittenBy.${property.writtenBy}`),
+                  })}
                 </span>
               </li>
             ))}

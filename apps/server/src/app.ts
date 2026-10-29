@@ -8,6 +8,7 @@ import { createComment } from './features/comments/commands/create-comment.comma
 import { registerCommentRoutes } from './features/comments/comments.routes.ts';
 import { registerInvitationRoutes } from './features/invitations/invitations.routes.ts';
 import { emailInvitationJob } from './features/invitations/jobs/email-invitation.job.ts';
+import { setPluginProperty } from './features/issues/commands/set-plugin-property.command.ts';
 import { registerIssueRoutes } from './features/issues/issues.routes.ts';
 import { rebuildIssueWordsJob } from './features/issues/jobs/rebuild-issue-words.job.ts';
 import { rebuildProjectWordsJob } from './features/issues/jobs/rebuild-project-words.job.ts';
@@ -127,6 +128,14 @@ export function createHostCalls(): HostCalls {
         ...(once === undefined ? {} : { once }),
       });
       return { commentId: created.id };
+    },
+    'issues.setProperty': async (context, { issueId, property, value }) => {
+      const issueKey = await issueKeyOf(context.db, issueId);
+      if (issueKey === null) {
+        throw new HttpError(404, 'ISSUE_NOT_FOUND', 'This issue does not exist');
+      }
+      await setPluginProperty.execute(context, { issueKey, property, value });
+      return null;
     },
     'projects.settings': (context, { projectId }) =>
       readOwnProjectSettings.execute(context, { projectId }),

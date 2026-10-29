@@ -39,6 +39,20 @@ const TIME_TRACKING = fakePlugin('time-tracking', 'Time tracking', {
       label: { en: 'Read the reports', fr: 'Lire les rapports' },
     },
   ],
+  properties: [
+    {
+      name: { en: 'Time spent', fr: 'Temps passé' },
+      type: 'number',
+      writtenBy: 'plugin',
+      display: 'duration',
+    },
+    {
+      name: { en: 'Estimate', fr: 'Estimation' },
+      type: 'date',
+      writtenBy: 'people',
+      display: null,
+    },
+  ],
   events: ['issue.statusChanged', 'issue.commented'],
   actions: ['timeEntry.log'],
 });
@@ -212,6 +226,14 @@ describe('a plugin’s page', () => {
     await expect
       .element(permissions.getByRole('listitem').filter({ hasText: 'Read the reports' }))
       .toMatchTextContent('For the whole instance');
+
+    const properties = screen.getByRole('region', { name: 'Properties it adds' });
+    await expect
+      .element(properties.getByRole('listitem').filter({ hasText: 'Time spent' }))
+      .toMatchTextContent('Duration, written by the plugin');
+    await expect
+      .element(properties.getByRole('listitem').filter({ hasText: 'Estimate' }))
+      .toMatchTextContent('Date, typed in by people');
 
     const events = screen.getByRole('region', { name: 'What it listens to' });
     await expect.element(events.getByText('An issue changes status')).toBeVisible();

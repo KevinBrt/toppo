@@ -101,6 +101,7 @@ import {
   type ProjectFields,
   type ProjectPlugin,
   type PropertyOptionRef,
+  type PropertyPlugin,
   type PropertyValue,
   passwordResetRequestSchema,
   prioritiesRequestSchema,
@@ -252,6 +253,8 @@ export interface FakeServerState {
 export type FakeProperty = IssuePropertyField & {
   /** The project it belongs to; none for one of the instance. */
   projectKey?: string;
+  /** The plugin that added it; none for one of Toppo's. */
+  plugin?: PropertyPlugin;
 };
 
 /** How a project adapts a property of the instance: hidden, and its own options or none. */
@@ -280,6 +283,8 @@ export function fakeProperty(
     shownInList: false,
     askedAtCreation: false,
     required: false,
+    writtenBy: 'people',
+    display: null,
     options: optionNames.map((optionName, index) => ({
       id: id(seed * 10 + index + 1),
       name: optionName,
@@ -525,6 +530,7 @@ export function fakePlugin(
     apiVersion: '^1.0',
     needs: [],
     permissions: [],
+    properties: [],
     events: [],
     actions: [],
     allProjects: false,
@@ -2064,7 +2070,9 @@ function shownValueOf(
         ? { id, name, type: 'user', value: userRef(state, value) }
         : null;
     case 'number':
-      return typeof value === 'number' ? { id, name, type: 'number', value } : null;
+      return typeof value === 'number'
+        ? { id, name, type: 'number', value, display: property.display }
+        : null;
     case 'checkbox':
       return value === true ? { id, name, type: 'checkbox', value } : null;
     case 'date':
@@ -3168,12 +3176,13 @@ function listedRows(
   );
   return state.properties
     .filter((property) => property.projectKey === projectKey)
-    .map(({ projectKey: _, ...property }) => {
+    .map(({ projectKey: _, plugin, ...property }) => {
       const adaptation = state.propertyAdaptations.find(
         (candidate) => candidate.projectKey === countedIn && candidate.propertyId === property.id,
       );
       return {
         ...property,
+        plugin: plugin ?? null,
         issueCount: counted.filter((issue) => property.id in issue.properties).length,
         options: (adaptation?.options ?? property.options).map((option) => ({
           ...option,

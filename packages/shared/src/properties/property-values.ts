@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { userRefSchema } from '../members/users.ts';
-import { PROPERTY_OPTIONS_MAX, type PropertyType, propertyOptionRefSchema } from './properties.ts';
+import {
+  PROPERTY_DISPLAYS,
+  PROPERTY_OPTIONS_MAX,
+  type PropertyType,
+  propertyOptionRefSchema,
+} from './properties.ts';
 
 /** A line of text, short enough to show whole beside an issue. */
 export const PROPERTY_TEXT_MAX_LENGTH = 500;
@@ -59,13 +64,13 @@ const valued = <T extends PropertyType, V extends z.ZodType>(type: T, value: V) 
 
 /**
  * The value of one property on an issue, as it reads: its options in their order, someone by
- * name, a date as a calendar day.
+ * name, a date as a calendar day, a number as its property shows it (minutes as a duration).
  */
 export const issuePropertyValueSchema = z.discriminatedUnion('type', [
   valued('list', propertyOptionRefSchema),
   valued('multiSelect', z.array(propertyOptionRefSchema)),
   valued('text', z.string()),
-  valued('number', z.number()),
+  valued('number', z.number()).extend({ display: z.enum(PROPERTY_DISPLAYS).nullable() }),
   valued('date', z.iso.date()),
   valued('user', userRefSchema),
   valued('checkbox', z.literal(true)),

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
+import { PLUGIN_SETTINGS_MAX } from './declarations/settings.ts';
 import { EVENT_TYPES, eventPayloadSchema } from './events.ts';
 import { type Manifest, manifestSchema, PLUGIN_LIMITS } from './manifest.ts';
 import { logoTypeOf } from './package.ts';
-import { PLUGIN_SETTINGS_MAX } from './settings.ts';
 import { isApiCompatible } from './version.ts';
 
 const manifest: Manifest = {
@@ -17,6 +17,7 @@ const manifest: Manifest = {
   settings: { type: 'object', properties: {} },
   projectSettings: { type: 'object', properties: {} },
   entities: {},
+  properties: {},
   messages: { en: { permissions: { reportsRead: 'See reports' } }, fr: {} },
   actions: [{ name: 'timeEntry.log', access: { issue: 'issueId' }, input: { type: 'object' } }],
   events: ['issue.created'],

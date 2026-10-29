@@ -81,6 +81,14 @@ export const getPlugin = defineQuery({
         scope,
         label: translated(manifest.messages, label, name),
       })),
+      properties: Object.entries(manifest.properties).map(
+        ([name, { name: label, type, writtenBy, display }]) => ({
+          name: translated(manifest.messages, label, name),
+          type,
+          writtenBy,
+          display: display ?? null,
+        }),
+      ),
       events: manifest.events,
       actions: manifest.actions.map((action) => action.name),
       allProjects: plugin.allProjects,

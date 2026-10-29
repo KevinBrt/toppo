@@ -123,9 +123,12 @@ export function IssueProperties({
               property={property}
               value={issue.properties.find(({ id }) => id === property.id)}
               projectKey={issue.project.key}
-              // Naming someone is choosing among those who may be assigned.
+              // Naming someone is choosing among those who may be assigned; what a plugin writes,
+              // no one types in.
               disabled={
-                !editsFields || (property.type === 'user' && !issue.actions.includes('assign'))
+                !editsFields ||
+                property.writtenBy === 'plugin' ||
+                (property.type === 'user' && !issue.actions.includes('assign'))
               }
               onChange={(value) => onEdit({ field: 'property', propertyId: property.id, value })}
             />

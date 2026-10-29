@@ -255,13 +255,13 @@ export const timeSpent = defineProperty({
 await ctx.issues.setProperty(input.issueId, "timeSpent", total);
 ```
 
-- The same types as the core's properties. `display` formats a number: `duration` shows minutes as "6 h 40".
-- `writtenBy: 'people'`: typed in like any property. Changing it takes `issue.update` and records an activity, as usual. The plugin reads it on the issue.
-- `writtenBy: 'plugin'`: only the plugin writes it; everyone else reads it. Writing its own property takes no `needs`. **It records no activity**: it is derived data, like a count, whose history is the plugin's own records. Recording it would fill the issue's history at every change and, through `issue.propertyChanged`, let plugins answer each other in loops.
-- Stored where the core's properties are (`issues.properties`, and the `properties` table with the plugin as owner), so the issue list, its filters and its sorts work unchanged.
-- Its name is data, as for every property: written when the plugin is installed, in the instance's language, then renamed at will. If a property already has that name, the administrator chooses another when approving.
-- The administrator adapts it like any property (shown in the list, hidden in a project; asked at creation when people write it), but cannot delete it or change its type while the plugin is installed.
-- At most 5 per plugin. When the plugin is uninstalled, they follow the administrator's choice: kept with their values, or deleted.
+- A number, a text, a date or a box: the core's types but those with options or people, which would need options a plugin declares. `display` formats a number: `duration` shows minutes as "6 h 40".
+- `writtenBy: 'people'`: typed in like any property. Changing it takes `issue.update` and records an activity, as usual. The plugin reads it on the issue (`ctx.issues.get(id).properties`), as it reads its own others.
+- `writtenBy: 'plugin'`: only the plugin writes it, on issues it, and whoever it acts for, sees; everyone else reads it. Writing its own property takes no `needs`, though a plugin with properties needs `issue.read`. **It records no activity**: it is derived data, like a count, whose history is the plugin's own records. Recording it would fill the issue's history at every change and, through `issue.propertyChanged`, let plugins answer each other in loops.
+- Stored where the core's properties are (`issues.properties`, and the `properties` table with the plugin as owner), so the issue list, its filters and its sorts work unchanged. They show in the projects where the plugin acts, while it is enabled.
+- Its name is data, as for every property: written when the plugin is approved, from its messages, in the language of whoever approves it, then renamed at will. If a property already has that name, the plugin's name follows it: "Estimate (Time tracking)".
+- The administrator adapts it like any property (shown in the list, hidden in a project; asked at creation when people write it), but cannot delete it while the plugin is installed. Its type, and who writes it, never change: a version that would is refused.
+- At most 5 per plugin, among the instance's 20. A version adding one is approved again; one dropping one leaves it hidden with its values, until a version declares it again. When the plugin is uninstalled, they follow the administrator's choice: kept hidden with their values, or deleted (what people typed told in each issue's history).
 
 ## Events, actions, jobs and routes
 

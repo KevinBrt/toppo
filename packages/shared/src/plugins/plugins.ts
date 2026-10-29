@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { userRefSchema } from '../members/users.ts';
 import { projectKeySchema } from '../project-key.ts';
+import { PROPERTY_DISPLAYS, PROPERTY_TYPES, PROPERTY_WRITERS } from '../properties/properties.ts';
 
 /**
  * `pending` until an administrator approves what it declares, and again when an upgrade asks for
@@ -183,6 +184,18 @@ export const pluginDetailsResponseSchema = pluginSummarySchema.extend({
       name: z.string(),
       scope: z.enum(['instance', 'project']),
       label: translatedSchema,
+    }),
+  ),
+  /**
+   * The properties it adds to issues, named in each language: typed in by people, or written by
+   * the plugin alone.
+   */
+  properties: z.array(
+    z.object({
+      name: translatedSchema,
+      type: z.enum(PROPERTY_TYPES),
+      writtenBy: z.enum(PROPERTY_WRITERS),
+      display: z.enum(PROPERTY_DISPLAYS).nullable(),
     }),
   ),
   /** The events it hears of. */

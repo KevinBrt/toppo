@@ -15,6 +15,7 @@ import {
   type RunAnswer,
   runAnswerSchema,
 } from '@toppo-tracker/plugin-sdk/protocol';
+import { createTestProperties } from './test-properties.ts';
 import { createTestRecords } from './test-records.ts';
 
 /** Why a run was refused: the plugin's own code (a message key), or one of Toppo's. */
@@ -56,7 +57,8 @@ export type TestIssueInput = Partial<Omit<IssueDetails, 'id' | 'key'>>;
  * A fake Toppo for a plugin's tests, in memory, with Toppo's rules: the plugin may only make the
  * calls its `needs` allow; an action runs only for someone its `access` lets in (404 for an issue
  * they do not see); a comment with the same `once` is written once; a project's settings are read
- * in a project the plugin reaches, and whoever it acts for too. The plugin runs in the test's
+ * in a project the plugin reaches, and whoever it acts for too; a property is written by the
+ * plugin when it says so, checked against its type. The plugin runs in the test's
  * process, its answers through JSON as in the sandbox; `toppo plugin build` checks its bundle.
  */
 export function createTestToppo(
@@ -96,6 +98,8 @@ export function createTestToppo(
     return issue && (runningFor === null || runningFor.sees(issueId)) ? issue : undefined;
   }
 
+  const properties = createTestProperties(manifest, issues, visible);
+
   /** Toppo's answer to a call, within the needs the plugin declared. */
   function answer(method: string, args: unknown): Promise<unknown> {
     const call = Object.hasOwn(HOST_CALLS, method)
@@ -113,6 +117,8 @@ export function createTestToppo(
         return getIssue(args);
       case 'projects.settings':
         return projectSettings(args);
+      case 'issues.setProperty':
+        return Promise.resolve().then(() => properties.set(args));
       default:
         return comment(args);
     }
@@ -212,6 +218,9 @@ export function createTestToppo(
     comments: comments as readonly TestComment[],
     /** What the plugin kept of one of its entities, oldest first, whoever sees it. */
     records: (entity: string) => records.of(entity),
+    /** The values of the plugin's properties an issue has, by their names. */
+    properties: (issueId: string): IssueDetails['properties'] =>
+      issues.get(issueId)?.properties ?? {},
 
     createIssue(input: TestIssueInput = {}): IssueDetails {
       const id = nextId();
@@ -232,6 +241,7 @@ export function createTestToppo(
         closedAt: null,
         createdAt: now,
         updatedAt: now,
+        properties: {},
         ...input,
       };
       issues.set(id, issue);
