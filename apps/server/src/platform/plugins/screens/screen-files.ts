@@ -90,23 +90,32 @@ export interface ScreenBundles {
 /** Bundles kept in memory at once: a few plugins' screens, each read from its zip once. */
 const BUNDLES_KEPT = 16;
 
+/**
+ * The bundle is public: anyone may ask for it. Each is read once, however many ask at the same
+ * time, and those asked for last are kept.
+ */
 export function createScreenBundles(store: Pick<PackageStore, 'read'>): ScreenBundles {
-  const kept = new Map<string, string | undefined>();
+  const kept = new Map<string, Promise<string | undefined>>();
   return {
-    async read(wanted) {
+    read(wanted) {
       const key = `${wanted.slug}@${wanted.sha256}`;
-      if (kept.has(key)) {
-        return kept.get(key);
+      const known = kept.get(key);
+      if (known) {
+        // Asked for again: the last one to be forgotten.
+        kept.delete(key);
+        kept.set(key, known);
+        return known;
       }
-      const bundle = screensOf(await store.read(wanted));
+      const reading = store.read(wanted).then(screensOf);
+      reading.catch(() => kept.delete(key));
       if (kept.size >= BUNDLES_KEPT) {
         const [oldest] = kept.keys();
         if (oldest !== undefined) {
           kept.delete(oldest);
         }
       }
-      kept.set(key, bundle);
-      return bundle;
+      kept.set(key, reading);
+      return reading;
     },
   };
 }

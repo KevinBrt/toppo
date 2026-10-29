@@ -22,7 +22,7 @@ import {
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
 import { keepPluginProperties } from '../utils/properties/plugin-properties.util.ts';
 import { assignRecordSlots } from '../utils/records/record-slots.util.ts';
-import { openSettings } from '../utils/settings/secret-settings.util.ts';
+import { settingsWithoutSecrets } from '../utils/settings/secret-settings.util.ts';
 
 const { pluginProjectSettings, plugins } = schema;
 
@@ -144,7 +144,8 @@ async function indexRecords(tx: Transaction, manifest: Manifest): Promise<void> 
 /**
  * What the code of an upgrade refuses of the settings saved for the version it replaces: the
  * instance's, and those of the projects that set theirs. Settings left empty need no check: each
- * one has a default, or may be left out.
+ * one has a default, or may be left out. Its secrets are left out too: the code is not approved
+ * yet, and must not read them; it checks them once they are saved again.
  */
 async function refusedSettings(
   tx: Transaction,
@@ -163,7 +164,7 @@ async function refusedSettings(
   return await services.plugins.checkSettings(
     code,
     {
-      instance: openSettings(installed.settings, services.secrets),
+      instance: settingsWithoutSecrets(installed.settings),
       projects: Object.fromEntries(
         projects.map(({ projectId, settings }) => [projectId, settings]),
       ),

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { displayNameSchema, emailSchema, passwordSchema } from '../auth.ts';
+import { displayNameSchema, passwordSchema, personEmailSchema } from '../auth.ts';
 import { DEFAULT_LOCALE, localeSchema } from '../locale.ts';
 
 /** Body of `GET /api/v1/setup`: whether the first-run wizard still has to run. */
@@ -14,7 +14,7 @@ export const setupRequestSchema = z.object({
   setupCode: z.string().trim().min(1).max(64),
   admin: z.object({
     name: displayNameSchema,
-    email: emailSchema,
+    email: personEmailSchema,
     password: passwordSchema,
   }),
   /** Language of the administrator: default data (role names) is written in it. */

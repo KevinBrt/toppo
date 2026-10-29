@@ -276,11 +276,37 @@ describe('a plugin’s page', () => {
     expect(server.requests).toContainEqual({
       method: 'POST',
       path: '/api/v1/plugins/time-tracking/approve',
-      body: { projects: ['WEB'], privateHosts: [] },
+      body: {
+        packageSha256: TIME_TRACKING.packageSha256,
+        projects: ['WEB'],
+        privateHosts: [],
+      },
     });
     await expect.element(badge('Enabled')).toBeVisible();
     await expect.element(screen.getByText(/^Approved by Ada Lovelace on /)).toBeVisible();
     await expect.element(where.getByRole('button', { name: 'Save' })).toBeVisible();
+  });
+
+  it('says so when another package was uploaded since it was reviewed', async () => {
+    const { server, screen } = await openPlugin(TIME_TRACKING, {
+      projects: [fakeProject('WEB', 'Website')],
+    });
+    const where = screen.getByRole('region', { name: 'Where it acts' });
+    server.state.plugins = server.state.plugins.map((plugin) => ({
+      ...plugin,
+      packageSha256: 'b'.repeat(64),
+    }));
+
+    await where.getByRole('checkbox', { name: /Website/ }).click();
+    await where.getByRole('button', { name: 'Approve and enable' }).click();
+
+    await expect
+      .element(
+        where.getByText(
+          'A new version of the plugin was installed meanwhile. Reload the page and review it before approving it.',
+        ),
+      )
+      .toBeVisible();
   });
 
   it('saves where an approved plugin acts: every project, present and future', async () => {
@@ -299,7 +325,7 @@ describe('a plugin’s page', () => {
     expect(server.requests).toContainEqual({
       method: 'POST',
       path: '/api/v1/plugins/time-tracking/approve',
-      body: { projects: 'all', privateHosts: [] },
+      body: { packageSha256: TIME_TRACKING.packageSha256, projects: 'all', privateHosts: [] },
     });
   });
 

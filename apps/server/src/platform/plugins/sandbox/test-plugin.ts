@@ -70,6 +70,24 @@ globalThis.__toppo = {
         return new Promise(() => {});
       case 'wait':
         return await __host.call('never', '{}');
+      case 'flood':
+        for (let i = 0; i < input.calls; i += 1) {
+          __host.call('slow', String(i)).catch(() => {});
+        }
+        return 'null';
+      case 'flood-refused':
+        // Answers which calls Toppo refused, by their rank, once it refused that many.
+        return await new Promise((resolve) => {
+          const refused = [];
+          for (let i = 0; i < input.calls; i += 1) {
+            __host.call('slow', String(i)).catch(() => {
+              refused.push(i);
+              if (refused.length === input.refused) {
+                resolve(JSON.stringify(refused));
+              }
+            });
+          }
+        });
     }
     throw new Error('No such test: ' + name);
   },

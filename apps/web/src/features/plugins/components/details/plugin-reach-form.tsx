@@ -52,7 +52,7 @@ export function PluginReachForm({
 
   const approve = useMutation({
     mutationFn: ({ chosen }: { chosen: 'all' | readonly string[]; done: PlainMessageKey }) =>
-      Plugins.approve(plugin.slug, chosen, hostsOf(privateHosts)),
+      Plugins.approve(plugin.slug, plugin.packageSha256, chosen, hostsOf(privateHosts)),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: PluginsQueries.all });
     },

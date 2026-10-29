@@ -122,7 +122,7 @@ describe('pruning the counters', () => {
 
     await db.transaction((tx) =>
       pruneRateLimitsJob.run(
-        { tx, db, log: Fastify({ logger: false }).log, services: testServices() },
+        { tx, db, attempt: 1, log: Fastify({ logger: false }).log, services: testServices() },
         {},
       ),
     );

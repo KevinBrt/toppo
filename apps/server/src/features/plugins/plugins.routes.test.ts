@@ -33,6 +33,7 @@ import {
   cookieHeader,
   createTestFileStorage,
   createTestUser,
+  packageSha256Of,
   setupTestDatabase,
   TEST_SETUP_CODE,
   testServices,
@@ -105,7 +106,10 @@ async function listed() {
 }
 
 async function approve(projects: 'all' | string[]): Promise<void> {
-  const response = await call('POST', '/api/v1/plugins/time-tracking/approve', { projects });
+  const response = await call('POST', '/api/v1/plugins/time-tracking/approve', {
+    packageSha256: await packageSha256Of(context.database, 'time-tracking'),
+    projects,
+  });
   expect(response.statusCode, response.body).toBe(204);
 }
 
@@ -239,11 +243,27 @@ describe('installing a plugin', () => {
     await install(testPackage());
 
     const refused = await call('POST', '/api/v1/plugins/time-tracking/approve', {
+      packageSha256: await packageSha256Of(context.database, 'time-tracking'),
       projects: ['WEB', 'NOPE'],
     });
 
     expect(refused.statusCode).toBe(404);
     expect(errorCode(refused)).toBe('PROJECT_NOT_FOUND');
+    expect(await details()).toMatchObject({ state: 'pending', approval: null, projects: [] });
+  });
+
+  it('refuses to approve a package other than the one reviewed, changing nothing', async () => {
+    await install(testPackage());
+    const reviewed = await packageSha256Of(context.database, 'time-tracking');
+    await install(testPackage({ version: '1.3.0' }));
+
+    const refused = await call('POST', '/api/v1/plugins/time-tracking/approve', {
+      packageSha256: reviewed,
+      projects: ['WEB'],
+    });
+
+    expect(refused.statusCode).toBe(409);
+    expect(errorCode(refused)).toBe('PLUGIN_CHANGED');
     expect(await details()).toMatchObject({ state: 'pending', approval: null, projects: [] });
   });
 
@@ -316,7 +336,10 @@ describe('installing a plugin', () => {
       await call('GET', '/api/v1/plugins/time-tracking'),
       await call('DELETE', '/api/v1/plugins/time-tracking'),
       await call('POST', '/api/v1/plugins/time-tracking/disable'),
-      await call('POST', '/api/v1/plugins/time-tracking/approve', { projects: 'all' }),
+      await call('POST', '/api/v1/plugins/time-tracking/approve', {
+        packageSha256: '0'.repeat(64),
+        projects: 'all',
+      }),
     ]) {
       expect(response.statusCode).toBe(404);
       expect(errorCode(response)).toBe('PLUGIN_NOT_FOUND');
@@ -517,6 +540,7 @@ describe('a plugin’s settings', () => {
       settings: { values: { reminderDays: 500 }, refused: true },
     });
     const approval = await call('POST', '/api/v1/plugins/time-tracking/approve', {
+      packageSha256: await packageSha256Of(context.database, 'time-tracking'),
       projects: ['WEB'],
     });
     expect(approval.statusCode).toBe(409);
@@ -667,6 +691,7 @@ describe('what a project sets for itself of a plugin', () => {
       plugins: [{ values: { budgetDays: 500 }, refused: true }],
     });
     const approval = await call('POST', '/api/v1/plugins/time-tracking/approve', {
+      packageSha256: await packageSha256Of(context.database, 'time-tracking'),
       projects: 'all',
     });
     expect(errorCode(approval)).toBe('PLUGIN_SETTINGS_REFUSED');

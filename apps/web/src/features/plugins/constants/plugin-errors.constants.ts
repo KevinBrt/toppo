@@ -18,6 +18,7 @@ export const APPROVAL_ERRORS = {
   PROJECT_NOT_FOUND: 'plugins.errors.projectNotFound',
   PLUGIN_USER_EMAIL_TAKEN: 'plugins.errors.userEmailTaken',
   PLUGIN_SETTINGS_REFUSED: 'plugins.errors.settingsRefused',
+  PLUGIN_CHANGED: 'plugins.errors.approvalChanged',
 } as const;
 
 /** Why its settings were not saved. */

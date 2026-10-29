@@ -47,15 +47,19 @@ export const Plugins = {
     ).slug;
   },
 
-  /** Approves what it declares, in the projects of these keys or all of them, and enables it. */
+  /**
+   * Approves what the package reviewed declares, in the projects of these keys or all of them, and
+   * enables it.
+   */
   async approve(
     slug: string,
+    packageSha256: string,
     projects: 'all' | readonly string[],
     privateHosts: readonly string[],
   ): Promise<void> {
     await apiRequest(`${pluginPath(slug)}/approve`, {
       method: 'POST',
-      body: { projects, privateHosts },
+      body: { packageSha256, projects, privateHosts },
       schema: noContent,
     });
   },

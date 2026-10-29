@@ -19,8 +19,9 @@ const EVENT_DEADLINE_MS = 60_000;
 /**
  * Hands a plugin the events it hears of, one after the other, as itself: its own user, its needs,
  * its projects. One that fails fails the job, tried again later with the ones before it, which
- * `{ once: event.id }` keeps from writing twice. What the plugin writes commits as it goes; its
- * failures are counted at once.
+ * `{ once: event.id }` keeps from writing twice. What the plugin writes commits as it goes; a
+ * delivery that fails counts once, at its first try: its retries run the same events again, and
+ * would otherwise let two events a plugin fails on disable it.
  */
 export const deliverEventsJob = defineJob({
   type: 'plugin.events',
@@ -28,7 +29,7 @@ export const deliverEventsJob = defineJob({
     pluginId: z.uuid(),
     activityIds: z.array(z.uuid()).min(1).max(EVENTS_PER_DELIVERY),
   }),
-  async handler({ db, log, services }, { pluginId, activityIds }) {
+  async handler({ db, attempt, log, services }, { pluginId, activityIds }) {
     const plugin = await actingPlugin(db, { id: pluginId }, services.secrets);
     if (!plugin) {
       log.info({ pluginId }, 'Events no longer to hand: the plugin is not enabled');
@@ -62,7 +63,9 @@ export const deliverEventsJob = defineJob({
       const failure = failureOf(outcome);
       if (failure) {
         log.warn({ plugin: plugin.slug, event: event.type, failure, outcome }, 'Plugin failed');
-        await recordFailure(db, plugin, failure, event.type, log);
+        if (attempt === 1) {
+          await recordFailure(db, plugin, failure, event.type, log);
+        }
         throw new Error(`${plugin.slug} failed to handle ${event.type}: ${failure}`);
       }
     }

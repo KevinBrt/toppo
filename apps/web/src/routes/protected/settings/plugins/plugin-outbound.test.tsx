@@ -120,7 +120,11 @@ describe('a plugin reaching outside Toppo', () => {
     expect(server.requests).toContainEqual({
       method: 'POST',
       path: '/api/v1/plugins/time-tracking/approve',
-      body: { projects: 'all', privateHosts: ['chat.internal', '10.0.0.12'] },
+      body: {
+        packageSha256: TIME_TRACKING.packageSha256,
+        projects: 'all',
+        privateHosts: ['chat.internal', '10.0.0.12'],
+      },
     });
   });
 

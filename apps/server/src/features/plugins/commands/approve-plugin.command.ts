@@ -16,20 +16,31 @@ const { pluginProjects, plugins, projects, users } = schema;
  * enables it, with a user of its own and the properties it adds to issues, named in the language
  * of whoever approves it, once its code takes its settings. The hosts inside the network it may
  * reach are named with it. Approving again changes its projects and those hosts; an upgrade that
- * asks for more is approved so.
+ * asks for more is approved so. Only the package reviewed is approved: one uploaded meanwhile is
+ * refused, to be reviewed in turn.
  */
 export const approvePlugin = defineCommand({
   name: 'plugin.approve',
   access: { permission: 'instance.plugins.manage' },
   input: approvePluginRequestSchema.extend({ pluginSlug: pluginSlugSchema }),
-  async handler({ tx, actor, log }, { pluginSlug, projects: chosen, privateHosts }): Promise<void> {
+  async handler(
+    { tx, actor, log },
+    { pluginSlug, packageSha256, projects: chosen, privateHosts },
+  ): Promise<void> {
     const plugin = await lockPlugin(tx, pluginSlug);
-    await assertSettingsAccepted(tx, plugin);
-    const projectIds = chosen === 'all' ? [] : await projectIdsOf(tx, chosen);
     const [declared] = await tx
-      .select({ manifest: plugins.manifest })
+      .select({ manifest: plugins.manifest, packageSha256: plugins.packageSha256 })
       .from(plugins)
       .where(eq(plugins.id, plugin.id));
+    if (declared?.packageSha256 !== packageSha256) {
+      throw new HttpError(
+        409,
+        'PLUGIN_CHANGED',
+        'Another package of the plugin was uploaded since it was reviewed: review it again',
+      );
+    }
+    await assertSettingsAccepted(tx, plugin);
+    const projectIds = chosen === 'all' ? [] : await projectIdsOf(tx, chosen);
     const manifest = manifestSchema.parse(declared?.manifest);
     await ensurePluginUser(tx, pluginSlug, pluginNameOf(manifest).en);
     const [approver] = await tx

@@ -2,7 +2,7 @@ import { DEFAULT_ROLE_IDS, DEFAULT_STATUSES } from '@toppo-tracker/core';
 import { schema } from '@toppo-tracker/db';
 import type { Manifest } from '@toppo-tracker/plugin-sdk/protocol';
 import { startSmtpServer, type TestSmtpServer } from '@toppo-tracker/testing';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createHostCalls, createJobs } from './app.ts';
@@ -16,6 +16,7 @@ import {
   createTestFileStorage,
   createTestPackageStore,
   createTestUser,
+  packageSha256Of,
   setupTestDatabase,
   TEST_SETUP_CODE,
   testPlugins,
@@ -68,7 +69,10 @@ async function install(manifest: Manifest, run: string, projects: 'all' | string
     payload: testPackage({ manifest, run }),
   });
   expect(uploaded.statusCode, uploaded.body).toBe(201);
-  const approved = await call('POST', `/api/v1/plugins/${manifest.id}/approve`, { projects });
+  const approved = await call('POST', `/api/v1/plugins/${manifest.id}/approve`, {
+    packageSha256: await packageSha256Of(context.database, manifest.id),
+    projects,
+  });
   expect(approved.statusCode, approved.body).toBe(204);
 }
 
@@ -384,6 +388,25 @@ describe('a plugin that keeps failing', () => {
     expect(sent[0]?.subject).toBe('Toppo stopped the plugin Time tracking');
     expect(sent[0]?.content).toContain('The last time, its code threw an error.');
     expect(sent[0]?.content).not.toContain('Broken on purpose');
+  });
+
+  it('counts a delivery it fails once, however many times it is tried again', async () => {
+    await install(listener(), `throw new Error('Broken on purpose');`);
+    const key = await report('WEB');
+
+    await move(key, 'inProgress');
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      await runJobs();
+      // The retry is due now rather than minutes later, by the database's clock.
+      await context.database.db.update(schema.jobs).set({ runAt: sql`now()` });
+    }
+
+    const [delivery] = await context.database.db
+      .select({ status: schema.jobs.status, attempts: schema.jobs.attempts })
+      .from(schema.jobs)
+      .where(eq(schema.jobs.type, 'plugin.events'));
+    expect(delivery).toStrictEqual({ status: 'failed', attempts: 5 });
+    expect(await pluginState('time-tracking')).toStrictEqual({ state: 'enabled', failures: 1 });
   });
 
   it('counts its failures from zero again once it runs well, or is enabled again', async () => {

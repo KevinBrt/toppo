@@ -38,3 +38,12 @@ plugin.defineEventHandler({
     await Promise.resolve('Told of the issue on the server only');
   },
 });
+
+plugin.defineJob({
+  name: 'weekly',
+  every: 'week',
+  label: 'report',
+  async handler() {
+    await Promise.resolve('Done each week on the server only');
+  },
+});

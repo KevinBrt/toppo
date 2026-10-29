@@ -8,6 +8,7 @@ import {
   buildTestApp,
   cookieHeader,
   createTestUser,
+  packageSha256Of,
   setupTestDatabase,
   TEST_SETUP_CODE,
 } from './test-helpers.ts';
@@ -141,7 +142,10 @@ beforeAll(async () => {
   expect((await upload(testPackage({ manifest: MANIFEST, screens: SCREENS }))).statusCode).toBe(
     201,
   );
-  await post('/api/v1/plugins/time-tracking/approve', { projects: ['WEB'] });
+  await post('/api/v1/plugins/time-tracking/approve', {
+    packageSha256: await packageSha256Of(context.database, 'time-tracking'),
+    projects: ['WEB'],
+  });
 });
 
 afterAll(async () => {
@@ -263,6 +267,18 @@ describe('a plugin’s screens', () => {
       'text/css; charset=utf-8',
     );
     expect((await call(null, '/plugin-runtime/elsewhere.js')).statusCode).toBe(400);
+  });
+
+  it('load their bundle 120 times a minute at most from one client, being public', async () => {
+    await context.database.db.delete(schema.rateLimitCounters);
+    try {
+      for (let n = 0; n < 120; n += 1) {
+        expect((await call(null, '/plugin-screens/time-tracking/web.js')).statusCode).toBe(200);
+      }
+      expect((await call(null, '/plugin-screens/time-tracking/web.js')).statusCode).toBe(429);
+    } finally {
+      await context.database.db.delete(schema.rateLimitCounters);
+    }
   });
 
   it('are not served once their plugin is disabled', async () => {

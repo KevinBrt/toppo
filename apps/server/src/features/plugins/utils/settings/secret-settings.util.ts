@@ -22,22 +22,32 @@ export function secretNamesOf(manifest: Manifest): Set<string> {
 }
 
 /**
- * The settings as the plugin reads them: its secrets opened. One sealed with a key the instance
- * no longer has is left out, as if never typed: the plugin runs without it.
+ * The settings as the plugin reads them: the secrets its manifest declares opened. One sealed
+ * with a key the instance no longer has, or that the manifest no longer declares a secret, is
+ * left out, as if never typed: the plugin runs without it.
  */
 export function openSettings(
   stored: Record<string, unknown>,
+  manifest: Manifest,
   secrets: SecretBox,
 ): Record<string, unknown> {
+  const names = secretNamesOf(manifest);
   return Object.fromEntries(
     Object.entries(stored).flatMap(([name, value]) => {
       const sealed = sealedSchema.safeParse(value);
       if (!sealed.success) {
         return [[name, value]];
       }
-      const opened = secrets.open(sealed.data.sealed);
+      const opened = names.has(name) ? secrets.open(sealed.data.sealed) : null;
       return opened === null ? [] : [[name, opened]];
     }),
+  );
+}
+
+/** The settings without their secrets, for code no administrator approved yet to read. */
+export function settingsWithoutSecrets(stored: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(stored).filter(([, value]) => !sealedSchema.safeParse(value).success),
   );
 }
 

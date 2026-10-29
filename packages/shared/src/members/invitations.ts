@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { displayNameSchema, emailSchema, passwordSchema } from '../auth.ts';
+import { displayNameSchema, passwordSchema, personEmailSchema } from '../auth.ts';
 import { DEFAULT_LOCALE, localeSchema } from '../locale.ts';
 import { projectKeySchema } from '../project-key.ts';
 import { roleBadgeSchema } from './roles.ts';
@@ -19,7 +19,7 @@ export const INVITATION_PROJECTS_MAX = 50;
 
 /** Body of `POST /api/v1/invitations`. */
 export const createInvitationsRequestSchema = z.object({
-  emails: z.array(emailSchema).min(1).max(INVITATIONS_PER_REQUEST_MAX),
+  emails: z.array(personEmailSchema).min(1).max(INVITATIONS_PER_REQUEST_MAX),
   roleId: z.uuid(),
   /** Access to every project, present and future. */
   allProjects: z.boolean().default(false),

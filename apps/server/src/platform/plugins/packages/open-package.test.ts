@@ -64,6 +64,14 @@ describe('a plugin package', () => {
     ).toMatch(/web\.js unpacks to more than 5242880 bytes/);
   });
 
+  it('inflates its screens’ bundle alone, once kept', () => {
+    // A server bundle past its weight: inflated, it would be refused.
+    const server = new Uint8Array(PLUGIN_PACKAGE_LIMITS.serverBytes + 1);
+    const zip = zipSync({ 'server.js': server, 'plugin.json': VERSION, 'web.js': strToU8('/**/') });
+
+    expect(screensOf(zip)).toBe('/**/');
+  });
+
   it.each([
     ['no server bundle', { 'plugin.json': VERSION }, /must hold server\.js and plugin\.json/],
     ['no version', { 'server.js': BUNDLE }, /must hold server\.js and plugin\.json/],

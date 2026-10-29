@@ -74,13 +74,17 @@ export function openPluginPackage(zip: Uint8Array): PluginPackage {
   };
 }
 
-/** The screens' bundle of a package kept, as its frames load it; `undefined` when it has none. */
+/**
+ * The screens' bundle of a package kept, as its frames load it; `undefined` when it has none.
+ * Only that file is inflated: the package was checked whole when it was installed.
+ */
 export function screensOf(zip: Uint8Array): string | undefined {
-  const web = unpack(zip).get(PLUGIN_PACKAGE_FILES.web);
+  const web = unpack(zip, PLUGIN_PACKAGE_FILES.web).get(PLUGIN_PACKAGE_FILES.web);
   return web === undefined ? undefined : textOf(web, PLUGIN_PACKAGE_FILES.web);
 }
 
-function unpack(zip: Uint8Array): Map<string, Uint8Array> {
+/** The files of a package, checked as they unpack; with `only`, that file alone. */
+function unpack(zip: Uint8Array, only?: string): Map<string, Uint8Array> {
   const files = new Map<string, Uint8Array>();
   const seen = new Set<string>();
   let unpacked = 0;
@@ -90,6 +94,10 @@ function unpack(zip: Uint8Array): Map<string, Uint8Array> {
   };
 
   const unzip = new Unzip((file) => {
+    if (only !== undefined && file.name !== only) {
+      // Never started: skipped, not inflated.
+      return;
+    }
     const limit = FILE_LIMITS.get(file.name);
     if (limit === undefined) {
       refuse(`it holds ${JSON.stringify(file.name.slice(0, 100))}`);

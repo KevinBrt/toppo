@@ -54,6 +54,12 @@ const NO_CONTENT = { 204: z.void() };
 const ACTION_RATE_LIMIT = { max: 300, windowSeconds: 60 };
 
 /**
+ * Screens' bundles are public, and read from their package when not kept in memory. Browsers keep
+ * them (`immutable`): a person needs a few, once.
+ */
+const BUNDLE_RATE_LIMIT = { max: 120, windowSeconds: 60 };
+
+/**
  * The plugins of the instance, named by their id: uploaded as a zip (`application/zip`), set up,
  * approved in some projects or all, enabled, disabled, removed. Administrators only.
  */
@@ -115,7 +121,7 @@ export function registerPluginRoutes(app: FastifyInstance): void {
   routes.get(
     '/plugin-screens/:pluginSlug/web.js',
     {
-      config: { access: getScreenBundle.access },
+      config: { access: getScreenBundle.access, rateLimit: BUNDLE_RATE_LIMIT },
       schema: { params: pluginSlugParamsSchema },
     },
     async (request, reply) =>

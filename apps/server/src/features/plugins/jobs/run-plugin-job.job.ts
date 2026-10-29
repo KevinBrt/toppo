@@ -13,13 +13,16 @@ const JOB_DEADLINE_MS = 60_000;
 /**
  * Runs one of a plugin's jobs, as itself, then again when its time comes: every hour, day or
  * week from this run. A job the plugin no longer has, or a plugin no longer enabled, runs no
- * more; one that fails is tried again later, its failures counted at once, and queued anew by
- * `plugin.jobs.schedule` once given up.
+ * more; one that fails is tried again later, its failure counted once, at its first try, and
+ * queued anew by `plugin.jobs.schedule` once given up.
  */
 export const runPluginJobJob = defineJob({
   type: 'plugin.job',
   payload: z.object({ pluginId: z.uuid(), job: z.string().regex(JOB_NAME) }),
-  async handler({ db, log, services }, { pluginId, job }): Promise<JobOutcome | undefined> {
+  async handler(
+    { db, attempt, log, services },
+    { pluginId, job },
+  ): Promise<JobOutcome | undefined> {
     const plugin = await actingPlugin(db, { id: pluginId }, services.secrets);
     const declared = plugin?.manifest.jobs.find(({ name }) => name === job);
     if (!(plugin && declared)) {
@@ -48,7 +51,9 @@ export const runPluginJobJob = defineJob({
     const failure = failureOf(outcome);
     if (failure) {
       log.warn({ plugin: plugin.slug, job, failure, outcome }, 'Plugin failed');
-      await recordFailure(db, plugin, failure, `job ${job}`, log);
+      if (attempt === 1) {
+        await recordFailure(db, plugin, failure, `job ${job}`, log);
+      }
       throw new Error(`${plugin.slug} failed its job ${job}: ${failure}`);
     }
     await recordSuccess(db, plugin.id);

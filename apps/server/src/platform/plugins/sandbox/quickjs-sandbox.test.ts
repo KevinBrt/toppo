@@ -148,6 +148,39 @@ describe('a plugin in its sandbox', () => {
     });
   });
 
+  it('runs none of its code once its call is over, when an answer comes late', async () => {
+    const late: Array<() => void> = [];
+    const plugin = await sandbox(
+      `globalThis.__toppo = {
+        manifest() { return '{}'; },
+        run(kind, name) {
+          if (name === 'leave') {
+            __host.call('slow', '{}').then(() => { globalThis.ran = (globalThis.ran ?? 0) + 1; });
+            return 'null';
+          }
+          return __host.call('quick', '{}').then(() => String(globalThis.ran ?? 0));
+        },
+      };`,
+      (method) =>
+        new Promise((resolve) => {
+          if (method === 'slow') {
+            late.push(() => resolve('null'));
+          } else {
+            setTimeout(() => resolve('null'), 20);
+          }
+        }),
+    );
+
+    // Answered once idle, then during another call: neither runs what waited on its own call.
+    expect(await run(plugin, 'leave')).toStrictEqual({ ok: true, value: 'null' });
+    late.shift()?.();
+    expect(await run(plugin, 'count')).toStrictEqual({ ok: true, value: '0' });
+    expect(await run(plugin, 'leave')).toStrictEqual({ ok: true, value: 'null' });
+    const during = run(plugin, 'count');
+    late.shift()?.();
+    expect(await during).toStrictEqual({ ok: true, value: '0' });
+  });
+
   it('runs one call at a time', async () => {
     const plugin = await sandbox();
     const first = run(plugin, 'never', {}, 100);

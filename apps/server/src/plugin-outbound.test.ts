@@ -18,6 +18,7 @@ import {
   cookieHeader,
   createTestFileStorage,
   createTestPackageStore,
+  packageSha256Of,
   setupTestDatabase,
   TEST_SETUP_CODE,
   testPlugins,
@@ -126,6 +127,7 @@ async function install(manifest: Manifest, privateHosts: string[] = []): Promise
 
 async function approve(slug: string, privateHosts: string[]): Promise<void> {
   const approved = await call('POST', `/api/v1/plugins/${slug}/approve`, {
+    packageSha256: await packageSha256Of(context.database, slug),
     projects: 'all',
     privateHosts,
   });
@@ -255,6 +257,28 @@ describe('a plugin’s secret', () => {
     });
   });
 
+  it('is not handed to an upgrade’s code before its approval, to check', async () => {
+    await install(notifier());
+    expect((await saveSettings({ values: { chatUrl, team: 'Billing' } })).statusCode).toBe(204);
+
+    // Refuses any settings that hold the secret: it sees what it is given.
+    const upgraded = await app.inject({
+      method: 'POST',
+      url: '/api/v1/plugins',
+      headers: { origin: ORIGIN, cookie: adminCookie, 'content-type': 'application/zip' },
+      payload: testPackage({
+        manifest: notifier(),
+        version: '1.3.0',
+        run: `return JSON.stringify('chatUrl' in JSON.parse(payload)
+          ? { ok: false, error: { code: 'VALIDATION_FAILED', issues: [{ path: 'chatUrl', message: 'Seen' }] } }
+          : { ok: true, result: null });`,
+      }),
+    });
+
+    expect(upgraded.statusCode, upgraded.body).toBe(201);
+    expect((await details()).json()).toMatchObject({ settings: { refused: false } });
+  });
+
   it('is cleared only when it is one', async () => {
     await install(notifier());
 
@@ -287,6 +311,7 @@ describe('a plugin reaching outside Toppo', () => {
     await install(notifier());
 
     const refused = await call('POST', '/api/v1/plugins/notifier/approve', {
+      packageSha256: await packageSha256Of(context.database, 'notifier'),
       projects: 'all',
       privateHosts: ['http://chat.internal:8065'],
     });
@@ -356,8 +381,25 @@ describe('a plugin reaching outside Toppo', () => {
     expect(await ping('https://hooks.example.com/T0')).toStrictEqual({ failed: 'TOO_MANY_CALLS' });
   });
 
-  it('keeps its last 50 calls', async () => {
+  it('reaches a host its approval names on the port its settings give, no other', async () => {
+    await install(notifier(), ['127.0.0.1']);
+    await saveSettings({ values: { chatUrl } });
+    const elsewhere = new URL(chatUrl);
+    elsewhere.port = String(Number(elsewhere.port) + 1);
+
+    expect(await ping(chatUrl)).toStrictEqual({ status: 200 });
+    expect(await ping(elsewhere.href)).toStrictEqual({ failed: 'ADDRESS_NOT_ALLOWED' });
+  });
+
+  it('reaches a host its approval names on the port of its scheme only, its address being data', async () => {
     await install(notifier({ http: 'any' }), ['127.0.0.1']);
+
+    expect(await ping(chatUrl)).toStrictEqual({ failed: 'ADDRESS_NOT_ALLOWED' });
+  });
+
+  it('keeps its last 50 calls', async () => {
+    await install(notifier(), ['127.0.0.1']);
+    await saveSettings({ values: { chatUrl } });
     const [plugin] = await context.database.db
       .select({ id: schema.plugins.id })
       .from(schema.plugins);
@@ -392,7 +434,7 @@ describe('a plugin’s jobs', () => {
     for (const _ of [1, 2]) {
       await context.database.db.transaction((tx) =>
         schedulePluginJobsJob.run(
-          { tx, db: context.database.db, log: app.log, services: worker.services },
+          { tx, db: context.database.db, attempt: 1, log: app.log, services: worker.services },
           {},
         ),
       );

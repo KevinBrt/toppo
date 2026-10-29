@@ -88,11 +88,11 @@ describe('toppo plugin build', () => {
     ]);
     expect(server).not.toContain('Hours spent on the screen');
     expect(web).toContain('Hours spent on the screen');
-    // Served to anyone with its address: what actions and event handlers do stays on the server.
-    expect(server).toContain('secret ways');
-    expect(server).toContain('Told of the issue');
-    expect(web).not.toContain('secret ways');
-    expect(web).not.toContain('Told of the issue');
+    // Served to anyone with its address: what actions, event handlers and jobs do stays on the server.
+    for (const serverOnly of ['secret ways', 'Told of the issue', 'Done each week']) {
+      expect(server).toContain(serverOnly);
+      expect(web).not.toContain(serverOnly);
+    }
 
     // In a frame, after Toppo's runtime: the page it hands over draws with the runtime's React.
     const served: { component(name: string): (() => Promise<unknown>) | undefined }[] = [];

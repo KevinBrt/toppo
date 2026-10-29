@@ -10,6 +10,7 @@ import { and, desc, eq, notInArray } from 'drizzle-orm';
 import { defineDetachedCommand } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
 import {
+  bareHost,
   OUTBOUND_LIMITS,
   OutboundError,
   type OutboundPolicy,
@@ -65,29 +66,47 @@ export const sendPluginRequest = defineDetachedCommand({
   },
 });
 
-/** Where the plugin may go: as its manifest says, and inside the network as its approval names. */
+/**
+ * Where the plugin may go: as its manifest says, and inside the network as its approval names, on
+ * the port of its scheme or the one an address in its settings gives: never another service of
+ * the same host.
+ */
 function policyOf({ manifest, settings, privateHosts }: ActingPlugin): OutboundPolicy {
-  const hosts = declaredHosts(manifest.http, settings);
+  const addresses = settingAddresses(manifest.http, settings);
+  const hosts = declaredHosts(manifest.http, addresses);
   return {
     mayReach: (url) => hosts === 'any' || hosts.includes(url.hostname),
-    privateHosts,
+    mayReachInside: (url) =>
+      privateHosts.includes(bareHost(url)) &&
+      (url.port === '' ||
+        addresses.some(
+          (address) => address.hostname === url.hostname && address.port === url.port,
+        )),
   };
 }
 
 /** The hosts a plugin declared, or those of the addresses in the settings it names. */
 function declaredHosts(
   http: Manifest['http'],
-  settings: Readonly<Record<string, unknown>>,
+  addresses: readonly URL[],
 ): readonly string[] | 'any' {
-  if (http === null || http === 'any') {
-    return http ?? [];
-  }
-  if (Array.isArray(http)) {
+  if (http === 'any' || Array.isArray(http)) {
     return http;
+  }
+  return addresses.map(({ hostname }) => hostname);
+}
+
+/** The addresses in the settings a plugin reaches through, as `{ fromSettings }` names them. */
+function settingAddresses(
+  http: Manifest['http'],
+  settings: Readonly<Record<string, unknown>>,
+): URL[] {
+  if (http === null || http === 'any' || Array.isArray(http)) {
+    return [];
   }
   return http.fromSettings.flatMap((name) => {
     const address = settings[name];
-    return typeof address === 'string' && URL.canParse(address) ? [new URL(address).hostname] : [];
+    return typeof address === 'string' && URL.canParse(address) ? [new URL(address)] : [];
   });
 }
 

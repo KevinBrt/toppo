@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createDatabase, type Database, schema, uuidv7 } from '@toppo-tracker/db';
 import { CSP_NONCE_PLACEHOLDER } from '@toppo-tracker/shared';
 import { createTestDatabase } from '@toppo-tracker/testing';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll } from 'vitest';
 import { buildApp, createHostCalls } from './app.ts';
@@ -205,6 +205,15 @@ export interface TestUser {
 }
 
 /** Adds a user who can sign in with `password`, as an accepted invitation would. Returns their id. */
+/** The hash of the package a plugin holds, as its details show it to whoever approves it. */
+export async function packageSha256Of(database: Database, slug: string): Promise<string> {
+  const [plugin] = await database.db
+    .select({ packageSha256: schema.plugins.packageSha256 })
+    .from(schema.plugins)
+    .where(eq(schema.plugins.slug, slug));
+  return plugin?.packageSha256 ?? '';
+}
+
 export async function createTestUser(database: Database, user: TestUser): Promise<string> {
   const auth = createAuth({
     db: database.db,
