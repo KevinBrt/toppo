@@ -18,6 +18,7 @@ Ouvrez `http://localhost:3000`, entrez le code d’installation lu dans les jour
 | [Premier démarrage](./self-hosting/first-run)                      | Le code d’installation, le premier administrateur, inviter l’équipe, ajuster les rôles           |
 | [Configuration](./self-hosting/configuration)                      | Chaque variable `TOPPO_*`, les secrets en fichiers, les pièces jointes, un PostgreSQL existant   |
 | [E-mail](./self-hosting/email)                                     | Invitations, réinitialisations de mot de passe et notifications par votre serveur d’envoi        |
+| [Webhooks](./self-hosting/webhooks)                                | Prévenir d’autres outils de ce qui arrive aux tickets, par des requêtes signées                  |
 | [HTTPS derrière un reverse proxy](./self-hosting/reverse-proxy)    | Caddy, nginx, l’adresse du client, les contrôles de santé                                        |
 | [Sauvegardes et mises à jour](./self-hosting/backups-and-upgrades) | Sauvegarder, restaurer, mettre à jour, savoir qu’une version est sortie                          |
 | [Dépannage](./self-hosting/troubleshooting)                        | Que faire quand quelque chose ne marche pas                                                      |

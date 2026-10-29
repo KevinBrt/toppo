@@ -18,6 +18,7 @@ Open `http://localhost:3000`, enter the setup code from the logs and create the 
 | [First run](./self-hosting/first-run)                        | The setup code, the first administrator, inviting the team, adjusting roles       |
 | [Configuration](./self-hosting/configuration)                | Every `TOPPO_*` variable, secrets in files, attachments, an existing PostgreSQL   |
 | [Email](./self-hosting/email)                                | Invitations, password resets and notifications through your mail server           |
+| [Webhooks](./self-hosting/webhooks)                          | Telling other tools what happens on issues, by signed requests                    |
 | [HTTPS behind a reverse proxy](./self-hosting/reverse-proxy) | Caddy, nginx, the client's address, health checks                                 |
 | [Backups and upgrades](./self-hosting/backups-and-upgrades)  | Backing up, restoring, upgrading, knowing a new version is out                    |
 | [Troubleshooting](./self-hosting/troubleshooting)            | What to do when something does not work                                           |

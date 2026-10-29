@@ -43,6 +43,10 @@ import { registerSetupRoutes } from './features/setup/setup.routes.ts';
 import { checkForUpdatesJob } from './features/updates/jobs/check-for-updates.job.ts';
 import { registerUpdateRoutes } from './features/updates/updates.routes.ts';
 import { registerUserRoutes } from './features/users/users.routes.ts';
+import { deliverWebhookJob } from './features/webhooks/jobs/deliver-webhook.job.ts';
+import { emailWebhookDisabledJob } from './features/webhooks/jobs/email-webhook-disabled.job.ts';
+import { fanOutWebhooksJob } from './features/webhooks/jobs/fan-out-webhooks.job.ts';
+import { registerWebhookRoutes } from './features/webhooks/webhooks.routes.ts';
 import { registerWorkflowRoutes } from './features/workflows/workflows.routes.ts';
 import { registerAccessControl } from './platform/auth/access-control.ts';
 import type { Auth } from './platform/auth/auth.ts';
@@ -235,6 +239,9 @@ export function createJobs({
     fillRecordSlotsJob,
     schedulePluginJobsJob,
     runPluginJobJob,
+    fanOutWebhooksJob,
+    deliverWebhookJob,
+    emailWebhookDisabledJob,
   ];
 }
 
@@ -324,6 +331,7 @@ export async function buildApp({
   registerWorkflowRoutes(app);
   registerUpdateRoutes(app);
   registerPluginRoutes(app);
+  registerWebhookRoutes(app);
 
   const servesWebApp = await registerWebApp(app, webRoot);
   if (!servesWebApp) {

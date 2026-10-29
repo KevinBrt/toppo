@@ -28,7 +28,7 @@
     "db:down": "docker compose -f docker/compose.dev.yml down",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "turbo run test --concurrency=3",
     "test:e2e": "npm run build && npm run test:e2e --workspace=@toppo-tracker/e2e",
     "lint": "biome check . && prettier --check .",
     "lint:fix": "biome check --write . && prettier --write .",

@@ -122,7 +122,11 @@ import {
   TOPPO_VERSION,
   type UserSummary,
   updatePropertyRequestSchema,
+  WEBHOOKS_MAX,
+  type WebhookDelivery,
+  type WebhookDetailsResponse,
   type WorkflowMode,
+  webhookRequestSchema,
   workflowRequestSchema,
 } from '@toppo-tracker/shared';
 import { vi } from 'vitest';
@@ -216,6 +220,8 @@ export interface FakeServerState {
   issuePanels: Record<string, PluginScreen[]>;
   /** What plugins' actions answer, by `slug/action`: none unless a test sets some. */
   pluginActions: Record<string, FakeActionAnswer>;
+  /** The webhooks of the instance, with their deliveries: none unless a test adds some. */
+  webhooks: FakeWebhook[];
   invitations: PendingInvitation[];
   /** The links the fake server made, by token, and what opening them shows. */
   invitationLinks: Map<string, InvitationLinkState>;
@@ -590,6 +596,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       projectScreens: {},
       issuePanels: {},
       pluginActions: {},
+      webhooks: [],
       invitations: [],
       invitationLinks: new Map(),
       projects: [],
@@ -884,6 +891,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
         changeRoleDefinition(state, method, url.pathname, body) ??
         propertyRequest(state, method, url.pathname, body) ??
         pluginRequest(state, method, url.pathname, body, new Headers(init?.headers)) ??
+        webhookRequest(state, method, url.pathname, body) ??
         apiError(404, 'NOT_FOUND'));
     return await Promise.resolve(answer);
   });
@@ -3686,4 +3694,217 @@ function peopleNamed(state: FakeServerState, search: URLSearchParams): Response 
   return json({
     people: state.users.filter(({ id }) => ids.includes(id)).map(({ id, name }) => ({ id, name })),
   });
+}
+
+/** A webhook as the fake server keeps it: as its page shows it, with its deliveries. */
+export type FakeWebhook = WebhookDetailsResponse;
+
+let fakeWebhooks = 0;
+let fakeDeliveries = 0;
+let secretsMade = 0;
+
+/** The secret the fake server makes next, for a webhook added or renewed. */
+function nextWebhookSecret(): string {
+  secretsMade += 1;
+  return `whsec_${String(secretsMade).padStart(43, 'x')}`;
+}
+
+/**
+ * A webhook named `name`, enabled, told of issues created in every project and sent nothing yet,
+ * unless `overrides` says otherwise.
+ */
+export function fakeWebhook(name: string, overrides: Partial<FakeWebhook> = {}): FakeWebhook {
+  fakeWebhooks += 1;
+  return {
+    id: `01a1569b-9900-7000-8000-0000000013${String(fakeWebhooks % 100).padStart(2, '0')}`,
+    name,
+    url: 'https://hooks.example.com/toppo',
+    events: ['issue.created'],
+    allProjects: true,
+    projects: [],
+    allowPrivate: false,
+    enabled: true,
+    failures: 0,
+    lastError: null,
+    createdAt: '2026-10-20T09:14:00.000Z',
+    deliveries: [],
+    ...overrides,
+  };
+}
+
+/** A delivery sent and answered 204, unless `overrides` says otherwise. */
+export function fakeDelivery(overrides: Partial<WebhookDelivery> = {}): WebhookDelivery {
+  fakeDeliveries += 1;
+  const seed = String(fakeDeliveries % 100).padStart(2, '0');
+  return {
+    id: `01a1569b-9900-7000-8000-0000000014${seed}`,
+    messageId: `01a1569b-9900-7000-8000-0000000015${seed}`,
+    eventType: 'issue.created',
+    status: 'delivered',
+    attempts: 1,
+    responseStatus: 204,
+    error: null,
+    durationMs: 42,
+    createdAt: '2026-10-21T08:30:00.000Z',
+    ...overrides,
+  };
+}
+
+const WEBHOOK_PATH =
+  /^\/api\/v1\/webhooks(?:\/([^/]+)(?:\/(enable|disable|secret|test)|\/deliveries\/([^/]+)\/redeliver)?)?$/;
+
+/**
+ * `/api/v1/webhooks…`: listing, adding, changing, enabling, disabling, testing and deleting
+ * webhooks, renewing their secret and sending their deliveries again. A test or a delivery sent
+ * again is delivered at once.
+ */
+function webhookRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+  body: unknown,
+): Response | undefined {
+  const match = WEBHOOK_PATH.exec(path);
+  if (!match) {
+    return undefined;
+  }
+  const refusal = asHolder(state, 'instance.webhooks.manage');
+  if (refusal) {
+    return refusal;
+  }
+  const [, id, action, deliveryId] = match;
+  if (id === undefined) {
+    if (method === 'GET') {
+      const byName = [...state.webhooks].sort((a, b) => a.name.localeCompare(b.name));
+      return json({ webhooks: byName.map(({ deliveries: _, ...summary }) => summary) });
+    }
+    return method === 'POST' ? addFakeWebhook(state, body) : undefined;
+  }
+  const webhook = state.webhooks.find((candidate) => candidate.id === id);
+  if (!webhook) {
+    return apiError(404, 'WEBHOOK_NOT_FOUND');
+  }
+  if (deliveryId !== undefined) {
+    return method === 'POST' ? redeliverFake(state, webhook, deliveryId) : undefined;
+  }
+  if (action === undefined) {
+    return oneWebhookRequest(state, method, webhook, body);
+  }
+  return method === 'POST' ? webhookCommand(state, webhook, action) : undefined;
+}
+
+/** `GET`, `PUT` and `DELETE /api/v1/webhooks/:id`. */
+function oneWebhookRequest(
+  state: FakeServerState,
+  method: string,
+  webhook: FakeWebhook,
+  body: unknown,
+): Response | undefined {
+  if (method === 'GET') {
+    return json(webhook);
+  }
+  if (method === 'PUT') {
+    const fields = webhookFields(state, body);
+    if (fields instanceof Response) {
+      return fields;
+    }
+    saveWebhook(state, { ...webhook, ...fields });
+    return NO_CONTENT();
+  }
+  if (method === 'DELETE') {
+    state.webhooks = state.webhooks.filter((candidate) => candidate !== webhook);
+    return NO_CONTENT();
+  }
+  return undefined;
+}
+
+/** `POST /api/v1/webhooks/:id/enable`, `…/disable`, `…/secret` and `…/test`. */
+function webhookCommand(state: FakeServerState, webhook: FakeWebhook, action: string): Response {
+  if (action === 'secret') {
+    return json({ id: webhook.id, secret: nextWebhookSecret() });
+  }
+  if (action === 'test') {
+    if (!webhook.enabled) {
+      return apiError(409, 'WEBHOOK_DISABLED');
+    }
+    const delivery = fakeDelivery({
+      eventType: 'webhook.test',
+      createdAt: new Date().toISOString(),
+    });
+    saveWebhook(state, { ...webhook, deliveries: [delivery, ...webhook.deliveries] });
+    return json({ id: delivery.id }, 202);
+  }
+  saveWebhook(
+    state,
+    action === 'enable'
+      ? { ...webhook, enabled: true, failures: 0, lastError: null }
+      : { ...webhook, enabled: false },
+  );
+  return NO_CONTENT();
+}
+
+/** What a webhook request sets, as the fake server keeps it. */
+type FakeWebhookFields = Pick<
+  FakeWebhook,
+  'name' | 'url' | 'events' | 'allProjects' | 'projects' | 'allowPrivate'
+>;
+
+/** `POST /api/v1/webhooks`: added enabled, its secret answered this once; 20 at most. */
+function addFakeWebhook(state: FakeServerState, body: unknown): Response {
+  const fields = webhookFields(state, body);
+  if (fields instanceof Response) {
+    return fields;
+  }
+  if (state.webhooks.length >= WEBHOOKS_MAX) {
+    return apiError(409, 'WEBHOOK_LIMIT_REACHED');
+  }
+  const webhook = fakeWebhook(fields.name, { ...fields, createdAt: new Date().toISOString() });
+  state.webhooks.push(webhook);
+  return json({ id: webhook.id, secret: nextWebhookSecret() }, 201);
+}
+
+/** What a webhook is sent, checked as the server does, its projects named as they are. */
+function webhookFields(state: FakeServerState, body: unknown): Response | FakeWebhookFields {
+  const parsed = webhookRequestSchema.safeParse(body);
+  if (!parsed.success || (parsed.data.url.startsWith('http:') && !parsed.data.allowPrivate)) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  const { projects, ...fields } = parsed.data;
+  const chosen =
+    projects === 'all'
+      ? []
+      : state.projects.filter(({ key }) => projects.some((named) => named === key));
+  if (projects !== 'all' && chosen.length !== new Set(projects).size) {
+    return apiError(404, 'PROJECT_NOT_FOUND');
+  }
+  return {
+    ...fields,
+    events: [...new Set(fields.events)],
+    allProjects: projects === 'all',
+    projects: chosen.map(({ id, key, name }) => ({ id, key, name })),
+  };
+}
+
+/** `POST …/deliveries/:id/redeliver`: sent again as it was, and delivered at once. */
+function redeliverFake(state: FakeServerState, webhook: FakeWebhook, deliveryId: string): Response {
+  const delivery = webhook.deliveries.find(({ id }) => id === deliveryId);
+  if (!delivery) {
+    return apiError(404, 'WEBHOOK_DELIVERY_NOT_FOUND');
+  }
+  if (!webhook.enabled) {
+    return apiError(409, 'WEBHOOK_DISABLED');
+  }
+  const again = fakeDelivery({
+    messageId: delivery.messageId,
+    eventType: delivery.eventType,
+    createdAt: new Date().toISOString(),
+  });
+  saveWebhook(state, { ...webhook, deliveries: [again, ...webhook.deliveries] });
+  return json({ id: again.id }, 202);
+}
+
+function saveWebhook(state: FakeServerState, webhook: FakeWebhook): void {
+  state.webhooks = state.webhooks.map((candidate) =>
+    candidate.id === webhook.id ? webhook : candidate,
+  );
 }

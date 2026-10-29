@@ -1,3 +1,4 @@
+import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 import { testDatabaseUrl } from '@toppo-tracker/testing';
@@ -24,6 +25,9 @@ export const ADMIN_STORAGE_STATE = fileURLToPath(new URL('.auth/admin.json', imp
 export default defineConfig({
   testDir: 'tests',
   fullyParallel: true,
+  // Each worker is a browser of its own: six run the journeys nearly as fast as one per two cores
+  // (Playwright's default), without taking the whole machine. Never more than that default.
+  workers: Math.max(1, Math.min(6, Math.floor(availableParallelism() / 2))),
   forbidOnly: isCI,
   retries: 0,
   reporter: isCI

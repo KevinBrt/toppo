@@ -1,7 +1,7 @@
 import type { Locale, PluginDetailsResponse } from '@toppo-tracker/shared';
 import type { Translate } from '../../../../shared/i18n/i18n.types.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
-import { PLUGIN_EVENT_MESSAGES } from '../../constants/plugin-events.constants.ts';
+import { ISSUE_EVENT_MESSAGES } from '../../../../shared/i18n/issue-events.constants.ts';
 import type { NeedLabel } from '../../models/plugin-page.model.ts';
 import { DetailsSection } from './details-section.tsx';
 
@@ -83,7 +83,7 @@ export function PluginDeclarations({
       >
         <Sentences
           sentences={plugin.events.map((event) => {
-            const message = PLUGIN_EVENT_MESSAGES.get(event);
+            const message = ISSUE_EVENT_MESSAGES.get(event);
             return { key: event, text: message ? t(message) : event };
           })}
           empty={t('plugins.eventsNone')}

@@ -1,3 +1,4 @@
+import { availableParallelism } from 'node:os';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config.ts';
@@ -20,6 +21,9 @@ export default mergeConfig(
       api: { port: 41315 },
       include: ['src/**/*.test.{ts,tsx}'],
       setupFiles: ['src/test-setup.ts'],
+      // Each worker is a Chromium of its own: eight run the tests as fast as one per core, without
+      // taking the whole machine. Never more than Vitest's default, one fewer than the cores.
+      maxWorkers: Math.max(1, Math.min(8, availableParallelism() - 1)),
       browser: {
         enabled: true,
         headless: true,

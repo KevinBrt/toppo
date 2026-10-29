@@ -64,6 +64,7 @@ describe('the matrix', () => {
           'instance.mail.manage',
           'instance.roles.manage',
           'instance.plugins.manage',
+          'instance.webhooks.manage',
         ],
       },
       { section: 'notifications', scope: 'project', rows: ['notifyNewIssues'] },
