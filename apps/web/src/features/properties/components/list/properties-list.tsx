@@ -46,6 +46,21 @@ export function PropertiesList({
           }),
           names: options.join(', '),
         });
+  // A plugin's says which; Toppo's, its options or what its type holds.
+  const summaryOfProperty = (
+    type: PropertyRow['type'],
+    options: PropertyRow['options'],
+    plugin: PropertyRow['plugin'],
+  ) => {
+    if (plugin) {
+      return t(plugin.installed ? 'properties.addedBy' : 'properties.addedByUninstalled', {
+        plugin: plugin.name[locale],
+      });
+    }
+    return hasOptions(type)
+      ? summaryOf(options.map((option) => option.name))
+      : t(`properties.typeHelps.${type}`);
+  };
   const rows: {
     property: ListedProperty;
     name: string;
@@ -75,14 +90,12 @@ export function PropertiesList({
       icon: TagsIcon,
       summary: summaryOf(labels.map(({ name }) => name)),
     },
-    ...properties.map(({ id, name, type, options }) => ({
+    ...properties.map(({ id, name, type, options, plugin }) => ({
       property: { id },
       name,
       type: t(`properties.types.${type}`),
       icon: PROPERTY_TYPE_ICONS[type],
-      summary: hasOptions(type)
-        ? summaryOf(options.map((option) => option.name))
-        : t(`properties.typeHelps.${type}`),
+      summary: summaryOfProperty(type, options, plugin),
     })),
   ];
 

@@ -38,7 +38,7 @@ function typedOf(value: IssuePropertyValue | undefined): string {
  * changes then.
  */
 function typedValue(
-  { id, name }: IssuePropertyField,
+  { id, name, display }: IssuePropertyField,
   type: TypedType,
   typed: string,
 ): IssuePropertyValue | null | undefined {
@@ -47,7 +47,7 @@ function typedValue(
   }
   if (type === 'number') {
     const number = Number(typed);
-    return Number.isFinite(number) ? { id, name, type, value: number } : undefined;
+    return Number.isFinite(number) ? { id, name, type, value: number, display } : undefined;
   }
   return { id, name, type, value: typed };
 }

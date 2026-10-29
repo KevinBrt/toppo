@@ -1,9 +1,10 @@
 import { effectiveProperties, type PropertyProblem, type PropertyRules } from '@toppo-tracker/core';
 import { type Db, schema } from '@toppo-tracker/db';
-import type { IssuePropertyField, ProjectFields } from '@toppo-tracker/shared';
+import type { IssuePropertyField, ProjectFields, PropertyWriter } from '@toppo-tracker/shared';
 import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import { propertiesOf } from '../../../platform/plugins/plugin-properties.ts';
 import { reachesProject } from './people.util.ts';
 
 const { projectProperties, projects, properties, propertyOptions } = schema;
@@ -17,6 +18,11 @@ const PROPERTY_REFUSALS: Readonly<
   unknownOption: ['INVALID_PROPERTY_OPTION', 'This option is not one of the property'],
   missingRequired: ['PROPERTY_REQUIRED', 'This property is required'],
 };
+
+/** What people are told giving a value to a property only its plugin writes. */
+export function writtenByPlugin(): HttpError {
+  return new HttpError(403, 'PROPERTY_WRITTEN_BY_PLUGIN', 'Only its plugin writes this property');
+}
 
 export function propertyRefusal({ problem }: PropertyProblem): HttpError {
   const [code, message] = PROPERTY_REFUSALS[problem];
@@ -38,8 +44,9 @@ export async function assertNameable(
 
 /**
  * The properties a project's issues take, with their options (`effectiveProperties`): the
- * instance's it keeps, with its own options where it has them, then its own. Locked, neither the
- * properties nor their options can be deleted while an issue is being given a value.
+ * instance's it keeps (a plugin's where it acts), with its own options where it has them, then
+ * its own. Locked, neither the properties nor their options can be deleted while an issue is
+ * being given a value.
  */
 async function effectiveOf(db: Pick<Db, 'select'>, projectId: string, { lock }: { lock: boolean }) {
   const query = db
@@ -51,9 +58,11 @@ async function effectiveOf(db: Pick<Db, 'select'>, projectId: string, { lock }: 
       shownInList: properties.shownInList,
       askedAtCreation: properties.askedAtCreation,
       required: properties.required,
+      writtenBy: properties.writtenBy,
+      display: properties.display,
     })
     .from(properties)
-    .where(or(isNull(properties.projectId), eq(properties.projectId, projectId)))
+    .where(propertiesOf(projectId))
     .orderBy(asc(properties.createdAt), asc(properties.id));
   const defined = await (lock ? query.for('share') : query);
   if (defined.length === 0) {
@@ -107,18 +116,28 @@ export async function propertyFields(
   );
 }
 
-/** What decides the values a project's issues may take, the options share-locked. */
+/**
+ * What decides the values a project's issues may take, the options share-locked, and who
+ * writes them.
+ */
 export async function lockedPropertyRules(
   tx: Transaction,
   projectId: string,
-): Promise<(PropertyRules & { name: string; options: { id: string; name: string }[] })[]> {
+): Promise<
+  (PropertyRules & {
+    name: string;
+    writtenBy: PropertyWriter;
+    options: { id: string; name: string }[];
+  })[]
+> {
   return (await effectiveOf(tx, projectId, { lock: true })).map(
-    ({ id, name, type, askedAtCreation, required, options }) => ({
+    ({ id, name, type, askedAtCreation, required, writtenBy, options }) => ({
       id,
       name,
       type,
       askedAtCreation,
       required,
+      writtenBy,
       optionIds: options.map((option) => option.id),
       options: options.map((option) => ({ id: option.id, name: option.name })),
     }),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defineEntity, definePlugin, z } from './index.ts';
+import { defineEntity, definePlugin, defineProperty, z } from './index.ts';
 
 /**
  * Mistakes a plugin's author could make, each of which TypeScript must refuse: were one accepted,
@@ -206,5 +206,74 @@ describe('the types of a plugin', () => {
     });
 
     expect(plugin.entities.timeEntry.indexes).toStrictEqual(['spentOn', 'kind']);
+  });
+
+  it('refuse properties that are not the plugin’s to write, or values of another type', () => {
+    const words = { name: 'Time tracking', properties: { spent: 'Time spent', guess: 'Estimate' } };
+    defineProperty({
+      name: 'properties.spent',
+      type: 'text',
+      // @ts-expect-error only a number shows as a duration
+      display: 'duration',
+      writtenBy: 'plugin',
+    });
+    // @ts-expect-error a type a plugin's property cannot have
+    defineProperty({ name: 'properties.spent', type: 'list', writtenBy: 'plugin' });
+    const timeSpent = defineProperty({
+      name: 'properties.spent',
+      type: 'number',
+      display: 'duration',
+      writtenBy: 'plugin',
+    });
+    const estimate = defineProperty({
+      name: 'properties.guess',
+      type: 'number',
+      writtenBy: 'people',
+    });
+    const billed = defineProperty({
+      name: 'properties.spent',
+      type: 'checkbox',
+      writtenBy: 'plugin',
+    });
+    definePlugin({
+      id: 'time-tracking',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.0',
+      properties: {
+        // @ts-expect-error named by a message the plugin does not have
+        spent: defineProperty({ name: 'properties.other', type: 'number', writtenBy: 'plugin' }),
+      },
+      messages: { en: words, fr: words },
+    });
+    const plugin = definePlugin({
+      id: 'time-tracking',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.0',
+      needs: ['issue.read'],
+      properties: { timeSpent, estimate, billed },
+      messages: { en: words, fr: words },
+    });
+
+    plugin.defineEventHandler({
+      event: 'issue.statusChanged',
+      async handler(ctx, { issue }) {
+        const read = await ctx.issues.get(issue.id);
+        const spent: number | undefined = read?.properties.timeSpent;
+        const ticked: true | undefined = read?.properties.billed;
+        await ctx.issues.setProperty(issue.id, 'timeSpent', (spent ?? 0) + 30);
+        await ctx.issues.setProperty(issue.id, 'billed', ticked === undefined);
+        await ctx.issues.setProperty(issue.id, 'timeSpent', null);
+        // @ts-expect-error people write the estimate, not the plugin
+        await ctx.issues.setProperty(issue.id, 'estimate', 60);
+        // @ts-expect-error a value of another type
+        await ctx.issues.setProperty(issue.id, 'timeSpent', '30');
+        // @ts-expect-error a property the plugin does not add
+        await ctx.issues.setProperty(issue.id, 'priority', 1);
+      },
+    });
+
+    expect(Object.keys(plugin.properties)).toStrictEqual(['timeSpent', 'estimate', 'billed']);
   });
 });

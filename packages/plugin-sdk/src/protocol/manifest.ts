@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { PLUGIN_NEEDS } from './calls.ts';
-import { checkEntities, entitiesSchema } from './entities.ts';
+import { checkEntities, entitiesSchema } from './declarations/entities.ts';
+import { checkProperties, propertiesSchema } from './declarations/properties.ts';
+import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './declarations/settings.ts';
 import { EVENT_TYPES } from './events.ts';
 import { PLUGIN_LOGO_FILES } from './package.ts';
-import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './settings.ts';
 import { apiVersionSchema } from './version.ts';
 
 /** `time-tracking`: lowercase words joined by dashes, as its URLs and its permissions use it. */
@@ -99,6 +100,8 @@ export const manifestSchema = z
     projectSettings: settingsSchema.default(NO_SETTINGS_SCHEMA),
     /** What it keeps, by name; none for a plugin uploaded before entities. */
     entities: entitiesSchema.default({}),
+    /** What it adds to issues, by name; none for a plugin uploaded before properties. */
+    properties: propertiesSchema.default({}),
     messages: z.strictObject({ en: messagesSchema, fr: messagesSchema }),
     actions: z
       .array(z.strictObject({ name: nameSchema, access: accessSchema, input: jsonSchema }))
@@ -107,6 +110,7 @@ export const manifestSchema = z
   })
   .superRefine(checkIssueActions)
   .superRefine(checkSettings)
-  .superRefine(checkEntities);
+  .superRefine(checkEntities)
+  .superRefine(checkProperties);
 
 export type Manifest = z.infer<typeof manifestSchema>;

@@ -1,4 +1,4 @@
-import { definePlugin, z } from '@toppo-tracker/plugin-sdk';
+import { definePlugin, defineProperty, z } from '@toppo-tracker/plugin-sdk';
 import { describe, expect, it } from 'vitest';
 import { createTestToppo, PluginRunError } from './test-toppo.ts';
 
@@ -206,6 +206,66 @@ describe('a fake Toppo for a plugin’s tests', () => {
       }),
     ).rejects.toMatchObject({ code: 'PLUGIN_ERROR', detail: 'NOT_FOUND' });
     expect(toppo.comments).toStrictEqual([]);
+  });
+
+  it('keeps the properties the plugin writes on issues it sees, checked against their types', async () => {
+    const words = { name: 'Time', spent: 'Time spent', guess: 'Estimate', billed: 'Billed' };
+    const plugin = definePlugin({
+      id: 'time-tracking',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.0',
+      needs: ['issue.read'],
+      properties: {
+        timeSpent: defineProperty({ name: 'spent', type: 'number', writtenBy: 'plugin' }),
+        estimate: defineProperty({ name: 'guess', type: 'number', writtenBy: 'people' }),
+        billed: defineProperty({ name: 'billed', type: 'checkbox', writtenBy: 'plugin' }),
+      },
+      messages: { en: words, fr: words },
+    });
+    const spend = plugin.defineAction({
+      name: 'time.spend',
+      access: 'authenticated',
+      input: z.object({ issueId: z.uuid(), minutes: z.unknown() }),
+      async handler(ctx, { issueId, minutes }) {
+        await ctx.issues.setProperty(issueId, 'timeSpent', minutes as number);
+        await ctx.issues.setProperty(issueId, 'billed', minutes !== null);
+        return (await ctx.issues.get(issueId))?.properties ?? null;
+      },
+    });
+    const guess = plugin.defineAction({
+      name: 'time.guess',
+      access: 'authenticated',
+      input: z.object({ issueId: z.uuid() }),
+      async handler(ctx, { issueId }) {
+        // People write the estimate: the plugin only reads it.
+        await Reflect.apply(ctx.issues.setProperty, ctx.issues, [issueId, 'estimate', 1]);
+      },
+    });
+    const toppo = createTestToppo(plugin);
+    const issue = toppo.createIssue({ properties: { estimate: 120 } });
+    const elsewhere = toppo.createIssue();
+    const someone = toppo.createUser({ sees: [issue] });
+
+    expect(await someone.run(spend, { issueId: issue.id, minutes: 90 })).toStrictEqual({
+      estimate: 120,
+      timeSpent: 90,
+      billed: true,
+    });
+    await someone.run(spend, { issueId: issue.id, minutes: null });
+    expect(toppo.properties(issue.id)).toStrictEqual({ estimate: 120 });
+    await expect(someone.run(spend, { issueId: issue.id, minutes: 'many' })).rejects.toMatchObject({
+      code: 'PLUGIN_ERROR',
+      detail: 'INVALID_PROPERTY_VALUE',
+    });
+    await expect(someone.run(spend, { issueId: elsewhere.id, minutes: 5 })).rejects.toMatchObject({
+      code: 'PLUGIN_ERROR',
+      detail: 'NOT_FOUND',
+    });
+    await expect(someone.run(guess, { issueId: issue.id })).rejects.toMatchObject({
+      code: 'PLUGIN_ERROR',
+      detail: 'PROPERTY_NOT_FOUND',
+    });
   });
 
   it('refuses a plugin for another API', () => {

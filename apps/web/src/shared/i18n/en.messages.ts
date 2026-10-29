@@ -91,6 +91,7 @@ export const en = {
     noValue: 'None',
     noOptions: 'No options.',
     checked: 'Yes',
+    duration: { hoursMinutes: '{hours} h {minutes}', hours: '{hours} h', minutes: '{minutes} min' },
     unchecked: 'No',
     propertyChip: '{name}: {value}',
     chooseOption: 'Choose…',
@@ -691,6 +692,14 @@ export const en = {
     newProperty: 'New property',
     customDescription:
       'A field the issues of every project may take, such as a version, a due date or a reviewer.',
+    addedBy: 'Added by {plugin}',
+    addedByUninstalled: 'Added by {plugin}, uninstalled',
+    addedByPlugin:
+      'Added by {plugin}, which reads it, in the projects it acts in. It stays while {plugin} is installed.',
+    writtenByPlugin:
+      'Added and written by {plugin}, in the projects it acts in: no one types it in. It stays while {plugin} is installed.',
+    ofUninstalledPlugin:
+      'Added by {plugin}, uninstalled with its data kept: it shows nowhere until {plugin} comes back.',
     name: 'Name',
     shownInList: 'Shown in the issue list',
     shownInListHelp: 'A chip beside the subject of each issue in the list.',
@@ -1116,6 +1125,13 @@ export const en = {
     permissionsDescription:
       'Roles give them to their members like Toppo’s own, in Roles and permissions.',
     permissionsNone: 'It adds no permission.',
+    propertiesTitle: 'Properties it adds',
+    propertiesDescription:
+      'Fields of the issues, in the projects where it acts, named so once it is approved: rename them at will in Issue properties.',
+    propertiesNone: 'It adds no property to issues.',
+    propertyKind: '{type}, {writer}',
+    durationType: 'Duration',
+    propertyWrittenBy: { people: 'typed in by people', plugin: 'written by the plugin' },
     scope: {
       instance: 'For the whole instance',
       project: 'In each project',

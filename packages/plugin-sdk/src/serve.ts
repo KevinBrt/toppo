@@ -73,6 +73,7 @@ function manifestOf({
   settings,
   projectSettings,
   entities,
+  properties,
   actions,
   events,
 }: PluginDefinition): Omit<Manifest, 'settings' | 'projectSettings' | 'entities'> &
@@ -91,6 +92,14 @@ function manifestOf({
       Object.entries(entities).map(([name, { attachedTo, fields, indexes, limits }]) => [
         name,
         { attachedTo, fields: jsonSchemaOf(fields), indexes: [...indexes], limits },
+      ]),
+    ),
+    properties: Object.fromEntries(
+      Object.entries(properties).map(([name, { name: label, type, display, writtenBy }]) => [
+        name,
+        display === undefined
+          ? { name: label, type, writtenBy }
+          : { name: label, type, display, writtenBy },
       ]),
     ),
     messages: config.messages,

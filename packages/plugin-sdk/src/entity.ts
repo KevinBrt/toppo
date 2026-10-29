@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 import { type HOST_CALLS, type RecordData, recordWhereSchema } from './protocol/calls.ts';
-import { RECORD_GROUPS, type RecordGroup } from './protocol/entities.ts';
+import { RECORD_GROUPS, type RecordGroup } from './protocol/declarations/entities.ts';
 
 /** What a plugin's records hang on: an issue (seen as it is), or a project. */
 export type Attachment = 'issue' | 'project';

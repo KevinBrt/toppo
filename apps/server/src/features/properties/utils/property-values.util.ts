@@ -1,11 +1,11 @@
 import { propertyChangeOf, withOptionsMoved, withoutOptions } from '@toppo-tracker/core';
 import { schema } from '@toppo-tracker/db';
-import type { PropertyType, PropertyValue } from '@toppo-tracker/shared';
+import type { PropertyType, PropertyValue, PropertyWriter } from '@toppo-tracker/shared';
 import { and, eq, inArray, isNull, or, type SQL, sql } from 'drizzle-orm';
 import { recordActivities } from '../../../platform/activities/record-activity.ts';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 
-const { issues, properties, propertyOptions } = schema;
+const { issues, plugins, properties, propertyOptions } = schema;
 
 /** Rows written at once: far below PostgreSQL's limit of parameters per statement. */
 const BATCH = 1000;
@@ -209,6 +209,22 @@ export async function lockedProperty(
     .where(and(eq(properties.id, propertyId), ofScope(projectId)))
     .for('update');
   return property;
+}
+
+/**
+ * Who writes a property's values, and whether the plugin that added it, if any, is installed:
+ * while it is, the property stays, of its type, written as it says.
+ */
+export async function writingOf(
+  tx: Transaction,
+  propertyId: string,
+): Promise<{ writtenBy: PropertyWriter; ofInstalledPlugin: boolean }> {
+  const [row] = await tx
+    .select({ writtenBy: properties.writtenBy, plugin: plugins.id })
+    .from(properties)
+    .leftJoin(plugins, eq(plugins.slug, properties.pluginSlug))
+    .where(eq(properties.id, propertyId));
+  return { writtenBy: row?.writtenBy ?? 'people', ofInstalledPlugin: Boolean(row?.plugin) };
 }
 
 /** The properties of the instance, or of one project. */

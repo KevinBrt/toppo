@@ -62,6 +62,11 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
   const permissions = page.getByRole('region', { name: 'Permissions it adds' });
   await expect(permissions.getByText('Log time')).toBeVisible();
   await expect(permissions.getByText('In each project')).toBeVisible();
+  await expect(
+    page
+      .getByRole('region', { name: 'Properties it adds' })
+      .getByText('It adds no property to issues.'),
+  ).toBeVisible();
   const logo = page.getByRole('main').locator('img');
   await expect(logo).toHaveJSProperty('naturalWidth', 256);
   await expectAccessible(page);

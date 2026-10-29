@@ -42,7 +42,27 @@ export {
   RECORD_TEXT_MAX_LENGTH,
   type RecordGroup,
   recordFieldsSchemaOf,
-} from './entities.ts';
+} from './declarations/entities.ts';
+export {
+  checkProperties,
+  PLUGIN_PROPERTIES_MAX,
+  PLUGIN_PROPERTY_TYPES,
+  type PluginPropertyDeclaration,
+  type PluginPropertyType,
+  PROPERTY_DISPLAYS,
+  type PropertyDisplay,
+  pluginPropertySchema,
+  propertiesSchema,
+} from './declarations/properties.ts';
+export {
+  NO_SETTINGS_SCHEMA,
+  PLUGIN_SETTINGS_MAX,
+  SETTING_NAME,
+  type Setting,
+  type SettingsSchema,
+  settingSchema,
+  settingsSchema,
+} from './declarations/settings.ts';
 export {
   type DeletedIssue,
   deletedIssueSchema,
@@ -89,13 +109,4 @@ export {
   type PluginGlobal,
   type RunKind,
 } from './sandbox.ts';
-export {
-  NO_SETTINGS_SCHEMA,
-  PLUGIN_SETTINGS_MAX,
-  SETTING_NAME,
-  type Setting,
-  type SettingsSchema,
-  settingSchema,
-  settingsSchema,
-} from './settings.ts';
 export { API_VERSION, apiVersionSchema, isApiCompatible } from './version.ts';

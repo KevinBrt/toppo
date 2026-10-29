@@ -16,6 +16,7 @@ import {
 import { fillRecordSlotsJob } from '../jobs/fill-record-slots.job.ts';
 import { declaredLogo, declaredManifest } from '../utils/declared-manifest.util.ts';
 import { forgetPluginPermissions } from '../utils/plugin-permissions.util.ts';
+import { keepPluginProperties } from '../utils/properties/plugin-properties.util.ts';
 import { assignRecordSlots } from '../utils/records/record-slots.util.ts';
 
 const { pluginProjectSettings, plugins } = schema;
@@ -59,6 +60,7 @@ export const installPlugin = defineCommand({
     if (!installed) {
       await assertRoomForOneMore(tx);
     }
+    await keepPluginProperties(tx, manifest);
     await services.plugins.packages.keep({ slug: manifest.id, sha256: opened.sha256 }, zip);
     const plugin = {
       slug: manifest.id,

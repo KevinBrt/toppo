@@ -13,6 +13,7 @@ export function testManifest(overrides: Partial<Manifest> = {}): Manifest {
     settings: { type: 'object', properties: {} },
     projectSettings: { type: 'object', properties: {} },
     entities: {},
+    properties: {},
     messages: {
       en: {
         plugin: { name: 'Time tracking', description: 'Time spent on each issue.' },

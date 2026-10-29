@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import type { ActionContext, Context, Entities } from './context.ts';
 import type { MessagesOf } from './messages.ts';
+import type { Properties } from './property.ts';
 import type { PluginNeed } from './protocol/calls.ts';
 import type { EventType } from './protocol/events.ts';
 import type { accessSchema, Messages } from './protocol/manifest.ts';
@@ -23,6 +24,7 @@ export interface PluginDefinition {
   settings: z.ZodType;
   projectSettings: z.ZodType;
   entities: Entities;
+  properties: Properties;
   actions: Map<
     string,
     {

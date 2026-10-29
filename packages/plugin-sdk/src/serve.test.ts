@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { definitionOf } from './definition.ts';
 import { z } from './index.ts';
 import { definePlugin } from './plugin.ts';
+import { defineProperty } from './property.ts';
 import { manifestSchema } from './protocol/manifest.ts';
 import type { HostGlobal } from './protocol/sandbox.ts';
 import { servePlugin } from './serve.ts';
@@ -38,6 +39,7 @@ const en = {
   },
   errors: { dailyLimit: 'At most {limit} minutes a day.' },
   comment: { closedAfter: 'Closed after {minutes} minutes.' },
+  properties: { timeSpent: 'Time spent', estimate: 'Estimate' },
 } as const;
 
 /** A plugin as an author writes one, defined anew for each test. */
@@ -55,6 +57,19 @@ function timeTracking() {
       budgetDays: z.number().positive().optional(),
       reportedEvery: z.enum(['week', 'month']).default('month'),
     }),
+    properties: {
+      timeSpent: defineProperty({
+        name: 'properties.timeSpent',
+        type: 'number',
+        display: 'duration',
+        writtenBy: 'plugin',
+      }),
+      estimate: defineProperty({
+        name: 'properties.estimate',
+        type: 'number',
+        writtenBy: 'people',
+      }),
+    },
     messages: {
       en,
       fr: {
@@ -67,6 +82,7 @@ function timeTracking() {
         },
         errors: { dailyLimit: '{limit} minutes par jour au plus.' },
         comment: { closedAfter: 'Fermé après {minutes} minutes.' },
+        properties: { timeSpent: 'Temps passé', estimate: 'Estimation' },
       },
     },
   });
@@ -96,6 +112,11 @@ function timeTracking() {
           return await ctx.issues.comment(ISSUE, '   ');
         case 'budget':
           return await ctx.projects.settings(PROJECT);
+        case 'spent': {
+          const issue = await ctx.issues.get(ISSUE);
+          await ctx.issues.setProperty(ISSUE, 'timeSpent', (issue?.properties.timeSpent ?? 0) + 30);
+          return issue?.properties ?? null;
+        }
         default:
           return await ctx.issues.get(ISSUE);
       }
@@ -155,6 +176,15 @@ describe('a plugin served to Toppo', () => {
       needs: ['issue.read', 'comment.create'],
       permissions: { 'entries.log': { scope: 'project', label: 'permissions.log' } },
       settings: { properties: { maxMinutesPerDay: { type: 'integer', default: 600 } } },
+      properties: {
+        timeSpent: {
+          name: 'properties.timeSpent',
+          type: 'number',
+          display: 'duration',
+          writtenBy: 'plugin',
+        },
+        estimate: { name: 'properties.estimate', type: 'number', writtenBy: 'people' },
+      },
       messages: { en, fr: { permissions: { log: 'Saisir du temps' } } },
       actions: [
         {
@@ -207,6 +237,22 @@ describe('a plugin served to Toppo', () => {
       await check({ [PROJECT]: { budgetDays: 20 }, [ISSUE]: { reportedEvery: 'day' } }),
     ).toStrictEqual({ ok: true, result: [ISSUE] });
     expect(await check([])).toMatchObject({ ok: false, error: { code: 'VALIDATION_FAILED' } });
+  });
+
+  it('reads its own properties on an issue, and writes those it writes', async () => {
+    const { host, call } = fakeHost({
+      'issues.get': { ...snapshot, description: '', properties: { timeSpent: 60, estimate: 120 } },
+      'issues.setProperty': null,
+    });
+
+    expect(await act(host, 'oddities.run', { what: 'spent' })).toStrictEqual({
+      ok: true,
+      result: { timeSpent: 60, estimate: 120 },
+    });
+    expect(call.mock.calls.at(-1)).toStrictEqual([
+      'issues.setProperty',
+      JSON.stringify({ issueId: ISSUE, property: 'timeSpent', value: 90 }),
+    ]);
   });
 
   it('reads a project’s settings from Toppo, its defaults applied, or fails on those it refuses', async () => {

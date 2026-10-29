@@ -10,6 +10,7 @@ import {
 import { and, asc, count, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import type { Transaction } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import { lockPropertyAdding } from '../../../platform/plugins/plugin-properties.ts';
 import {
   ofScope,
   type PropertyRef,
@@ -18,9 +19,6 @@ import {
 } from './property-values.util.ts';
 
 const { properties, propertyOptions } = schema;
-
-/** Arbitrary but fixed: two properties created at once are counted one after the other. */
-const PROPERTIES_LOCK_KEY = 7_461_756_331;
 
 const nameTaken = () => new HttpError(409, 'PROPERTY_NAME_TAKEN', 'Another property has this name');
 
@@ -95,7 +93,7 @@ export async function insertProperty(
     options: readonly { name: string; color: PaletteColor }[];
   },
 ): Promise<string> {
-  await tx.execute(sql`select pg_advisory_xact_lock(${PROPERTIES_LOCK_KEY})`);
+  await lockPropertyAdding(tx);
   const [existing] = await tx.select({ count: count() }).from(properties).where(ofScope(projectId));
   if ((existing?.count ?? 0) >= PROPERTIES_MAX) {
     throw new HttpError(

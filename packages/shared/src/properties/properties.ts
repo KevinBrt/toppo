@@ -27,6 +27,22 @@ export const hasOptions = (type: PropertyType): boolean =>
 /** Properties of the instance: few enough for the forms and the issue's side to show them all. */
 export const PROPERTIES_MAX = 20;
 
+/** Who writes a property's values: people, or the plugin that added it alone, without activity. */
+export const PROPERTY_WRITERS = ['people', 'plugin'] as const;
+
+export type PropertyWriter = (typeof PROPERTY_WRITERS)[number];
+
+/** How a number shows: `duration` reads minutes as "6 h 40". */
+export const PROPERTY_DISPLAYS = ['duration'] as const;
+
+export type PropertyDisplay = (typeof PROPERTY_DISPLAYS)[number];
+
+/** What a property says of how its values are written and shown. */
+const propertyWritingSchema = z.object({
+  writtenBy: z.enum(PROPERTY_WRITERS),
+  display: z.enum(PROPERTY_DISPLAYS).nullable(),
+});
+
 /** Options of one property, short enough to be read whole in a menu. */
 export const PROPERTY_OPTIONS_MAX = 100;
 
@@ -123,16 +139,30 @@ export const propertyParamsSchema = z.object({ propertyId: z.uuid() });
 export const createPropertyResponseSchema = z.object({ id: z.uuid() });
 
 /**
+ * The plugin that added a property, by id and in each language, and whether it is installed:
+ * while it is, the property stays, its type and who writes it with it.
+ */
+export const propertyPluginSchema = z.object({
+  slug: z.string(),
+  name: z.object({ en: z.string(), fr: z.string() }),
+  installed: z.boolean(),
+});
+
+export type PropertyPlugin = z.infer<typeof propertyPluginSchema>;
+
+/**
  * A property as the settings show it, with how many issues have a value of it, and each option
  * with how many have that one.
  */
-export const propertyRowSchema = z.object({
+export const propertyRowSchema = propertyWritingSchema.extend({
   id: z.uuid(),
   name: z.string(),
   type: z.enum(PROPERTY_TYPES),
   shownInList: z.boolean(),
   askedAtCreation: z.boolean(),
   required: z.boolean(),
+  /** The plugin that added it; `null` for one of the instance's or a project's own. */
+  plugin: propertyPluginSchema.nullable(),
   /** Issues having a value of it: deleting it takes the values off them. */
   issueCount: z.number().int(),
   /** In their order, each with how many issues have it; none unless its type has options. */
@@ -148,8 +178,11 @@ export type PropertiesResponse = z.infer<typeof propertiesResponseSchema>;
 
 export type PropertyRow = PropertiesResponse['properties'][number];
 
-/** A property as the issue forms offer it: its type, what it asks, and its options in order. */
-export const issuePropertyFieldSchema = z.object({
+/**
+ * A property as the issue forms offer it: its type, what it asks, its options in order, and who
+ * writes it (people never type in what a plugin writes).
+ */
+export const issuePropertyFieldSchema = propertyWritingSchema.extend({
   id: z.uuid(),
   name: z.string(),
   type: z.enum(PROPERTY_TYPES),

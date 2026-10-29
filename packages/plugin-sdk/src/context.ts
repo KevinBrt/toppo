@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import { createEntityClient, type Entity, type EntityClient } from './entity.ts';
 import { PluginFailure } from './failure.ts';
 import { type MessageKey, type MessageParams, translate } from './messages.ts';
+import type { OwnWritten, Properties, PropertyInput, PropertyValues } from './property.ts';
 import { HOST_CALLS, type HostCallMethod, type IssueDetails } from './protocol/calls.ts';
 import type { Messages } from './protocol/manifest.ts';
 import type { Locale } from './protocol/run.ts';
@@ -10,12 +11,18 @@ import type { HostGlobal } from './protocol/sandbox.ts';
 /** A plugin's entities, by name: the records it keeps. */
 export type Entities = Readonly<Record<string, Entity>>;
 
+/** An issue with its words, and the values of the plugin's own properties it has. */
+export type IssueOf<Pr extends Properties> = Omit<IssueDetails, 'properties'> & {
+  readonly properties: PropertyValues<Pr>;
+};
+
 /** What every handler is given: the plugin's settings and words, and what it may ask Toppo. */
 export interface Context<
   S extends z.ZodType,
   M extends Messages,
   PS extends z.ZodType = z.ZodType,
   E extends Entities = Entities,
+  Pr extends Properties = Properties,
 > {
   /** As the administrator saved them, parsed with the plugin's schema: its defaults applied. */
   readonly settings: z.output<S>;
@@ -26,8 +33,11 @@ export interface Context<
   /** What to throw to tell the person who acted why: one of the plugin's message keys. */
   fail(code: MessageKey<M>, params?: MessageParams): PluginFailure;
   readonly issues: {
-    /** An issue with its words; `null` when it does not exist or is not seen. Needs `issue.read`. */
-    get(issueId: string): Promise<IssueDetails | null>;
+    /**
+     * An issue with its words and the plugin's own properties; `null` when it does not exist or
+     * is not seen. Needs `issue.read`.
+     */
+    get(issueId: string): Promise<IssueOf<Pr> | null>;
     /**
      * Comments on an issue, as the plugin's own user. `once` makes it single: an event handled
      * twice comments once. Needs `comment.create`.
@@ -37,6 +47,16 @@ export interface Context<
       body: string,
       options?: { once?: string },
     ): Promise<{ commentId: string }>;
+    /**
+     * Gives an issue it sees a value of a property it writes, checked by Toppo against the
+     * property's type; `null` (or `false` for a box) takes it away. No activity is recorded: the
+     * value is derived from what the plugin keeps, which is its history.
+     */
+    setProperty<K extends OwnWritten<Pr>>(
+      issueId: string,
+      property: K,
+      value: PropertyInput<Pr[K]['type']> | null,
+    ): Promise<void>;
   };
   readonly projects: {
     /**
@@ -55,7 +75,8 @@ export interface ActionContext<
   M extends Messages,
   PS extends z.ZodType = z.ZodType,
   E extends Entities = Entities,
-> extends Context<S, M, PS, E> {
+  Pr extends Properties = Properties,
+> extends Context<S, M, PS, E, Pr> {
   readonly user: { readonly id: string };
 }
 
@@ -94,13 +115,18 @@ export function createContext<
     t: (key, params) => translate(messages[locale], key, params),
     fail: (code, params) => new PluginFailure(code, params),
     issues: {
-      get: (issueId) => callToppo(host, 'issues.get', { issueId }),
+      // Toppo answers the plugin's own properties: they are what it declares.
+      get: async (issueId) =>
+        (await callToppo(host, 'issues.get', { issueId })) as IssueOf<Properties> | null,
       comment: (issueId, body, { once } = {}) =>
         callToppo(
           host,
           'issues.comment',
           once === undefined ? { issueId, body } : { issueId, body, once },
         ),
+      async setProperty(issueId, property, value) {
+        await callToppo(host, 'issues.setProperty', { issueId, property, value });
+      },
     },
     projects: {
       async settings(projectId) {

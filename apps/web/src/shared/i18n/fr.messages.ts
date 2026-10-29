@@ -94,6 +94,7 @@ export const fr: Messages = {
     noValue: 'Aucune',
     noOptions: 'Aucune option.',
     checked: 'Oui',
+    duration: { hoursMinutes: '{hours} h {minutes}', hours: '{hours} h', minutes: '{minutes} min' },
     unchecked: 'Non',
     propertyChip: '{name} : {value}',
     chooseOption: 'Choisir…',
@@ -714,6 +715,14 @@ export const fr: Messages = {
     newProperty: 'Nouvelle propriété',
     customDescription:
       'Un champ que peuvent prendre les tickets de tous les projets, comme une version, une échéance ou un relecteur.',
+    addedBy: 'Ajoutée par {plugin}',
+    addedByUninstalled: 'Ajoutée par {plugin}, désinstallé',
+    addedByPlugin:
+      'Ajoutée par {plugin}, qui la lit, dans les projets où il agit. Elle reste tant que {plugin} est installé.',
+    writtenByPlugin:
+      'Ajoutée et écrite par {plugin}, dans les projets où il agit : personne ne la saisit. Elle reste tant que {plugin} est installé.',
+    ofUninstalledPlugin:
+      'Ajoutée par {plugin}, désinstallé en gardant ses données : elle n’apparaît nulle part tant que {plugin} ne revient pas.',
     name: 'Nom',
     shownInList: 'Affichée dans la liste des tickets',
     shownInListHelp: 'Une pastille à côté du sujet de chaque ticket dans la liste.',
@@ -1158,6 +1167,13 @@ export const fr: Messages = {
     permissionsDescription:
       'Les rôles les donnent à leurs membres comme celles de Toppo, dans Rôles et permissions.',
     permissionsNone: 'Il n’ajoute aucune permission.',
+    propertiesTitle: 'Propriétés qu’il ajoute',
+    propertiesDescription:
+      'Des champs des tickets, dans les projets où il agit, nommés ainsi une fois approuvé : renommez-les à votre guise dans Propriétés des tickets.',
+    propertiesNone: 'Il n’ajoute aucune propriété aux tickets.',
+    propertyKind: '{type}, {writer}',
+    durationType: 'Durée',
+    propertyWrittenBy: { people: 'saisie par les personnes', plugin: 'écrite par le plugin' },
     scope: {
       instance: 'Pour toute l’instance',
       project: 'Dans chaque projet',

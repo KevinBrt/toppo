@@ -3,6 +3,7 @@ import { PROPERTIES_MAX, type PropertiesResponse } from '@toppo-tracker/shared';
 import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
+import { propertyPlugins } from '../../../platform/plugins/plugin-properties.ts';
 import { issuesChoosing, issuesWithValue } from '../utils/property-counts.util.ts';
 
 const { issues, properties, propertyOptions } = schema;
@@ -10,7 +11,7 @@ const { issues, properties, propertyOptions } = schema;
 /**
  * Every property of the instance, oldest first, with how many issues have a value of it, and its
  * options in their order with how many issues have each: removing one takes it off them. The
- * projects' own are left to them.
+ * projects' own are left to them. A plugin's say which, and whether it is still installed.
  */
 export const listProperties = defineQuery({
   name: 'property.list',
@@ -25,6 +26,9 @@ export const listProperties = defineQuery({
         shownInList: properties.shownInList,
         askedAtCreation: properties.askedAtCreation,
         required: properties.required,
+        writtenBy: properties.writtenBy,
+        display: properties.display,
+        pluginSlug: properties.pluginSlug,
         issueCount: count(issues.id),
       })
       .from(properties)
@@ -57,9 +61,14 @@ export const listProperties = defineQuery({
               ),
             )
             .orderBy(asc(propertyOptions.position));
+    const plugins = await propertyPlugins(
+      db,
+      defined.map(({ pluginSlug }) => pluginSlug),
+    );
     return {
-      properties: defined.map((property) => ({
+      properties: defined.map(({ pluginSlug, ...property }) => ({
         ...property,
+        plugin: (pluginSlug === null ? undefined : plugins.get(pluginSlug)) ?? null,
         options: options
           .filter(({ propertyId }) => propertyId === property.id)
           .map(({ propertyId: _, ...option }) => option),

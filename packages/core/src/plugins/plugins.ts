@@ -33,18 +33,21 @@ export interface PluginGrants {
   permissions: Readonly<Record<string, { scope: string }>>;
   /** The events it hears of, each telling it of the issues it concerns. */
   events: readonly string[];
+  /** The properties it adds to issues, by name: each a column everyone may see. */
+  properties: Readonly<Record<string, unknown>>;
 }
 
 /**
  * Whether a new version asks for what the approved one did not: a need, a permission (or a wider
- * scope for one) or an event. It then waits for a new approval; asking for the same or less, it
- * takes the place of the approved one at once.
+ * scope for one), an event or a property. It then waits for a new approval; asking for the same
+ * or less, it takes the place of the approved one at once.
  */
 export function asksForMore(approved: PluginGrants, upgrade: PluginGrants): boolean {
   const isNew = (had: readonly string[]) => (item: string) => !had.includes(item);
   return (
     upgrade.needs.some(isNew(approved.needs)) ||
     upgrade.events.some(isNew(approved.events)) ||
+    Object.keys(upgrade.properties).some(isNew(Object.keys(approved.properties))) ||
     Object.entries(upgrade.permissions).some(
       ([name, { scope }]) =>
         !Object.hasOwn(approved.permissions, name) ||
