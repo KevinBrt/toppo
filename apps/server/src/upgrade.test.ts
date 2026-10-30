@@ -100,6 +100,15 @@ describe.each(snapshots)('a database of $name, upgraded', (snapshot) => {
     ]) {
       await read(admin, url);
     }
+    // Plugins and webhooks, as their pages read them: their packages stay in the data volume.
+    const { plugins } = (await read(admin, '/api/v1/plugins')) as { plugins: { slug: string }[] };
+    for (const { slug } of plugins) {
+      await read(admin, `/api/v1/plugins/${slug}`);
+    }
+    const { webhooks } = (await read(admin, '/api/v1/webhooks')) as { webhooks: { id: string }[] };
+    for (const { id } of webhooks) {
+      await read(admin, `/api/v1/webhooks/${id}`);
+    }
 
     const member = await signIn(ACCOUNTS.team);
     await read(member, '/api/v1/notifications');
