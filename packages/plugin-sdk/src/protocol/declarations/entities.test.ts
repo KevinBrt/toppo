@@ -95,6 +95,42 @@ describe('the entities Toppo keeps', () => {
     expect(tooMany.success).toBe(false);
     expect(ofProjects.success).toBe(true);
   });
+
+  it('keeps records on a person for a plugin asking for the API that brought them', () => {
+    const onPerson = { attachedTo: 'person', visibleTo: 'teammates', limits: { perPerson: 5000 } };
+
+    const declared = manifestSchema.safeParse(withEntity(onPerson, { apiVersion: '^1.1' }));
+    const tooOld = manifestSchema.safeParse(withEntity(onPerson));
+
+    expect(declared.data?.entities['timeEntry']).toMatchObject(onPerson);
+    expect(tooOld.error?.issues).toStrictEqual([
+      expect.objectContaining({
+        path: ['entities', 'timeEntry', 'attachedTo'],
+        message: 'timeEntry hangs on a person: the plugin asks for API ^1.1',
+      }),
+    ]);
+  });
+
+  it('says who sees records on a person only, bounded by person', () => {
+    const shownAsIssues = manifestSchema.safeParse(withEntity({ visibleTo: 'person' }));
+    const boundedByIssue = manifestSchema.safeParse(
+      withEntity({ attachedTo: 'person', limits: { perIssue: 10 } }, { apiVersion: '^1.1' }),
+    );
+    const tooMany = manifestSchema.safeParse(
+      withEntity(
+        { attachedTo: 'person', limits: { perPerson: ENTITY_LIMITS.perPerson.max + 1 } },
+        { apiVersion: '^1.1' },
+      ),
+    );
+
+    expect(shownAsIssues.error?.issues[0]?.message).toBe(
+      'timeEntry hangs on issues: they are seen as those are',
+    );
+    expect(boundedByIssue.error?.issues[0]?.message).toBe(
+      'timeEntry hangs on persons: it has no perIssue limit',
+    );
+    expect(tooMany.success).toBe(false);
+  });
 });
 
 describe('the indexes of an entity', () => {

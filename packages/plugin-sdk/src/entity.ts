@@ -2,8 +2,14 @@ import type { z } from 'zod';
 import { type HOST_CALLS, type RecordData, recordWhereSchema } from './protocol/calls.ts';
 import { RECORD_GROUPS, type RecordGroup } from './protocol/declarations/entities.ts';
 
-/** What a plugin's records hang on: an issue (seen as it is), or a project. */
-export type Attachment = 'issue' | 'project';
+/** What a plugin's records hang on: an issue (seen as it is), a project, or a person. */
+export type Attachment = 'issue' | 'project' | 'person';
+
+/**
+ * Who sees the records on a person, besides the plugin itself: that person only, or also those
+ * who share with them a project the plugin acts in.
+ */
+export type PersonVisibility = 'person' | 'teammates';
 
 /** Records a plugin keeps, as `defineEntity` declares them. */
 export interface Entity<
@@ -12,11 +18,24 @@ export interface Entity<
   I extends string = string,
 > {
   readonly attachedTo: A;
+  /** On a person: who sees its records; that person only unless said. */
+  readonly visibleTo?: PersonVisibility | undefined;
   readonly fields: F;
   /** The fields its records are filtered, sorted and grouped on. */
   readonly indexes: readonly I[];
-  readonly limits: { readonly perIssue?: number; readonly perProject?: number };
+  readonly limits: {
+    readonly perIssue?: number;
+    readonly perProject?: number;
+    readonly perPerson?: number;
+  };
 }
+
+/** The bound of an entity's records: by issue, by project, or by person, as they hang. */
+type LimitsOf<A extends Attachment> = A extends 'issue'
+  ? { perIssue?: number }
+  : A extends 'project'
+    ? { perProject?: number }
+    : { perPerson?: number };
 
 /**
  * The fields an index takes: a number, a date, an id, a choice or a short text, which no record
@@ -28,9 +47,10 @@ type IndexableField<T> = {
   string;
 
 /**
- * Declares what a plugin keeps: records on an issue or a project, with fields Toppo checks
- * itself, those it filters, sorts and groups them on (`indexes`), and the most of them an issue
- * (or a project, for those on no issue) may hold.
+ * Declares what a plugin keeps: records on an issue, a project or a person, with fields Toppo
+ * checks itself, those it filters, sorts and groups them on (`indexes`), and the most of them an
+ * issue (or a project, for those on no issue, or a person) may hold. Records on a person are seen
+ * by that person only, unless `visibleTo: 'teammates'`; they ask for plugin API ^1.1.
  */
 export function defineEntity<
   const A extends Attachment,
@@ -38,12 +58,14 @@ export function defineEntity<
   const I extends IndexableField<z.output<F>> = never,
 >(definition: {
   attachedTo: A;
+  visibleTo?: A extends 'person' ? PersonVisibility : never;
   fields: F;
   indexes?: readonly I[];
-  limits?: A extends 'issue' ? { perIssue?: number } : { perProject?: number };
+  limits?: LimitsOf<A>;
 }): Entity<A, F, I> {
   return {
     attachedTo: definition.attachedTo,
+    ...(definition.visibleTo === undefined ? {} : { visibleTo: definition.visibleTo }),
     fields: definition.fields,
     indexes: definition.indexes ?? [],
     limits: definition.limits ?? {},
@@ -54,24 +76,34 @@ type FieldsOf<En extends Entity> = z.output<En['fields']>;
 
 type IndexOf<En extends Entity> = En['indexes'][number];
 
+/** Where a record hangs, as it reads: an issue in its project, a project, or a person. */
+type AnchorsOf<A extends Attachment> = [A] extends ['issue']
+  ? { readonly issueId: string; readonly projectId: string; readonly personId: null }
+  : [A] extends ['project']
+    ? { readonly issueId: null; readonly projectId: string; readonly personId: null }
+    : [A] extends ['person']
+      ? { readonly issueId: null; readonly projectId: null; readonly personId: string }
+      : {
+          readonly issueId: string | null;
+          readonly projectId: string | null;
+          readonly personId: string | null;
+        };
+
 /** A record as a plugin reads it: where it hangs, who wrote it and when, then its fields. */
 export type EntityRecord<En extends Entity> = {
   readonly id: string;
-  readonly issueId: En['attachedTo'] extends 'issue'
-    ? string
-    : En['attachedTo'] extends 'project'
-      ? null
-      : string | null;
-  readonly projectId: string;
   readonly createdBy: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
-} & FieldsOf<En>;
+} & AnchorsOf<En['attachedTo']> &
+  FieldsOf<En>;
 
 /** Where a new record hangs. */
 type AnchorOf<A extends Attachment> = A extends 'issue'
   ? { issueId: string }
-  : { projectId: string };
+  : A extends 'project'
+    ? { projectId: string }
+    : { personId: string };
 
 /** What an indexed field must be: a value, one of a list (100 at most), or within bounds. */
 export type FieldCondition<V> =
@@ -80,16 +112,17 @@ export type FieldCondition<V> =
   | { readonly gt?: V; readonly gte?: V; readonly lt?: V; readonly lte?: V };
 
 /**
- * Which records: on an issue, in a project, written by someone, with indexed fields as said; all
- * it sees otherwise.
+ * Which records: on an issue, in a project, on a person, written by someone, with indexed fields
+ * as said; all it sees otherwise.
  */
 export type RecordWhere<En extends Entity = Entity> = {
   readonly issueId?: string;
   readonly projectId?: string;
+  readonly personId?: string;
   readonly createdBy?: string;
 } & { readonly [K in IndexOf<En>]?: FieldCondition<FieldsOf<En>[K]> };
 
-/** What records are grouped by: their issue, project or author, or a field the entity indexes. */
+/** What records are grouped by: their issue, project, person or author, or an indexed field. */
 type GroupOf<En extends Entity> = RecordGroup | IndexOf<En>;
 
 /** A count or a sum of a group: its id (`null` for none), or the value of its field. */
@@ -130,7 +163,7 @@ export interface EntityClient<En extends Entity> {
     pageSize?: number;
   }): Promise<{ items: EntityRecord<En>[]; total: number }>;
   count(query?: { where?: RecordWhere<En> }): Promise<number>;
-  /** By issue, project, author or indexed field: the largest first, 1,000 groups at most. */
+  /** By issue, project, person, author or indexed field: the largest first, 1,000 at most. */
   countBy<G extends GroupOf<En>>(
     groupBy: G,
     query?: { where?: RecordWhere<En> },
@@ -218,12 +251,13 @@ export function createEntityClient<En extends Entity>(
     });
   const client: AnyEntityClient = {
     async create(input) {
-      const { issueId, projectId, ...fields } = input;
+      const { issueId, projectId, personId, ...fields } = input;
       return read(
         await call('entities.create', {
           entity: name,
           ...(typeof issueId === 'string' ? { issueId } : {}),
           ...(typeof projectId === 'string' ? { projectId } : {}),
+          ...(typeof personId === 'string' ? { personId } : {}),
           fields: entity.fields.parse(fields),
         }),
       );

@@ -24,11 +24,16 @@ export const issueDetailsSchema = issueSnapshotSchema.extend({
 
 export type IssueDetails = z.infer<typeof issueDetailsSchema>;
 
-/** A record as Toppo keeps it: where it hangs, who wrote it and when, and its fields apart. */
+/**
+ * A record as Toppo keeps it: where it hangs (an issue in its project, a project, or a person),
+ * who wrote it and when, and its fields apart.
+ */
 export const recordSchema = z.object({
   id: z.uuid(),
   issueId: z.uuid().nullable(),
-  projectId: z.uuid(),
+  projectId: z.uuid().nullable(),
+  // A Toppo of API 1.0 answers none: it keeps no record on a person.
+  personId: z.uuid().nullable().default(null),
   /** `null` once Toppo no longer knows who: never, today. */
   createdBy: z.uuid().nullable(),
   createdAt: z.iso.datetime(),
@@ -66,13 +71,14 @@ const fieldConditionSchema = z.union([
 export type FieldCondition = z.infer<typeof fieldConditionSchema>;
 
 /**
- * Which records: on an issue, in a project, written by someone, with indexed fields as said; all
- * those it sees otherwise.
+ * Which records: on an issue, in a project, on a person, written by someone, with indexed fields
+ * as said; all those it sees otherwise.
  */
 export const recordWhereSchema = z
   .strictObject({
     issueId: z.uuid().optional(),
     projectId: z.uuid().optional(),
+    personId: z.uuid().optional(),
     createdBy: z.uuid().optional(),
     fields: z
       .record(z.string().regex(ENTITY_NAME), fieldConditionSchema)
@@ -146,9 +152,10 @@ export const HOST_CALLS = {
     needs: null,
     args: z.object({
       entity: entityArg,
-      /** The issue or the project it hangs on, as its entity says. */
+      /** The issue, the project or the person it hangs on, as its entity says. */
       issueId: z.uuid().optional(),
       projectId: z.uuid().optional(),
+      personId: z.uuid().optional(),
       fields: recordFieldsArg,
     }),
     result: recordSchema,
@@ -191,7 +198,7 @@ export const HOST_CALLS = {
       op: z.enum(['count', 'sum']),
       field: z.string().regex(ENTITY_NAME).optional(),
       where: recordWhereSchema,
-      /** The issue, the project, the author, or a field the entity indexes. */
+      /** The issue, the project, the person, the author, or a field the entity indexes. */
       groupBy: recordKeyArg.optional(),
     }),
     result: z.object({

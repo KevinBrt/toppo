@@ -20,7 +20,7 @@ import {
   runAnswerSchema,
 } from '@toppo-tracker/plugin-sdk/protocol';
 import { createTestProperties } from './test-properties.ts';
-import { createTestRecords } from './test-records.ts';
+import { createTestRecords, type Reach } from './test-records.ts';
 import { nodeCrypto, type TestRouteRequest } from './test-signatures.ts';
 
 /** Why a run was refused: the plugin's own code (a message key), or one of Toppo's. */
@@ -66,6 +66,9 @@ export interface TestHttpRequest {
 /** What the test's outside world answers: a response, or why there was none. */
 export type TestHttpReply = Partial<HttpAnswer> | HttpFailureCode;
 
+/** Who reports issues and acts in events unless the test says otherwise: in every project. */
+const SOMEONE_ID = '00000000-0000-4000-8000-000000000001';
+
 /** An issue to start from: anything left out takes a plausible value. */
 export type TestIssueInput = Partial<Omit<IssueDetails, 'id' | 'key'>>;
 
@@ -94,6 +97,7 @@ export function createTestToppo(
   let lastId = 0;
   const nextId = () => `00000000-0000-4000-8000-${String(++lastId).padStart(12, '0')}`;
   const issues = new Map<string, IssueDetails>();
+  const people = new Map<string, Reach>([[SOMEONE_ID, 'all']]);
   const comments: TestComment[] = [];
   const written = new Map<string, string>();
   const sent: TestHttpRequest[] = [];
@@ -113,7 +117,7 @@ export function createTestToppo(
   if (!isApiCompatible(manifest.apiVersion)) {
     throw new Error(`The plugin asks for API ${manifest.apiVersion}, which this Toppo lacks`);
   }
-  const records = createTestRecords(manifest, issues, nextId);
+  const records = createTestRecords(manifest, issues, people, nextId);
 
   function visible(issueId: string): IssueDetails | undefined {
     const issue = issues.get(issueId);
@@ -333,7 +337,7 @@ export function createTestToppo(
         category: { id: '00000000-0000-4000-8000-000000000301', name: 'Bug' },
         priority: { id: '00000000-0000-4000-8000-000000000401', name: 'Normal', level: 2 },
         assigneeId: null,
-        reporterId: '00000000-0000-4000-8000-000000000001',
+        reporterId: SOMEONE_ID,
         closedAt: null,
         createdAt: now,
         updatedAt: now,
@@ -344,12 +348,16 @@ export function createTestToppo(
       return issue;
     },
 
-    /** Someone who sees the issues given (all by default) and holds the permissions given. */
+    /**
+     * Someone who sees the issues given (all by default), working in their projects, and holds
+     * the permissions given.
+     */
     createUser(
       user: { sees?: readonly IssueSnapshot[]; permissions?: readonly string[] } = {},
     ): TestUser {
       const id = nextId();
       const seen = user.sees && new Set(user.sees.map((issue) => issue.id));
+      people.set(id, user.sees ? new Set(user.sees.map((issue) => issue.projectId)) : 'all');
       const sees = (issueId: string | undefined) =>
         issueId !== undefined && (seen === undefined || seen.has(issueId));
       const holds = (permission: string) => user.permissions?.includes(permission) ?? false;
@@ -386,7 +394,7 @@ export function createTestToppo(
         id: nextId(),
         type,
         occurredAt: new Date().toISOString(),
-        actorId: happened.actorId ?? '00000000-0000-4000-8000-000000000001',
+        actorId: happened.actorId ?? SOMEONE_ID,
       };
       await run('event', type, { event, issue, change: happened.change }, null);
     },

@@ -1,6 +1,6 @@
 {
   "name": "@toppo-tracker/create-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Starts a Toppo plugin: npm create @toppo-tracker/plugin my-plugin.",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@toppo-tracker/plugin-sdk": "0.1.0"
+    "@toppo-tracker/plugin-sdk": "0.2.0"
   },
   "devDependencies": {
     "@types/node": "24.19.2",

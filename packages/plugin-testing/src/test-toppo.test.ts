@@ -1,4 +1,5 @@
 import {
+  defineEntity,
   definePlugin,
   defineProperty,
   HttpFailure,
@@ -301,6 +302,65 @@ describe('a fake Toppo for a plugin’s tests', () => {
       code: 'PLUGIN_ERROR',
       detail: 'PROPERTY_NOT_FOUND',
     });
+  });
+
+  it('keeps records on a person: on the one an action runs for, on anyone for an event', async () => {
+    const words = { name: 'Boosters' };
+    const plugin = definePlugin({
+      id: 'boosters',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.1',
+      needs: ['issue.read'],
+      entities: {
+        booster: defineEntity({
+          attachedTo: 'person',
+          fields: z.object({ pack: z.string().max(20) }),
+        }),
+      },
+      messages: { en: words, fr: words },
+    });
+    plugin.defineEventHandler({
+      event: 'issue.statusChanged',
+      async handler(ctx, { event }) {
+        await ctx.entities.booster.create({ personId: event.actorId, pack: 'starter' });
+      },
+    });
+    const give = plugin.defineAction({
+      name: 'booster.give',
+      access: 'authenticated',
+      input: z.object({ personId: z.uuid() }),
+      async handler(ctx, { personId }) {
+        return (await ctx.entities.booster.create({ personId, pack: 'gift' })).personId;
+      },
+    });
+    const toppo = createTestToppo(plugin);
+    const issue = toppo.createIssue();
+    const ada = toppo.createUser();
+    const grace = toppo.createUser({ sees: [] });
+
+    await toppo.emit('issue.statusChanged', {
+      issue,
+      change: { from: issue.status, to: issue.status },
+    });
+    await toppo.emit('issue.statusChanged', {
+      issue,
+      change: { from: issue.status, to: issue.status },
+      actorId: ada.id,
+    });
+
+    expect(await ada.run(give, { personId: ada.id })).toBe(ada.id);
+    await expect(ada.run(give, { personId: grace.id })).rejects.toMatchObject({
+      detail: 'FORBIDDEN',
+    });
+    await expect(grace.run(give, { personId: grace.id })).rejects.toMatchObject({
+      detail: 'PERSON_NOT_FOUND',
+    });
+    expect(toppo.records('booster').map(({ personId }) => personId)).toStrictEqual([
+      issue.reporterId,
+      ada.id,
+      ada.id,
+    ]);
   });
 
   it('refuses a plugin for another API', () => {

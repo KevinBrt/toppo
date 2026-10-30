@@ -57,6 +57,7 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] `plugins/time-tracking`: the time of each week sent to a chat;
     - [x] routes, where services outside Toppo call a plugin, and `ctx.crypto` to check they signed what they send;
     - [x] `ctx.issues.find(key)`, for the issue a service names by its key.
+  - [x] Records on a person (plugin API 1.1): what a plugin keeps of someone, a collection or a level, seen by them, or by their teammates when its entity says so.
   - [ ] Publish the packages to npm: ready (`publish-plugin-packages.yml`, trusted publishing, `npm create @toppo-tracker/plugin`, proven outside the repository in CI), first published with the Toppo release that ships plugins.
 - [ ] The core's integrations, on blocks plugins share: the outbound HTTP guard, signed webhooks, routes that check a signature:
   - [x] webhooks, signed as Standard Webhooks writes them, in **Settings → Webhooks**;

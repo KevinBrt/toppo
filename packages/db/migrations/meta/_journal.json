@@ -407,6 +407,13 @@
       "when": 1793299743026,
       "tag": "0057_webhooks",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1793371563006,
+      "tag": "0058_plugin_person_records",
+      "breakpoints": true
     }
   ]
 }

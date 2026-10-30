@@ -69,7 +69,7 @@ export const aggregateRecords = defineQuery({
     const indexed = await indexedFieldsOf(db, plugin.slug, name, entity);
     const measure = measureOf(op, field, name, entity, indexed);
     const condition = and(
-      visibleRecords(plugin, name, entity.attachedTo),
+      visibleRecords(plugin, name, entity),
       recordsWhere(where),
       fieldConditionsOf(indexed, name, where.fields),
     );
@@ -77,7 +77,7 @@ export const aggregateRecords = defineQuery({
     const [all] = await db
       .select({ value: measure })
       .from(pluginRecords)
-      .innerJoin(projects, eq(projects.id, pluginRecords.projectId))
+      .leftJoin(projects, eq(projects.id, pluginRecords.projectId))
       .leftJoin(issues, eq(issues.id, pluginRecords.issueId))
       .where(condition);
     const total = Number(all?.value ?? 0);
@@ -87,7 +87,7 @@ export const aggregateRecords = defineQuery({
     const groups = await db
       .select({ key: grouping.key, value: measure })
       .from(pluginRecords)
-      .innerJoin(projects, eq(projects.id, pluginRecords.projectId))
+      .leftJoin(projects, eq(projects.id, pluginRecords.projectId))
       .leftJoin(issues, eq(issues.id, pluginRecords.issueId))
       .where(and(condition, grouping.condition))
       // By the key, first of the columns: written twice, its parameters would make it two.

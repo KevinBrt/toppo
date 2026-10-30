@@ -118,6 +118,7 @@ export function recordOrderOf(
 const GROUP_COLUMNS = {
   issueId: pluginRecords.issueId,
   projectId: pluginRecords.projectId,
+  personId: pluginRecords.personId,
   createdBy: pluginRecords.createdById,
 } as const satisfies Record<RecordGroup, SQLWrapper>;
 

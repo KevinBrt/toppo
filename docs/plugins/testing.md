@@ -29,9 +29,9 @@ describe('timeEntry.log', () => {
 | Member                                     | What it does                                                                                                                                |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `createIssue(fields?)`                     | An issue of a test project, `WEB-1`, `WEB-2`…                                                                                               |
-| `createUser({ sees?, permissions? })`      | Someone who sees those issues (all by default) and holds those of the plugin's permissions                                                  |
+| `createUser({ sees?, permissions? })`      | Someone who sees those issues (all by default), works in their projects, and holds those of the plugin's permissions                        |
 | `user.run(action, input)`                  | Runs an action for them, and answers its result                                                                                             |
-| `emit(event, { issue, change, actorId? })` | Hands the plugin an event                                                                                                                   |
+| `emit(event, { issue, change, actorId? })` | Hands the plugin an event, by someone in every project unless `actorId` names a user                                                        |
 | `runJob(job)`                              | Runs one of its jobs                                                                                                                        |
 | `receive(route, request?)`                 | Sends one of its routes a request from outside Toppo, and answers `{ status, body? }`: `signed(check, body)` signs one as the service would |
 | `records(entity)`, `properties(issueId)`   | What it wrote                                                                                                                               |

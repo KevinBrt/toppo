@@ -33,7 +33,7 @@ export const plugin = definePlugin({
 | `id`                  | 3 to 40 lowercase letters, digits and dashes, starting with a letter. It names the plugin for good. `toppo` and Toppo's own resources (`issue`, `project`…) are taken. |
 | `name`, `description` | Keys of its messages: an administrator reads them in their language.                                                                                                   |
 | `logo`                | Optional: `logo.png` or `logo.webp`, beside `package.json`, 256 KB at most. Checked by its bytes; SVG, which may carry script, is refused.                             |
-| `apiVersion`          | The plugin API it speaks, `^1.0`: Toppo installs it if it speaks the same major version and at least that minor one.                                                   |
+| `apiVersion`          | The plugin API it speaks, `^1.0`: Toppo installs it if it speaks the same major version and at least that minor one. Records on a person take `^1.1` (Toppo 1.2).      |
 
 Its version is `package.json`'s.
 

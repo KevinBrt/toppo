@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@tanstack/react-query": "5.105.0",
-    "@toppo-tracker/plugin-sdk": "0.1.0",
-    "@toppo-tracker/plugin-ui": "0.1.0",
+    "@toppo-tracker/plugin-sdk": "0.2.0",
+    "@toppo-tracker/plugin-ui": "0.2.0",
     "@toppo-tracker/ui": "0.0.0",
     "lucide-react": "1.62.0",
     "react": "19.3.1",

@@ -23,9 +23,9 @@ export const getRecord = defineQuery({
     const [record] = await db
       .select(RECORD_COLUMNS)
       .from(pluginRecords)
-      .innerJoin(projects, eq(projects.id, pluginRecords.projectId))
+      .leftJoin(projects, eq(projects.id, pluginRecords.projectId))
       .leftJoin(issues, eq(issues.id, pluginRecords.issueId))
-      .where(and(eq(pluginRecords.id, id), visibleRecords(plugin, name, entity.attachedTo)));
+      .where(and(eq(pluginRecords.id, id), visibleRecords(plugin, name, entity)));
     return record ? recordOf(record) : null;
   },
 });

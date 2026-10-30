@@ -10,7 +10,7 @@ import {
 } from '@toppo-tracker/core';
 import { type Db, schema } from '@toppo-tracker/db';
 import { projectKeySchema } from '@toppo-tracker/shared';
-import { and, eq, inArray, or, type SQL, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, type SQL, type SQLWrapper, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { HttpError } from '../http/http-error.ts';
 import type { Actor, PluginReach } from './actor.ts';
@@ -59,9 +59,10 @@ const notFound = () => new HttpError(404, 'PROJECT_NOT_FOUND', 'This project doe
 
 /**
  * The projects `actorId` reaches, as a condition on `projects`: through the system role, access
- * to every project, or a membership. Lists filter with it in SQL, never after loading.
+ * to every project, or a membership. Lists filter with it in SQL, never after loading. The id may
+ * be a column, for the person of each row.
  */
-export function reachableBy(actorId: string): SQL {
+export function reachableBy(actorId: string | SQLWrapper): SQL {
   return sql`(
     exists (select 1 from ${users} join ${roles} on ${roles.id} = ${users.instanceRoleId}
       where ${users.id} = ${actorId} and (${roles.grantsAll} or ${users.allProjects}))

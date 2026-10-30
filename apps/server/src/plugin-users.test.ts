@@ -2,8 +2,10 @@ import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
 import { schema } from '@toppo-tracker/db';
 import { apiErrorSchema } from '@toppo-tracker/shared';
 import { eq } from 'drizzle-orm';
-import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
+import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { createRecord } from './features/plugins/commands/records/create-record.command.ts';
+import { actingPlugin } from './features/plugins/utils/plugin-actor.util.ts';
 import { createAuth } from './platform/auth/auth.ts';
 import { testManifest, testPackage } from './platform/plugins/packages/test-package.ts';
 import {
@@ -14,6 +16,7 @@ import {
   setupTestDatabase,
   TEST_SECRET,
   TEST_SETUP_CODE,
+  testServices,
 } from './test-helpers.ts';
 
 /*
@@ -206,6 +209,41 @@ describe("a plugin's own user", () => {
     await expect(
       db.update(schema.users).set({ allProjects: true }).where(ofThePlugin),
     ).rejects.toThrow();
+  });
+
+  it('is no one a plugin’s records hang on', async () => {
+    const { db } = context.database;
+    await install(
+      testManifest({
+        id: 'boosters',
+        entities: {
+          booster: {
+            attachedTo: 'person',
+            fields: { type: 'object', properties: {} },
+            indexes: [],
+            limits: {},
+          },
+        },
+      }),
+    );
+    expect((await approve('boosters')).statusCode).toBe(204);
+    const services = testServices();
+    const boosters = await actingPlugin(db, { slug: 'boosters' }, services.secrets);
+    const [ada] = await db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(eq(schema.users.email, 'ada@example.com'));
+    // As itself, as on an event: acting for someone, it would hang records on them only.
+    const keep = (personId: string) =>
+      createRecord.execute(
+        { db, actor: boosters?.actor ?? null, log: Fastify({ logger: false }).log, services },
+        { entity: 'booster', personId, fields: {} },
+      );
+
+    await expect(keep(ada?.id ?? '')).resolves.toStrictEqual({ id: expect.any(String) });
+    for (const plugin of [pluginUserId, boosters?.actor.id ?? '']) {
+      await expect(keep(plugin)).rejects.toMatchObject({ code: 'PERSON_NOT_FOUND' });
+    }
   });
 
   it('never signs in, even given a password', async () => {

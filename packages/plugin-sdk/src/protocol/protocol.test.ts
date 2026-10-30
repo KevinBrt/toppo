@@ -13,7 +13,7 @@ import { PLUGIN_SETTINGS_MAX } from './declarations/settings.ts';
 import { EVENT_TYPES, eventPayloadSchema } from './events.ts';
 import { type Manifest, manifestSchema, PLUGIN_LIMITS } from './manifest.ts';
 import { logoTypeOf } from './package.ts';
-import { isApiCompatible } from './version.ts';
+import { asksAtLeast, isApiCompatible } from './version.ts';
 
 const manifest: Manifest = {
   id: 'time-tracking',
@@ -51,6 +51,19 @@ describe('the API version a plugin asks for', () => {
     ['^1.0', 'nonsense', false],
   ])('%s on a Toppo that speaks %s: %s', (range, host, runs) => {
     expect(isApiCompatible(range, host)).toBe(runs);
+  });
+});
+
+describe('the API a plugin asks for at least', () => {
+  it.each([
+    ['^1.1', '1.1', true],
+    ['^1.2', '1.1', true],
+    ['^2.0', '1.1', true],
+    ['^1.0', '1.1', false],
+    ['^1.1', 'nonsense', false],
+    ['1.1', '1.1', false],
+  ])('%s asks for %s at least: %s', (range, version, asks) => {
+    expect(asksAtLeast(range, version)).toBe(asks);
   });
 });
 

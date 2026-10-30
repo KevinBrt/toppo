@@ -5,7 +5,11 @@ import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
 import { schema } from '@toppo-tracker/db';
-import { type Manifest, PLUGIN_PACKAGE_LIMITS } from '@toppo-tracker/plugin-sdk/protocol';
+import {
+  API_VERSION,
+  type Manifest,
+  PLUGIN_PACKAGE_LIMITS,
+} from '@toppo-tracker/plugin-sdk/protocol';
 import {
   apiErrorSchema,
   PLUGINS_MAX,
@@ -165,7 +169,7 @@ describe('installing a plugin', () => {
       description: { en: 'Time spent on each issue.', fr: 'Le temps passé sur chaque ticket.' },
       logoUrl: null,
       packageSha256: sha256,
-      apiVersion: '^1.0',
+      apiVersion: `^${API_VERSION}`,
       needs: ['issue.read', 'comment.create'],
       permissions: [
         {
