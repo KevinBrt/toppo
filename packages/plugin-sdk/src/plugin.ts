@@ -27,7 +27,10 @@ type Scope = 'instance' | 'project';
 /** A plugin's own permissions, by their short name: `reports.read`. */
 export type PermissionDefinitions<M> = Record<string, { scope: Scope; label: MessageKey<M> }>;
 
-type PermissionOf<P> = (keyof P & string) | PluginNeed;
+/** One of the plugin's own permissions, by its short name. */
+type OwnPermissionOf<P> = keyof P & string;
+
+type PermissionOf<P> = OwnPermissionOf<P> | PluginNeed;
 
 /** The fields of an input that hold a string: those that may name an issue. */
 type StringFieldOf<T> = { [K in keyof T]-?: T[K] extends string ? K : never }[keyof T] & string;
@@ -153,12 +156,18 @@ export interface Plugin<
     name: string;
     access: Access<P, z.input<I>>;
     input: I;
-    handler(ctx: ActionContext<S, M, PS, E, Pr>, input: z.output<I>): Promise<R>;
+    handler(
+      ctx: ActionContext<S, M, PS, E, Pr, OwnPermissionOf<P>>,
+      input: z.output<I>,
+    ): Promise<R>;
   }): Action<I, R>;
   /** What the plugin does when something happens to an issue, in the background. */
   defineEventHandler<T extends EventType>(definition: {
     event: T;
-    handler(ctx: Context<S, M, PS, E, Pr>, payload: EventPayload<T>): Promise<void>;
+    handler(
+      ctx: Context<S, M, PS, E, Pr, OwnPermissionOf<P>>,
+      payload: EventPayload<T>,
+    ): Promise<void>;
   }): EventHandler<T>;
   /**
    * A page of the plugin, in a zone of Toppo's: the main sidebar, the settings, or a project's
@@ -198,7 +207,7 @@ export interface Plugin<
     every: JobEvery;
     /** What it does, shown to who approves the plugin. */
     label: MessageKey<M>;
-    handler(ctx: Context<S, M, PS, E, Pr>): Promise<void>;
+    handler(ctx: Context<S, M, PS, E, Pr, OwnPermissionOf<P>>): Promise<void>;
   }): Job;
   /**
    * Where a service outside Toppo calls the plugin, a GitHub webhook say:
@@ -209,7 +218,10 @@ export interface Plugin<
   defineRoute(definition: {
     /** `push.receive`: the last part of its address. */
     name: string;
-    handler(ctx: Context<S, M, PS, E, Pr>, request: RouteRequest): Promise<RouteAnswer>;
+    handler(
+      ctx: Context<S, M, PS, E, Pr, OwnPermissionOf<P>>,
+      request: RouteRequest,
+    ): Promise<RouteAnswer>;
   }): Route;
 }
 
@@ -267,7 +279,7 @@ export function definePlugin<
         // Toppo runs it with an input parsed by this very schema, and a context of this plugin.
         handler: (ctx, input) =>
           action.handler(
-            ctx as unknown as ActionContext<S, M, PS, E, Pr>,
+            ctx as unknown as ActionContext<S, M, PS, E, Pr, OwnPermissionOf<P>>,
             input as z.output<typeof action.input>,
           ),
       });
@@ -280,7 +292,7 @@ export function definePlugin<
       // Toppo runs it with a payload checked against this event, and a context of this plugin.
       definition.events.set(handler.event, (ctx, payload) =>
         handler.handler(
-          ctx as unknown as Context<S, M, PS, E, Pr>,
+          ctx as unknown as Context<S, M, PS, E, Pr, OwnPermissionOf<P>>,
           payload as EventPayload<typeof handler.event>,
         ),
       );
@@ -309,7 +321,7 @@ export function definePlugin<
       definition.jobs.set(name, {
         every,
         label,
-        handler: (ctx) => handler(ctx as unknown as Context<S, M, PS, E, Pr>),
+        handler: (ctx) => handler(ctx as unknown as Context<S, M, PS, E, Pr, OwnPermissionOf<P>>),
       });
       return { name, every };
     },
@@ -319,7 +331,8 @@ export function definePlugin<
       }
       // Toppo runs it with the request as it came, and a context of this plugin.
       definition.routes.set(name, {
-        handler: (ctx, request) => handler(ctx as unknown as Context<S, M, PS, E, Pr>, request),
+        handler: (ctx, request) =>
+          handler(ctx as unknown as Context<S, M, PS, E, Pr, OwnPermissionOf<P>>, request),
       });
       return { name };
     },

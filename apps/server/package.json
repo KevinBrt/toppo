@@ -18,7 +18,7 @@
     "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
     "@toppo-tracker/core": "0.0.0",
     "@toppo-tracker/db": "0.0.0",
-    "@toppo-tracker/plugin-sdk": "0.1.0",
+    "@toppo-tracker/plugin-sdk": "0.2.0",
     "@toppo-tracker/shared": "0.0.0",
     "better-auth": "1.7.14",
     "drizzle-orm": "0.45.4",

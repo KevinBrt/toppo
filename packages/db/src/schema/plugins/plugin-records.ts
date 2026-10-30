@@ -26,9 +26,9 @@ export const RECORD_SLOT_TEXT_MAX_LENGTH = 320;
 
 /**
  * What plugins keep: the records of their entities, one table for all, checked by Toppo as each
- * entity declares. A record hangs on an issue, or on a project only, and is seen as it is; gone
- * with it. Named after its plugin's id, not its row: the records of a plugin uninstalled with its
- * data stay, found again if it comes back.
+ * entity declares. A record hangs on an issue (in its project), on a project only, or on a
+ * person, and is seen as it is; gone with it. Named after its plugin's id, not its row: the
+ * records of a plugin uninstalled with its data stay, found again if it comes back.
  */
 export const pluginRecords = pgTable(
   'plugin_records',
@@ -37,11 +37,15 @@ export const pluginRecords = pgTable(
     pluginSlug: text('plugin_slug').notNull(),
     /** As its plugin names it: `timeEntry`. */
     entity: text('entity').notNull(),
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id, { onDelete: 'cascade' }),
+    /** `null` for a record on a person. */
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     /** In the project above; `null` for a record on the project only. */
     issueId: uuid('issue_id').references(() => issues.id, { onDelete: 'cascade' }),
+    /**
+     * The person it hangs on, instead of a project: gone with their account. Erasing someone, whose
+     * row stays, deletes these too.
+     */
+    personId: uuid('person_id').references(() => users.id, { onDelete: 'cascade' }),
     /** Whoever the plugin wrote it for, or its own user. */
     createdById: uuid('created_by_id').references(() => users.id, { onDelete: 'set null' }),
     /** Its fields, as the entity declares them. */
@@ -74,6 +78,12 @@ export const pluginRecords = pgTable(
       table.entity,
       table.createdAt,
     ),
+    index('plugin_records_person_idx').on(
+      table.personId,
+      table.pluginSlug,
+      table.entity,
+      table.createdAt,
+    ),
     index('plugin_records_created_by_idx').on(
       table.createdById,
       table.pluginSlug,
@@ -98,6 +108,15 @@ export const pluginRecords = pgTable(
       sql`${table.pluginSlug} ~ '^[a-z][a-z0-9-]{1,38}[a-z0-9]$'`,
     ),
     check('plugin_records_entity_format', sql`${table.entity} ~ '^[a-z][A-Za-z0-9]{0,39}$'`),
+    // One anchor exactly: a project (and maybe an issue of it), or a person.
+    check(
+      'plugin_records_one_anchor',
+      sql`(${table.projectId} is null) <> (${table.personId} is null)`,
+    ),
+    check(
+      'plugin_records_issue_in_project',
+      sql`${table.issueId} is null or ${table.projectId} is not null`,
+    ),
     check('plugin_records_data_object', sql`jsonb_typeof(${table.data}) = 'object'`),
     // Twice RECORD_MAX_BYTES (`@toppo-tracker/plugin-sdk/protocol`): PostgreSQL writes JSON looser.
     check('plugin_records_data_size', sql`octet_length(${table.data}::text) <= 32768`),

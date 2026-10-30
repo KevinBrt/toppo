@@ -16,14 +16,16 @@ An action is what a plugin answers when asked: by its screens, mostly, for the p
 
 `access` is checked by Toppo before the plugin runs:
 
-| `access`                                          | Who may run it                                                                          |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `'authenticated'`                                 | Anyone signed in                                                                        |
-| `{ permission: 'reports.read' }`                  | Who holds that permission, one of the plugin's (`'instance'` scope) or one of its needs |
-| `{ issue: 'issueId' }`                            | Who sees the issue the input's `issueId` names, in a project the plugin acts in         |
-| `{ issue: 'issueId', permission: 'entries.log' }` | Who sees the issue and holds the permission in its project                              |
+| `access`                                          | Who may run it                                                                       |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `'authenticated'`                                 | Anyone signed in                                                                     |
+| `{ permission: 'reports.read' }`                  | Who holds that permission, one of the plugin's of the instance (`scope: 'instance'`) |
+| `{ issue: 'issueId' }`                            | Who sees the issue the input's `issueId` names, in a project the plugin acts in      |
+| `{ issue: 'issueId', permission: 'entries.log' }` | Who sees the issue and holds the permission in its project                           |
 
 An issue the person or the plugin does not see answers 404, as if it did not exist. An action on an issue takes the need `issue.read`.
+
+Without an issue, there is no project to hold a permission of projects in: only one of the plugin's permissions of the instance is held there. From API 1.1, the build and Toppo refuse one of projects in an action on no issue. An action that needs more than one permission checks the others itself, with [`ctx.people.can`](./context#people).
 
 ## When it refuses
 

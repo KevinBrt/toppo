@@ -22,6 +22,7 @@ const record = (fields: Record<string, unknown>): RecordData => ({
   id: '01a1569b-9900-7000-8000-000000000900',
   issueId: ISSUE,
   projectId: PROJECT,
+  personId: null,
   createdBy: ADA,
   createdAt: '2026-10-28T09:00:00.000Z',
   updatedAt: '2026-10-28T09:00:00.000Z',
@@ -45,6 +46,17 @@ describe('an entity', () => {
       indexes: [],
       limits: {},
     });
+    expect(
+      defineEntity({
+        attachedTo: 'person',
+        visibleTo: 'teammates',
+        fields: z.object({ cardId: z.string().max(40) }),
+        limits: { perPerson: 5000 },
+      }),
+    ).toMatchObject({ attachedTo: 'person', visibleTo: 'teammates', limits: { perPerson: 5000 } });
+    expect(defineEntity({ attachedTo: 'person', fields: z.object({}) })).not.toHaveProperty(
+      'visibleTo',
+    );
   });
 });
 
@@ -65,6 +77,7 @@ describe('the records of an entity', () => {
       id: saved.id,
       issueId: ISSUE,
       projectId: PROJECT,
+      personId: null,
       createdBy: ADA,
       createdAt: saved.createdAt,
       updatedAt: saved.updatedAt,
@@ -82,6 +95,36 @@ describe('the records of an entity', () => {
         },
       ],
       ['entities.update', { entity: 'timeEntry', id: saved.id, fields: { note: 'Review' } }],
+    ]);
+  });
+
+  it('hang on a person, written and read with them', async () => {
+    const card = defineEntity({
+      attachedTo: 'person',
+      fields: z.object({ cardId: z.string().max(40) }),
+      indexes: ['cardId'],
+    });
+    const kept: RecordData = {
+      ...record({ cardId: 'dragon' }),
+      issueId: null,
+      projectId: null,
+      personId: ADA,
+    };
+    const call = vi.fn((method: string, _args: unknown) =>
+      Promise.resolve(method === 'entities.create' ? kept : { total: 1, groups: [] }),
+    );
+    const cards = createEntityClient(call as EntityCaller, 'card', card);
+
+    const created = await cards.create({ personId: ADA, cardId: 'dragon' });
+    await cards.countBy('cardId', { where: { personId: ADA } });
+
+    expect(created).toMatchObject({ personId: ADA, issueId: null, cardId: 'dragon' });
+    expect(call.mock.calls).toStrictEqual([
+      ['entities.create', { entity: 'card', personId: ADA, fields: { cardId: 'dragon' } }],
+      [
+        'entities.aggregate',
+        { entity: 'card', op: 'count', groupBy: 'cardId', where: { personId: ADA } },
+      ],
     ]);
   });
 

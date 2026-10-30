@@ -4,17 +4,30 @@ import {
   type RecordData,
 } from '@toppo-tracker/plugin-sdk/protocol';
 import { describe, expect, it } from 'vitest';
-import { createTestRecords, type Reader, TEST_PLUGIN_USER_ID } from './test-records.ts';
+import { createTestRecords, type Reach, type Reader, TEST_PLUGIN_USER_ID } from './test-records.ts';
 
 const WEB = '00000000-0000-4000-8000-000000000100';
 const OPS = '00000000-0000-4000-8000-000000000200';
 const ADA = '00000000-0000-4000-8000-000000000001';
+const GRACE = '00000000-0000-4000-8000-000000000002';
+const MARGARET = '00000000-0000-4000-8000-000000000003';
+const OTTO = '00000000-0000-4000-8000-000000000004';
+const JOAN = '00000000-0000-4000-8000-000000000005';
+
+/** Ada and Grace work in WEB, Margaret in OPS, Otto everywhere, Joan nowhere. */
+const PEOPLE = new Map<string, Reach>([
+  [ADA, new Set([WEB])],
+  [GRACE, new Set([WEB])],
+  [MARGARET, new Set([OPS])],
+  [OTTO, 'all'],
+  [JOAN, new Set()],
+]);
 
 const manifest = manifestSchema.parse({
   id: 'time-tracking',
   name: 'name',
   description: 'name',
-  apiVersion: '^1.0',
+  apiVersion: '^1.1',
   needs: ['issue.read'],
   permissions: {},
   settings: { type: 'object', properties: {} },
@@ -39,6 +52,18 @@ const manifest = manifestSchema.parse({
       fields: { type: 'object', properties: { days: { type: 'number' } }, required: ['days'] },
       limits: { perProject: 1 },
     },
+    card: {
+      attachedTo: 'person',
+      visibleTo: 'teammates',
+      fields: {
+        type: 'object',
+        properties: { cardId: { type: 'string', maxLength: 40 } },
+        required: ['cardId'],
+      },
+      indexes: ['cardId'],
+      limits: { perPerson: 2 },
+    },
+    booster: { attachedTo: 'person', fields: { type: 'object', properties: {} }, limits: {} },
   },
   messages: { en: { name: 'Time' }, fr: { name: 'Temps' } },
   actions: [],
@@ -76,6 +101,7 @@ function store() {
       [OURS, issue(OURS, WEB)],
       [THEIRS, issue(THEIRS, OPS)],
     ]),
+    PEOPLE,
     () => `00000000-0000-4000-8000-000000000${++last}`,
   );
   // Ada sees WEB's issue only.
@@ -143,6 +169,16 @@ describe('a fake Toppo’s records', () => {
       'NOT_FOUND',
     ],
     [
+      'a project for a record on a person',
+      { entity: 'booster', projectId: WEB, fields: {} },
+      'RECORD_INVALID',
+    ],
+    [
+      'someone else for a record on a person',
+      { entity: 'booster', personId: GRACE, fields: {} },
+      'FORBIDDEN',
+    ],
+    [
       'an entity it does not keep',
       { entity: 'estimate', issueId: OURS, fields: {} },
       'ENTITY_NOT_FOUND',
@@ -151,17 +187,71 @@ describe('a fake Toppo’s records', () => {
     expect(store().ask('entities.create', args)).toStrictEqual({ refused });
   });
 
-  it('stops at an entity’s limit, by issue or by project', () => {
+  it('stops at an entity’s limit, by issue, by project or by person', () => {
     const { ask } = store();
     const entry = { entity: 'timeEntry', issueId: OURS, fields: { minutes: 5 } };
     const budget = { entity: 'budget', projectId: WEB, fields: { days: 5 } };
+    const card = { entity: 'card', personId: ADA, fields: { cardId: 'dragon' } };
 
-    ask('entities.create', entry);
-    ask('entities.create', entry);
-    ask('entities.create', budget);
+    for (const args of [entry, entry, budget, card, card]) {
+      ask('entities.create', args);
+    }
 
     expect(ask('entities.create', entry)).toStrictEqual({ refused: 'RECORD_LIMIT_REACHED' });
     expect(ask('entities.create', budget)).toStrictEqual({ refused: 'RECORD_LIMIT_REACHED' });
+    expect(ask('entities.create', card)).toStrictEqual({ refused: 'RECORD_LIMIT_REACHED' });
+    expect(ask('entities.create', { ...card, personId: GRACE }, null)).toMatchObject({
+      personId: GRACE,
+    });
+  });
+
+  it('are kept on a person, theirs to write, seen by their teammates when the entity says so', () => {
+    const { ask } = store();
+    const as = (id: string): Reader => ({ id, sees: () => true });
+    const card = (personId: string, reader: Reader = as(personId)) =>
+      ask('entities.create', { entity: 'card', personId, fields: { cardId: 'dragon' } }, reader);
+    const seenBy = (reader: Reader, entity: string) =>
+      (ask('entities.list', { entity }, reader) as { items: RecordData[] }).items.map(
+        (record) => record.personId,
+      );
+
+    const ours = card(ADA) as RecordData;
+    card(MARGARET, null);
+    ask('entities.create', { entity: 'booster', personId: ADA, fields: {} }, null);
+
+    expect(ours).toMatchObject({ issueId: null, projectId: null, personId: ADA, createdBy: ADA });
+    expect(card(JOAN, null)).toStrictEqual({ refused: 'PERSON_NOT_FOUND' });
+    expect(card(TEST_PLUGIN_USER_ID, null)).toStrictEqual({ refused: 'PERSON_NOT_FOUND' });
+    // Grace shares WEB with Ada, Margaret works in OPS, Otto everywhere.
+    expect(seenBy(as(GRACE), 'card')).toStrictEqual([ADA]);
+    expect(seenBy(as(MARGARET), 'card')).toStrictEqual([MARGARET]);
+    expect(seenBy(as(OTTO), 'card')).toStrictEqual([MARGARET, ADA]);
+    expect(seenBy(as(GRACE), 'booster')).toStrictEqual([]);
+    expect(seenBy(as(ADA), 'booster')).toStrictEqual([ADA]);
+    expect(seenBy(null, 'card')).toStrictEqual([MARGARET, ADA]);
+    // Seen by her teammates, Ada's card is hers alone to change.
+    const changed = { entity: 'card', id: ours.id, fields: { cardId: 'phoenix' } };
+    expect(ask('entities.update', changed, as(GRACE))).toStrictEqual({
+      refused: 'RECORD_NOT_FOUND',
+    });
+    expect(ask('entities.delete', { entity: 'card', id: ours.id }, as(GRACE))).toStrictEqual({
+      refused: 'RECORD_NOT_FOUND',
+    });
+    expect(ask('entities.update', changed, as(ADA))).toMatchObject({
+      fields: { cardId: 'phoenix' },
+    });
+    expect(
+      ask('entities.aggregate', { entity: 'card', op: 'count', groupBy: 'personId' }, as(OTTO)),
+    ).toStrictEqual({
+      total: 2,
+      groups: [
+        { key: ADA, value: 1 },
+        { key: MARGARET, value: 1 },
+      ],
+    });
+    expect(
+      ask('entities.list', { entity: 'card', where: { personId: ADA } }, as(OTTO)),
+    ).toMatchObject({ total: 1 });
   });
 
   it('lists, counts and sums what each sees, by group, the plugin itself seeing all', () => {

@@ -38,6 +38,7 @@ export {
   recordWhereSchema,
 } from './calls.ts';
 export {
+  ATTACHMENTS,
   checkEntities,
   comparedValueSchemaOf,
   ENTITY_FIELDS_MAX,
@@ -56,6 +57,8 @@ export {
   INDEXED_TEXT_MAX_LENGTH,
   type IndexKind,
   indexKindOf,
+  PERSON_RECORDS_API,
+  PERSON_VISIBILITIES,
   PLUGIN_ENTITIES_MAX,
   RECORD_ANCHORS,
   RECORD_GROUPS,
@@ -170,6 +173,7 @@ export {
 } from './events.ts';
 export {
   accessSchema,
+  INSTANCE_ACCESS_API,
   type Manifest,
   type Messages,
   manifestSchema,

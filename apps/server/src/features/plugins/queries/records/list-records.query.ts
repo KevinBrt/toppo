@@ -33,7 +33,7 @@ export const listRecords = defineQuery({
     const indexed = await indexedFieldsOf(db, plugin.slug, name, entity);
     const { order, condition: sorted } = recordOrderOf(indexed, name, orderBy, direction);
     const condition = and(
-      visibleRecords(plugin, name, entity.attachedTo),
+      visibleRecords(plugin, name, entity),
       recordsWhere(where),
       fieldConditionsOf(indexed, name, where.fields),
       sorted,
@@ -42,7 +42,7 @@ export const listRecords = defineQuery({
       db
         .select(RECORD_COLUMNS)
         .from(pluginRecords)
-        .innerJoin(projects, eq(projects.id, pluginRecords.projectId))
+        .leftJoin(projects, eq(projects.id, pluginRecords.projectId))
         .leftJoin(issues, eq(issues.id, pluginRecords.issueId))
         .where(condition)
         .orderBy(...order)
@@ -51,7 +51,7 @@ export const listRecords = defineQuery({
       db
         .select({ total: count() })
         .from(pluginRecords)
-        .innerJoin(projects, eq(projects.id, pluginRecords.projectId))
+        .leftJoin(projects, eq(projects.id, pluginRecords.projectId))
         .leftJoin(issues, eq(issues.id, pluginRecords.issueId))
         .where(condition),
     ]);

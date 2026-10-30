@@ -102,9 +102,15 @@ function manifestOf({
     settings: jsonSchemaOf(settings),
     projectSettings: jsonSchemaOf(projectSettings),
     entities: Object.fromEntries(
-      Object.entries(entities).map(([name, { attachedTo, fields, indexes, limits }]) => [
+      Object.entries(entities).map(([name, { attachedTo, visibleTo, fields, indexes, limits }]) => [
         name,
-        { attachedTo, fields: jsonSchemaOf(fields), indexes: [...indexes], limits },
+        {
+          attachedTo,
+          ...(visibleTo === undefined ? {} : { visibleTo }),
+          fields: jsonSchemaOf(fields),
+          indexes: [...indexes],
+          limits,
+        },
       ]),
     ),
     properties: Object.fromEntries(

@@ -1,7 +1,7 @@
 import { DEFAULT_ROLE_IDS } from '@toppo-tracker/core';
 import { schema } from '@toppo-tracker/db';
 import type { Manifest } from '@toppo-tracker/plugin-sdk/protocol';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createJobs } from './app.ts';
@@ -58,6 +58,24 @@ const MANIFEST = testManifest({
         properties: { days: { type: 'number', exclusiveMinimum: 0 } },
         required: ['days'],
       },
+      indexes: [],
+      limits: {},
+    },
+    // A collection, shown to teammates; and what each has left to open, theirs alone.
+    card: {
+      attachedTo: 'person',
+      visibleTo: 'teammates',
+      fields: {
+        type: 'object',
+        properties: { cardId: { type: 'string', maxLength: 40 } },
+        required: ['cardId'],
+      },
+      indexes: ['cardId'],
+      limits: { perPerson: 3 },
+    },
+    booster: {
+      attachedTo: 'person',
+      fields: { type: 'object', properties: { pack: { type: 'string', maxLength: 20 } } },
       indexes: [],
       limits: {},
     },
@@ -162,9 +180,32 @@ const entry = (issueId: string, fields: Record<string, unknown>) => ({
 interface Kept {
   id: string;
   issueId: string | null;
-  projectId: string;
+  projectId: string | null;
+  personId: string | null;
   createdBy: string | null;
   fields: Record<string, unknown>;
+}
+
+const card = (personId: string | undefined, cardId: string) => ({
+  entity: 'card',
+  personId,
+  fields: { cardId },
+});
+
+/** Someone working in `projectKey` with the team role, signed in as `who`. */
+async function memberOf(projectKey: string, who: string): Promise<void> {
+  ids[who] = await createTestUser(context.database, {
+    name: who,
+    email: `${who}@example.com`,
+    password: PASSWORD,
+    instanceRoleId: DEFAULT_ROLE_IDS.team,
+  });
+  await signIn(who, `${who}@example.com`);
+  const joined = await call('ada', 'POST', `/api/v1/projects/${projectKey}/members`, {
+    userIds: [ids[who]],
+    roleId: null,
+  });
+  expect(joined.statusCode, joined.body).toBe(204);
 }
 
 beforeAll(async () => {
@@ -188,6 +229,7 @@ beforeAll(async () => {
   });
   expect(setup.statusCode).toBe(201);
   await signIn('ada', 'ada@example.com');
+  ids['ada'] = (await call('ada', 'GET', '/api/v1/me')).json<{ user: { id: string } }>().user.id;
   for (const [key, name] of [
     ['WEB', 'Website'],
     ['OPS', 'Operations'],
@@ -430,6 +472,117 @@ describe('a plugin’s records', () => {
   });
 });
 
+describe('a plugin’s records on a person', () => {
+  it('are kept on the person it acts for, theirs only to write', async () => {
+    const kept = await answered<Kept>('grace', 'entities.create', card(ids['grace'], 'dragon'));
+
+    expect(kept).toMatchObject({
+      issueId: null,
+      projectId: null,
+      personId: ids['grace'],
+      createdBy: ids['grace'],
+      fields: { cardId: 'dragon' },
+    });
+    // Not for someone else, even one they see.
+    expect(await asks('grace', 'entities.create', card(ids['ada'], 'dragon'))).toStrictEqual({
+      refused: 'FORBIDDEN',
+    });
+    expect(
+      await asks('ada', 'entities.update', {
+        entity: 'card',
+        id: kept.id,
+        fields: { cardId: 'phoenix' },
+      }),
+    ).toStrictEqual({ refused: 'RECORD_NOT_FOUND' });
+    expect(await asks('ada', 'entities.delete', { entity: 'card', id: kept.id })).toStrictEqual({
+      refused: 'RECORD_NOT_FOUND',
+    });
+    expect(
+      await answered<Kept>('grace', 'entities.update', {
+        entity: 'card',
+        id: kept.id,
+        fields: { cardId: 'phoenix' },
+      }),
+    ).toMatchObject({ fields: { cardId: 'phoenix' } });
+    // Only on a person, as the entity says.
+    expect(
+      await asks('grace', 'entities.create', {
+        ...card(undefined, 'dragon'),
+        projectId: ids['WEB'],
+      }),
+    ).toStrictEqual({ refused: 'RECORD_INVALID' });
+  });
+
+  it('are seen by that person, and by their teammates when their entity says so', async () => {
+    await memberOf('OPS', 'margaret');
+    await answered('grace', 'entities.create', card(ids['grace'], 'dragon'));
+    await answered('grace', 'entities.create', {
+      entity: 'booster',
+      personId: ids['grace'],
+      fields: {},
+    });
+
+    const seenBy = async (who: string, entity: string) =>
+      (await answered<{ items: Kept[] }>(who, 'entities.list', { entity, where: {} })).items.map(
+        ({ personId }) => personId,
+      );
+
+    expect(await seenBy('grace', 'card')).toStrictEqual([ids['grace']]);
+    expect(await seenBy('grace', 'booster')).toStrictEqual([ids['grace']]);
+    // Ada shares WEB with Grace; Margaret works in OPS only.
+    expect(await seenBy('ada', 'card')).toStrictEqual([ids['grace']]);
+    expect(await seenBy('ada', 'booster')).toStrictEqual([]);
+    expect(await seenBy('margaret', 'card')).toStrictEqual([]);
+    expect(
+      await answered('ada', 'entities.aggregate', {
+        entity: 'card',
+        op: 'count',
+        groupBy: 'personId',
+        where: {},
+      }),
+    ).toStrictEqual({ total: 1, groups: [{ key: ids['grace'], value: 1 }] });
+  });
+
+  it('hang on the people of the projects the plugin acts in only', async () => {
+    await approve(['OPS']);
+
+    // Grace works in WEB only, where the plugin no longer acts.
+    expect(await asks('grace', 'entities.create', card(ids['grace'], 'dragon'))).toStrictEqual({
+      refused: 'PERSON_NOT_FOUND',
+    });
+    expect(await asks('ada', 'entities.create', card(ids['ada'], 'dragon'))).toMatchObject({
+      answer: { personId: ids['ada'] },
+    });
+  });
+
+  it('stop at the limit of their entity for each person', async () => {
+    for (const cardId of ['a', 'b', 'c']) {
+      await answered('grace', 'entities.create', card(ids['grace'], cardId));
+    }
+
+    expect(await asks('grace', 'entities.create', card(ids['grace'], 'd'))).toStrictEqual({
+      refused: 'RECORD_LIMIT_REACHED',
+    });
+    expect(await asks('ada', 'entities.create', card(ids['ada'], 'd'))).toMatchObject({
+      answer: { personId: ids['ada'] },
+    });
+  });
+
+  it('go with the person erased', async () => {
+    await memberOf('WEB', 'otto');
+    await answered('otto', 'entities.create', card(ids['otto'], 'dragon'));
+
+    const erased = await call('ada', 'DELETE', `/api/v1/users/${ids['otto']}`);
+
+    expect(erased.statusCode, erased.body).toBe(204);
+    const left = await context.database.db
+      .select({ id: schema.pluginRecords.id })
+      .from(schema.pluginRecords)
+      .where(eq(schema.pluginRecords.personId, ids['otto'] ?? ''));
+    expect(left).toStrictEqual([]);
+  });
+});
+
 describe('the indexes of a plugin’s records', () => {
   /** Keeps each entry on an issue of its own in `projectKey`, as `who` logs it. */
   async function logged(who: string, projectKey: string, entries: Record<string, unknown>[]) {
@@ -463,7 +616,7 @@ describe('the indexes of a plugin’s records', () => {
       .orderBy(asc(pluginRecords.createdAt), asc(pluginRecords.id));
   }
 
-  /** Which slot each indexed field has, by slot. */
+  /** Which slot each indexed field of time entries has, by slot. */
   async function slotsGiven() {
     const { pluginRecordSlots } = schema;
     return await context.database.db
@@ -474,7 +627,12 @@ describe('the indexes of a plugin’s records', () => {
         filledAt: pluginRecordSlots.filledAt,
       })
       .from(pluginRecordSlots)
-      .where(eq(pluginRecordSlots.pluginSlug, 'time-tracking'))
+      .where(
+        and(
+          eq(pluginRecordSlots.pluginSlug, 'time-tracking'),
+          eq(pluginRecordSlots.entity, 'timeEntry'),
+        ),
+      )
       .orderBy(asc(pluginRecordSlots.slot));
   }
 

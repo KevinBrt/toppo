@@ -58,6 +58,10 @@ async function dispatch(
       return HOST_CALLS[method].result.parse(
         await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
       );
+    case 'people.can':
+      return HOST_CALLS[method].result.parse(
+        await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),
+      );
     case 'entities.create':
       return HOST_CALLS[method].result.parse(
         await calls[method](context, argumentsOf(method, HOST_CALLS[method].args, args)),

@@ -68,6 +68,8 @@ describe('the types of a plugin', () => {
         input.minute;
         // @ts-expect-error a message key that does not exist
         ctx.t('errors.toMuch');
+        // @ts-expect-error a permission that is not the plugin's own
+        void ctx.people.can(ctx.user.id, 'issue.read');
         // @ts-expect-error an error that is no message key
         return Promise.reject(ctx.fail('errors.unknown'));
       },
@@ -267,6 +269,35 @@ describe('the types of a plugin', () => {
     });
 
     expect(plugin.entities.timeEntry.attachedTo).toBe('issue');
+  });
+
+  it('take records on a person, with fields or none', () => {
+    const name = { name: 'Boosters' } as const;
+    const booster = defineEntity({ attachedTo: 'person', fields: z.object({}) });
+    const plugin = definePlugin({
+      id: 'boosters',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.1',
+      entities: { booster },
+      messages: { en: name, fr: name },
+    });
+
+    plugin.defineEventHandler({
+      event: 'issue.statusChanged',
+      async handler(ctx, { event }) {
+        // @ts-expect-error a record on a person names the person
+        await ctx.entities.booster.create({});
+        // @ts-expect-error a field the entity does not have
+        await ctx.entities.booster.create({ personId: event.actorId, pack: 'gold' });
+        const given = await ctx.entities.booster.create({ personId: event.actorId });
+        // @ts-expect-error a record on a person hangs on no project
+        given.projectId.length;
+        expect(given.personId.length).toBeGreaterThan(0);
+      },
+    });
+
+    expect(plugin.entities.booster.attachedTo).toBe('person');
   });
 
   it('filter, sort and group records on indexed fields only', () => {

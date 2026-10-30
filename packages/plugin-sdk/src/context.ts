@@ -18,13 +18,17 @@ export type IssueOf<Pr extends Properties> = Omit<IssueDetails, 'properties'> & 
   readonly properties: PropertyValues<Pr>;
 };
 
-/** What every handler is given: the plugin's settings and words, and what it may ask Toppo. */
+/**
+ * What every handler is given: the plugin's settings and words, and what it may ask Toppo. `Pe`
+ * names its own permissions.
+ */
 export interface Context<
   S extends z.ZodType,
   M extends Messages,
   PS extends z.ZodType = z.ZodType,
   E extends Entities = Entities,
   Pr extends Properties = Properties,
+  Pe extends string = string,
 > {
   /** As the administrator saved them, parsed with the plugin's schema: its defaults applied. */
   readonly settings: z.output<S>;
@@ -72,6 +76,14 @@ export interface Context<
      */
     settings(projectId: string): Promise<z.output<PS>>;
   };
+  readonly people: {
+    /**
+     * Whether someone holds one of the plugin's permissions: one of projects in `projectId`, a
+     * project it acts in; one of the instance, in the instance. Acting for someone, of that person
+     * only; as itself, of anyone who works in its projects. A deactivated account holds none.
+     */
+    can(personId: string, permission: Pe, options?: { projectId?: string }): Promise<boolean>;
+  };
   /** Its records, entity by entity, as far as it, and whoever it acts for, sees them. */
   readonly entities: { readonly [K in keyof E]: EntityClient<E[K]> };
   /** Requests outside Toppo, where it declared it may go (`http` in `definePlugin`). */
@@ -87,7 +99,8 @@ export interface ActionContext<
   PS extends z.ZodType = z.ZodType,
   E extends Entities = Entities,
   Pr extends Properties = Properties,
-> extends Context<S, M, PS, E, Pr> {
+  Pe extends string = string,
+> extends Context<S, M, PS, E, Pr, Pe> {
   readonly user: { readonly id: string };
 }
 
@@ -140,6 +153,14 @@ export function createContext<
       async setProperty(issueId, property, value) {
         await callToppo(host, 'issues.setProperty', { issueId, property, value });
       },
+    },
+    people: {
+      can: (personId, permission, { projectId } = {}) =>
+        callToppo(
+          host,
+          'people.can',
+          projectId === undefined ? { personId, permission } : { personId, permission, projectId },
+        ),
     },
     projects: {
       async settings(projectId) {

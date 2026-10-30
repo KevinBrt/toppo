@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { asksAtLeast } from '../version.ts';
 
 /** At most this many entities in a plugin, and fields in an entity. */
 export const PLUGIN_ENTITIES_MAX = 10;
@@ -12,12 +13,26 @@ export const RECORD_TEXT_MAX_LENGTH = 10_000;
 
 /**
  * How many records of an entity Toppo keeps: by default, and at most when the entity says. Each
- * issue bounds its records; the records of a project that hang on no issue are bounded there.
+ * issue bounds its records; the records of a project that hang on no issue are bounded there, and
+ * each person's those that hang on them.
  */
 export const ENTITY_LIMITS = {
   perIssue: { default: 1_000, max: 10_000 },
   perProject: { default: 100_000, max: 1_000_000 },
+  perPerson: { default: 1_000, max: 10_000 },
 } as const;
+
+/** What a plugin's records hang on. */
+export const ATTACHMENTS = ['issue', 'project', 'person'] as const;
+
+/**
+ * Who sees the records that hang on a person, besides the plugin itself: that person only, or
+ * also those who share with them a project the plugin acts in.
+ */
+export const PERSON_VISIBILITIES = ['person', 'teammates'] as const;
+
+/** The plugin API that brought records on a person: a plugin keeping some asks for it. */
+export const PERSON_RECORDS_API = '1.1';
 
 /** `timeEntry`, `minutes`: an entity's name, or a field's. */
 export const ENTITY_NAME = /^[a-z][A-Za-z0-9]{0,39}$/;
@@ -27,13 +42,17 @@ export const RECORD_ANCHORS = [
   'id',
   'issueId',
   'projectId',
+  'personId',
   'createdBy',
   'createdAt',
   'updatedAt',
 ] as const;
 
-/** What records are listed, counted and summed by: the issue, the project, who wrote them. */
-export const RECORD_GROUPS = ['issueId', 'projectId', 'createdBy'] as const;
+/**
+ * What records are listed, counted and summed by: the issue, the project, the person they hang
+ * on, who wrote them.
+ */
+export const RECORD_GROUPS = ['issueId', 'projectId', 'personId', 'createdBy'] as const;
 
 export type RecordGroup = (typeof RECORD_GROUPS)[number];
 
@@ -131,16 +150,18 @@ export const entityFieldsSchema = z.strictObject({
 export type EntityFields = z.infer<typeof entityFieldsSchema>;
 
 /**
- * An entity as its plugin declares it: what its records hang on, their fields, those it filters,
- * sorts and groups them on, their bounds.
+ * An entity as its plugin declares it: what its records hang on (and, on a person, who sees
+ * them), their fields, those it filters, sorts and groups them on, their bounds.
  */
 export const entitySchema = z.strictObject({
-  attachedTo: z.enum(['issue', 'project']),
+  attachedTo: z.enum(ATTACHMENTS),
+  visibleTo: z.enum(PERSON_VISIBILITIES).optional(),
   fields: entityFieldsSchema,
   indexes: z.array(z.string().regex(ENTITY_NAME)).max(ENTITY_INDEXES_TOTAL).default([]),
   limits: z.strictObject({
     perIssue: z.int().min(1).max(ENTITY_LIMITS.perIssue.max).optional(),
     perProject: z.int().min(1).max(ENTITY_LIMITS.perProject.max).optional(),
+    perPerson: z.int().min(1).max(ENTITY_LIMITS.perPerson.max).optional(),
   }),
 });
 
@@ -152,32 +173,67 @@ export const entitiesSchema = z
     message: `At most ${PLUGIN_ENTITIES_MAX} entities`,
   });
 
+/** The bound each attachment takes: an issue's records are bounded by issue, and so on. */
+const LIMIT_OF = {
+  issue: 'perIssue',
+  project: 'perProject',
+  person: 'perPerson',
+} as const satisfies Record<EntityDeclaration['attachedTo'], keyof EntityDeclaration['limits']>;
+
+type Problem = (path: (string | number)[], message: string) => void;
+
 /**
- * Refuses entities Toppo could not keep as declared: records on issues from a plugin that does
- * not read issues, a bound of the other kind (an issue's records are bounded by issue), and
- * indexes it has no slot for.
+ * Refuses entities Toppo could not keep as declared, by what they hang on, and indexes it has no
+ * slot for.
  */
 export function checkEntities(
-  manifest: { needs: readonly string[]; entities: Readonly<Record<string, EntityDeclaration>> },
+  manifest: {
+    apiVersion: string;
+    needs: readonly string[];
+    entities: Readonly<Record<string, EntityDeclaration>>;
+  },
   ctx: z.RefinementCtx,
 ): void {
   for (const [name, entity] of Object.entries(manifest.entities)) {
-    if (entity.attachedTo === 'issue' && !manifest.needs.includes('issue.read')) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['entities', name, 'attachedTo'],
-        message: `${name} hangs on issues: the plugin needs issue.read`,
-      });
-    }
-    const other = entity.attachedTo === 'issue' ? 'perProject' : 'perIssue';
-    if (entity.limits[other] !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['entities', name, 'limits', other],
-        message: `${name} hangs on ${entity.attachedTo === 'issue' ? 'issues' : 'projects'}: it has no ${other} limit`,
-      });
-    }
+    checkAttachment(manifest, name, entity, (path, message) =>
+      ctx.addIssue({ code: 'custom', path: ['entities', name, ...path], message }),
+    );
     checkIndexes(name, entity, ctx);
+  }
+}
+
+/**
+ * Refuses what an entity's attachment rules out: records on issues from a plugin that does not
+ * read issues, records on a person from a plugin asking for an API older than theirs, who sees
+ * them said of another attachment, a bound of another kind (an issue's records are bounded by
+ * issue).
+ */
+function checkAttachment(
+  manifest: { apiVersion: string; needs: readonly string[] },
+  name: string,
+  entity: EntityDeclaration,
+  problem: Problem,
+): void {
+  if (entity.attachedTo === 'issue' && !manifest.needs.includes('issue.read')) {
+    problem(['attachedTo'], `${name} hangs on issues: the plugin needs issue.read`);
+  }
+  if (entity.attachedTo === 'person' && !asksAtLeast(manifest.apiVersion, PERSON_RECORDS_API)) {
+    // An older Toppo then refuses the plugin by its API, rather than by an entity it misreads.
+    problem(
+      ['attachedTo'],
+      `${name} hangs on a person: the plugin asks for API ^${PERSON_RECORDS_API}`,
+    );
+  }
+  if (entity.attachedTo !== 'person' && entity.visibleTo !== undefined) {
+    problem(['visibleTo'], `${name} hangs on ${entity.attachedTo}s: they are seen as those are`);
+  }
+  for (const limit of Object.values(LIMIT_OF)) {
+    if (limit !== LIMIT_OF[entity.attachedTo] && entity.limits[limit] !== undefined) {
+      problem(
+        ['limits', limit],
+        `${name} hangs on ${entity.attachedTo}s: it has no ${limit} limit`,
+      );
+    }
   }
 }
 

@@ -5,11 +5,19 @@ import { checkHttp, httpDeclarationSchema } from './declarations/http.ts';
 import { jobsSchema } from './declarations/jobs.ts';
 import { checkProperties, propertiesSchema } from './declarations/properties.ts';
 import { routesSchema } from './declarations/routes.ts';
-import { checkScreens, dialogsSchema, pagesSchema, panelsSchema } from './declarations/screens.ts';
+import {
+  checkScreens,
+  type DialogDeclaration,
+  dialogsSchema,
+  type PageDeclaration,
+  pagesSchema,
+  panelsSchema,
+  type ScreenAccess,
+} from './declarations/screens.ts';
 import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './declarations/settings.ts';
 import { EVENT_TYPES } from './events.ts';
 import { PLUGIN_LOGO_FILES } from './package.ts';
-import { apiVersionSchema } from './version.ts';
+import { apiVersionSchema, asksAtLeast } from './version.ts';
 
 /** `time-tracking`: lowercase words joined by dashes, as its URLs and its permissions use it. */
 export const PLUGIN_ID = /^[a-z][a-z0-9-]{1,38}[a-z0-9]$/;
@@ -78,6 +86,59 @@ function checkIssueActions(
 }
 
 /**
+ * The plugin API from which an access where no project is names a permission of the instance:
+ * one of projects is held in projects only, so Toppo refused it to everyone there.
+ */
+export const INSTANCE_ACCESS_API = '1.1';
+
+/**
+ * Refuses, from API 1.1, a permission of projects where no project is: an action on no issue, a
+ * page of the main sidebar or of the settings, a dialog. There, only one of the plugin's own
+ * permissions of the instance is held.
+ */
+function checkAccessScopes(
+  manifest: {
+    apiVersion: string;
+    permissions: Readonly<Record<string, { scope: 'instance' | 'project' }>>;
+    actions: readonly { name: string; access: z.output<typeof accessSchema> }[];
+    pages: readonly PageDeclaration[];
+    dialogs: readonly DialogDeclaration[];
+  },
+  ctx: z.RefinementCtx,
+): void {
+  if (!asksAtLeast(manifest.apiVersion, INSTANCE_ACCESS_API)) {
+    return;
+  }
+  const projectless: {
+    path: (string | number)[];
+    name: string;
+    access: z.output<typeof accessSchema> | ScreenAccess;
+  }[] = [
+    ...manifest.actions.map(({ name, access }, at) => ({ path: ['actions', at], name, access })),
+    ...manifest.pages.flatMap(({ name, zone, access }, at) =>
+      zone === 'project.settings' ? [] : [{ path: ['pages', at], name, access }],
+    ),
+    ...manifest.dialogs.map(({ name, access }, at) => ({ path: ['dialogs', at], name, access })),
+  ];
+  for (const { path, name, access } of projectless) {
+    if (access === 'authenticated' || 'issue' in access) {
+      continue;
+    }
+    const { permission } = access;
+    const declared = Object.hasOwn(manifest.permissions, permission)
+      ? manifest.permissions[permission]
+      : undefined;
+    if (declared?.scope !== 'instance') {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...path, 'access'],
+        message: `${name} is reached in no project: ${permission} must be one of the plugin's permissions of the instance`,
+      });
+    }
+  }
+}
+
+/**
  * What a plugin declares, as its bundle answers `manifest()` in the sandbox: Toppo never reads it
  * from a file its author writes. Unknown keys are refused, as is anything past its limits.
  */
@@ -124,6 +185,7 @@ export const manifestSchema = z
     routes: routesSchema.default([]),
   })
   .superRefine(checkIssueActions)
+  .superRefine(checkAccessScopes)
   .superRefine(checkSettings)
   .superRefine(checkEntities)
   .superRefine(checkProperties)

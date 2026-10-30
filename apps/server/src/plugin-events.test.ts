@@ -37,6 +37,8 @@ let app: FastifyInstance;
 let worker: WorkerContext;
 let mail: TestSmtpServer;
 let adminCookie: string;
+/** Grace has an account, and works in no project. */
+let graceId = '';
 
 const ORIGIN = 'http://localhost:3000';
 const PASSWORD = 'correct horse battery staple';
@@ -162,7 +164,7 @@ beforeAll(async () => {
     },
   });
   expect(setup.statusCode).toBe(201);
-  await createTestUser(context.database, {
+  graceId = await createTestUser(context.database, {
     name: 'Grace Hopper',
     email: 'grace@example.com',
     password: PASSWORD,
@@ -325,6 +327,44 @@ describe('a plugin hearing of events', () => {
       .from(schema.pluginRecords)
       .innerJoin(schema.users, eq(schema.users.id, schema.pluginRecords.createdById));
     expect(kept).toStrictEqual({ author: 'time-tracking' });
+  });
+
+  it('keeps records on the people of its projects, as itself, on no one else', async () => {
+    await install(
+      listener({
+        entities: {
+          booster: {
+            attachedTo: 'person',
+            fields: { type: 'object', properties: { pack: { type: 'string', maxLength: 20 } } },
+            indexes: [],
+            limits: {},
+          },
+        },
+      }),
+      `const { issue, event } = JSON.parse(payload);
+       const ask = (method, args) =>
+         __host.call(method, JSON.stringify(args)).then(JSON.parse, (error) => error.message);
+       const mover = await ask('entities.create', { entity: 'booster', personId: event.actorId, fields: {} });
+       const outsider = await ask('entities.create', { entity: 'booster', personId: '${graceId}', fields: {} });
+       const { total } = await ask('entities.aggregate', { entity: 'booster', op: 'count' });
+       const said = [mover.personId === event.actorId, outsider, total].join(' ');
+       await __host.call('issues.comment', JSON.stringify({ issueId: issue.id, body: said, once: event.id }));
+       return JSON.stringify({ ok: true, result: null });`,
+    );
+    const key = await report('WEB');
+
+    await move(key, 'inProgress');
+    await runJobs();
+
+    // Ada moved it, and reaches WEB; Grace works in no project of the plugin's.
+    expect(await commentsOn(key)).toMatchObject([{ body: 'true PERSON_NOT_FOUND 1' }]);
+    const kept = await context.database.db
+      .select({ author: schema.users.pluginSlug, personId: schema.pluginRecords.personId })
+      .from(schema.pluginRecords)
+      .innerJoin(schema.users, eq(schema.users.id, schema.pluginRecords.createdById))
+      .where(eq(schema.pluginRecords.entity, 'booster'));
+    expect(kept).toStrictEqual([{ author: 'time-tracking', personId: expect.any(String) }]);
+    expect(kept[0]?.personId).not.toBe(graceId);
   });
 
   it('may ask only what its needs allow', async () => {

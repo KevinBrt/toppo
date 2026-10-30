@@ -16,14 +16,16 @@ Une action, c’est ce qu’un plugin répond quand on le lui demande : ses écr
 
 `access` est vérifié par Toppo avant que le plugin tourne :
 
-| `access`                                          | Qui peut la lancer                                                                             |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `'authenticated'`                                 | Toute personne connectée                                                                       |
-| `{ permission: 'reports.read' }`                  | Qui a cette permission, l’une de celles du plugin (portée `'instance'`) ou l’un de ses besoins |
-| `{ issue: 'issueId' }`                            | Qui voit le ticket que désigne l’`issueId` de l’entrée, dans un projet où le plugin agit       |
-| `{ issue: 'issueId', permission: 'entries.log' }` | Qui voit le ticket et a la permission dans son projet                                          |
+| `access`                                          | Qui peut la lancer                                                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `'authenticated'`                                 | Toute personne connectée                                                                          |
+| `{ permission: 'reports.read' }`                  | Qui a cette permission, l’une de celles du plugin à l’échelle de l’instance (`scope: 'instance'`) |
+| `{ issue: 'issueId' }`                            | Qui voit le ticket que désigne l’`issueId` de l’entrée, dans un projet où le plugin agit          |
+| `{ issue: 'issueId', permission: 'entries.log' }` | Qui voit le ticket et a la permission dans son projet                                             |
 
 Un ticket que la personne ou le plugin ne voit pas répond 404, comme s’il n’existait pas. Une action sur un ticket demande le besoin `issue.read`.
+
+Sans ticket, aucun projet où avoir une permission de projet : seule l’une des permissions d’instance du plugin s’y détient. Depuis l’API 1.1, le build et Toppo refusent une permission de projet dans une action sans ticket. Une action qui demande plus d’une permission vérifie les autres elle-même, avec [`ctx.people.can`](./context#personnes).
 
 ## Quand elle refuse
 

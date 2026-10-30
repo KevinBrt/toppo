@@ -13,7 +13,7 @@ import { PLUGIN_SETTINGS_MAX } from './declarations/settings.ts';
 import { EVENT_TYPES, eventPayloadSchema } from './events.ts';
 import { type Manifest, manifestSchema, PLUGIN_LIMITS } from './manifest.ts';
 import { logoTypeOf } from './package.ts';
-import { isApiCompatible } from './version.ts';
+import { asksAtLeast, isApiCompatible } from './version.ts';
 
 const manifest: Manifest = {
   id: 'time-tracking',
@@ -51,6 +51,19 @@ describe('the API version a plugin asks for', () => {
     ['^1.0', 'nonsense', false],
   ])('%s on a Toppo that speaks %s: %s', (range, host, runs) => {
     expect(isApiCompatible(range, host)).toBe(runs);
+  });
+});
+
+describe('the API a plugin asks for at least', () => {
+  it.each([
+    ['^1.1', '1.1', true],
+    ['^1.2', '1.1', true],
+    ['^2.0', '1.1', true],
+    ['^1.0', '1.1', false],
+    ['^1.1', 'nonsense', false],
+    ['1.1', '1.1', false],
+  ])('%s asks for %s at least: %s', (range, version, asks) => {
+    expect(asksAtLeast(range, version)).toBe(asks);
   });
 });
 
@@ -134,6 +147,48 @@ describe('the manifest Toppo accepts', () => {
     expect(
       manifestSchema.safeParse({ ...manifest, needs: ['comment.create'], actions: [] }).success,
     ).toBe(true);
+  });
+
+  it('refuses, from API 1.1, a permission of projects where there is no project, saying which', () => {
+    const access = (permission: string) => ({ permission });
+    const declared = {
+      ...manifest,
+      permissions: {
+        'reports.read': { scope: 'project', label: 'permissions.reportsRead' },
+        'reports.export': { scope: 'instance', label: 'permissions.reportsRead' },
+      },
+      actions: [
+        { name: 'report.read', access: access('reports.read'), input: {} },
+        { name: 'report.export', access: access('reports.export'), input: {} },
+        {
+          name: 'timeEntry.log',
+          access: { issue: 'issueId', permission: 'reports.read' },
+          input: {},
+        },
+      ],
+      pages: [
+        { name: 'report', zone: 'main', access: access('issue.read'), title: 'plugin.name' },
+        { name: 'budget', zone: 'project.settings', access: access('reports.read'), title: 'x' },
+      ],
+      dialogs: [{ name: 'pick', access: access('reports.read'), title: 'x' }],
+    };
+
+    expect(
+      manifestSchema.safeParse({ ...declared, apiVersion: '^1.1' }).error?.issues,
+    ).toStrictEqual(
+      [
+        ['actions', 0, 'report.read', 'reports.read'],
+        ['pages', 0, 'report', 'issue.read'],
+        ['dialogs', 0, 'pick', 'reports.read'],
+      ].map(([kind, at, name, permission]) =>
+        expect.objectContaining({
+          path: [kind, at, 'access'],
+          message: `${name} is reached in no project: ${permission} must be one of the plugin's permissions of the instance`,
+        }),
+      ),
+    );
+    // Toppo kept such plugins of API 1.0: it reads them as it took them.
+    expect(manifestSchema.safeParse(declared).success).toBe(true);
   });
 });
 

@@ -18,7 +18,7 @@ A plugin's screens are React components, in `.tsx` files, drawn with Toppo's com
 
 `plugin.definePanel({ name, on: 'issue', access, title, component })` shows a panel on the issue page, under its title, in the projects the plugin acts in; it takes `issue.read`.
 
-- **`access`**: `'authenticated'` or `{ permission }`, one of the plugin's or one of its needs. For a project's tab or an issue's panel, it is checked in that project. Who may not open a screen does not see its entry either.
+- **`access`**: `'authenticated'` or `{ permission }`, one of the plugin's or one of its needs. For a project's tab or an issue's panel, it is checked in that project; elsewhere, in the main sidebar, the settings or a dialog, only a permission of the instance is held, and from API 1.1 the build refuses one of projects there. Who may not open a screen does not see its entry either.
 - **`title`**, **`nav.label`**: keys of its messages. **`nav.icon`**: `bar-chart`, `briefcase`, `calendar`, `clock`, `database`, `file-text`, `flag`, `folder`, `gauge`, `list`, `puzzle`, `settings`, `tag`, `timer`, `users` or `wallet`.
 - **`component`**: `() => import('../web/x.tsx').then((module) => module.X)`, so that its code is in the screens' bundle only.
 
@@ -130,7 +130,8 @@ Toppo searches: the screen learns only what the person picked. It draws one thin
 A screen runs in a sandboxed frame without an origin, under a Content Security Policy that reaches nothing:
 
 - **No network**: it asks its plugin, through its actions, for everything it shows.
-- **No styles of its own**: it ships no CSS, and Toppo's stylesheet holds only Toppo's own classes. Lay it out with `Stack` and `Row`, never with `className`.
+- **No styles of its own**: it ships no CSS, and Toppo's stylesheet holds only Toppo's own classes. Lay it out with `Stack` and `Row`, never with `className`. The policy refuses `<style>` elements, and with them `@keyframes` and pseudo-elements: what moves, moves with the Web Animations API (`element.animate()`).
+- **No images from elsewhere**: images come from Toppo's origin or from `data:` addresses only, and a plugin's package holds its `server.js`, `web.js`, `plugin.json` and logo, nothing else. An image a screen shows is carried in its code, as a `data:` address.
 - **No navigation**: a form calls `event.preventDefault()`; links go through `IssueLink`, `PageLink` or `open`. A frame that loads another document is closed.
 
 A component that throws shows Toppo's own words in its place. The frame's height follows its content.

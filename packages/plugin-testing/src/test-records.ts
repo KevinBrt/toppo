@@ -21,13 +21,29 @@ export const TEST_PLUGIN_USER_ID = '00000000-0000-4000-8000-000000000000';
 /** Who a call is answered for: someone the plugin acts for, or the plugin itself (`null`). */
 export type Reader = { id: string; sees: (issueId: string) => boolean } | null;
 
+/** The projects someone works in: every one, or those of the issues they see. */
+export type Reach = 'all' | ReadonlySet<string>;
+
 type Kept = RecordData & { entity: string };
+
+type Anchor = Pick<RecordData, 'issueId' | 'projectId' | 'personId'>;
+
+/** The one anchor an entity's records take, and the limit of their number on it. */
+const ANCHORS = {
+  issue: { given: 'issueId', limit: 'perIssue' },
+  project: { given: 'projectId', limit: 'perProject' },
+  person: { given: 'personId', limit: 'perPerson' },
+} as const satisfies Record<
+  EntityDeclaration['attachedTo'],
+  { given: keyof Anchor; limit: keyof typeof ENTITY_LIMITS }
+>;
 
 const refusal = (code: string) => new Error(code);
 
 const GROUP_KEYS = {
   issueId: (record: Kept) => record.issueId,
   projectId: (record: Kept) => record.projectId,
+  personId: (record: Kept) => record.personId,
   createdBy: (record: Kept) => record.createdBy,
 } as const satisfies Record<RecordGroup, (record: Kept) => string | null>;
 
@@ -64,6 +80,17 @@ const BOUNDS = [
   ['lte', (compared: number) => compared <= 0],
 ] as const;
 
+export const worksSomewhere = (reach: Reach | undefined) =>
+  reach === 'all' || (reach !== undefined && reach.size > 0);
+
+/** Whether two people work in a project in common. */
+function teammates(one: Reach | undefined, other: Reach | undefined): boolean {
+  if (one === 'all' || other === 'all') {
+    return worksSomewhere(one) && worksSomewhere(other);
+  }
+  return one !== undefined && other !== undefined && [...one].some((id) => other.has(id));
+}
+
 /** Whether a field's value meets a condition, its values checked of the field's kind first. */
 function conditionOf(
   declared: EntityField,
@@ -94,11 +121,13 @@ function conditionOf(
 
 /**
  * A plugin's records, kept in memory with Toppo's rules: checked as each entity declares them,
- * within their limits, seen as their issue is, or their project by an issue of it.
+ * within their limits, seen as their issue is, or their project by an issue of it; on a person,
+ * by them, or their teammates when the entity says so, written by them only.
  */
 export function createTestRecords(
   manifest: Manifest,
   issues: ReadonlyMap<string, IssueDetails>,
+  people: ReadonlyMap<string, Reach>,
   nextId: () => string,
 ) {
   const kept: Kept[] = [];
@@ -116,10 +145,26 @@ export function createTestRecords(
       (issue) => issue.projectId === projectId && (reader === null || reader.sees(issue.id)),
     );
 
-  const seenBy = (reader: Reader, record: Kept) =>
-    record.issueId === null
-      ? reaches(reader, record.projectId)
-      : reader === null || reader.sees(record.issueId);
+  /** Whether the reader sees the records on a person: the plugin's people's, or as `entity` says. */
+  function personSeenBy(reader: Reader, entity: EntityDeclaration, personId: string): boolean {
+    const reach = people.get(personId);
+    if (reader === null) {
+      return worksSomewhere(reach);
+    }
+    return entity.visibleTo === 'teammates'
+      ? teammates(people.get(reader.id), reach)
+      : reader.id === personId && worksSomewhere(reach);
+  }
+
+  function seenBy(reader: Reader, record: Kept): boolean {
+    if (record.personId !== null) {
+      return personSeenBy(reader, entityOf(record.entity), record.personId);
+    }
+    if (record.issueId !== null) {
+      return reader === null || reader.sees(record.issueId);
+    }
+    return record.projectId !== null && reaches(reader, record.projectId);
+  }
 
   function checked(entity: EntityDeclaration, fields: unknown): Record<string, unknown> {
     const parsed = recordFieldsSchemaOf(entity.fields).safeParse(fields);
@@ -132,30 +177,44 @@ export function createTestRecords(
   function anchorOf(
     reader: Reader,
     entity: EntityDeclaration,
-    given: { issueId?: string | undefined; projectId?: string | undefined },
-  ): { issueId: string | null; projectId: string } {
-    const { issueId, projectId } = given;
-    if (entity.attachedTo === 'issue') {
-      if (issueId === undefined || projectId !== undefined) {
-        throw refusal('RECORD_INVALID');
-      }
-      return issueAnchorOf(reader, issueId);
-    }
-    if (projectId === undefined || issueId !== undefined) {
+    given: Partial<Record<keyof Anchor, string | undefined>>,
+  ): Anchor {
+    const anchor = ANCHORS[entity.attachedTo].given;
+    const id = given[anchor];
+    const others = Object.values(ANCHORS).filter(({ given: other }) => other !== anchor);
+    if (id === undefined || others.some(({ given: other }) => given[other] !== undefined)) {
       throw refusal('RECORD_INVALID');
     }
-    if (!reaches(reader, projectId)) {
-      throw refusal('NOT_FOUND');
+    switch (entity.attachedTo) {
+      case 'issue':
+        return issueAnchorOf(reader, id);
+      case 'project':
+        if (!reaches(reader, id)) {
+          throw refusal('NOT_FOUND');
+        }
+        return { issueId: null, projectId: id, personId: null };
+      case 'person':
+        return personAnchorOf(reader, id);
     }
-    return { issueId: null, projectId };
   }
 
-  function issueAnchorOf(reader: Reader, issueId: string) {
+  function issueAnchorOf(reader: Reader, issueId: string): Anchor {
     const issue = issues.get(issueId);
     if (!(issue && (reader === null || reader.sees(issue.id)))) {
       throw refusal('NOT_FOUND');
     }
-    return { issueId: issue.id, projectId: issue.projectId };
+    return { issueId: issue.id, projectId: issue.projectId, personId: null };
+  }
+
+  /** Acting for someone, themselves only; as itself, anyone working in a project. */
+  function personAnchorOf(reader: Reader, personId: string): Anchor {
+    if (reader !== null && reader.id !== personId) {
+      throw refusal('FORBIDDEN');
+    }
+    if (!worksSomewhere(people.get(personId))) {
+      throw refusal('PERSON_NOT_FOUND');
+    }
+    return { issueId: null, projectId: null, personId };
   }
 
   function create(reader: Reader, args: unknown): RecordData {
@@ -163,22 +222,21 @@ export function createTestRecords(
       entity: name,
       issueId,
       projectId,
+      personId,
       fields,
     } = HOST_CALLS['entities.create'].args.parse(args);
     const entity = entityOf(name);
-    const anchor = anchorOf(reader, entity, { issueId, projectId });
+    const anchor = anchorOf(reader, entity, { issueId, projectId, personId });
     const data = checked(entity, fields);
     const held = kept.filter(
       (record) =>
         record.entity === name &&
         record.issueId === anchor.issueId &&
-        record.projectId === anchor.projectId,
+        record.projectId === anchor.projectId &&
+        record.personId === anchor.personId,
     ).length;
-    const limit =
-      anchor.issueId === null
-        ? (entity.limits.perProject ?? ENTITY_LIMITS.perProject.default)
-        : (entity.limits.perIssue ?? ENTITY_LIMITS.perIssue.default);
-    if (held >= limit) {
+    const { limit: kind } = ANCHORS[entity.attachedTo];
+    if (held >= (entity.limits[kind] ?? ENTITY_LIMITS[kind].default)) {
       throw refusal('RECORD_LIMIT_REACHED');
     }
     const now = new Date().toISOString();
@@ -202,12 +260,18 @@ export function createTestRecords(
     );
   }
 
-  function update(reader: Reader, args: unknown): RecordData {
-    const { entity: name, id, fields } = HOST_CALLS['entities.update'].args.parse(args);
+  /** A record the reader sees, and may change: acting for someone, theirs only on a person. */
+  function toChange(reader: Reader, name: string, id: string): Kept {
     const record = seen(reader, name, id);
-    if (!record) {
+    if (!record || (reader !== null && ![null, reader.id].includes(record.personId))) {
       throw refusal('RECORD_NOT_FOUND');
     }
+    return record;
+  }
+
+  function update(reader: Reader, args: unknown): RecordData {
+    const { entity: name, id, fields } = HOST_CALLS['entities.update'].args.parse(args);
+    const record = toChange(reader, name, id);
     record.fields = checked(entityOf(name), { ...record.fields, ...fields });
     record.updatedAt = new Date().toISOString();
     return shown(record);
@@ -215,10 +279,7 @@ export function createTestRecords(
 
   function remove(reader: Reader, args: unknown): null {
     const { entity: name, id } = HOST_CALLS['entities.delete'].args.parse(args);
-    const record = seen(reader, name, id);
-    if (!record) {
-      throw refusal('RECORD_NOT_FOUND');
-    }
+    const record = toChange(reader, name, id);
     kept.splice(kept.indexOf(record), 1);
     return null;
   }
@@ -229,6 +290,7 @@ export function createTestRecords(
     where: {
       issueId?: string | undefined;
       projectId?: string | undefined;
+      personId?: string | undefined;
       createdBy?: string | undefined;
       fields?: Record<string, FieldCondition> | undefined;
     },
@@ -243,6 +305,7 @@ export function createTestRecords(
         seenBy(reader, record) &&
         (where.issueId === undefined || record.issueId === where.issueId) &&
         (where.projectId === undefined || record.projectId === where.projectId) &&
+        (where.personId === undefined || record.personId === where.personId) &&
         (where.createdBy === undefined || record.createdBy === where.createdBy) &&
         conditions.every((meets) => meets(record)),
     );

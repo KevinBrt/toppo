@@ -11,6 +11,7 @@ import type { Actor, PluginReach } from '../../../../platform/auth/actor.ts';
 import { grantedIn, reachableBy } from '../../../../platform/auth/project-access.ts';
 import type { Transaction } from '../../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../../platform/http/http-error.ts';
+import { amongPeopleOf } from '../people/plugin-people.util.ts';
 
 const { issues, pluginRecords, plugins, projects } = schema;
 
@@ -65,16 +66,35 @@ export function checkedFields(
 }
 
 /**
- * The records of `entity` the actor sees, as a condition on `plugin_records` joined to its
- * project and, left, to its issue: the plugin's own, in the projects it acts in; acting for
- * someone, those they see too, as they see their issue or project.
+ * The records on a person the actor sees: the plugin's people's; acting for someone, their own,
+ * or, for an entity seen by teammates, those of anyone who shares with them a project the plugin
+ * acts in.
  */
-export function visibleRecords(
-  plugin: PluginReach,
-  entity: string,
-  attachedTo: EntityDeclaration['attachedTo'],
-): SQL {
-  const own = and(eq(pluginRecords.pluginSlug, plugin.slug), eq(pluginRecords.entity, entity));
+function visiblePersonRecords(plugin: PluginReach, entity: EntityDeclaration): SQL {
+  const person = plugin.onBehalfOf;
+  if (!person) {
+    return amongPeopleOf(plugin, pluginRecords.personId);
+  }
+  if (entity.visibleTo === 'teammates') {
+    return amongPeopleOf(plugin, pluginRecords.personId, reachableBy(person.id));
+  }
+  return (
+    and(eq(pluginRecords.personId, person.id), amongPeopleOf(plugin, pluginRecords.personId)) ??
+    sql`false`
+  );
+}
+
+/**
+ * The records of `entity` the actor sees, as a condition on `plugin_records` joined, left, to its
+ * project and its issue: the plugin's own, in the projects it acts in, or on its people; acting
+ * for someone, those they see too, as they see their issue or project, or as the entity shows
+ * records on a person.
+ */
+export function visibleRecords(plugin: PluginReach, name: string, entity: EntityDeclaration): SQL {
+  const own = and(eq(pluginRecords.pluginSlug, plugin.slug), eq(pluginRecords.entity, name));
+  if (entity.attachedTo === 'person') {
+    return and(own, visiblePersonRecords(plugin, entity)) ?? sql`false`;
+  }
   const reached = plugin.allProjects
     ? sql`true`
     : inArray(pluginRecords.projectId, [...plugin.projectIds]);
@@ -83,7 +103,7 @@ export function visibleRecords(
     return and(own, reached) ?? sql`false`;
   }
   const seen =
-    attachedTo === 'issue'
+    entity.attachedTo === 'issue'
       ? or(
           grantedIn(person.id, ['issue.read']),
           and(eq(issues.reporterId, person.id), grantedIn(person.id, ['issue.read.own'])),
@@ -92,15 +112,17 @@ export function visibleRecords(
   return and(own, reached, seen) ?? sql`false`;
 }
 
-/** The records the plugin asks for: on an issue, in a project, written by someone. */
+/** The records the plugin asks for: on an issue, in a project, on a person, written by someone. */
 export function recordsWhere(where: {
   issueId?: string | undefined;
   projectId?: string | undefined;
+  personId?: string | undefined;
   createdBy?: string | undefined;
 }): SQL | undefined {
   return and(
     where.issueId === undefined ? undefined : eq(pluginRecords.issueId, where.issueId),
     where.projectId === undefined ? undefined : eq(pluginRecords.projectId, where.projectId),
+    where.personId === undefined ? undefined : eq(pluginRecords.personId, where.personId),
     where.createdBy === undefined ? undefined : eq(pluginRecords.createdById, where.createdBy),
   );
 }
@@ -115,6 +137,7 @@ export const RECORD_COLUMNS = {
   id: pluginRecords.id,
   issueId: pluginRecords.issueId,
   projectId: pluginRecords.projectId,
+  personId: pluginRecords.personId,
   createdBy: pluginRecords.createdById,
   createdAt: pluginRecords.createdAt,
   updatedAt: pluginRecords.updatedAt,
@@ -124,7 +147,8 @@ export const RECORD_COLUMNS = {
 export function recordOf(row: {
   id: string;
   issueId: string | null;
-  projectId: string;
+  projectId: string | null;
+  personId: string | null;
   createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -139,7 +163,8 @@ export function recordNotFound(): HttpError {
 
 /**
  * A record the actor sees, locked to be changed: its fields as kept. Refused in an archived
- * project, read-only as it is.
+ * project, read-only as it is. Acting for someone, a record on a person is theirs to change only,
+ * even one their teammates see.
  */
 export async function recordToChange(
   tx: Transaction,
@@ -148,12 +173,17 @@ export async function recordToChange(
   entity: EntityDeclaration,
   id: string,
 ): Promise<{ fields: Record<string, unknown> }> {
+  const actingFor = plugin.onBehalfOf;
+  const theirs =
+    entity.attachedTo === 'person' && actingFor
+      ? eq(pluginRecords.personId, actingFor.id)
+      : undefined;
   const [record] = await tx
     .select({ fields: pluginRecords.data, archivedAt: projects.archivedAt })
     .from(pluginRecords)
-    .innerJoin(projects, eq(projects.id, pluginRecords.projectId))
+    .leftJoin(projects, eq(projects.id, pluginRecords.projectId))
     .leftJoin(issues, eq(issues.id, pluginRecords.issueId))
-    .where(and(eq(pluginRecords.id, id), visibleRecords(plugin, name, entity.attachedTo)))
+    .where(and(eq(pluginRecords.id, id), visibleRecords(plugin, name, entity), theirs))
     .for('update', { of: pluginRecords });
   if (!record) {
     throw recordNotFound();
