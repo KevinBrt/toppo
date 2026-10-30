@@ -1,9 +1,10 @@
 name: Publish plugin packages
 
-# Publishes plugin authors' packages (@toppo-tracker/plugin-sdk, plugin-ui, plugin-testing, cli,
-# create-plugin) to npm, by hand, from main only. npm trusts this workflow's `npm` environment to
-# publish them (trusted publishing): no token is stored, and each package carries a signed
-# provenance.
+# Stages plugin authors' packages (@toppo-tracker/plugin-sdk, plugin-ui, plugin-testing, cli,
+# create-plugin) on npm, by hand, from main only. npm trusts this workflow's `npm` environment to
+# stage them (trusted publishing): no token is stored, and each package carries a signed
+# provenance. None goes live before a maintainer approves it on npmjs.com, with their second
+# factor.
 on:
   workflow_dispatch:
     inputs:
@@ -42,7 +43,7 @@ jobs:
       - run: npm run plugin-packages:try
 
   publish:
-    name: Publish
+    name: Stage for approval
     needs: try
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
