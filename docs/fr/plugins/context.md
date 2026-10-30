@@ -17,6 +17,7 @@ Chaque gestionnaire reçoit `ctx` : ce avec quoi il tourne, et son seul chemin v
 ## Les tickets
 
 - **`ctx.issues.get(issueId)`** répond le ticket, ou `null` pour un ticket qu’il ne voit pas : sa clé, son projet, son titre et sa description, son statut, sa priorité, sa catégorie, la personne assignée et le demandeur, ses dates, et les valeurs des propriétés du plugin. Demande `issue.read`.
+- **`ctx.issues.find(key)`** répond le ticket d’une clé comme le fait `get`, la clé lue comme les gens l’écrivent (`web-12` désigne `WEB-12`) ; `null` quand il ne voit aucun ticket de cette clé, ou que le texte n’est pas une clé, pour qu’un mot lu dans le message d’un commit ne désigne rien. 100 caractères au plus. Demande `issue.read`.
 - **`ctx.issues.comment(issueId, corps, { once? })`** le commente sous l’utilisateur du plugin, 20 000 caractères au plus, et répond `{ commentId }`. Demande `comment.create`, et dans une action la personne doit l’avoir aussi. Avec `once`, une clé à vous, le commentaire n’est écrit qu’une fois, quel que soit le nombre de demandes : un événement traité deux fois commente une fois. Les clés sont gardées 7 jours.
 - **`ctx.issues.setProperty(issueId, propriété, valeur)`** écrit l’une de ses propriétés : voir [propriétés](./data#proprietes).
 

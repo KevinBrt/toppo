@@ -29,6 +29,7 @@ const context = setupTestDatabase();
 let app: FastifyInstance;
 let adminCookie: string;
 let issueId: string;
+let issueKey: string;
 
 const ORIGIN = 'http://localhost:3000';
 const PASSWORD = 'correct horse battery staple';
@@ -115,9 +116,14 @@ function receive(
   });
 }
 
-/** A commit on the issue, signed as `check` says, under its delivery's id. */
-function commit(check: SignatureCheck, delivery: Record<string, string> = {}, timestamp = now()) {
-  const body = JSON.stringify({ issueId, sha: '4f2a9c1e7b', message: 'Fix the invoice download' });
+/** A commit whose message names the issue, signed as `check` says, under its delivery's id. */
+function commit(
+  check: SignatureCheck,
+  delivery: Record<string, string> = {},
+  timestamp = now(),
+  message = `Fix the invoice download (${issueKey})`,
+) {
+  const body = JSON.stringify({ sha: '4f2a9c1e7b', message });
   return {
     body,
     headers: { ...signedHeaders(nodeCrypto, check, body, { id: 'msg_1', timestamp }), ...delivery },
@@ -163,7 +169,7 @@ beforeAll(async () => {
   const reported = await call('POST', '/api/v1/projects/WEB/issues', {
     title: 'Invoices fail to download',
   });
-  issueId = reported.json<{ id: string }>().id;
+  ({ id: issueId, key: issueKey } = reported.json<{ id: string; key: string }>());
 
   await install(
     testPackage({
@@ -213,13 +219,37 @@ describe('a plugin’s route', () => {
 
     const received = await receive('github.push', github);
     expect(received.statusCode, received.body).toBe(202);
-    expect(received.json()).toStrictEqual({ issueId });
+    expect(received.json()).toStrictEqual({ issueKey });
     // GitHub sends it again when it got no answer in time: one comment all the same.
     expect((await receive('github.push', github)).statusCode).toBe(202);
 
     expect(await commentsOnIssue()).toStrictEqual([
-      { body: 'Commit 4f2a9c1: Fix the invoice download', author: 'Commit links' },
+      { body: `Commit 4f2a9c1: Fix the invoice download (${issueKey})`, author: 'Commit links' },
     ]);
+  });
+
+  it('finds the issue a commit names by its key, among those the plugin sees only', async () => {
+    const created = await call('POST', '/api/v1/projects', { key: 'OPS', name: 'Operations' });
+    expect(created.statusCode).toBe(201);
+    const reported = await call('POST', '/api/v1/projects/OPS/issues', { title: 'Backups fail' });
+    const elsewhere = reported.json<{ key: string }>().key;
+    const github = (delivery: string, message: string) =>
+      commit(
+        { scheme: 'github', secret: SECRETS.githubSecret },
+        { 'x-github-delivery': delivery },
+        now(),
+        message,
+      );
+
+    for (const message of [`Fix the backups (${elsewhere})`, 'Fix a typo', 'Fix WEB-999']) {
+      expect((await receive('github.push', github(message, message))).statusCode).toBe(404);
+    }
+    const lower = await receive(
+      'github.push',
+      github('lower', `Fix it, ${issueKey.toLowerCase()}`),
+    );
+    expect(lower.statusCode, lower.body).toBe(202);
+    expect(lower.json()).toStrictEqual({ issueKey });
   });
 
   it('refuses a request signed with another secret, or not at all', async () => {

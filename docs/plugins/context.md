@@ -17,6 +17,7 @@ Every handler is given `ctx`: what it runs with, and its only way into Toppo.
 ## Issues
 
 - **`ctx.issues.get(issueId)`** answers the issue, or `null` for one it does not see: its key, project, title and description, status, priority, category, assignee and requester, dates, and the values of the plugin's own properties. Takes `issue.read`.
+- **`ctx.issues.find(key)`** answers the issue of a key as `get` does, the key read as people write it (`web-12` names `WEB-12`); `null` when it sees no issue of that key, or the text is no key, so that a word read in a commit's message names nothing. 100 characters at most. Takes `issue.read`.
 - **`ctx.issues.comment(issueId, body, { once? })`** comments on it as the plugin's own user, 20,000 characters at most, and answers `{ commentId }`. Takes `comment.create`, and in an action the person must hold it too. With `once`, a key of yours, the comment is written once however many times it is asked: an event handled twice comments once. Keys are kept 7 days.
 - **`ctx.issues.setProperty(issueId, property, value)`** writes one of its own properties: see [properties](./data#properties).
 

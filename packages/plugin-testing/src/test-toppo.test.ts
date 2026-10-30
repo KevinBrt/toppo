@@ -60,6 +60,14 @@ function timeTracking(
       return (await ctx.issues.get(issueId))?.key ?? null;
     },
   });
+  const find = plugin.defineAction({
+    name: 'issue.find',
+    access: 'authenticated',
+    input: z.object({ key: z.string() }),
+    async handler(ctx, { key }) {
+      return (await ctx.issues.find(key))?.id ?? null;
+    },
+  });
   plugin.defineEventHandler({
     event: 'issue.statusChanged',
     async handler(ctx, { event, issue }) {
@@ -77,7 +85,7 @@ function timeTracking(
       return (await ctx.projects.settings(projectId)).budgetDays ?? null;
     },
   });
-  return { plugin, logTime, ask, budget };
+  return { plugin, logTime, ask, find, budget };
 }
 
 /** The project of the issues the kit makes. */
@@ -110,7 +118,12 @@ describe('a fake Toppo for a plugin’s tests', () => {
     });
     expect(toppo.manifest).toMatchObject({
       id: 'time-tracking',
-      actions: [{ name: 'timeEntry.log' }, { name: 'issue.peek' }, { name: 'project.budget' }],
+      actions: [
+        { name: 'timeEntry.log' },
+        { name: 'issue.peek' },
+        { name: 'issue.find' },
+        { name: 'project.budget' },
+      ],
     });
   });
 
@@ -140,6 +153,20 @@ describe('a fake Toppo for a plugin’s tests', () => {
 
     expect(await ada.run(ask, { issueId: seen.id })).toBe(seen.key);
     expect(await ada.run(ask, { issueId: hidden.id })).toBeNull();
+  });
+
+  it('finds an issue by its key, as people write it, among those its user sees', async () => {
+    const { plugin, find } = timeTracking();
+    const toppo = createTestToppo(plugin);
+    const seen = toppo.createIssue();
+    const hidden = toppo.createIssue();
+    const ada = toppo.createUser({ sees: [seen] });
+
+    expect(await ada.run(find, { key: seen.key })).toBe(seen.id);
+    expect(await ada.run(find, { key: ` ${seen.key.toLowerCase()} ` })).toBe(seen.id);
+    for (const key of [hidden.key, 'WEB-99', 'not a key']) {
+      expect(await ada.run(find, { key })).toBeNull();
+    }
   });
 
   it('refuses the plugin a call its needs do not allow', async () => {
