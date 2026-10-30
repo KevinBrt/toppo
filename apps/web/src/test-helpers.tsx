@@ -27,12 +27,14 @@ import {
   instancePermissionsOf,
   invitationExpiry,
   isNewerVersion,
+  isProjectPermission,
   issueActionsOf,
   issueChanges,
   issueVisibilityOf,
   mediaTypeOf,
   meetsCondition,
   nextStatusesOf,
+  type PluginPermission,
   type ProjectPermission,
   type PropertyCondition,
   type PropertyProblem,
@@ -53,6 +55,7 @@ import {
 import {
   ATTACHMENTS_MAX,
   type AttachmentMediaType,
+  approvePluginRequestSchema,
   type CurrentUser,
   categoriesRequestSchema,
   commentRequestSchema,
@@ -86,13 +89,22 @@ import {
   type Notification,
   type PaletteColor,
   type PendingInvitation,
+  type PluginDetailsResponse,
+  type PluginDialogsResponse,
+  type PluginPermissionSection,
+  type PluginScreen,
+  type PluginScreensResponse,
+  type PluginSettingValues,
+  type PluginSummary,
   PROJECT_ACCESS_PAGE_SIZE,
   PROJECT_MEMBERS_PREVIEW,
   PROJECTS_PAGE_SIZE,
   type PriorityLevel,
   type ProjectAccessRow,
   type ProjectFields,
+  type ProjectPlugin,
   type PropertyOptionRef,
+  type PropertyPlugin,
   type PropertyValue,
   passwordResetRequestSchema,
   prioritiesRequestSchema,
@@ -107,10 +119,15 @@ import {
   resetPasswordRequestSchema,
   rolePermissionsRequestSchema,
   type SortOrder,
+  savePluginSettingsRequestSchema,
   TOPPO_VERSION,
   type UserSummary,
   updatePropertyRequestSchema,
+  WEBHOOKS_MAX,
+  type WebhookDelivery,
+  type WebhookDetailsResponse,
   type WorkflowMode,
+  webhookRequestSchema,
   workflowRequestSchema,
 } from '@toppo-tracker/shared';
 import { vi } from 'vitest';
@@ -121,7 +138,7 @@ import { I18nProvider } from './shared/i18n/i18n-provider.tsx';
 
 const instancePermissionsOfRole = (roleId: string) => {
   const role = DEFAULT_ROLES.find((candidate) => candidate.id === roleId);
-  return role ? instancePermissionsOf(role) : [];
+  return role ? instancePermissionsOf(role, []) : [];
 };
 
 /** The administrator who set the instance up. */
@@ -168,7 +185,7 @@ function defaultRoles(): FakeRole[] {
     name,
     color,
     grantsAll,
-    permissions: permissionsOfRole({ grantsAll, permissions }),
+    permissions: permissionsOfRole({ grantsAll, permissions }, []),
     notifyNewIssues,
   }));
 }
@@ -188,6 +205,26 @@ export interface FakeServerState {
   users: UserSummary[];
   /** The default roles unless a test sets others. */
   roles: FakeRole[];
+  /** The plugins installed, as their pages show them: none unless a test adds some. */
+  plugins: FakePlugin[];
+  /** What the next zip uploaded installs, or how the server refuses it: refused unless set. */
+  pluginPackage: FakePlugin | FakePackageRefusal | null;
+  /** Settings the plugins' code refuses, whatever their value: none unless a test sets some. */
+  refusedSettings: string[];
+  /** The plugins at work in each project that take settings of it, by project key: none. */
+  projectPlugins: Record<string, ProjectPlugin[]>;
+  /** The plugins' pages the signed-in user may open, in the sidebar and the settings: none. */
+  pluginScreens: PluginScreensResponse;
+  /** The tabs plugins add to each project's settings, by project key: none. */
+  projectScreens: Record<string, PluginScreen[]>;
+  /** The panels plugins show beside each issue, by issue key: none. */
+  issuePanels: Record<string, PluginScreen[]>;
+  /** What plugins' actions answer, by `slug/action`: none unless a test sets some. */
+  pluginActions: Record<string, FakeActionAnswer>;
+  /** Each plugin's dialogs the signed-in person may open, by slug: none unless a test sets some. */
+  pluginDialogs: Record<string, PluginDialogsResponse>;
+  /** The webhooks of the instance, with their deliveries: none unless a test adds some. */
+  webhooks: FakeWebhook[];
   invitations: PendingInvitation[];
   /** The links the fake server made, by token, and what opening them shows. */
   invitationLinks: Map<string, InvitationLinkState>;
@@ -235,6 +272,8 @@ export interface FakeServerState {
 export type FakeProperty = IssuePropertyField & {
   /** The project it belongs to; none for one of the instance. */
   projectKey?: string;
+  /** The plugin that added it; none for one of Toppo's. */
+  plugin?: PropertyPlugin;
 };
 
 /** How a project adapts a property of the instance: hidden, and its own options or none. */
@@ -263,6 +302,8 @@ export function fakeProperty(
     shownInList: false,
     askedAtCreation: false,
     required: false,
+    writtenBy: 'people',
+    display: null,
     options: optionNames.map((optionName, index) => ({
       id: id(seed * 10 + index + 1),
       name: optionName,
@@ -477,6 +518,60 @@ export function invitationToken(seed: number): string {
   return String(seed).padStart(43, 'x');
 }
 
+/** A plugin as the fake server keeps it: as its page shows it. */
+export type FakePlugin = PluginDetailsResponse;
+
+/** What a plugin's action answers: its result, or a refusal in the plugin's own words. */
+export type FakeActionAnswer =
+  | { result: unknown }
+  | { refused: { code: string; params?: Record<string, string | number> } };
+
+/** How the server refuses a zip: `{ status: 422, code: 'PLUGIN_MANIFEST_INVALID' }`. */
+export interface FakePackageRefusal {
+  status: number;
+  code: string;
+}
+
+/**
+ * A plugin named `name` in both languages, waiting for an approval and declaring nothing, unless
+ * `overrides` says otherwise.
+ */
+export function fakePlugin(
+  slug: string,
+  name: string,
+  overrides: Partial<FakePlugin> = {},
+): FakePlugin {
+  return {
+    slug,
+    name: { en: name, fr: name },
+    version: '1.0.0',
+    state: 'pending',
+    logoUrl: null,
+    createdAt: '2026-10-20T09:14:00.000Z',
+    updatedAt: '2026-10-20T09:14:00.000Z',
+    description: { en: '', fr: '' },
+    packageSha256: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+    apiVersion: '^1.0',
+    needs: [],
+    permissions: [],
+    properties: [],
+    events: [],
+    actions: [],
+    jobs: [],
+    http: null,
+    privateHosts: [],
+    httpCalls: [],
+    routes: [],
+    allProjects: false,
+    projects: [],
+    approval: null,
+    failures: 0,
+    lastFailure: null,
+    settings: { fields: [], values: {}, refused: false, refusedProjects: [] },
+    ...overrides,
+  };
+}
+
 export interface FakeServer {
   state: FakeServerState;
   requests: { method: string; path: string; body: unknown }[];
@@ -497,6 +592,16 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       user: null,
       users: [memberOf(ADA, ROLE_BADGES.administrator), memberOf(GRACE, ROLE_BADGES.team)],
       roles: defaultRoles(),
+      plugins: [],
+      pluginPackage: null,
+      refusedSettings: [],
+      projectPlugins: {},
+      pluginScreens: { main: [], settings: [] },
+      projectScreens: {},
+      issuePanels: {},
+      pluginActions: {},
+      pluginDialogs: {},
+      webhooks: [],
       invitations: [],
       invitationLinks: new Map(),
       projects: [],
@@ -744,6 +849,8 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       );
     },
     'GET /api/v1/projects': (_body, search) => asSignedIn(state) ?? listProjects(state, search),
+    'GET /api/v1/plugin-screens': () => asSignedIn(state) ?? json(state.pluginScreens),
+    'GET /api/v1/people': (_body, search) => asSignedIn(state) ?? peopleNamed(state, search),
     'GET /api/v1/issues/assigned': (_body, search) =>
       asSignedIn(state) ?? listAssignedIssues(state, search),
     'GET /api/v1/issues/search': (_body, search) =>
@@ -778,7 +885,10 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
     const handler = routes[`${method} ${url.pathname}`];
     const answer = handler
       ? handler((body ?? {}) as Record<string, unknown>, url.searchParams)
-      : (attachmentRequest(state, method, url.pathname, body, new Headers(init?.headers)) ??
+      : // Before the projects': their paths would read `plugin-screens` as a project's part.
+        (pluginOverlayRequest(state, method, url.pathname, url.searchParams) ??
+        pluginScreenRequest(state, method, url.pathname) ??
+        attachmentRequest(state, method, url.pathname, body, new Headers(init?.headers)) ??
         projectRequest(state, method, url.pathname, url.searchParams, body) ??
         issueRequest(state, method, url.pathname, url.searchParams, body) ??
         userProjects(state, method, url.pathname, url.searchParams, body) ??
@@ -786,6 +896,8 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
         changeInvitation(state, method, url.pathname) ??
         changeRoleDefinition(state, method, url.pathname, body) ??
         propertyRequest(state, method, url.pathname, body) ??
+        pluginRequest(state, method, url.pathname, body, new Headers(init?.headers)) ??
+        webhookRequest(state, method, url.pathname, body) ??
         apiError(404, 'NOT_FOUND'));
     return await Promise.resolve(answer);
   });
@@ -1027,8 +1139,27 @@ function listRoles(state: FakeServerState): Response {
         .length,
       projectCount: 0,
     })),
+    plugins: pluginsBySlug(state).map(pluginSectionOf),
   });
 }
+
+/** A plugin's section of the roles matrix: its permissions, named after it in the catalog. */
+function pluginSectionOf({ slug, name, permissions }: FakePlugin): PluginPermissionSection {
+  return {
+    slug,
+    name,
+    permissions: permissions.map((permission) => ({
+      ...permission,
+      name: `${slug}.${permission.name}`,
+    })),
+  };
+}
+
+/** The permissions the plugins of the fake server add to the catalog. */
+const pluginPermissionsOf = (state: FakeServerState) =>
+  state.plugins
+    .map(pluginSectionOf)
+    .flatMap(({ permissions }) => permissions.map(({ name, scope }) => ({ name, scope })));
 
 const sameName = (left: string, right: string) => left.toLowerCase() === right.toLowerCase();
 
@@ -1063,6 +1194,7 @@ function savePermissions(state: FakeServerState, body: Record<string, unknown>):
     const refusal = permissionsRefusal(
       state.roles.find((candidate) => candidate.id === change.roleId),
       change,
+      pluginPermissionsOf(state),
     );
     if (refusal) {
       return refusal;
@@ -1071,7 +1203,7 @@ function savePermissions(state: FakeServerState, body: Record<string, unknown>):
   for (const { roleId, to, notifyNewIssues } of parsed.data.changes) {
     const role = state.roles.find((candidate) => candidate.id === roleId);
     if (role && !role.grantsAll) {
-      role.permissions = rolePermissionsFrom(to).permissions;
+      role.permissions = rolePermissionsFrom(to, pluginPermissionsOf(state)).permissions;
     }
     if (role && notifyNewIssues) {
       role.notifyNewIssues = notifyNewIssues.to;
@@ -1084,6 +1216,7 @@ function savePermissions(state: FakeServerState, body: Record<string, unknown>):
 function permissionsRefusal(
   role: FakeRole | undefined,
   { from, to, notifyNewIssues }: RolePermissionsRequest['changes'][number],
+  plugins: readonly PluginPermission[],
 ): Response | null {
   const sameSet = (left: readonly string[], right: readonly string[]) =>
     [...left].sort().join() === [...right].sort().join();
@@ -1093,11 +1226,13 @@ function permissionsRefusal(
   if (role.grantsAll && !sameSet(from, to)) {
     return apiError(403, 'SYSTEM_ROLE_LOCKED');
   }
-  if (!role.grantsAll && rolePermissionsFrom(to).refused.length > 0) {
+  if (!role.grantsAll && rolePermissionsFrom(to, plugins).refused.length > 0) {
     return apiError(400, 'INVALID_PERMISSIONS');
   }
   const changed = notifyNewIssues !== undefined && notifyNewIssues.from !== role.notifyNewIssues;
-  return !sameSet(from, role.permissions) || changed ? apiError(409, 'ROLES_CHANGED') : null;
+  return !sameSet(from, permissionsOfRole(role, plugins)) || changed
+    ? apiError(409, 'ROLES_CHANGED')
+    : null;
 }
 
 /** `PATCH /api/v1/roles/:id` and `DELETE /api/v1/roles/:id`. */
@@ -1157,11 +1292,16 @@ function projectPermissionsFor(
     permissions: [],
   };
   const membership = project.members.find(({ userId }) => userId === user.id);
-  return projectPermissionsOf({
-    role: own,
-    allProjects: state.allProjects.has(user.id),
-    membership: membership ? { role: roleOf(membership.roleId ?? undefined) ?? null } : null,
-  });
+  // No plugin in the fake server: Toppo's own permissions only.
+  const permissions = projectPermissionsOf(
+    {
+      role: own,
+      allProjects: state.allProjects.has(user.id),
+      membership: membership ? { role: roleOf(membership.roleId ?? undefined) ?? null } : null,
+    },
+    [],
+  );
+  return permissions?.filter(isProjectPermission) ?? null;
 }
 
 /** Whether the signed-in user manages `project`'s settings or access. */
@@ -1253,7 +1393,7 @@ function createProject(state: FakeServerState, body: Record<string, unknown>): R
 }
 
 const PROJECT_PATH =
-  /^\/api\/v1\/projects\/([^/]+)(?:\/(archive|unarchive|access|members|invitations|candidates|roles|issues|issue-fields|assignees|workflow|properties|fields))?(?:\/([^/]+))?(?:\/(adaptation|status|fields|assignee|labels|delete))?$/;
+  /^\/api\/v1\/projects\/([^/]+)(?:\/(archive|unarchive|access|members|invitations|candidates|roles|issues|issue-fields|assignees|workflow|properties|fields|plugins))?(?:\/([^/]+))?(?:\/(adaptation|status|fields|assignee|labels|delete|settings))?$/;
 
 /** `/api/v1/projects/:key` and what hangs off it, with the server's rules. */
 function projectRequest(
@@ -1350,6 +1490,11 @@ function projectRequest(
       return unless('project.settings.manage', () =>
         projectPropertyRequest(state, project, method, part, target, sub, body),
       );
+    case 'GET plugins':
+    case 'PUT plugins':
+      return unless('project.settings.manage', () =>
+        projectPluginRequest(state, project, method, target, sub, body),
+      );
     case 'GET issue-fields':
       return json(issueFields(state, project.key));
     case 'GET workflow':
@@ -1374,7 +1519,7 @@ function projectRequest(
         json({
           roles: badgesOf(state).filter((badge) => {
             const role = state.roles.find(({ id }) => id === badge.id);
-            return role !== undefined && canGiveProjectRole(permissions, role);
+            return role !== undefined && canGiveProjectRole(permissions, role, []);
           }),
         }),
       );
@@ -1492,7 +1637,7 @@ function changeProjectMembers(
 ): Response {
   const roleId = (fields['roleId'] as string | null | undefined) ?? null;
   const role = state.roles.find(({ id }) => id === roleId);
-  if (method !== 'DELETE' && role && !canGiveProjectRole(permissions, role)) {
+  if (method !== 'DELETE' && role && !canGiveProjectRole(permissions, role, [])) {
     return apiError(403, 'ROLE_BEYOND_YOURS');
   }
   if (method === 'POST') {
@@ -1532,7 +1677,7 @@ function memberRefusal(
     return apiError(409, 'SYSTEM_ROLE_HOLDER');
   }
   const current = roleOf(member.roleId ?? ownRole?.id);
-  return current && !canActOnProjectMember(permissions, current)
+  return current && !canActOnProjectMember(permissions, current, [])
     ? apiError(403, 'ROLE_BEYOND_YOURS')
     : undefined;
 }
@@ -1966,7 +2111,9 @@ function shownValueOf(
         ? { id, name, type: 'user', value: userRef(state, value) }
         : null;
     case 'number':
-      return typeof value === 'number' ? { id, name, type: 'number', value } : null;
+      return typeof value === 'number'
+        ? { id, name, type: 'number', value, display: property.display }
+        : null;
     case 'checkbox':
       return value === true ? { id, name, type: 'checkbox', value } : null;
     case 'date':
@@ -3070,12 +3217,13 @@ function listedRows(
   );
   return state.properties
     .filter((property) => property.projectKey === projectKey)
-    .map(({ projectKey: _, ...property }) => {
+    .map(({ projectKey: _, plugin, ...property }) => {
       const adaptation = state.propertyAdaptations.find(
         (candidate) => candidate.projectKey === countedIn && candidate.propertyId === property.id,
       );
       return {
         ...property,
+        plugin: plugin ?? null,
         issueCount: counted.filter((issue) => property.id in issue.properties).length,
         options: (adaptation?.options ?? property.options).map((option) => ({
           ...option,
@@ -3249,4 +3397,572 @@ function takeFakeOptionsOff(
       });
     }
   }
+}
+
+/** The plugins in the server's order: by slug. */
+const pluginsBySlug = (state: FakeServerState) =>
+  [...state.plugins].sort((left, right) => left.slug.localeCompare(right.slug));
+
+function pluginSummaryOf({
+  slug,
+  name,
+  version,
+  state,
+  logoUrl,
+  createdAt,
+  updatedAt,
+}: FakePlugin): PluginSummary {
+  return { slug, name, version, state, logoUrl, createdAt, updatedAt };
+}
+
+/** Puts `plugin` in the place of the one of its slug: tests share their plugins between runs. */
+function savePlugin(state: FakeServerState, plugin: FakePlugin): void {
+  state.plugins = [...state.plugins.filter(({ slug }) => slug !== plugin.slug), plugin];
+}
+
+const PLUGIN_PATH = /^\/api\/v1\/plugins(?:\/([^/]+)(?:\/(approve|enable|disable|settings))?)?$/;
+
+/**
+ * `/api/v1/plugins…`: listing, installing, setting up, approving, enabling, disabling and
+ * uninstalling.
+ */
+function pluginRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+  body: unknown,
+  headers: Headers,
+): Response | undefined {
+  const match = PLUGIN_PATH.exec(path);
+  if (!match) {
+    return undefined;
+  }
+  const refusal = asHolder(state, 'instance.plugins.manage');
+  if (refusal) {
+    return refusal;
+  }
+  const [, slug, action] = match;
+  if (slug === undefined) {
+    if (method === 'GET') {
+      return json({ plugins: pluginsBySlug(state).map(pluginSummaryOf) });
+    }
+    return method === 'POST' ? installFakePlugin(state, body, headers) : undefined;
+  }
+  const plugin = state.plugins.find((candidate) => candidate.slug === slug);
+  if (!plugin) {
+    return apiError(404, 'PLUGIN_NOT_FOUND');
+  }
+  return action === undefined
+    ? onePluginRequest(state, method, plugin)
+    : pluginCommand(state, method, plugin, action, body);
+}
+
+/** `GET` and `DELETE /api/v1/plugins/:slug`. */
+function onePluginRequest(
+  state: FakeServerState,
+  method: string,
+  plugin: FakePlugin,
+): Response | undefined {
+  if (method === 'GET') {
+    return json(plugin);
+  }
+  if (method === 'DELETE') {
+    state.plugins = state.plugins.filter((candidate) => candidate !== plugin);
+    return NO_CONTENT();
+  }
+  return undefined;
+}
+
+/** `PUT /api/v1/plugins/:slug/settings`, `POST …/approve`, `…/enable` and `…/disable`. */
+function pluginCommand(
+  state: FakeServerState,
+  method: string,
+  plugin: FakePlugin,
+  action: string,
+  body: unknown,
+): Response | undefined {
+  if (action === 'settings') {
+    return method === 'PUT' ? saveFakePluginSettings(state, plugin, body) : undefined;
+  }
+  if (method !== 'POST') {
+    return undefined;
+  }
+  if (action === 'approve') {
+    return approveFakePlugin(state, plugin, body);
+  }
+  if (action === 'enable' && plugin.approval === null) {
+    return apiError(409, 'PLUGIN_NOT_APPROVED');
+  }
+  savePlugin(
+    state,
+    action === 'enable'
+      ? { ...plugin, state: 'enabled', failures: 0 }
+      : { ...plugin, state: 'disabled' },
+  );
+  return NO_CONTENT();
+}
+
+/**
+ * `POST /api/v1/plugins`: a zip, sent as `application/zip` and nothing else, installs the plugin
+ * the test set as `pluginPackage`, or upgrades the one of its slug; or is refused as it says.
+ */
+function installFakePlugin(state: FakeServerState, body: unknown, headers: Headers): Response {
+  if (!(body instanceof Blob && headers.get('content-type') === 'application/zip')) {
+    return apiError(415, 'UNSUPPORTED_MEDIA_TYPE');
+  }
+  const next = state.pluginPackage;
+  if (next === null) {
+    return apiError(422, 'PLUGIN_PACKAGE_INVALID');
+  }
+  if ('code' in next) {
+    return apiError(next.status, next.code);
+  }
+  savePlugin(state, next);
+  return json({ slug: next.slug }, 201);
+}
+
+/**
+ * `PUT /api/v1/plugins/:slug/settings`: kept unless the plugin's code refuses one of them, as the
+ * test says; settings refused since an upgrade are so corrected.
+ */
+function saveFakePluginSettings(
+  state: FakeServerState,
+  plugin: FakePlugin,
+  body: unknown,
+): Response {
+  // A secret typed is set, one cleared is not, one left out is as it was: never shown again.
+  const isSet = (
+    name: string,
+    values: PluginSettingValues,
+    cleared: readonly string[],
+    was: boolean,
+  ) => Object.hasOwn(values, name) || (was && !cleared.includes(name));
+  return checkFakeSettings(state, body, (values, cleared) => {
+    const { fields } = plugin.settings;
+    const secrets = new Set(
+      fields.flatMap((field) => (field.kind === 'text' && field.secret ? [field.name] : [])),
+    );
+    savePlugin(state, {
+      ...plugin,
+      settings: {
+        ...plugin.settings,
+        fields: fields.map((field) =>
+          field.kind === 'text' && field.secret
+            ? { ...field, secret: { set: isSet(field.name, values, cleared, field.secret.set) } }
+            : field,
+        ),
+        values: Object.fromEntries(Object.entries(values).filter(([name]) => !secrets.has(name))),
+        refused: false,
+      },
+    });
+  });
+}
+
+/** Settings sent, kept by `keep` unless the plugin's code refuses one of them, as the test says. */
+function checkFakeSettings(
+  state: FakeServerState,
+  body: unknown,
+  keep: (values: PluginSettingValues, clearSecrets: readonly string[]) => void,
+): Response {
+  const parsed = savePluginSettingsRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  const { values, clearSecrets } = parsed.data;
+  const refused = Object.keys(values).filter((name) => state.refusedSettings.includes(name));
+  if (refused.length > 0) {
+    const details = refused.map((path) => ({ path, message: 'Refused by the plugin' }));
+    return json({ error: { code: 'PLUGIN_SETTINGS_INVALID', message: 'Refused', details } }, 400);
+  }
+  keep(values, clearSecrets);
+  return NO_CONTENT();
+}
+
+/**
+ * `GET /api/v1/projects/:key/plugins` and `PUT …/plugins/:slug/settings`: what a project sets for
+ * itself of the plugins at work in it; settings refused since an upgrade are so corrected.
+ */
+function projectPluginRequest(
+  state: FakeServerState,
+  project: FakeProject,
+  method: string,
+  slug: string,
+  sub: string,
+  body: unknown,
+): Response {
+  const plugins = state.projectPlugins[project.key] ?? [];
+  if (method === 'GET' && slug === '') {
+    return json({ plugins });
+  }
+  const plugin = plugins.find((candidate) => candidate.slug === slug);
+  if (!(method === 'PUT' && sub === 'settings' && plugin)) {
+    return apiError(404, 'PLUGIN_NOT_FOUND');
+  }
+  return checkFakeSettings(state, body, (values) => {
+    state.projectPlugins[project.key] = plugins.map((candidate) =>
+      candidate === plugin ? { ...plugin, values, refused: false } : candidate,
+    );
+  });
+}
+
+/**
+ * `POST /api/v1/plugins/:slug/approve`: in projects that all exist, or all of them, once its code
+ * takes its settings; enables it.
+ */
+function approveFakePlugin(state: FakeServerState, plugin: FakePlugin, body: unknown): Response {
+  const parsed = approvePluginRequestSchema.safeParse(body);
+  if (!(parsed.success && state.user)) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  if (parsed.data.packageSha256 !== plugin.packageSha256) {
+    return apiError(409, 'PLUGIN_CHANGED');
+  }
+  if (plugin.settings.refused) {
+    return apiError(409, 'PLUGIN_SETTINGS_REFUSED');
+  }
+  const { projects: keys } = parsed.data;
+  const projects = (keys === 'all' ? [] : keys).flatMap((key) => {
+    const found = state.projects.find((project) => project.key === key);
+    return found ? [{ id: found.id, key: found.key, name: found.name }] : [];
+  });
+  if (keys !== 'all' && projects.length !== keys.length) {
+    return apiError(404, 'PROJECT_NOT_FOUND');
+  }
+  savePlugin(state, {
+    ...plugin,
+    state: 'enabled',
+    allProjects: keys === 'all',
+    projects,
+    privateHosts: [...new Set(parsed.data.privateHosts)],
+    approval: { by: { id: state.user.id, name: state.user.name }, at: requestTime },
+  });
+  return NO_CONTENT();
+}
+
+const PLUGIN_SCREENS_PATH =
+  /^\/api\/v1\/(?:projects\/([^/]+)\/plugin-screens|issues\/([^/]+)\/plugin-panels|plugins\/([^/]+)\/actions\/([^/]+))$/;
+
+/**
+ * `GET /api/v1/projects/:key/plugin-screens`, `GET /api/v1/issues/:key/plugin-panels` and
+ * `POST /api/v1/plugins/:slug/actions/:action`: what plugins' screens show and run, as the test
+ * set it, in what the signed-in user sees.
+ */
+function pluginScreenRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+): Response | undefined {
+  const match = PLUGIN_SCREENS_PATH.exec(path);
+  if (!match) {
+    return undefined;
+  }
+  const [, projectKey, issueKey, slug, action] = match;
+  if (issueKey !== undefined && method === 'GET') {
+    const seen = seenIssue(state, issueKey);
+    return seen instanceof Response
+      ? seen
+      : json({
+          screens: state.issuePanels[issueKey] ?? [],
+          issue: {
+            id: '01a1569b-9900-7000-8000-000000000700',
+            key: issueKey,
+            projectId: seen.project.id,
+            projectKey: seen.project.key,
+          },
+        });
+  }
+  if (projectKey !== undefined && method === 'GET') {
+    return state.projects.some((project) => project.key === projectKey)
+      ? json({ screens: state.projectScreens[projectKey] ?? [] })
+      : apiError(404, 'PROJECT_NOT_FOUND');
+  }
+  return method === 'POST' ? runFakeAction(state, `${slug}/${action}`) : undefined;
+}
+
+/** A plugin's action, run as the test said it answers. */
+function runFakeAction(state: FakeServerState, action: string): Response {
+  const answer = state.pluginActions[action];
+  if (!answer) {
+    return asSignedIn(state) ?? apiError(404, 'PLUGIN_ACTION_NOT_FOUND');
+  }
+  if ('refused' in answer) {
+    return json(
+      { error: { code: 'PLUGIN_REFUSED', message: 'The plugin refused', plugin: answer.refused } },
+      422,
+    );
+  }
+  return json({ result: answer.result });
+}
+
+/** `GET /api/v1/people?ids=`: the names of the accounts asked for that the fake server knows. */
+function peopleNamed(state: FakeServerState, search: URLSearchParams): Response {
+  const ids = (search.get('ids') ?? '').split(',');
+  return json({
+    people: state.users.filter(({ id }) => ids.includes(id)).map(({ id, name }) => ({ id, name })),
+  });
+}
+
+/** A webhook as the fake server keeps it: as its page shows it, with its deliveries. */
+export type FakeWebhook = WebhookDetailsResponse;
+
+let fakeWebhooks = 0;
+let fakeDeliveries = 0;
+let secretsMade = 0;
+
+/** The secret the fake server makes next, for a webhook added or renewed. */
+function nextWebhookSecret(): string {
+  secretsMade += 1;
+  return `whsec_${String(secretsMade).padStart(43, 'x')}`;
+}
+
+/**
+ * A webhook named `name`, enabled, told of issues created in every project and sent nothing yet,
+ * unless `overrides` says otherwise.
+ */
+export function fakeWebhook(name: string, overrides: Partial<FakeWebhook> = {}): FakeWebhook {
+  fakeWebhooks += 1;
+  return {
+    id: `01a1569b-9900-7000-8000-0000000013${String(fakeWebhooks % 100).padStart(2, '0')}`,
+    name,
+    url: 'https://hooks.example.com/toppo',
+    events: ['issue.created'],
+    allProjects: true,
+    projects: [],
+    allowPrivate: false,
+    enabled: true,
+    failures: 0,
+    lastError: null,
+    createdAt: '2026-10-20T09:14:00.000Z',
+    deliveries: [],
+    ...overrides,
+  };
+}
+
+/** A delivery sent and answered 204, unless `overrides` says otherwise. */
+export function fakeDelivery(overrides: Partial<WebhookDelivery> = {}): WebhookDelivery {
+  fakeDeliveries += 1;
+  const seed = String(fakeDeliveries % 100).padStart(2, '0');
+  return {
+    id: `01a1569b-9900-7000-8000-0000000014${seed}`,
+    messageId: `01a1569b-9900-7000-8000-0000000015${seed}`,
+    eventType: 'issue.created',
+    status: 'delivered',
+    attempts: 1,
+    responseStatus: 204,
+    error: null,
+    durationMs: 42,
+    createdAt: '2026-10-21T08:30:00.000Z',
+    ...overrides,
+  };
+}
+
+const WEBHOOK_PATH =
+  /^\/api\/v1\/webhooks(?:\/([^/]+)(?:\/(enable|disable|secret|test)|\/deliveries\/([^/]+)\/redeliver)?)?$/;
+
+/**
+ * `/api/v1/webhooks…`: listing, adding, changing, enabling, disabling, testing and deleting
+ * webhooks, renewing their secret and sending their deliveries again. A test or a delivery sent
+ * again is delivered at once.
+ */
+function webhookRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+  body: unknown,
+): Response | undefined {
+  const match = WEBHOOK_PATH.exec(path);
+  if (!match) {
+    return undefined;
+  }
+  const refusal = asHolder(state, 'instance.webhooks.manage');
+  if (refusal) {
+    return refusal;
+  }
+  const [, id, action, deliveryId] = match;
+  if (id === undefined) {
+    if (method === 'GET') {
+      const byName = [...state.webhooks].sort((a, b) => a.name.localeCompare(b.name));
+      return json({ webhooks: byName.map(({ deliveries: _, ...summary }) => summary) });
+    }
+    return method === 'POST' ? addFakeWebhook(state, body) : undefined;
+  }
+  const webhook = state.webhooks.find((candidate) => candidate.id === id);
+  if (!webhook) {
+    return apiError(404, 'WEBHOOK_NOT_FOUND');
+  }
+  if (deliveryId !== undefined) {
+    return method === 'POST' ? redeliverFake(state, webhook, deliveryId) : undefined;
+  }
+  if (action === undefined) {
+    return oneWebhookRequest(state, method, webhook, body);
+  }
+  return method === 'POST' ? webhookCommand(state, webhook, action) : undefined;
+}
+
+/** `GET`, `PUT` and `DELETE /api/v1/webhooks/:id`. */
+function oneWebhookRequest(
+  state: FakeServerState,
+  method: string,
+  webhook: FakeWebhook,
+  body: unknown,
+): Response | undefined {
+  if (method === 'GET') {
+    return json(webhook);
+  }
+  if (method === 'PUT') {
+    const fields = webhookFields(state, body);
+    if (fields instanceof Response) {
+      return fields;
+    }
+    saveWebhook(state, { ...webhook, ...fields });
+    return NO_CONTENT();
+  }
+  if (method === 'DELETE') {
+    state.webhooks = state.webhooks.filter((candidate) => candidate !== webhook);
+    return NO_CONTENT();
+  }
+  return undefined;
+}
+
+/** `POST /api/v1/webhooks/:id/enable`, `…/disable`, `…/secret` and `…/test`. */
+function webhookCommand(state: FakeServerState, webhook: FakeWebhook, action: string): Response {
+  if (action === 'secret') {
+    return json({ id: webhook.id, secret: nextWebhookSecret() });
+  }
+  if (action === 'test') {
+    if (!webhook.enabled) {
+      return apiError(409, 'WEBHOOK_DISABLED');
+    }
+    const delivery = fakeDelivery({
+      eventType: 'webhook.test',
+      createdAt: new Date().toISOString(),
+    });
+    saveWebhook(state, { ...webhook, deliveries: [delivery, ...webhook.deliveries] });
+    return json({ id: delivery.id }, 202);
+  }
+  saveWebhook(
+    state,
+    action === 'enable'
+      ? { ...webhook, enabled: true, failures: 0, lastError: null }
+      : { ...webhook, enabled: false },
+  );
+  return NO_CONTENT();
+}
+
+/** What a webhook request sets, as the fake server keeps it. */
+type FakeWebhookFields = Pick<
+  FakeWebhook,
+  'name' | 'url' | 'events' | 'allProjects' | 'projects' | 'allowPrivate'
+>;
+
+/** `POST /api/v1/webhooks`: added enabled, its secret answered this once; 20 at most. */
+function addFakeWebhook(state: FakeServerState, body: unknown): Response {
+  const fields = webhookFields(state, body);
+  if (fields instanceof Response) {
+    return fields;
+  }
+  if (state.webhooks.length >= WEBHOOKS_MAX) {
+    return apiError(409, 'WEBHOOK_LIMIT_REACHED');
+  }
+  const webhook = fakeWebhook(fields.name, { ...fields, createdAt: new Date().toISOString() });
+  state.webhooks.push(webhook);
+  return json({ id: webhook.id, secret: nextWebhookSecret() }, 201);
+}
+
+/** What a webhook is sent, checked as the server does, its projects named as they are. */
+function webhookFields(state: FakeServerState, body: unknown): Response | FakeWebhookFields {
+  const parsed = webhookRequestSchema.safeParse(body);
+  if (!parsed.success || (parsed.data.url.startsWith('http:') && !parsed.data.allowPrivate)) {
+    return apiError(400, 'VALIDATION_FAILED');
+  }
+  const { projects, ...fields } = parsed.data;
+  const chosen =
+    projects === 'all'
+      ? []
+      : state.projects.filter(({ key }) => projects.some((named) => named === key));
+  if (projects !== 'all' && chosen.length !== new Set(projects).size) {
+    return apiError(404, 'PROJECT_NOT_FOUND');
+  }
+  return {
+    ...fields,
+    events: [...new Set(fields.events)],
+    allProjects: projects === 'all',
+    projects: chosen.map(({ id, key, name }) => ({ id, key, name })),
+  };
+}
+
+/** `POST …/deliveries/:id/redeliver`: sent again as it was, and delivered at once. */
+function redeliverFake(state: FakeServerState, webhook: FakeWebhook, deliveryId: string): Response {
+  const delivery = webhook.deliveries.find(({ id }) => id === deliveryId);
+  if (!delivery) {
+    return apiError(404, 'WEBHOOK_DELIVERY_NOT_FOUND');
+  }
+  if (!webhook.enabled) {
+    return apiError(409, 'WEBHOOK_DISABLED');
+  }
+  const again = fakeDelivery({
+    messageId: delivery.messageId,
+    eventType: delivery.eventType,
+    createdAt: new Date().toISOString(),
+  });
+  saveWebhook(state, { ...webhook, deliveries: [again, ...webhook.deliveries] });
+  return json({ id: again.id }, 202);
+}
+
+function saveWebhook(state: FakeServerState, webhook: FakeWebhook): void {
+  state.webhooks = state.webhooks.map((candidate) =>
+    candidate.id === webhook.id ? webhook : candidate,
+  );
+}
+
+const OVERLAY_PATH =
+  /^\/api\/v1\/(?:plugin-screens\/([^/]+)\/dialogs|plugins\/([^/]+)\/pick\/(issues|people))$/;
+
+/**
+ * `GET /api/v1/plugin-screens/:slug/dialogs`, as the test sets them, and Toppo's search for a
+ * plugin's screen (`…/pick/issues`, `…/pick/people`): the issues and people of the fake
+ * server whose key, title or name holds what is typed.
+ */
+function pluginOverlayRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+  search: URLSearchParams,
+): Response | undefined {
+  const match = OVERLAY_PATH.exec(path);
+  if (!match || method !== 'GET') {
+    return undefined;
+  }
+  const refusal = asSignedIn(state);
+  if (refusal) {
+    return refusal;
+  }
+  const [, dialogsOf, , of] = match;
+  if (dialogsOf !== undefined) {
+    const dialogs = state.pluginDialogs[dialogsOf];
+    return dialogs ? json(dialogs) : apiError(404, 'SCREEN_NOT_FOUND');
+  }
+  const typed = (search.get('search') ?? '').toLowerCase();
+  if (of === 'people') {
+    return json({
+      people: state.users
+        .filter(({ name }) => name.toLowerCase().includes(typed))
+        .map(({ id, name }) => ({ id, name })),
+    });
+  }
+  return json({
+    issues: state.issues
+      .filter((issue) =>
+        `${issue.projectKey}-${issue.number} ${issue.title}`.toLowerCase().includes(typed),
+      )
+      .map((issue) => ({
+        id: `01a1569b-9900-7000-8000-0000000016${String(issue.number % 100).padStart(2, '0')}`,
+        key: `${issue.projectKey}-${issue.number}`,
+        title: issue.title,
+        projectId:
+          state.projects.find(({ key }) => key === issue.projectKey)?.id ??
+          '01a1569b-9900-7000-8000-000000000500',
+        projectKey: issue.projectKey,
+      })),
+  });
 }

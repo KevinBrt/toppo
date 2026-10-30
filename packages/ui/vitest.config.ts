@@ -1,3 +1,4 @@
+import { availableParallelism } from 'node:os';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { playwright } from '@vitest/browser-playwright';
@@ -12,6 +13,8 @@ export default defineConfig({
     api: { port: 41316 },
     include: ['src/**/*.test.tsx'],
     setupFiles: ['src/test-setup.ts'],
+    // Each worker is a Chromium of its own, as in the web app's tests: eight at most.
+    maxWorkers: Math.max(1, Math.min(8, availableParallelism() - 1)),
     browser: {
       enabled: true,
       headless: true,

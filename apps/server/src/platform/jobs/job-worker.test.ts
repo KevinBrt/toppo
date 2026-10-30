@@ -4,7 +4,7 @@ import Fastify from 'fastify';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { setupTestDatabase, testServices } from '../../test-helpers.ts';
-import { runNextJob, startJobWorker, type WorkerContext } from './job-worker.ts';
+import { runNextJob, startJobWorker, startJobWorkers, type WorkerContext } from './job-worker.ts';
 import { defineJob, enqueue, type RunnableJob, scheduleRecurringJobs } from './jobs.ts';
 
 const { jobs } = schema;
@@ -56,7 +56,39 @@ const urgent = defineJob({
   },
 });
 
-function worker(all: readonly RunnableJob[] = [greet, flaky, hourly, urgent]): WorkerContext {
+/** Runs again as long as its payload says, each at its own pace. */
+const paced = defineJob({
+  type: 'test.paced',
+  payload: z.object({ name: z.string(), againInMs: z.int().nullable() }),
+  handler(_scope, { name, againInMs }) {
+    done.push(`paced ${name}`);
+    return Promise.resolve(againInMs === null ? undefined : { runAgainInMs: againInMs });
+  },
+});
+
+/** Lets the calls waiting on a service outside Toppo answer. */
+let answer: () => void = () => undefined;
+
+/** Waits on a service outside Toppo until the test lets it answer. */
+const call = defineJob({
+  type: 'test.call',
+  payload: z.object({ name: z.string() }),
+  waitsOutside: true,
+  async handler(_scope, { name }) {
+    await new Promise<void>((answered) => {
+      const before = answer;
+      answer = () => {
+        before();
+        answered();
+      };
+    });
+    done.push(`called ${name}`);
+  },
+});
+
+function worker(
+  all: readonly RunnableJob[] = [greet, flaky, hourly, urgent, paced, call],
+): WorkerContext {
   return { db: context.database.db, jobs: all, log, services: testServices() };
 }
 
@@ -237,6 +269,28 @@ describe('a recurring job', () => {
   });
 });
 
+describe('a job queued once that asks to run again', () => {
+  it('waits for its next run, each at its own pace, until it asks no more', async () => {
+    const { db } = context.database;
+    await enqueue(db, paced, { name: 'daily', againInMs: 24 * 60 * 60 * 1000 });
+    await enqueue(db, paced, { name: 'done', againInMs: null });
+
+    expect(await runNextJob(worker())).toBe(true);
+    expect(await runNextJob(worker())).toBe(true);
+
+    expect(done).toStrictEqual(['paced daily', 'paced done']);
+    const [next] = await db
+      .select({
+        payload: jobs.payload,
+        inHours: sql<number>`extract(epoch from ${jobs.runAt} - now()) / 3600`,
+      })
+      .from(jobs);
+    expect(next?.payload).toStrictEqual({ name: 'daily', againInMs: 24 * 60 * 60 * 1000 });
+    expect(Number(next?.inHours)).toBeGreaterThan(23.9);
+    expect(await stored()).toHaveLength(1);
+  });
+});
+
 describe('startJobWorker', () => {
   it('runs what is queued, then stops once the job under way is done', async () => {
     const running = startJobWorker(worker());
@@ -247,5 +301,24 @@ describe('startJobWorker', () => {
     await enqueue(context.database.db, greet, { name: 'nobody' });
 
     expect(await stored()).toMatchObject([{ type: 'test.greet', status: 'pending' }]);
+  });
+});
+
+describe('startJobWorkers', () => {
+  it('runs the jobs waiting on a service outside Toppo apart: a slow one holds up no other', async () => {
+    const running = startJobWorkers(worker());
+    try {
+      await enqueue(context.database.db, call, { name: 'a slow receiver' });
+      await enqueue(context.database.db, call, { name: 'another' });
+      await enqueue(context.database.db, greet, { name: 'Grace' });
+
+      await vi.waitFor(() => expect(done).toStrictEqual(['hello Grace']), { timeout: 5000 });
+      answer();
+      await vi.waitFor(() => expect(done).toHaveLength(3), { timeout: 5000 });
+      expect(done).toContain('called a slow receiver');
+    } finally {
+      answer();
+      await running.stop();
+    }
   });
 });

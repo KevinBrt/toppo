@@ -92,6 +92,22 @@ jobs:
           path: "**/coverage/"
           retention-days: 14
 
+  plugin-packages:
+    name: Plugin packages, outside the repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Packed as npm will publish them, they start, test, type-check and build a plugin of their own.
+      - run: npm run plugin-packages:try
+
   e2e:
     name: End-to-end on the Docker image
     runs-on: ubuntu-24.04

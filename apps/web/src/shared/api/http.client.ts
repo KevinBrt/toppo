@@ -5,12 +5,27 @@ import { z } from 'zod';
 export class ApiRequestError extends Error {
   readonly status: number;
   readonly code: string;
+  /** What the server refused, field by field, when it says. */
+  readonly details: readonly { path: string; message: string }[];
+  /** Why a plugin refused, in its own words (`PLUGIN_REFUSED`): its message key and values. */
+  readonly plugin:
+    | { code: string; params?: Record<string, string | number> | undefined }
+    | undefined;
 
-  constructor(status: number, code: string, message: string, options?: ErrorOptions) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    options?: ErrorOptions,
+    details: readonly { path: string; message: string }[] = [],
+    plugin?: { code: string; params?: Record<string, string | number> | undefined },
+  ) {
     super(message, options);
     this.name = 'ApiRequestError';
     this.status = status;
     this.code = code;
+    this.details = details;
+    this.plugin = plugin;
   }
 }
 
@@ -72,7 +87,8 @@ function toApiRequestError(status: number, payload: unknown): ApiRequestError {
   }
   const toppo = apiErrorSchema.safeParse(payload);
   if (toppo.success) {
-    return new ApiRequestError(status, toppo.data.error.code, toppo.data.error.message);
+    const { code, message, details, plugin } = toppo.data.error;
+    return new ApiRequestError(status, code, message, undefined, details, plugin);
   }
   const betterAuth = betterAuthErrorSchema.safeParse(payload);
   if (betterAuth.success) {

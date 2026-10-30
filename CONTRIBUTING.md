@@ -49,6 +49,14 @@ release-please opens the release pull request from the Conventional Commits. Bef
 3. If screens changed, refresh the README's screenshots: `npm run docs:screenshots`.
 4. Commit the snapshot (and the screenshots) in a pull request merged just before the release's: release-please rewrites its own branch whenever `main` moves. A released migration is never edited afterwards.
 
+### Plugin packages
+
+The packages plugin authors use (`@toppo-tracker/plugin-sdk`, `plugin-ui`, `plugin-testing`, `cli`, `create-plugin`) are published to npm together, at one version, apart from Toppo's releases.
+
+1. Give the five packages their new version, and the dependencies on each other the same, in a pull request. `npm run plugin-packages:try` checks they still start, test and build a plugin outside the repository.
+2. Once it is merged, run the **Publish plugin packages** workflow on `main`, first as a dry run (the default), then for real. It publishes each package npm does not have at that version, the SDK first.
+3. npm trusts this workflow to publish them, with no token: each package's settings on npmjs.com name it as a trusted publisher (repository `KevinBrt/toppo`, workflow `publish-plugin-packages.yml`, environment `npm`). The repository's `npm` environment deploys from `main` only, so a copy of the workflow on another branch cannot publish. The packages are tried outside the repository in a job of their own, which cannot ask for the identity that publishes.
+
 ## Dependencies
 
 Adding a dependency needs a reason in the PR. Prefer the platform and existing packages; a few dozen lines of our own often beat a new package. Versions are exact and install scripts are disabled.

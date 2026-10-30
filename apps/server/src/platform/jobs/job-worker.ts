@@ -1,10 +1,10 @@
 import { randomInt } from 'node:crypto';
 import { retryDelay } from '@toppo-tracker/core';
 import { type Db, schema } from '@toppo-tracker/db';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, lte, notInArray, type SQL, sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
 import type { Services, Transaction } from '../cqrs/cqrs.ts';
-import type { RunnableJob } from './jobs.ts';
+import type { JobOutcome, RunnableJob } from './jobs.ts';
 
 const { jobs } = schema;
 
@@ -16,12 +16,24 @@ const LEASE_SECONDS = 15 * 60;
 /** Waits between two looks at an empty queue. */
 const IDLE_MS = 2000;
 const ERROR_MAX_LENGTH = 1000;
+/**
+ * The jobs waiting on a service outside Toppo a server runs at once: each holds two connections
+ * of the pool (its transaction, and what it records whatever becomes of it) while it waits.
+ */
+const OUTSIDE_AT_ONCE = 2;
+
+/**
+ * The jobs a worker claims: those waiting on a service outside Toppo (`waitsOutside`), the
+ * others, or all when it says nothing.
+ */
+export type JobLane = 'inside' | 'outside';
 
 export interface WorkerContext {
   db: Db;
   jobs: readonly RunnableJob[];
   log: FastifyBaseLogger;
   services: Services;
+  lane?: JobLane;
 }
 
 type StoredJob = typeof jobs.$inferSelect;
@@ -42,7 +54,7 @@ export async function runNextJob(context: WorkerContext): Promise<boolean> {
       eq(
         jobs.id,
         sql`(select ${jobs.id} from ${jobs}
-          where ${jobs.status} = 'pending' and ${jobs.runAt} <= now()
+          where ${and(eq(jobs.status, 'pending'), lte(jobs.runAt, sql`now()`), inLane(context))}
           order by ${jobs.priority} desc, ${jobs.runAt} limit 1 for update skip locked)`,
       ),
     )
@@ -60,6 +72,18 @@ export async function runNextJob(context: WorkerContext): Promise<boolean> {
   return true;
 }
 
+/**
+ * The types of job a worker's lane holds, as a condition on `jobs`: a type no worker knows stays
+ * inside, to be recorded as such.
+ */
+function inLane({ jobs: known, lane }: WorkerContext): SQL | undefined {
+  if (lane === undefined) {
+    return undefined;
+  }
+  const outside = known.filter(({ waitsOutside }) => waitsOutside).map(({ type }) => type);
+  return lane === 'outside' ? inArray(jobs.type, outside) : notInArray(jobs.type, outside);
+}
+
 async function runLocked(tx: Transaction, job: StoredJob, context: WorkerContext): Promise<void> {
   const log = context.log.child({ job: job.type, jobId: job.id, attempt: job.attempts });
   const definition = context.jobs.find(({ type }) => type === job.type);
@@ -75,19 +99,24 @@ async function runLocked(tx: Transaction, job: StoredJob, context: WorkerContext
     await failed(tx, job, definition, new Error('Interrupted too many times'), log);
     return;
   }
+  let outcome: JobOutcome | undefined;
   try {
     // A savepoint: the job's own writes go if it fails, and its failure is still recorded here.
-    await tx.transaction((savepoint) =>
-      definition.run({ tx: savepoint, log, services: context.services }, job.payload),
+    outcome = await tx.transaction((savepoint) =>
+      definition.run(
+        { tx: savepoint, db: context.db, attempt: job.attempts, log, services: context.services },
+        job.payload,
+      ),
     );
   } catch (error) {
     await failed(tx, job, definition, error, log);
     return;
   }
-  if (definition.every === null) {
+  const every = definition.every ?? outcome?.runAgainInMs ?? null;
+  if (every === null) {
     await tx.delete(jobs).where(eq(jobs.id, job.id));
   } else {
-    await nextRun(tx, job.id, definition.every, null);
+    await nextRun(tx, job.id, every, null);
   }
 }
 
@@ -168,6 +197,25 @@ export function startJobWorker(context: WorkerContext): { stop: () => Promise<vo
       stopped = true;
       clearTimeout(timer);
       await running;
+    },
+  };
+}
+
+/**
+ * The workers of a server: one for Toppo's own jobs, one after the other, and a lane apart for
+ * those waiting on a service outside Toppo, a few at once, so that a slow receiver holds up no
+ * email, no plugin and no sweep. `stop` lets the jobs under way end.
+ */
+export function startJobWorkers(context: WorkerContext): { stop: () => Promise<void> } {
+  const workers = [
+    startJobWorker({ ...context, lane: 'inside' }),
+    ...Array.from({ length: OUTSIDE_AT_ONCE }, () =>
+      startJobWorker({ ...context, lane: 'outside' }),
+    ),
+  ];
+  return {
+    async stop() {
+      await Promise.all(workers.map((worker) => worker.stop()));
     },
   };
 }

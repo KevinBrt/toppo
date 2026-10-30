@@ -2,14 +2,14 @@ import type { IssuePropertyValue, Locale } from '@toppo-tracker/shared';
 import { Badge } from '@toppo-tracker/ui';
 import { formatDay } from '../../../../shared/i18n/dates.util.ts';
 import { useI18n } from '../../../../shared/i18n/i18n-provider.tsx';
-import { formatNumber } from '../../../../shared/i18n/numbers.util.ts';
+import { formatDuration, formatNumber } from '../../../../shared/i18n/numbers.util.ts';
 import { PersonName } from '../fields/person-name.tsx';
 
 type Translate = ReturnType<typeof useI18n>['t'];
 
 /**
  * A property's value in words: options and people by name, a day and a number as the reader
- * writes them, a box ticked as "Yes".
+ * writes them (minutes as a duration when its property says so), a box ticked as "Yes".
  */
 export function propertyText(value: IssuePropertyValue, t: Translate, locale: Locale): string {
   switch (value.type) {
@@ -20,7 +20,9 @@ export function propertyText(value: IssuePropertyValue, t: Translate, locale: Lo
     case 'user':
       return value.value.name ?? t('issues.deletedUser');
     case 'number':
-      return formatNumber(value.value, locale);
+      return value.display === 'duration'
+        ? formatDuration(value.value, t, locale)
+        : formatNumber(value.value, locale);
     case 'date':
       return formatDay(value.value, locale);
     case 'checkbox':

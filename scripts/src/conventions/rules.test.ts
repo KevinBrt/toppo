@@ -116,6 +116,17 @@ describe('front-end rules', () => {
     expect(rulesBroken(WEB, 'const c = "bg-surface dark:bg-black";')).toContain('light-theme-only');
   });
 
+  it('lays a plugin’s screens out with its components, never with classes', () => {
+    const screen = 'plugins/time-tracking/src/web/report-page.tsx';
+
+    expect(rulesBroken(screen, '<div className="flex gap-4">')).toContain(
+      'plugin-screens-without-classes',
+    );
+    expect(rulesBroken(screen, '<Stack gap="small">')).not.toContain(
+      'plugin-screens-without-classes',
+    );
+  });
+
   it.each([
     '<div className="bg-[#0f766e]" />',
     "const style = { color: '#fff' };",

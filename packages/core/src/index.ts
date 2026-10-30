@@ -96,6 +96,7 @@ export {
   type PermissionDefinition,
   type PermissionScope,
   type PermissionSection,
+  type PluginPermission,
   type ProjectPermission,
 } from './permissions/catalog.ts';
 export {
@@ -113,6 +114,7 @@ export {
   permissionsOfRole,
   type RoleGrants,
   rolePermissionsFrom,
+  scopeOf,
 } from './permissions/grants.ts';
 export {
   canActOnProjectMember,
@@ -122,6 +124,13 @@ export {
   projectPermissionsOf,
   roleInProject,
 } from './permissions/projects.ts';
+export {
+  asksForMore,
+  isReservedPluginId,
+  type PluginGrants,
+  type PluginReach,
+  pluginUserOf,
+} from './plugins/plugins.ts';
 export { projectColorFor } from './projects/project-color.ts';
 export { effectiveProperties, type PropertyAdaptation } from './properties/project-properties.ts';
 export {

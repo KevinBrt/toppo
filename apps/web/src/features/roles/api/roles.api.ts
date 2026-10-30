@@ -1,8 +1,8 @@
 import {
   createRoleResponseSchema,
-  type RoleDetails,
   type RolePermissionsRequest,
   type RoleRequest,
+  type RolesResponse,
   rolesResponseSchema,
 } from '@toppo-tracker/shared';
 import { z } from 'zod';
@@ -15,9 +15,12 @@ const rolePath = (roleId: string) => `/api/v1/roles/${encodeURIComponent(roleId)
 
 /** Server calls about roles and what they grant, for holders of the system role. */
 export const Roles = {
-  /** Every role, in creation order: a short configuration list. */
-  async list(): Promise<RoleDetails[]> {
-    return (await apiRequest('/api/v1/roles', { schema: rolesResponseSchema })).roles;
+  /**
+   * Every role, in creation order: a short configuration list; and the permissions the plugins
+   * installed add, a section of the matrix each.
+   */
+  async list(): Promise<RolesResponse> {
+    return await apiRequest('/api/v1/roles', { schema: rolesResponseSchema });
   },
 
   /** Creates a role without permissions and returns its id. */

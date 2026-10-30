@@ -1,14 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { createRoute, Link, Outlet } from '@tanstack/react-router';
+import { can } from '@toppo-tracker/core';
 import { EmptyState } from '@toppo-tracker/ui';
 import { FolderXIcon } from 'lucide-react';
+import { PluginsQueries } from '../../../features/plugins/queries/plugins.queries.ts';
+import { pluginNavSections } from '../../../features/plugins/utils/plugin-nav.util.ts';
 import { ProjectIdentity } from '../../../features/projects/components/settings/project-identity.tsx';
-import { PROJECT_ADMIN_NAV } from '../../../features/projects/constants/project-admin.constants.ts';
+import {
+  PROJECT_ADMIN_NAV,
+  PROJECT_PLUGINS_PATH,
+} from '../../../features/projects/constants/project-admin.constants.ts';
 import { ProjectsQueries } from '../../../features/projects/queries/projects.queries.ts';
 import { ApiRequestError } from '../../../shared/api/http.client.ts';
 import { requestErrorMessage } from '../../../shared/forms/form-errors.util.ts';
 import { useI18n } from '../../../shared/i18n/i18n-provider.tsx';
 import { AccessDenied } from '../../../shared/layout/access-denied.tsx';
+import type { NavSection } from '../../../shared/layout/navigation.constants.ts';
 import { visibleSections } from '../../../shared/layout/navigation.util.ts';
 import { Page } from '../../../shared/layout/page.tsx';
 import { SectionLayout } from '../../../shared/layout/section-layout.tsx';
@@ -47,10 +54,32 @@ export const projectRoute = createRoute({
   component: ProjectLayout,
 });
 
+/** The project's pages, its Plugins tab once a plugin at work in it takes settings of it. */
+function withPluginsTab(sections: NavSection[], shown: boolean): NavSection[] {
+  return shown
+    ? sections
+    : sections.map((section) => ({
+        ...section,
+        items: section.items.filter(({ to }) => to !== PROJECT_PLUGINS_PATH),
+      }));
+}
+
 function ProjectLayout() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { projectKey } = projectRoute.useParams();
   const project = useQuery(ProjectsQueries.detail(projectKey));
+  const plugins = useQuery({
+    ...PluginsQueries.inProject(projectKey),
+    enabled: Boolean(project.data && can(project.data.permissions, 'project.settings.manage')),
+  });
+  const { data: pluginScreens } = useQuery({
+    ...PluginsQueries.projectScreens(projectKey),
+    enabled: project.isSuccess,
+  });
+  const pluginSections = pluginNavSections(pluginScreens ?? [], locale, (screen) => ({
+    to: '/projects/$projectKey/p/$pluginSlug/$screen',
+    params: { projectKey, pluginSlug: screen.pluginSlug, screen: screen.name },
+  }));
 
   if (project.isPending) {
     return (
@@ -71,8 +100,11 @@ function ProjectLayout() {
       </Page>
     );
   }
-  const sections = visibleSections(PROJECT_ADMIN_NAV, { permissions: project.data.permissions });
-  if (sections.length === 0) {
+  const sections = withPluginsTab(
+    visibleSections(PROJECT_ADMIN_NAV, { permissions: project.data.permissions }),
+    (plugins.data?.length ?? 0) > 0,
+  );
+  if (sections.length === 0 && pluginSections.length === 0) {
     return (
       <Page title={project.data.name}>
         <AccessDenied />
@@ -84,6 +116,7 @@ function ProjectLayout() {
       label={t('projectAdmin.navLabel')}
       header={<ProjectIdentity project={project.data} />}
       sections={sections}
+      addedSections={pluginSections}
     >
       <Outlet />
     </SectionLayout>

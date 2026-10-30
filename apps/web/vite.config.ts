@@ -17,6 +17,9 @@ export default defineConfig({
     proxy: {
       '/api': SERVER_URL,
       '/health': SERVER_URL,
+      // Plugins' screens, their frames and their runtime, as the server serves them.
+      '/plugin-screens': SERVER_URL,
+      '/plugin-runtime': SERVER_URL,
     },
   },
   build: {

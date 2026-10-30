@@ -23,6 +23,7 @@ import {
   assertNameable,
   lockedPropertyRules,
   propertyRefusal,
+  writtenByPlugin,
 } from '../utils/issue-properties.util.ts';
 
 const { issues, propertyOptions } = schema;
@@ -44,6 +45,9 @@ export const setIssueProperty = defineCommand({
     );
     if (!property) {
       throw new HttpError(404, 'PROPERTY_NOT_FOUND', 'This property does not exist');
+    }
+    if (property.writtenBy === 'plugin') {
+      throw writtenByPlugin();
     }
     // Naming someone is choosing among those who may be assigned.
     if (property.type === 'user' && !can(project.permissions, 'issue.assign')) {

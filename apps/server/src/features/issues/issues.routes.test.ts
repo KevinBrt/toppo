@@ -444,7 +444,8 @@ describe('assigning an issue', () => {
 });
 
 describe('deleting an issue', () => {
-  it('is for those who may, leaves its key in a trace, and its number is never reused', async () => {
+  it('is for those who may, leaves its key and id in a trace, and its number is never reused', async () => {
+    const { id } = await issue('WEB-2');
     const team = await call('DELETE', '/api/v1/issues/WEB-2', teamCookie);
     const admin = await call('DELETE', '/api/v1/issues/WEB-2', adminCookie);
 
@@ -456,7 +457,7 @@ describe('deleting an issue', () => {
       .from(schema.activities)
       .where(and(eq(schema.activities.type, 'issue.deleted'), isNull(schema.activities.issueId)));
     expect(traces).toHaveLength(1);
-    expect(traces[0]?.payload).toStrictEqual({ key: 'WEB-2' });
+    expect(traces[0]?.payload).toStrictEqual({ key: 'WEB-2', issueId: id });
     expect(await report(teamCookie, { title: 'After the deletion' })).toBe('WEB-10');
   });
 });

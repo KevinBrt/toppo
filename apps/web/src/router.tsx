@@ -10,10 +10,13 @@ import { myIssuesRoute } from './routes/protected/issues/my-issues.route.tsx';
 import { newIssueRoute } from './routes/protected/issues/new-issue.route.tsx';
 import { notFoundRoute } from './routes/protected/not-found.route.tsx';
 import { notificationsRoute } from './routes/protected/notifications/notifications.route.tsx';
+import { pluginPageRoute } from './routes/protected/plugins/plugin-page.route.tsx';
 import { projectsIndexRoute } from './routes/protected/projects/index.route.tsx';
 import { projectRoute } from './routes/protected/projects/project.route.tsx';
 import { projectAccessRoute } from './routes/protected/projects/project-access.route.tsx';
 import { projectGeneralRoute } from './routes/protected/projects/project-general.route.tsx';
+import { projectPluginPageRoute } from './routes/protected/projects/project-plugin-page.route.tsx';
+import { projectPluginsRoute } from './routes/protected/projects/project-plugins.route.tsx';
 import { projectPropertiesRoute } from './routes/protected/projects/project-properties.route.tsx';
 import { projectStatusesRoute } from './routes/protected/projects/project-statuses.route.tsx';
 import { projectsRoute } from './routes/protected/projects/projects.route.tsx';
@@ -21,10 +24,18 @@ import { protectedRoute } from './routes/protected/protected.route.tsx';
 import { emailRoute } from './routes/protected/settings/email.route.tsx';
 import { settingsIndexRoute } from './routes/protected/settings/index.route.tsx';
 import { membersRoute } from './routes/protected/settings/members.route.tsx';
+import { pluginsIndexRoute } from './routes/protected/settings/plugins/index.route.tsx';
+import { pluginRoute } from './routes/protected/settings/plugins/plugin.route.tsx';
+import { pluginSettingsPageRoute } from './routes/protected/settings/plugins/plugin-settings-page.route.tsx';
+import { pluginsRoute } from './routes/protected/settings/plugins/plugins.route.tsx';
 import { propertiesRoute } from './routes/protected/settings/properties.route.tsx';
 import { rolesRoute } from './routes/protected/settings/roles.route.tsx';
 import { settingsRoute } from './routes/protected/settings/settings.route.tsx';
 import { statusesRoute } from './routes/protected/settings/statuses.route.tsx';
+import { webhooksIndexRoute } from './routes/protected/settings/webhooks/index.route.tsx';
+import { newWebhookRoute } from './routes/protected/settings/webhooks/new-webhook.route.tsx';
+import { webhookRoute } from './routes/protected/settings/webhooks/webhook.route.tsx';
+import { webhooksRoute } from './routes/protected/settings/webhooks/webhooks.route.tsx';
 import { forgotPasswordRoute } from './routes/public/forgot-password.route.tsx';
 import { invitationRoute } from './routes/public/invitation.route.tsx';
 import { loginRoute } from './routes/public/login.route.tsx';
@@ -47,6 +58,7 @@ const routeTree = rootRoute.addChildren([
     issuesRoute.addChildren([issuesIndexRoute, newIssueRoute, issueRoute]),
     myIssuesRoute,
     notificationsRoute,
+    pluginPageRoute,
     projectsRoute.addChildren([
       projectsIndexRoute,
       projectRoute.addChildren([
@@ -54,6 +66,8 @@ const routeTree = rootRoute.addChildren([
         projectAccessRoute,
         projectStatusesRoute,
         projectPropertiesRoute,
+        projectPluginsRoute,
+        projectPluginPageRoute,
       ]),
     ]),
     settingsRoute.addChildren([
@@ -63,6 +77,9 @@ const routeTree = rootRoute.addChildren([
       statusesRoute,
       propertiesRoute,
       emailRoute,
+      pluginsRoute.addChildren([pluginsIndexRoute, pluginRoute]),
+      webhooksRoute.addChildren([webhooksIndexRoute, newWebhookRoute, webhookRoute]),
+      pluginSettingsPageRoute,
     ]),
     accountRoute,
     notFoundRoute,

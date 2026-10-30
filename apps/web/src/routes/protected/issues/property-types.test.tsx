@@ -217,6 +217,42 @@ describe('the properties of an issue', () => {
     await expect.element(activity.getByText(/cleared Reference/)).toBeVisible();
   });
 
+  /** WEB-1, with 400 minutes spent, as a plugin writes them. */
+  function spentByPlugin() {
+    const spent = fakeProperty(7, 'Time spent', [], {
+      type: 'number',
+      writtenBy: 'plugin',
+      display: 'duration',
+      shownInList: true,
+    });
+    fakeServer({
+      user: ADA,
+      properties: [spent],
+      projects: [fakeProject('WEB', 'Website', { members: [{ userId: ADA.id, roleId: null }] })],
+      issues: [fakeIssue('WEB', 1, 'Crash on phones', { properties: { [spent.id]: 400 } })],
+    });
+  }
+
+  it('show what a plugin writes as it says, for no one to change', async () => {
+    spentByPlugin();
+    await renderApp({ path: '/issues/WEB-1' });
+
+    await expect.element(sidebar().getByText('6 h 40')).toBeVisible();
+    await expect
+      .element(sidebar().getByRole('spinbutton', { name: 'Time spent' }))
+      .not.toBeInTheDocument();
+  });
+
+  it('show a duration in the list as a duration', async () => {
+    spentByPlugin();
+    const { screen } = await renderApp({ path: '/issues?project=WEB' });
+
+    const chips = screen
+      .getByRole('row', { name: /Crash on phones/ })
+      .getByRole('list', { name: 'Properties' });
+    await expect.element(chips.getByText('Time spent: 6 h 40')).toBeVisible();
+  });
+
   it('show in the list with their names, a box ticked by its name alone', async () => {
     server({
       values: { [DUE.id]: '2026-11-02', [REFERENCE.id]: 'CUST-42', [BLOCKING.id]: true },

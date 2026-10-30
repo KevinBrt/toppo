@@ -1,7 +1,7 @@
 import { type Db, schema } from '@toppo-tracker/db';
 import { sql } from 'drizzle-orm';
 import type { FastifyBaseLogger } from 'fastify';
-import type { z } from 'zod';
+import { z } from 'zod';
 import type { Services, Transaction } from '../cqrs/cqrs.ts';
 
 const { jobs } = schema;
@@ -16,8 +16,24 @@ const DEFAULT_MAX_ATTEMPTS = 5;
  */
 export interface JobScope {
   tx: Transaction;
+  /**
+   * The database itself, for what must commit whatever becomes of the job: what a plugin writes
+   * as it runs, which must not hold its issue locked until the job ends.
+   */
+  db: Db;
+  /** Which try this is, from 1: what a job counts once per payload, it counts on the first. */
+  attempt: number;
   log: FastifyBaseLogger;
   services: Services;
+}
+
+/**
+ * What a job run once may ask once done: to run again, with the same payload, this many
+ * milliseconds later, as a recurring job does. For work queued per payload, each at its own pace
+ * (a plugin's jobs).
+ */
+export interface JobOutcome {
+  runAgainInMs: number;
 }
 
 /** A job as the worker runs it, whatever its payload. */
@@ -29,8 +45,10 @@ export interface RunnableJob {
   readonly priority: number;
   /** How long between two runs of a recurring job, in milliseconds; `null` for a job run once. */
   readonly every: number | null;
+  /** Waits on a service outside Toppo: run in a lane of its own (`startJobWorkers`). */
+  readonly waitsOutside: boolean;
   /** Checks the stored payload, then does the work. */
-  run(scope: JobScope, payload: unknown): Promise<void>;
+  run(scope: JobScope, payload: unknown): Promise<JobOutcome | undefined>;
 }
 
 export interface Job<Payload extends z.ZodObject> extends RunnableJob {
@@ -49,8 +67,16 @@ interface JobDefinition<Payload extends z.ZodObject> {
   priority?: number;
   /** Makes the job recurring: one job of its type, run again this many milliseconds later. */
   every?: number;
-  handler(scope: JobScope, payload: z.output<Payload>): Promise<void>;
+  /**
+   * Waits on a service outside Toppo, as long as it takes to answer: run in a lane of its own, so
+   * that a slow one holds up no other job.
+   */
+  waitsOutside?: boolean;
+  /** Answers nothing, or a `JobOutcome` to run again later. */
+  handler(scope: JobScope, payload: z.output<Payload>): Promise<unknown>;
 }
+
+const jobOutcomeSchema = z.object({ runAgainInMs: z.number().positive() });
 
 /** Work for the background, queued with `enqueue` and run by the worker of any server process. */
 export function defineJob<Payload extends z.ZodObject>(
@@ -62,8 +88,12 @@ export function defineJob<Payload extends z.ZodObject>(
     maxAttempts: definition.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
     priority: definition.priority ?? 0,
     every: definition.every ?? null,
+    waitsOutside: definition.waitsOutside ?? false,
     async run(scope, payload) {
-      await definition.handler(scope, definition.payload.parse(payload));
+      const outcome = jobOutcomeSchema.safeParse(
+        await definition.handler(scope, definition.payload.parse(payload)),
+      );
+      return outcome.success ? outcome.data : undefined;
     },
   };
 }

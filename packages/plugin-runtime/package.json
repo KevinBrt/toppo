@@ -1,0 +1,35 @@
+{
+  "name": "@toppo-tracker/plugin-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "What Toppo serves in plugins' screens: React, Toppo's components and the bridge to the page holding them.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.105.0",
+    "@toppo-tracker/plugin-sdk": "0.1.0",
+    "@toppo-tracker/plugin-ui": "0.1.0",
+    "@toppo-tracker/ui": "0.0.0",
+    "lucide-react": "1.62.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "@vitest/browser-playwright": "5.0.5",
+    "playwright": "1.64.1",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5",
+    "vitest-browser-react": "2.3.0"
+  }
+}

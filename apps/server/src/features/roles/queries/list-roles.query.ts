@@ -4,10 +4,14 @@ import { ROLES_MAX, type RolesResponse } from '@toppo-tracker/shared';
 import { count, countDistinct, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
+import { pluginPermissionSections } from '../../../platform/plugins/plugin-permissions.ts';
 
 const { invitations, projectMembers, roles, users } = schema;
 
-/** Every role with what it grants and who holds it, for the roles and permissions matrix. */
+/**
+ * Every role with what it grants and who holds it, for the roles and permissions matrix, and the
+ * permissions the plugins installed add to it.
+ */
 export const listRoles = defineQuery({
   name: 'role.list',
   access: { permission: 'instance.roles.manage' },
@@ -41,12 +45,16 @@ export const listRoles = defineQuery({
       .from(projectMembers)
       .groupBy(projectMembers.roleId);
 
+    const plugins = await pluginPermissionSections(db);
+    const pluginPermissions = plugins.flatMap((plugin) => plugin.permissions);
+
     const countOf = (counts: { roleId: string | null; count: number }[], roleId: string) =>
       counts.find((row) => row.roleId === roleId)?.count ?? 0;
     return {
+      plugins,
       roles: rows.map((role) => ({
         ...role,
-        permissions: permissionsOfRole(role),
+        permissions: permissionsOfRole(role, pluginPermissions),
         memberCount: countOf(members, role.id),
         invitationCount: countOf(pending, role.id),
         projectCount: countOf(inProjects, role.id),

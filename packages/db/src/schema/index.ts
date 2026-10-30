@@ -25,6 +25,13 @@ export {
   propertyOptions,
 } from './issues.ts';
 export { jobs } from './jobs.ts';
+export { pluginHttpCalls } from './plugins/plugin-http-calls.ts';
+export { pluginOnceKeys } from './plugins/plugin-once-keys.ts';
+export { pluginProjectSettings } from './plugins/plugin-project-settings.ts';
+export { pluginRecordSlots } from './plugins/plugin-record-slots.ts';
+export { pluginRecords } from './plugins/plugin-records.ts';
+export { pluginProjects, plugins } from './plugins/plugins.ts';
 export { projectMembers, projects } from './projects.ts';
 export { roles } from './roles.ts';
+export { webhookDeliveries, webhookProjects, webhooks } from './webhooks/webhooks.ts';
 export { statuses, workflowStatuses, workflows, workflowTransitions } from './workflows.ts';

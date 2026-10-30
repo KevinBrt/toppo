@@ -7,13 +7,14 @@ import {
 import { and, asc, count, eq, inArray, isNull, or } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../platform/http/http-error.ts';
+import { propertiesOf, propertyPlugins } from '../../../platform/plugins/plugin-properties.ts';
 import { issuesChoosing, issuesWithValue } from '../utils/property-counts.util.ts';
 
 const { issues, projectProperties, projects, properties, propertyOptions } = schema;
 
 /**
  * How a project adapts the issues' fields: the category, the priority, each property of the
- * instance (hidden, its own options), then its own properties, each with how many of the
+ * instance (hidden, its own options; a plugin's where it acts), then its own properties, each with how many of the
  * project's issues have a value of it, and each option with how many have that one.
  */
 export const listProjectProperties = defineQuery({
@@ -42,11 +43,14 @@ export const listProjectProperties = defineQuery({
         shownInList: properties.shownInList,
         askedAtCreation: properties.askedAtCreation,
         required: properties.required,
+        writtenBy: properties.writtenBy,
+        display: properties.display,
+        pluginSlug: properties.pluginSlug,
         issueCount: count(issues.id),
       })
       .from(properties)
       .leftJoin(issues, issuesWithValue(project.id))
-      .where(or(isNull(properties.projectId), eq(properties.projectId, project.id)))
+      .where(propertiesOf(project.id))
       .groupBy(properties.id)
       .orderBy(asc(properties.createdAt), asc(properties.id));
     const options =
@@ -83,11 +87,20 @@ export const listProjectProperties = defineQuery({
       .where(eq(projectProperties.projectId, project.id));
     const adaptationOf = (propertyId: string) =>
       adaptations.find((adaptation) => adaptation.propertyId === propertyId);
-    const rowOf = ({ projectId, ...property }: (typeof defined)[number]): PropertyRow => {
+    const plugins = await propertyPlugins(
+      db,
+      defined.map(({ pluginSlug }) => pluginSlug),
+    );
+    const rowOf = ({
+      projectId,
+      pluginSlug,
+      ...property
+    }: (typeof defined)[number]): PropertyRow => {
       // The instance's options, or the project's own where it has them, never both.
       const ownOptions = projectId === null && Boolean(adaptationOf(property.id)?.ownOptions);
       return {
         ...property,
+        plugin: (pluginSlug === null ? undefined : plugins.get(pluginSlug)) ?? null,
         options: options
           .filter(
             (option) =>

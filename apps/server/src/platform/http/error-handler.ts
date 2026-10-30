@@ -1,5 +1,6 @@
 import type { ApiError } from '@toppo-tracker/shared';
 import type { FastifyError, FastifyInstance } from 'fastify';
+import { HttpError } from './http-error.ts';
 import { RequestValidationError } from './zod.ts';
 
 const INTERNAL_ERROR: ApiError = {
@@ -19,11 +20,16 @@ export function registerErrorHandler(app: FastifyInstance): void {
     const statusCode = error.statusCode ?? 500;
     if (statusCode >= 500) {
       request.log.error({ err: error }, 'Request failed');
-      return reply.status(500).send(INTERNAL_ERROR);
+      // One Toppo answers on purpose keeps its status (a plugin that failed: 502), not its words.
+      return reply.status(error instanceof HttpError ? statusCode : 500).send(INTERNAL_ERROR);
     }
 
     const body: ApiError = {
-      error: { code: error.code ?? 'REQUEST_ERROR', message: error.message },
+      error: {
+        code: error.code ?? 'REQUEST_ERROR',
+        message: error.message,
+        ...(error instanceof HttpError ? error.more : {}),
+      },
     };
     return reply.status(statusCode).send(body);
   });

@@ -40,9 +40,24 @@ export const PERMISSIONS = {
   'instance.mail.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
   // Whoever edits roles can give themselves anything: only administrators may.
   'instance.roles.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
+  // A plugin runs code inside Toppo and reads what its approval opens to it, in every project it
+  // is given: only administrators may install, approve or remove one.
+  'instance.plugins.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
+  // A webhook sends what changes on issues, their words included, to an address outside Toppo:
+  // what leaves the instance is its administrators' to choose.
+  'instance.webhooks.manage': { scope: 'instance', section: 'organisation', systemOnly: true },
 } as const satisfies Record<string, PermissionDefinition>;
 
 export type Permission = keyof typeof PERMISSIONS;
+
+/**
+ * A permission a plugin adds to the catalog while it is approved, prefixed with the plugin's id:
+ * `time-tracking.entries.log`. Roles store it as text, like Toppo's own.
+ */
+export interface PluginPermission {
+  name: string;
+  scope: PermissionScope;
+}
 
 /** A permission that applies in the whole instance, granted by the member's role. */
 export type InstancePermission = {

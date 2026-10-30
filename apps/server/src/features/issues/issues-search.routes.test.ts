@@ -191,7 +191,10 @@ describe('the words a typo is corrected to', () => {
     await context.database.db.delete(schema.jobs);
 
     await context.database.db.transaction((tx) =>
-      rebuildIssueWordsJob.run({ tx, log: app.log, services: testServices() }, {}),
+      rebuildIssueWordsJob.run(
+        { tx, db: context.database.db, attempt: 1, log: app.log, services: testServices() },
+        {},
+      ),
     );
 
     const queued = await context.database.db

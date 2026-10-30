@@ -1,0 +1,69 @@
+name: Publish plugin packages
+
+# Publishes plugin authors' packages (@toppo-tracker/plugin-sdk, plugin-ui, plugin-testing, cli,
+# create-plugin) to npm, by hand, from main only. npm trusts this workflow's `npm` environment to
+# publish them (trusted publishing): no token is stored, and each package carries a signed
+# provenance.
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Check everything, publish nothing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-plugin-packages
+  cancel-in-progress: false
+
+jobs:
+  try:
+    name: Try them outside the repository
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Installs the plugin's dependencies fresh from npm, without a lockfile, and runs them: never
+    # where the identity that publishes can be asked for.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The packages, as npm will install them, start, test and build a plugin outside the repository.
+      - run: npm run plugin-packages:try
+
+  publish:
+    name: Publish
+    needs: try
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Its deployment branches (main only), and npm trusting this environment alone, keep a copy of
+    # this file on another branch from publishing: the guard above is in the file it would copy.
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      # The repository's own lockfile only, install scripts disabled (.npmrc).
+      - run: npm ci
+      - run: npm run plugin-packages:publish -- $DRY_RUN
+        env:
+          DRY_RUN: ${{ inputs.dry-run && '--dry-run' || '' }}

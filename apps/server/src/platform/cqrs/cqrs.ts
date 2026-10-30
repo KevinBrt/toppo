@@ -19,6 +19,11 @@ import type { SecretBox } from '../config/secret-box.ts';
 import { HttpError } from '../http/http-error.ts';
 import { RequestValidationError } from '../http/zod.ts';
 import type { Mailer } from '../mail/mailer.ts';
+import type { HostCalls } from '../plugins/host-calls.ts';
+import type { ManifestReader, SettingsChecker } from '../plugins/packages/manifest-reader.ts';
+import type { PackageStore } from '../plugins/packages/package-store.ts';
+import type { PluginRuntime } from '../plugins/runtime/plugin-runtime.ts';
+import type { ScreenBundles } from '../plugins/screens/screen-files.ts';
 import type { ReleaseFeed } from '../updates/release-feed.ts';
 import type { FileStorage } from '../uploads/file-storage.ts';
 
@@ -41,6 +46,25 @@ export interface Services {
   mailer: Mailer;
   /** The versions of Toppo published, unless the instance does not look (`TOPPO_UPDATE_CHECK`). */
   releases: ReleaseFeed;
+  /** What installing and running plugins takes besides the database. */
+  plugins: {
+    /** Plugins' zips on disk: a command keeps an uploaded one there, under its hash. */
+    packages: Pick<PackageStore, 'keep'>;
+    /** Asks a server bundle, in a sandbox of its own, what it declares. */
+    readManifest: ManifestReader;
+    /** Asks a server bundle, in a sandbox of its own, whether it takes settings saved before. */
+    checkSettings: SettingsChecker;
+    /** The sandboxes of this server process, one per plugin that ran lately. */
+    runtime: Pick<PluginRuntime, 'run'>;
+    /** What a plugin may ask Toppo, answered by the features that own each thing. */
+    calls: HostCalls;
+    /** Plugins' screens: their bundles, read from their zips, and the runtime drawing them. */
+    screens: {
+      bundles: ScreenBundles;
+      /** The runtime's version, in its address; `null` when it is not built (some tests). */
+      runtimeVersion: string | null;
+    };
+  };
 }
 
 /** What every command and query runs with: per HTTP request today, per plugin call later. */
@@ -124,17 +148,51 @@ export function defineCommand<Input extends z.ZodType, Output, A extends Access<
     name: definition.name,
     access: definition.access,
     async execute(context, rawInput) {
-      const { actor, input, project } = await prepare(definition, context, rawInput);
-      const { access } = definition;
-      if (project?.archived && isProjectAccess(access) && !access.evenArchived) {
-        throw new HttpError(409, 'PROJECT_ARCHIVED', 'This project is archived: it is read-only');
-      }
+      const { actor, input, project } = await prepareCommand(definition, context, rawInput);
       const log = context.log.child({ command: definition.name });
       return await context.db.transaction((tx) =>
         definition.handler({ tx, actor, project, log, services: context.services }, input),
       );
     },
   };
+}
+
+/**
+ * A command that waits on something slow, a plugin's run, checked like any other but with no
+ * transaction of its own: it holds no connection while it waits. What it changes goes through
+ * other commands, each in its own transaction.
+ */
+export function defineDetachedCommand<
+  Input extends z.ZodType,
+  Output,
+  A extends Access<z.output<Input>>,
+>(definition: QueryDefinition<Input, Output, A>): Operation<Input, Output> {
+  return {
+    name: definition.name,
+    access: definition.access,
+    async execute(context, rawInput) {
+      const { actor, input, project } = await prepareCommand(definition, context, rawInput);
+      const log = context.log.child({ command: definition.name });
+      return await definition.handler(
+        { db: context.db, actor, project, log, services: context.services },
+        input,
+      );
+    },
+  };
+}
+
+/** What every command checks first: its access, its input, and that it changes no archive. */
+async function prepareCommand<Input extends z.ZodType, A extends Access<z.output<Input>>>(
+  definition: Definition<Input, A>,
+  context: ExecutionContext,
+  rawInput: unknown,
+) {
+  const prepared = await prepare(definition, context, rawInput);
+  const { access } = definition;
+  if (prepared.project?.archived && isProjectAccess(access) && !access.evenArchived) {
+    throw new HttpError(409, 'PROJECT_ARCHIVED', 'This project is archived: it is read-only');
+  }
+  return prepared;
 }
 
 /** A read: access checked, input validated, no transaction, no write. */

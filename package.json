@@ -16,6 +16,7 @@
   "workspaces": [
     "apps/*",
     "packages/*",
+    "plugins/*",
     "e2e",
     "scripts",
     "docs"
@@ -27,7 +28,7 @@
     "db:down": "docker compose -f docker/compose.dev.yml down",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
+    "test": "turbo run test --concurrency=3",
     "test:e2e": "npm run build && npm run test:e2e --workspace=@toppo-tracker/e2e",
     "lint": "biome check . && prettier --check .",
     "lint:fix": "biome check --write . && prettier --write .",
@@ -35,6 +36,9 @@
     "check:dependencies": "node scripts/src/check-dependencies.ts",
     "perf:issues": "npm run build --workspace=@toppo-tracker/server && node scripts/src/perf/explain-issues.ts",
     "docs:dev": "npm run serve --workspace=@toppo-tracker/docs",
+    "plugin-packages:pack": "node scripts/src/packages/pack-plugin-packages.ts",
+    "plugin-packages:try": "node scripts/src/packages/try-plugin-packages.ts",
+    "plugin-packages:publish": "node scripts/src/packages/publish-plugin-packages.ts",
     "docs:screenshots": "npm run build && npm run screenshots --workspace=@toppo-tracker/e2e",
     "db:snapshot": "npm run build --workspace=@toppo-tracker/server && node scripts/src/upgrades/capture-snapshot.ts",
     "check": "npm run lint && npm run check:conventions && npm run check:dependencies && npm run typecheck && npm run test && npm run build"

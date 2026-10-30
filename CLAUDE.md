@@ -4,22 +4,23 @@ Toppo is an open-source (AGPL-3.0), self-hosted issue tracker. The code is publi
 
 ## Commands
 
-| Command                      | What it does                                                                                      |
-| ---------------------------- | ------------------------------------------------------------------------------------------------- |
-| `npm run setup`              | Once after cloning: enables the git hooks in `.githooks/`                                         |
-| `npm run dev`                | Dev PostgreSQL (Docker) + server on :3000 + Vite on :5173                                         |
-| `npm run check`              | **Everything CI runs** except e2e. Must pass before calling a task done                           |
-| `npm test`                   | Unit, integration (real PostgreSQL) and browser component tests                                   |
-| `npm run test:e2e`           | Builds, then runs Playwright (desktop + phone) against the built server                           |
-| `npm run lint` / `lint:fix`  | Biome (code) + Prettier (Markdown, YAML)                                                          |
-| `npm run typecheck`          | TypeScript 7 (`tsc`) in every workspace                                                           |
-| `npm run check:conventions`  | Project rules the linter cannot express (`scripts/src/conventions`)                               |
-| `npm run check:dependencies` | Package boundaries, exact versions, lockfile, licenses                                            |
-| `npm run db:up` / `db:down`  | Start or stop the dev database and the in-memory test server                                      |
-| `npm run perf:issues`        | Query plans of the issue list and search on 100,000 issues (docs/performance.md)                  |
-| `npm run db:snapshot`        | At each release adding a migration, `-- <version>`: the database it leaves, for the upgrade tests |
-| `npm run docs:screenshots`   | Rebuilds the README's screenshots (`docs/images/`) from a filled instance                         |
-| `npm run docs:dev`           | The documentation site (`docs/`, VitePress), English and French, as you write it                  |
+| Command                       | What it does                                                                                         |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `npm run setup`               | Once after cloning: enables the git hooks in `.githooks/`                                            |
+| `npm run dev`                 | Dev PostgreSQL (Docker) + server on :3000 + Vite on :5173                                            |
+| `npm run check`               | **Everything CI runs** except e2e. Must pass before calling a task done                              |
+| `npm test`                    | Unit, integration (real PostgreSQL) and browser component tests                                      |
+| `npm run test:e2e`            | Builds, then runs Playwright (desktop + phone) against the built server                              |
+| `npm run lint` / `lint:fix`   | Biome (code) + Prettier (Markdown, YAML)                                                             |
+| `npm run typecheck`           | TypeScript 7 (`tsc`) in every workspace                                                              |
+| `npm run check:conventions`   | Project rules the linter cannot express (`scripts/src/conventions`)                                  |
+| `npm run check:dependencies`  | Package boundaries, exact versions, lockfile, licenses                                               |
+| `npm run db:up` / `db:down`   | Start or stop the dev database and the in-memory test server                                         |
+| `npm run perf:issues`         | Query plans of the issue list and search on 100,000 issues (docs/performance.md)                     |
+| `npm run db:snapshot`         | At each release adding a migration, `-- <version>`: the database it leaves, for the upgrade tests    |
+| `npm run docs:screenshots`    | Rebuilds the README's screenshots (`docs/images/`) from a filled instance                            |
+| `npm run docs:dev`            | The documentation site (`docs/`, VitePress), English and French, as you write it                     |
+| `npm run plugin-packages:try` | Packs the plugin packages as npm will publish them, then starts, tests and builds a plugin with them |
 
 Run one workspace: `npm test --workspace=@toppo-tracker/core`, or `npx vitest run src/foo.test.ts` inside it. Node 24 (`.nvmrc`) and Docker are required.
 
@@ -35,15 +36,19 @@ Run one workspace: `npm test --workspace=@toppo-tracker/core`, or `npx vitest ru
 
 ```
 apps/server  → core, shared, db          apps/web → core, shared, ui
+             (+ plugin-sdk: the protocol)           (+ plugin-sdk: the screens' bridge)
 packages/core → shared only (pure: no I/O, no framework, no Date.now() without injection)
 packages/db   → shared, core             packages/ui → shared
-plugins/*     → plugin-sdk only          packages/testing → devDependency only
+plugins/*     → plugin-sdk, plugin-ui    packages/testing → devDependency only
+                (cli, plugin-testing: dev)
+packages/plugin-ui → plugin-sdk (MIT: types and relays to the runtime)
+packages/plugin-runtime → ui, plugin-sdk, plugin-ui (AGPL: served in screens' frames)
 ```
 
 Enforced by `check:dependencies` (allowed graph in `scripts/src/dependencies/rules.ts`) and Biome `noUndeclaredDependencies`. Import other workspaces by package name (`@toppo-tracker/core`), never by relative path.
 
 - **Business rules live in `core`** as pure functions, unit-tested without a database. Server commands orchestrate them: authorize → validate → call core → persist (and record the activity) in one transaction.
-- **Every issue change writes an `activities` row in the same transaction**, through `recordActivity(tx, …)` (checked), which also queues the job that tells people. History, notifications, webhooks and plugins all read from it. Side effects (email, webhooks) go through the PostgreSQL job queue, never inline in a request.
+- **Every issue change writes an `activities` row in the same transaction**, through `recordActivity(tx, …)` (checked), which also queues the job that tells people. History, notifications, webhooks and plugins all read from it. The one exception: a property a plugin writes (`written_by = 'plugin'`), derived data whose history is the plugin's own records. Side effects (email, webhooks) go through the PostgreSQL job queue, never inline in a request.
 - **No new service to host.** PostgreSQL is the only infrastructure (search, jobs, sessions). No Redis, no Elasticsearch, no external queue without an `ARCHITECTURE.md` decision.
 - **Configuration follows "global default, project override"** for workflows (a project copies the instance’s) and properties (a project adds, hides or adapts them one by one). Reuse these mechanisms; do not invent a per-feature variant. Categories, priorities and labels are single instance-wide lists, never overridden by a project.
 - **A complete core, extended by plugins.** What most teams need is in the core (the kanban board, webhooks, GitHub); what is specific to a team or a tool is a plugin. A core integration builds on blocks plugins share (the outbound HTTP guard, signed webhooks, routes that check a signature), never on a shortcut only the core may take.
@@ -57,11 +62,12 @@ Enforced by `check:dependencies` (allowed graph in `scripts/src/dependencies/rul
 - **SQL only through Drizzle or tagged `sql` templates.** `sql.raw()` and `.unsafe()` are banned (an `// allow(no-raw-sql): reason` comment is reviewed like a security change).
 - **No HTML injection sinks**: no `dangerouslySetInnerHTML`, `innerHTML`, `document.write`, `new Function`, `eval`. User Markdown is rendered with a sanitizer that drops raw HTML.
 - **CSP stays strict**: same-origin only, no inline script, no `unsafe-inline`, no `unsafe-eval`, no CDN. Runtime `<style>` tags get the per-request nonce. Fonts and assets are bundled.
-- **Secrets never leave the server**: not in logs, errors, responses or the front bundle. 5xx answers are generic (`INTERNAL_ERROR`); details go to the log with the request id.
+- **Secrets never leave the server**: not in logs, errors, responses or the front bundle. 5xx answers are generic (`INTERNAL_ERROR`); details go to the log with the request id. An `HttpError` Toppo answers on purpose with a 5xx keeps its status (a plugin that failed: 502), never its words.
 - **Configuration only through `apps/server/src/platform/config/config.ts`**: `process.env` is read nowhere else (Biome `noProcessEnv`). New variables are `TOPPO_*`, validated, defaulted safely and documented in `.env.example`.
 - **Randomness for tokens and ids comes from `node:crypto`**, never `Math.random()`.
 - **Uploads** (when they come): size limits, content type sniffed server-side, random storage keys, served with `Content-Disposition: attachment` and `nosniff`.
 - **Rate-limit authentication and any endpoint that sends email**, through `config.rateLimit` (Toppo's own `rate_limit_counters`, keyed on `request.ip` as Fastify resolves it behind one trusted proxy; never read a forwarding header yourself). `route-permissions.test.ts` lists the routes that send email and finds the commands that do: invitations are the one exception, by decision.
+- **A plugin acts within its approval only.** As itself, it is an `Actor` with `plugin` set: `resolveProject` gives it its approved needs in its approved projects, nothing more. Access checked any other way (from roles in SQL, by id) must handle a plugin actor or refuse it, with a test in `plugin-events.test.ts`.
 - **Never grant beyond your reach.** An operation that gives access (a role, a project, every project, an invitation, and its renewal or resending) checks that the actor holds or reaches all of it, compares both the current and the resulting effective role, and never applies to the actor themselves. Test it with a custom role holding the permission, not only with an administrator.
 - **What reaches beyond the instance belongs to the system role** (`systemOnly` in the catalog): the mail server, outgoing URLs, anything that carries reset or invitation links.
 - **Derived data follows the visibility of its source.** Counts, previews, suggestions, search corrections and caches are scoped by project and permission like the rows they come from: a list read by everyone tells what people may not read.
@@ -118,7 +124,7 @@ features/<feature>/
 
 - **Each kind of file has one home** (checked), possibly in grouping subfolders (`commands/labels/add-label.command.ts`): a command outside `commands/`, a model at the root, a `services/` or `repositories/` folder fail CI. Tests sit next to the file they test; route-level tests next to `<feature>.routes.ts`.
 - **Light CQRS, no ceremony.** A command changes state and returns at most an id; a query reads and never writes. No bus, no event sourcing, no read database, no repository layer over Drizzle.
-- **`defineCommand` / `defineQuery` enforce the envelope** (`platform/cqrs/cqrs.ts`): access is checked first, then the input is validated with its Zod schema (even when the caller is not HTTP: plugins, jobs), then a command's handler runs in **one transaction** (`tx`): everything commits or nothing does. Activities and job enqueues will be written through `tx` too.
+- **`defineCommand` / `defineQuery` enforce the envelope** (`platform/cqrs/cqrs.ts`): access is checked first, then the input is validated with its Zod schema (even when the caller is not HTTP: plugins, jobs), then a command's handler runs in **one transaction** (`tx`): everything commits or nothing does. Activities and job enqueues will be written through `tx` too. The one exception is `defineDetachedCommand`, for a command that waits on a plugin's run: no transaction of its own, so that it holds no connection while it waits; it writes only through other commands.
 - **Routes are one line**: `command.execute(request.executionContext, request.body)`. No SQL, no business rule, no authorization logic in a route; the route declares the access of the operation it runs, `config: { access: command.access }` (checked).
 - **Commands and queries are the API of a feature**, for routes today and plugins tomorrow. Name them `resource.action` (`setup.complete`, `issue.create`), files `commands/<verb>-<resource>.command.ts` and `queries/<verb>-<resource>.query.ts` (checked: a command outside `commands/` fails CI).
 - **Layers** (checked): a feature imports `platform/` and its own files only; `platform/` never imports a feature. Logic needed by several features goes to `@toppo-tracker/core` (pure) or becomes a query of its owner, wired in `app.ts`.
@@ -175,8 +181,22 @@ shared/<area>/                code used by several features: api/, i18n/, layout
 - Every foreign key indexed; constraints in the database (NOT NULL, CHECK, UNIQUE, FK actions), not only in code.
 - Data tied to `@toppo-tracker/core` constants (default roles) must match them: a test compares the seeded rows with the constants.
 - Every query on project data is scoped by project and filtered by the user's permissions in the query itself, not after loading.
+- A plugin's own user (`users.plugin_slug`) is no person: it holds no role, so lists of people that join the role leave it out. A query that finds people otherwise (by id, by email) excludes it explicitly, with a test in `plugin-users.test.ts`.
 - Every list query filters, searches and sorts in SQL and returns one page (at most 100 rows); no endpoint returns an unbounded collection. Search goes through `containsText()` (`@toppo-tracker/db`), which escapes `LIKE` wildcards. Checks that need "all of X" count or select only what they need in SQL.
 - Server integration tests call `setupTestDatabase()`: one migrated database per test file, never shared, never mocked.
+
+## Plugins
+
+Official plugins (`plugins/*`) are written as any author would write theirs, and the packages authors use (`plugin-sdk`, `plugin-ui`, `plugin-testing`, `cli`, `create-plugin`, MIT, published at one version) are a public API. The guide for authors is `docs/plugins/`.
+
+- **No privilege**: a plugin imports `@toppo-tracker/plugin-sdk` and `@toppo-tracker/plugin-ui` only (checked), is built by `toppo plugin build`, tested with `@toppo-tracker/plugin-testing`, and installed through **Settings › Plugins** like any other. What it needs that the SDK lacks goes into the SDK, for every author.
+- **Ask for the least**: only the needs it uses; `http` naming hosts or settings rather than `'any'`; every setting optional or with a default; tokens and webhook addresses through `secret()`.
+- **Every word is a message**, in English and French: name, description, permission, setting and property labels, screens (`useT`), refusals (`ctx.fail`). No text hard-coded in a screen.
+- **Screens draw with `plugin-ui` only**: layout with `Stack` and `Row`, never `className` (checked: Toppo's stylesheet holds Toppo's classes, not a plugin's); data through the plugin's own actions; forms call `preventDefault()`.
+- **Server code bears being run twice and bounds what it asks**: an event or a job may run again, so comments take `once: event.id` and records are looked for before being created; Toppo's calls are awaited, or sent a few at a time (four are worked on at once, a thousand wait, past that `TOO_MANY_CALLS`).
+- **Tested through `createTestToppo`**: every action, event handler and job, its refusals included (`FORBIDDEN`, `NOT_FOUND`, `ctx.fail`), at the coverage threshold of the plugin (90 %).
+- **The contract does not break**: within an `apiVersion` major (`API_VERSION`), nothing a plugin uses changes or goes; once a Toppo with plugins has shipped, a capability older Toppos lack raises the minor. A change of the SDK, `plugin-ui` or what Toppo does with a plugin updates `docs/plugins/` (English and French) in the same pull request; examples are imported from `plugins/time-tracking`, or from the plugins of the tests (`apps/server/src/platform/plugins/fixtures/`) for what time tracking does not do, never copied.
+- **On Toppo's side**, a plugin's call is a feature's command or query (wired in `app.ts`, `platform/plugins/host-calls.ts`), checked as a person's request is: never SQL of its own, never a check that forgets the plugin actor (see the security rules).
 
 ## Dependencies
 

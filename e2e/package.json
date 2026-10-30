@@ -6,7 +6,7 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
-    "test:e2e": "node prepare-database.ts && playwright test",
+    "test:e2e": "npm run build --workspace=@toppo-tracker/plugin-time-tracking && node prepare-database.ts && playwright test",
     "screenshots": "node screenshots/prepare-database.ts && playwright test -c screenshots/playwright.config.ts",
     "typecheck": "tsc -p tsconfig.json"
   },

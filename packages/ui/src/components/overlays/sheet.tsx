@@ -29,7 +29,7 @@ export function SheetContent({
 }: SheetContentProps) {
   return (
     <Dialog.Portal>
-      <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
+      <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
       <Dialog.Content
         aria-describedby={undefined}
         className={cn(

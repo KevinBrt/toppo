@@ -1,0 +1,9 @@
+{
+  "name": "fixture-time-tracking",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@toppo-tracker/plugin-sdk": "0.1.0"
+  }
+}

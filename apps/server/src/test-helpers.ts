@@ -4,15 +4,28 @@ import { join } from 'node:path';
 import { createDatabase, type Database, schema, uuidv7 } from '@toppo-tracker/db';
 import { CSP_NONCE_PLACEHOLDER } from '@toppo-tracker/shared';
 import { createTestDatabase } from '@toppo-tracker/testing';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll } from 'vitest';
-import { buildApp } from './app.ts';
+import { buildApp, createHostCalls } from './app.ts';
 import type { Actor } from './platform/auth/actor.ts';
 import { createAuth } from './platform/auth/auth.ts';
 import { createSecretBox } from './platform/config/secret-box.ts';
 import type { ExecutionContext, Services } from './platform/cqrs/cqrs.ts';
 import { createMailer } from './platform/mail/mailer.ts';
+import {
+  createManifestReader,
+  createSettingsChecker,
+} from './platform/plugins/packages/manifest-reader.ts';
+import {
+  createPackageStore,
+  type PackageStore,
+} from './platform/plugins/packages/package-store.ts';
+import { createPluginRuntime } from './platform/plugins/runtime/plugin-runtime.ts';
+import {
+  createScreenBundles,
+  type ScreenRuntime,
+} from './platform/plugins/screens/screen-files.ts';
 import { createFileStorage, type FileStorage } from './platform/uploads/file-storage.ts';
 
 export const TEST_SECRET = 'test-secret-that-is-long-enough-to-be-accepted';
@@ -28,6 +41,42 @@ export interface TestAppOptions {
   files?: FileStorage;
   /** Behind one reverse proxy, as `TOPPO_TRUST_PROXY=true` says; reached directly by default. */
   trustProxy?: boolean;
+  /** Plugins' zips; by default, an empty store of its own in the temporary directory. */
+  packages?: PackageStore;
+}
+
+/** The sandbox worker, run from the sources. */
+export const TEST_SANDBOX_WORKER = new URL(
+  './platform/plugins/sandbox/sandbox-worker.ts',
+  import.meta.url,
+);
+
+/** What runs plugins in tests: their zips in `packages`, an empty store of its own by default. */
+export async function testPlugins(packages?: PackageStore) {
+  const store = packages ?? (await createTestPackageStore());
+  return {
+    packages: store,
+    workerUrl: TEST_SANDBOX_WORKER,
+    runtime: createPluginRuntime({ packages: store, workerUrl: TEST_SANDBOX_WORKER }),
+    screens: { bundles: createScreenBundles(store), runtime: TEST_SCREEN_RUNTIME },
+  };
+}
+
+/** The screens' runtime of tests: its files stand for the built ones. */
+export const TEST_SCREEN_RUNTIME: ScreenRuntime = {
+  version: 'test-runtime',
+  file: (name) =>
+    name === 'runtime.js' || name === 'runtime.css'
+      ? {
+          body: Buffer.from(`/* ${name} */`),
+          type: name.endsWith('.js') ? 'text/javascript; charset=utf-8' : 'text/css; charset=utf-8',
+        }
+      : undefined,
+};
+
+/** An empty store of plugins' zips, of its own, in the temporary directory. */
+export function createTestPackageStore(): Promise<PackageStore> {
+  return createPackageStore({ root: mkdtempSync(join(tmpdir(), 'toppo-plugins-')) });
 }
 
 /** Largest attachment in tests unless a test chooses otherwise: small, to test the limit cheaply. */
@@ -51,6 +100,7 @@ export async function buildTestApp({
   webRoot = join(tmpdir(), 'toppo-no-web-root'),
   files,
   trustProxy = false,
+  packages,
 }: TestAppOptions = {}): Promise<FastifyInstance> {
   const url = new URL(publicUrl);
   return await buildApp({
@@ -60,6 +110,7 @@ export async function buildTestApp({
     secret: TEST_SECRET,
     setupCode: TEST_SETUP_CODE,
     files: files ?? (await createTestFileStorage()),
+    plugins: await testPlugins(packages),
     webRoot,
   });
 }
@@ -85,6 +136,18 @@ export function testServices(overrides: Partial<Services> = {}): Services {
       enabled: false,
       latest: () => Promise.reject(new Error('No release feed in this test')),
     },
+    // No package is kept unless a test gives a store; bundles run in a real sandbox.
+    plugins: {
+      packages: { keep: () => Promise.reject(new Error('No package store in this test')) },
+      readManifest: createManifestReader(TEST_SANDBOX_WORKER),
+      checkSettings: createSettingsChecker(TEST_SANDBOX_WORKER),
+      runtime: { run: () => Promise.reject(new Error('No plugin runs in this test')) },
+      calls: createHostCalls(),
+      screens: {
+        bundles: { read: () => Promise.reject(new Error('No package store in this test')) },
+        runtimeVersion: TEST_SCREEN_RUNTIME.version,
+      },
+    },
     ...overrides,
   };
 }
@@ -96,7 +159,7 @@ export function testExecutionContext(
 ): ExecutionContext {
   return {
     db: database.db,
-    actor: { name: 'Test actor', email: 'actor@example.com', ...actor },
+    actor: { name: 'Test actor', email: 'actor@example.com', pluginPermissions: [], ...actor },
     log: Fastify({ logger: false }).log,
     services: testServices(),
   };
@@ -142,6 +205,15 @@ export interface TestUser {
 }
 
 /** Adds a user who can sign in with `password`, as an accepted invitation would. Returns their id. */
+/** The hash of the package a plugin holds, as its details show it to whoever approves it. */
+export async function packageSha256Of(database: Database, slug: string): Promise<string> {
+  const [plugin] = await database.db
+    .select({ packageSha256: schema.plugins.packageSha256 })
+    .from(schema.plugins)
+    .where(eq(schema.plugins.slug, slug));
+  return plugin?.packageSha256 ?? '';
+}
+
 export async function createTestUser(database: Database, user: TestUser): Promise<string> {
   const auth = createAuth({
     db: database.db,

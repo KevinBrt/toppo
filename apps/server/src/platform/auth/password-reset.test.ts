@@ -14,6 +14,7 @@ import {
   buildTestApp,
   cookieHeader,
   createTestFileStorage,
+  createTestPackageStore,
   createTestUser,
   setupTestDatabase,
   TEST_SETUP_CODE,
@@ -77,7 +78,10 @@ beforeAll(async () => {
   app = await buildTestApp({ database: context.database });
   worker = {
     db: context.database.db,
-    jobs: createJobs({ files: await createTestFileStorage() }),
+    jobs: createJobs({
+      files: await createTestFileStorage(),
+      packages: await createTestPackageStore(),
+    }),
     log: app.log,
     services: testServices(),
   };
@@ -179,6 +183,20 @@ describe('resetting a forgotten password', () => {
       .update(schema.users)
       .set({ deactivatedAt: null })
       .where(eq(schema.users.id, graceId));
+
+    expect(mailServer.received.slice(before)).toStrictEqual([]);
+  });
+
+  it("emails nothing to a plugin's own user, whose address reaches no one anyway", async () => {
+    await context.database.db.insert(schema.users).values({
+      name: 'Time tracking',
+      email: 'time-tracking@plugins.invalid',
+      pluginSlug: 'time-tracking',
+    });
+    const before = mailServer.received.length;
+
+    expect((await askReset('time-tracking@plugins.invalid')).statusCode).toBe(204);
+    await deliver();
 
     expect(mailServer.received.slice(before)).toStrictEqual([]);
   });

@@ -1,9 +1,10 @@
 import { schema, uuidv7 } from '@toppo-tracker/db';
 import type { IssueActivityPayload, IssueActivityType } from '@toppo-tracker/shared';
+import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Transaction } from '../cqrs/cqrs.ts';
 
-const { activities, jobs } = schema;
+const { activities, jobs, plugins, webhooks } = schema;
 
 /** Rows written at once: far below PostgreSQL's limit of parameters per statement. */
 const BATCH = 1000;
@@ -15,6 +16,24 @@ const BATCH = 1000;
 export const ACTIVITY_RECORDED = {
   type: 'activity.recorded',
   payload: z.object({ activityId: z.uuid() }),
+} as const;
+
+/**
+ * The job that hands recorded activities to the plugins that hear of them, run by
+ * `features/plugins`: every change, people told of it or not, bulk ones in batches.
+ */
+export const PLUGINS_TOLD = {
+  type: 'plugin.eventsRecorded',
+  payload: z.object({ activityIds: z.array(z.uuid()).min(1).max(BATCH) }),
+} as const;
+
+/**
+ * The job that hands recorded activities to the webhooks told of them, run by
+ * `features/webhooks`: every change, a plugin's included, bulk ones in batches.
+ */
+export const WEBHOOKS_TOLD = {
+  type: 'webhook.eventsRecorded',
+  payload: z.object({ activityIds: z.array(z.uuid()).min(1).max(BATCH) }),
 } as const;
 
 /** One change to an issue, its payload checked against its type at compile time. */
@@ -37,8 +56,9 @@ export interface RecordOptions {
 
 /**
  * Records a change to an issue in the transaction that makes it, and queues the job that tells
- * the people concerned: both commit with the change, or neither does. The one way to write an
- * activity (checked by `check:conventions`). Answers its id.
+ * the people concerned, and the one that tells plugins if any hears of it: all commit with the
+ * change, or none does. The one way to write an activity (checked by `check:conventions`).
+ * Answers its id.
  */
 export async function recordActivity<T extends IssueActivityType>(
   tx: Transaction,
@@ -79,6 +99,54 @@ export async function recordActivities(
         })),
       );
     }
+    const types = [...new Set(batch.map(({ type }) => type))];
+    const activityIds = ids.slice(start, start + BATCH);
+    if (await anyPluginHears(tx, types)) {
+      await tx.insert(jobs).values({
+        type: PLUGINS_TOLD.type,
+        payload: PLUGINS_TOLD.payload.parse({ activityIds }),
+      });
+    }
+    if (await anyWebhookHears(tx, types)) {
+      await tx.insert(jobs).values({
+        type: WEBHOOKS_TOLD.type,
+        payload: WEBHOOKS_TOLD.payload.parse({ activityIds }),
+      });
+    }
   }
   return ids;
+}
+
+/** `types` as a PostgreSQL array of text, each a parameter. */
+function textArray(types: readonly string[]) {
+  return sql`array[${sql.join(
+    types.map((type) => sql`${type}`),
+    sql`, `,
+  )}]::text[]`;
+}
+
+/** Whether an enabled webhook is told of one of `types`: most instances have none. */
+async function anyWebhookHears(tx: Transaction, types: readonly string[]): Promise<boolean> {
+  const [listening] = await tx
+    .select({ id: webhooks.id })
+    .from(webhooks)
+    .where(and(eq(webhooks.enabled, true), sql`${webhooks.events} && ${textArray(types)}`))
+    .limit(1);
+  return listening !== undefined;
+}
+
+/** Whether an enabled plugin hears of one of `types`: most changes queue nothing for plugins. */
+async function anyPluginHears(tx: Transaction, types: readonly string[]): Promise<boolean> {
+  const heard = textArray(types);
+  const [listening] = await tx
+    .select({ id: plugins.id })
+    .from(plugins)
+    .where(
+      and(
+        eq(plugins.state, 'enabled'),
+        sql`jsonb_exists_any((${plugins.manifest}->'events')::jsonb, ${heard})`,
+      ),
+    )
+    .limit(1);
+  return listening !== undefined;
 }

@@ -36,8 +36,13 @@ export const removeProjectMember = defineCommand({
     // Someone given every project still reaches it, with their own role from then on: like going
     // back to it, that role must be within the actor's too.
     const beyond =
-      !canActOnProjectMember(project.permissions, member.projectRole ?? member.ownRole) ||
-      (member.allProjects && !canActOnProjectMember(project.permissions, member.ownRole));
+      !canActOnProjectMember(
+        project.permissions,
+        member.projectRole ?? member.ownRole,
+        actor.pluginPermissions,
+      ) ||
+      (member.allProjects &&
+        !canActOnProjectMember(project.permissions, member.ownRole, actor.pluginPermissions));
     if (beyond) {
       throw new HttpError(
         403,

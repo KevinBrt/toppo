@@ -4,7 +4,7 @@ Pour joindre Toppo depuis l’extérieur de votre réseau, placez devant lui un 
 
 1. Définissez `TOPPO_URL=https://toppo.example.com`. Toppo envoie alors HSTS et fait passer les requêtes non sécurisées en HTTPS.
 2. Publiez le port de Toppo sur le serveur lui-même seulement, pour que le proxy soit le seul chemin d’entrée : `HTTP_PORT=127.0.0.1:3000`.
-3. Définissez ensuite `TOPPO_TRUST_PROXY=true`, pour que Toppo lise l’adresse du client dans les en-têtes du proxy (les limites de connexion en dépendent). Ne le faites jamais tant que le port de Toppo est joignable directement : n’importe qui pourrait alors se donner n’importe quelle adresse.
+3. Définissez ensuite `TOPPO_TRUST_PROXY=true`, pour que Toppo lise l’adresse du client dans les en-têtes du proxy (les limites de connexion et des routes des plugins en dépendent). Ne le faites jamais tant que le port de Toppo est joignable directement : n’importe qui pourrait alors se donner n’importe quelle adresse.
 4. Faites pointer le proxy sur le port 3000.
 
 Le proxy doit laisser passer les pièces jointes : jusqu’à 20 Mo par défaut (`TOPPO_ATTACHMENT_MAX_SIZE_MB`).

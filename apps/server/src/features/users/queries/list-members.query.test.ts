@@ -17,6 +17,7 @@ const executionContext = (): ExecutionContext => ({
     name: 'Admin',
     email: 'admin@example.com',
     permissions: ['instance.users.manage'],
+    pluginPermissions: [],
   },
   log: Fastify({ logger: false }).log,
   services: testServices(),

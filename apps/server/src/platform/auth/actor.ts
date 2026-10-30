@@ -1,7 +1,8 @@
-import { type InstancePermission, instancePermissionsOf } from '@toppo-tracker/core';
+import { instancePermissionsOf, type PluginPermission } from '@toppo-tracker/core';
 import { type Db, schema } from '@toppo-tracker/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { pluginPermissionsOf } from '../plugins/plugin-permissions.ts';
 import type { Auth } from './auth.ts';
 import { forwardSetCookies, toFetchHeaders } from './fetch-bridge.ts';
 
@@ -12,13 +13,33 @@ export interface Actor {
   id: string;
   name: string;
   email: string;
-  permissions: readonly InstancePermission[];
+  /** In the whole instance: Toppo's permissions, then those of plugins, by catalog name. */
+  permissions: readonly string[];
+  /** The permissions plugins add to the catalog, as the request found them. */
+  pluginPermissions: readonly PluginPermission[];
+  /** Set when a plugin acts as itself, under its own user: what its approval opens to it. */
+  plugin?: PluginReach;
+}
+
+/** Where a plugin acting as itself may act, and what it may do there: its approval, no more. */
+export interface PluginReach {
+  slug: string;
+  /** The core permissions it was approved to use, in its projects. */
+  needs: readonly string[];
+  allProjects: boolean;
+  /** The projects it acts in, when not all of them. */
+  projectIds: readonly string[];
+  /**
+   * The person it acts for, running one of its actions: it then reaches what both reach, and
+   * holds what both hold.
+   */
+  onBehalfOf?: Actor;
 }
 
 /**
  * The signed-in user behind a request, or `null`. The session comes from Better Auth, then the
- * user and their role's permissions from one query: a role change or a deactivation applies on
- * the next request.
+ * user and their role's permissions from one query, and the catalog's plugin permissions from
+ * another: a role change, a deactivation or a plugin removed applies on the next request.
  */
 export async function resolveActor(
   { auth, db }: { auth: Auth; db: Db },
@@ -48,5 +69,10 @@ export async function resolveActor(
     return null;
   }
   const { role, ...identity } = user;
-  return { ...identity, permissions: instancePermissionsOf(role) };
+  const pluginPermissions = await pluginPermissionsOf(db);
+  return {
+    ...identity,
+    permissions: instancePermissionsOf(role, pluginPermissions),
+    pluginPermissions,
+  };
 }

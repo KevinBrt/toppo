@@ -1,0 +1,9 @@
+{
+  "name": "fixture-throws",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@toppo-tracker/plugin-sdk": "0.1.0"
+  }
+}

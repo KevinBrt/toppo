@@ -67,4 +67,12 @@ export const PERMISSION_MESSAGES: Readonly<Record<SwitchPermission, PermissionMe
     label: 'roles.permissions.rolesManage.label',
     description: 'roles.permissions.rolesManage.description',
   },
+  'instance.plugins.manage': {
+    label: 'roles.permissions.pluginsManage.label',
+    description: 'roles.permissions.pluginsManage.description',
+  },
+  'instance.webhooks.manage': {
+    label: 'roles.permissions.webhooksManage.label',
+    description: 'roles.permissions.webhooksManage.description',
+  },
 };

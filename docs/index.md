@@ -7,7 +7,7 @@ hero:
   tagline: One edition with every feature, no user limit, installed with one command.
   image:
     src: /logo.svg
-    alt: ""
+    alt: ''
   actions:
     - theme: brand
       text: Discover Toppo
@@ -23,6 +23,9 @@ features:
   - title: Host it
     details: Docker, email, HTTPS behind a reverse proxy, backups, restores and upgrades.
     link: /self-hosting
+  - title: Extend it
+    details: Plugins with their own fields, screens and jobs, written in TypeScript and tested without a server.
+    link: /plugins/
   - title: Build it
     details: How the code is organised, the checks it passes, and how to contribute.
     link: /contributing

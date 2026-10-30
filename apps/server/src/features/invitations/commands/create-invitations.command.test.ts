@@ -31,7 +31,7 @@ async function insertActor(
   await context.database.db
     .insert(schema.users)
     .values({ id, name: `User ${id}`, email: `${id}@example.com`, instanceRoleId, allProjects });
-  return { id, name: `User ${id}`, email: `${id}@example.com`, permissions };
+  return { id, name: `User ${id}`, email: `${id}@example.com`, permissions, pluginPermissions: [] };
 }
 
 beforeAll(async () => {

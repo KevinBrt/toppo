@@ -38,7 +38,7 @@ export const bulkDeleteIssues = defineCommand({
         projectId: project.id,
         issueId: null,
         actorId: actor.id,
-        ...activity('issue.deleted', { key: issue.key }),
+        ...activity('issue.deleted', { key: issue.key, issueId: issue.id }),
       })),
       { notify: false },
     );

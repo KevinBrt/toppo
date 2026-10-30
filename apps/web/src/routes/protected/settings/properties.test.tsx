@@ -44,6 +44,45 @@ describe('the issue properties', () => {
       .toBeVisible();
   });
 
+  it('say which a plugin added, kept while it is installed, and never ask what it writes', async () => {
+    const plugin = {
+      slug: 'time-tracking',
+      name: { en: 'Time tracking', fr: 'Suivi du temps' },
+      installed: true,
+    };
+    fakeServer({
+      user: ADA,
+      properties: [
+        fakeProperty(1, 'Time spent', [], {
+          type: 'number',
+          writtenBy: 'plugin',
+          display: 'duration',
+          plugin,
+        }),
+      ],
+    });
+    const { screen } = await renderApp({ path: '/settings/properties' });
+
+    await screen.getByRole('button', { name: /Time spent Added by Time tracking/ }).click();
+
+    await expect
+      .element(
+        panel().getByText(
+          'Added and written by Time tracking, in the projects it acts in: no one types it in. It stays while Time tracking is installed.',
+        ),
+      )
+      .toBeVisible();
+    await expect
+      .element(panel().getByRole('switch', { name: 'Shown in the issue list' }))
+      .toBeVisible();
+    await expect
+      .element(panel().getByRole('switch', { name: 'Asked when an issue is reported' }))
+      .not.toBeInTheDocument();
+    await expect
+      .element(panel().getByRole('button', { name: 'Delete the property' }))
+      .not.toBeInTheDocument();
+  });
+
   it('are kept from those who do not manage the settings', async () => {
     fakeServer({ user: GRACE });
     const { screen } = await renderApp({ path: '/settings/properties' });

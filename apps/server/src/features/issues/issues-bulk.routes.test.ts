@@ -349,6 +349,7 @@ describe('labelling several issues', () => {
 describe('deleting several issues', () => {
   it('deletes them for good, each deletion recorded and told to nobody', async () => {
     const keys = await reportMany(2);
+    const ids = await Promise.all(keys.map(async (key) => (await issue(key)).id));
 
     expect(await outcome(await bulk('delete', { issueKeys: keys }))).toStrictEqual({
       changed: keys,
@@ -362,7 +363,7 @@ describe('deleting several issues', () => {
       .from(schema.activities)
       .where(eq(schema.activities.type, 'issue.deleted'));
     expect(deleted.map(({ payload }) => payload)).toStrictEqual(
-      expect.arrayContaining(keys.map((key) => ({ key }))),
+      expect.arrayContaining(keys.map((key, index) => ({ key, issueId: ids[index] }))),
     );
     expect(await outcome(await bulk('delete', { issueKeys: keys }))).toStrictEqual({
       changed: [],

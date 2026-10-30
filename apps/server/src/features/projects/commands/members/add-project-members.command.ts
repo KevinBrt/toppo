@@ -26,7 +26,7 @@ export const addProjectMembers = defineCommand({
   input: projectKeyParamsSchema.extend(addProjectMembersRequestSchema.shape),
   async handler({ tx, actor, project, log }, { userIds, roleId }): Promise<void> {
     const role = roleId === null ? null : await givenRole(tx, roleId);
-    if (role && !canGiveProjectRole(project.permissions, role)) {
+    if (role && !canGiveProjectRole(project.permissions, role, actor.pluginPermissions)) {
       throw beyondYours();
     }
     const people = await tx
@@ -51,8 +51,9 @@ export const addProjectMembers = defineCommand({
     // and so must the own role of whoever already works here with it.
     const beyond = people.some(
       ({ ownRole, reachedWithOwnRole }) =>
-        !canActOnProjectMember(project.permissions, role ?? ownRole) ||
-        (reachedWithOwnRole && !canActOnProjectMember(project.permissions, ownRole)),
+        !canActOnProjectMember(project.permissions, role ?? ownRole, actor.pluginPermissions) ||
+        (reachedWithOwnRole &&
+          !canActOnProjectMember(project.permissions, ownRole, actor.pluginPermissions)),
     );
     if (beyond) {
       throw beyondYours();

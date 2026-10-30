@@ -2,7 +2,7 @@ import { Outlet } from '@tanstack/react-router';
 import { Sheet, SheetContent } from '@toppo-tracker/ui';
 import { type ReactNode, useState } from 'react';
 import { useI18n } from '../i18n/i18n-provider.tsx';
-import type { NavAudience } from './navigation.constants.ts';
+import type { AddedNavSection, NavAudience } from './navigation.constants.ts';
 import { SidebarContent } from './sidebar-content.tsx';
 import { Topbar } from './topbar.tsx';
 
@@ -14,11 +14,14 @@ import { Topbar } from './topbar.tsx';
  */
 export function AppShell({
   audience,
+  addedSections = [],
   sidebarFooter,
   topbarEnd,
 }: {
   /** The signed-in user: the navigation hides what they could not use. */
   audience: NavAudience;
+  /** Entries after the app's own: plugins' pages. */
+  addedSections?: readonly AddedNavSection[];
   /** Drawn in the sidebar and in the drawer, whose links call `onNavigate` to close it. */
   sidebarFooter?: (options: { onNavigate?: () => void }) => ReactNode;
   /** Drawn at the right of the top bar, e.g. the way to search. */
@@ -37,7 +40,11 @@ export function AppShell({
       </a>
 
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 border-r border-sidebar-border lg:flex">
-        <SidebarContent audience={audience} footer={sidebarFooter?.({})} />
+        <SidebarContent
+          audience={audience}
+          addedSections={addedSections}
+          footer={sidebarFooter?.({})}
+        />
       </aside>
 
       <Sheet open={isMenuOpen} onOpenChange={setMenuOpen}>
@@ -48,6 +55,7 @@ export function AppShell({
         >
           <SidebarContent
             audience={audience}
+            addedSections={addedSections}
             footer={sidebarFooter?.({ onNavigate: () => setMenuOpen(false) })}
             onNavigate={() => setMenuOpen(false)}
           />

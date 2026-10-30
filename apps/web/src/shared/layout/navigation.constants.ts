@@ -7,10 +7,12 @@ import {
   ListIcon,
   type LucideIcon,
   MailIcon,
+  PuzzleIcon,
   ShieldCheckIcon,
   SlidersHorizontalIcon,
   UserIcon,
   UsersIcon,
+  WebhookIcon,
 } from 'lucide-react';
 import type { PlainMessageKey } from '../i18n/i18n.types.ts';
 
@@ -38,12 +40,30 @@ export interface NavSection {
   items: readonly NavItem[];
 }
 
-/** Each of these opens a part of the settings: instance settings, members, roles. */
+/** An entry added as the app runs, its words already in the reader's language: a plugin's. */
+export interface AddedNavItem {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  to: NonNullable<LinkProps['to']>;
+  params: Record<string, string>;
+}
+
+/** Entries added as the app runs, after the app's own, under their own heading. */
+export interface AddedNavSection {
+  key: string;
+  label: string;
+  items: readonly AddedNavItem[];
+}
+
+/** Each of these opens a part of the settings, from the instance's settings to its webhooks. */
 export const SETTINGS_PERMISSIONS: readonly Permission[] = [
   'instance.settings.manage',
   'instance.mail.manage',
   'instance.users.manage',
   'instance.roles.manage',
+  'instance.plugins.manage',
+  'instance.webhooks.manage',
 ];
 
 export const NAV_SECTIONS: readonly NavSection[] = [
@@ -116,6 +136,18 @@ export const SETTINGS_NAV: readonly NavSection[] = [
         labelKey: 'mail.title',
         icon: MailIcon,
         requiresAnyOf: ['instance.mail.manage'],
+      },
+      {
+        to: '/settings/plugins',
+        labelKey: 'plugins.title',
+        icon: PuzzleIcon,
+        requiresAnyOf: ['instance.plugins.manage'],
+      },
+      {
+        to: '/settings/webhooks',
+        labelKey: 'webhooks.title',
+        icon: WebhookIcon,
+        requiresAnyOf: ['instance.webhooks.manage'],
       },
     ],
   },

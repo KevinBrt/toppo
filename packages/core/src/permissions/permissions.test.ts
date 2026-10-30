@@ -41,10 +41,12 @@ describe('permission catalog', () => {
     expect(order).toStrictEqual([...order].sort((left, right) => left - right));
   });
 
-  it('lets no role but the system one manage roles or the email server', () => {
+  it('lets no role but the system one manage roles, the email server, plugins or webhooks', () => {
     expect(ALL_PERMISSIONS.filter((permission) => !canBeGranted(permission))).toStrictEqual([
       'instance.mail.manage',
       'instance.roles.manage',
+      'instance.plugins.manage',
+      'instance.webhooks.manage',
     ]);
   });
 });
@@ -101,12 +103,14 @@ describe('default roles', () => {
     'instance.settings.manage': [true, false, false],
     'instance.mail.manage': [true, false, false],
     'instance.roles.manage': [true, false, false],
+    'instance.plugins.manage': [true, false, false],
+    'instance.webhooks.manage': [true, false, false],
   };
 
   it.each(ALL_PERMISSIONS)('grant %s as documented', (permission) => {
     const granted = (['administrator', 'team', 'requester'] as const).map((kind) => {
       const role = DEFAULT_ROLES.find((candidate) => candidate.kind === kind);
-      return role ? permissionsOfRole(role).includes(permission) : undefined;
+      return role ? permissionsOfRole(role, []).includes(permission) : undefined;
     });
     expect(granted).toStrictEqual(MATRIX[permission]);
   });

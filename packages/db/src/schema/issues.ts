@@ -184,7 +184,8 @@ export const issueWords = pgTable(
 /**
  * Properties of the issues (Version, Team…), defined for the whole instance in the settings, or
  * for one project (`project_id`), of a type fixed at creation. Each says whether it shows in the
- * issue list and whether it is asked at creation, then required.
+ * issue list and whether it is asked at creation, then required. A plugin's are the instance's,
+ * added as it is approved, shown where it acts, and written by people or by the plugin alone.
  */
 export const properties = pgTable(
   'properties',
@@ -197,6 +198,19 @@ export const properties = pgTable(
     shownInList: boolean('shown_in_list').notNull().default(false),
     askedAtCreation: boolean('asked_at_creation').notNull().default(false),
     required: boolean('required').notNull().default(false),
+    /**
+     * The plugin that added it, by id, not by row: kept when it is uninstalled with its data,
+     * found again if it comes back. `null` for Toppo's own.
+     */
+    pluginSlug: text('plugin_slug'),
+    /** Its name in that plugin: `timeSpent`. */
+    pluginProperty: text('plugin_property'),
+    /** `plugin` for a property only its plugin writes, without activity: derived data. */
+    writtenBy: text('written_by', { enum: ['people', 'plugin'] })
+      .notNull()
+      .default('people'),
+    /** How a number shows: `duration` reads minutes as "6 h 40". */
+    display: text('display', { enum: ['duration'] }),
     ...timestamps,
   },
   (table) => [
@@ -223,6 +237,41 @@ export const properties = pgTable(
       .on(table.projectId, sql`lower(${table.name})`)
       .where(sql`${table.projectId} is not null`),
     index('properties_project_id_idx').on(table.projectId),
+    // Each of a plugin's properties once, found again as it comes back.
+    uniqueIndex('properties_plugin_property_unique')
+      .on(table.pluginSlug, table.pluginProperty)
+      .where(sql`${table.pluginSlug} is not null`),
+    check(
+      'properties_plugin_named',
+      sql`(${table.pluginSlug} is null) = (${table.pluginProperty} is null)`,
+    ),
+    // Mirror PLUGIN_ID and ENTITY_NAME (`@toppo-tracker/plugin-sdk/protocol`).
+    check(
+      'properties_plugin_slug_format',
+      sql`${table.pluginSlug} ~ '^[a-z][a-z0-9-]{1,38}[a-z0-9]$'`,
+    ),
+    check(
+      'properties_plugin_property_format',
+      sql`${table.pluginProperty} ~ '^[a-z][A-Za-z0-9]{0,39}$'`,
+    ),
+    // A plugin's properties are the instance's, shown in the projects it acts in.
+    check(
+      'properties_plugin_of_instance',
+      sql`${table.pluginSlug} is null or ${table.projectId} is null`,
+    ),
+    check(
+      'properties_written_by',
+      sql`${table.writtenBy} = 'people' or (${table.writtenBy} = 'plugin' and ${table.pluginSlug} is not null)`,
+    ),
+    // What no one types in is asked of no one.
+    check(
+      'properties_plugin_written_not_asked',
+      sql`${table.writtenBy} = 'people' or not ${table.askedAtCreation}`,
+    ),
+    check(
+      'properties_display',
+      sql`${table.display} is null or (${table.display} = 'duration' and ${table.type} = 'number')`,
+    ),
   ],
 );
 

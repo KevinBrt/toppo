@@ -15,19 +15,24 @@
   "dependencies": {
     "@fastify/helmet": "13.2.0",
     "@fastify/static": "10.1.8",
+    "@jitl/quickjs-wasmfile-release-sync": "0.32.0",
     "@toppo-tracker/core": "0.0.0",
     "@toppo-tracker/db": "0.0.0",
+    "@toppo-tracker/plugin-sdk": "0.1.0",
     "@toppo-tracker/shared": "0.0.0",
     "better-auth": "1.7.14",
     "drizzle-orm": "0.45.4",
     "fastify": "5.12.7",
+    "fflate": "0.8.3",
     "nodemailer": "10.2.1",
+    "quickjs-emscripten-core": "0.32.0",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@toppo-tracker/testing": "0.0.0",
     "@types/node": "24.19.2",
     "@vitest/coverage-v8": "5.0.5",
+    "fast-check": "4.10.2",
     "rolldown": "1.2.15",
     "vitest": "5.0.5"
   }

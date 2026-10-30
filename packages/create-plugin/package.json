@@ -1,0 +1,24 @@
+{
+  "name": "@toppo-tracker/create-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Starts a Toppo plugin: npm create @toppo-tracker/plugin my-plugin.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "create-plugin": "./src/main.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@toppo-tracker/plugin-sdk": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "5.0.5",
+    "vitest": "5.0.5"
+  }
+}

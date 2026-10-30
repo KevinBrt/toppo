@@ -14,7 +14,12 @@ import { setupTestDatabase, testServices } from '../../test-helpers.ts';
 import type { Actor } from '../auth/actor.ts';
 import { HttpError } from '../http/http-error.ts';
 import { RequestValidationError } from '../http/zod.ts';
-import { defineCommand, defineQuery, type ExecutionContext } from './cqrs.ts';
+import {
+  defineCommand,
+  defineDetachedCommand,
+  defineQuery,
+  type ExecutionContext,
+} from './cqrs.ts';
 
 const context = setupTestDatabase();
 
@@ -23,6 +28,7 @@ const ADA: Actor = {
   name: 'Ada',
   email: 'ada@example.com',
   permissions: ['project.create'],
+  pluginPermissions: [],
 };
 
 function executionContext(actor: Actor | null = null): ExecutionContext {
@@ -82,6 +88,36 @@ describe('defineCommand', () => {
 
     expect(error).toBeInstanceOf(RequestValidationError);
     expect(error.validationContext).toBe('input');
+  });
+});
+
+describe('defineDetachedCommand', () => {
+  const createRoleThenWait = defineDetachedCommand({
+    name: 'role.createThenWait',
+    access: 'authenticated',
+    input: z.object({ name: z.string().min(1) }),
+    async handler({ db }, { name }) {
+      await db.insert(schema.roles).values({ name });
+      // What a plugin's run looks like from here: something slow, which may fail.
+      throw new Error('the slow part failed');
+    },
+  });
+
+  it('checks access and input like any command', async () => {
+    await expect(
+      createRoleThenWait.execute(executionContext(null), { name: 'X' }),
+    ).rejects.toMatchObject({ statusCode: 401 });
+    await expect(createRoleThenWait.execute(executionContext(ADA), { name: '' })).rejects.toThrow(
+      RequestValidationError,
+    );
+  });
+
+  it('holds no transaction: what it wrote stays when what follows fails', async () => {
+    await expect(
+      createRoleThenWait.execute(executionContext(ADA), { name: 'Written apart' }),
+    ).rejects.toThrow('the slow part failed');
+
+    expect(await roleNamed('Written apart')).toHaveLength(1);
   });
 });
 
@@ -157,7 +193,13 @@ describe('operations about a project', () => {
         instanceRoleId: roleId,
         allProjects,
       });
-    return { id, name: 'Grace', email: `${id}@example.com`, permissions: [] };
+    return {
+      id,
+      name: 'Grace',
+      email: `${id}@example.com`,
+      permissions: [],
+      pluginPermissions: [],
+    };
   }
 
   async function insertProject(key: string, archived = false): Promise<string> {

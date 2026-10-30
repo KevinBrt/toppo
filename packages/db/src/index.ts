@@ -3,6 +3,12 @@ import * as schema from './schema/index.ts';
 export { createDatabase, type Database, type DatabaseOptions, type Db } from './database.ts';
 export { isUniqueViolation } from './errors.ts';
 export {
+  ALL_RECORD_SLOTS,
+  RECORD_SLOT_TEXT_MAX_LENGTH,
+  RECORD_SLOTS,
+  type RecordSlot,
+} from './schema/plugins/plugin-records.ts';
+export {
   containsText,
   escapeLike,
   matchesWords,

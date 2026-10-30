@@ -7,8 +7,11 @@ import { generateSetupCode } from './features/setup/utils/setup-code.util.ts';
 import { createAuth } from './platform/auth/auth.ts';
 import { type Config, ConfigError, loadConfig } from './platform/config/config.ts';
 import { resolveSecret } from './platform/config/secret.ts';
-import { startJobWorker } from './platform/jobs/job-worker.ts';
+import { startJobWorkers } from './platform/jobs/job-worker.ts';
 import { scheduleRecurringJobs } from './platform/jobs/jobs.ts';
+import { createPackageStore } from './platform/plugins/packages/package-store.ts';
+import { createPluginRuntime } from './platform/plugins/runtime/plugin-runtime.ts';
+import { createScreenBundles, loadScreenRuntime } from './platform/plugins/screens/screen-files.ts';
 import { createFileStorage } from './platform/uploads/file-storage.ts';
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -20,6 +23,17 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 const WEB_ROOT = fileURLToPath(new URL('../../web/dist', import.meta.url));
 const MIGRATIONS_FOLDER = fileURLToPath(
   new URL('../../../packages/db/migrations', import.meta.url),
+);
+/** The runtime of plugins' screens, built beside the web app's packages. */
+const SCREEN_RUNTIME_ROOT = fileURLToPath(
+  new URL('../../../packages/plugin-runtime/dist', import.meta.url),
+);
+/** Run by Node from the sources in development (`src/main.ts`), bundled beside `dist/main.js`. */
+const SANDBOX_WORKER = new URL(
+  import.meta.url.endsWith('.ts')
+    ? './platform/plugins/sandbox/sandbox-worker.ts'
+    : './plugin-sandbox-worker.js',
+  import.meta.url,
 );
 
 function loadConfigOrExit(): Config {
@@ -43,16 +57,36 @@ const files = await createFileStorage({
   root: join(config.dataDir, 'uploads'),
   maxFileSize: config.attachmentMaxSize,
 });
-const app = await buildApp({ config, database, auth, secret, setupCode, files, webRoot: WEB_ROOT });
+const packages = await createPackageStore({ root: join(config.dataDir, 'plugins') });
+const plugins = {
+  packages,
+  workerUrl: SANDBOX_WORKER,
+  runtime: createPluginRuntime({ packages, workerUrl: SANDBOX_WORKER }),
+  screens: {
+    bundles: createScreenBundles(packages),
+    runtime: loadScreenRuntime(SCREEN_RUNTIME_ROOT),
+  },
+};
+const app = await buildApp({
+  config,
+  database,
+  auth,
+  secret,
+  setupCode,
+  files,
+  plugins,
+  webRoot: WEB_ROOT,
+});
 const services = createServices({
   auth,
   secret,
   setupCode,
   files,
+  plugins,
   publicUrl: config.publicUrl,
   updateCheck: config.updateCheck,
 });
-const jobs = createJobs({ files });
+const jobs = createJobs({ files, packages: plugins.packages });
 let worker: { stop: () => Promise<void> } | undefined;
 
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
@@ -83,7 +117,7 @@ try {
   await database.migrate(MIGRATIONS_FOLDER);
   await app.listen({ host: config.host, port: config.port });
   await scheduleRecurringJobs(database.db, jobs);
-  worker = startJobWorker({ db: database.db, jobs, log: app.log, services });
+  worker = startJobWorkers({ db: database.db, jobs, log: app.log, services });
 
   const { required } = await getSetupStatus.execute(
     { db: database.db, actor: null, log: app.log, services },

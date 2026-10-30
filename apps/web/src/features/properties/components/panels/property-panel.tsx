@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   createPropertyRequestSchema,
   hasOptions,
+  type Locale,
   PROPERTY_NAME_MAX_LENGTH,
   PROPERTY_OPTIONS_MAX,
   type PropertyRow,
@@ -221,9 +222,7 @@ function PropertyEditor({
   return (
     <SidePanelContent
       title={property ? property.name : t('properties.newProperty')}
-      description={
-        projectKey ? t('projectProperties.ownDescription') : t('properties.customDescription')
-      }
+      description={descriptionOf(property, projectKey, t, locale)}
       closeLabel={t('properties.close')}
       footer={
         <>
@@ -305,8 +304,13 @@ function PropertyEditor({
             {errors['options']}
           </p>
         ) : null}
-        <SettingsSwitches type={type} settings={settings} onChange={setSettings} />
-        {property ? (
+        <SettingsSwitches
+          type={type}
+          settings={settings}
+          writtenByPlugin={property?.writtenBy === 'plugin'}
+          onChange={setSettings}
+        />
+        {property && !property.plugin?.installed ? (
           <div>
             <Button
               variant="secondary"
@@ -330,26 +334,59 @@ function PropertyEditor({
   );
 }
 
-/** Where a property shows, and whether reporting an issue asks it, then requires it. */
+/**
+ * What the panel says of a property: whose it is, a plugin's while it is installed, written by
+ * people or by the plugin alone.
+ */
+function descriptionOf(
+  property: PropertyRow | null,
+  projectKey: string | undefined,
+  t: ReturnType<typeof useI18n>['t'],
+  locale: Locale,
+): string {
+  if (property?.plugin) {
+    const plugin = property.plugin.name[locale];
+    if (!property.plugin.installed) {
+      return t('properties.ofUninstalledPlugin', { plugin });
+    }
+    return property.writtenBy === 'plugin'
+      ? t('properties.writtenByPlugin', { plugin })
+      : t('properties.addedByPlugin', { plugin });
+  }
+  return projectKey ? t('projectProperties.ownDescription') : t('properties.customDescription');
+}
+
+/**
+ * Where a property shows, and whether reporting an issue asks it, then requires it: never what a
+ * plugin writes, which no one types in.
+ */
 function SettingsSwitches({
   type,
   settings,
+  writtenByPlugin,
   onChange,
 }: {
   type: PropertyType;
   settings: Settings;
+  writtenByPlugin: boolean;
   onChange: (settings: Settings) => void;
 }) {
   const { t } = useI18n();
   const checkbox = type === 'checkbox';
+  const shownInList = (
+    <SettingSwitch
+      label={t('properties.shownInList')}
+      help={t('properties.shownInListHelp')}
+      checked={settings.shownInList}
+      onChange={(shown) => onChange({ ...settings, shownInList: shown })}
+    />
+  );
+  if (writtenByPlugin) {
+    return <div className="rounded-lg border border-border">{shownInList}</div>;
+  }
   return (
     <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
-      <SettingSwitch
-        label={t('properties.shownInList')}
-        help={t('properties.shownInListHelp')}
-        checked={settings.shownInList}
-        onChange={(shownInList) => onChange({ ...settings, shownInList })}
-      />
+      {shownInList}
       <SettingSwitch
         label={t('properties.askedAtCreation')}
         help={t('properties.askedAtCreationHelp')}

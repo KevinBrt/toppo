@@ -8,13 +8,15 @@ ARG NODE_IMAGE=node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be8571
 ARG RUNTIME_IMAGE=gcr.io/distroless/nodejs24-debian13:nonroot@sha256:cb606325b7ec4af55462cb0b424a53b452a5b4a894ffe841fcf1048d216fb9f8
 
 # ---------------------------------------------------------------------------------------------
-# Keep only the package manifests needed by the server and the web app, so the dependency
-# layers below are cached until a package.json or the lockfile changes.
+# Keep only the package manifests needed by the server, the web app and the runtime the server
+# serves in plugins' screens, so the dependency layers below are cached until a package.json or
+# the lockfile changes.
 FROM --platform=$BUILDPLATFORM ${NODE_IMAGE} AS prune
 WORKDIR /src
 RUN npm install --global --ignore-scripts turbo@2.11.9
 COPY . .
-RUN turbo prune @toppo-tracker/server @toppo-tracker/web --docker --out-dir /out/all \
+RUN turbo prune @toppo-tracker/server @toppo-tracker/web @toppo-tracker/plugin-runtime \
+    --docker --out-dir /out/all \
  && turbo prune @toppo-tracker/server --docker --out-dir /out/server
 
 # ---------------------------------------------------------------------------------------------
@@ -29,6 +31,7 @@ COPY --from=prune /out/all/full/ ./
 # Root files that `turbo prune` does not carry over.
 COPY tsconfig.base.json ./
 RUN npx turbo run build --filter=@toppo-tracker/server --filter=@toppo-tracker/web \
+    --filter=@toppo-tracker/plugin-runtime \
  && mkdir -p /data-skeleton
 
 # ---------------------------------------------------------------------------------------------
@@ -64,6 +67,7 @@ COPY --from=runtime-deps /src/node_modules ./node_modules
 COPY --from=runtime-deps /src/apps/server/node_modules ./apps/server/node_modules
 COPY --from=build /src/apps/server/dist ./apps/server/dist
 COPY --from=build /src/apps/web/dist ./apps/web/dist
+COPY --from=build /src/packages/plugin-runtime/dist ./packages/plugin-runtime/dist
 COPY --from=build /src/packages/db/migrations ./packages/db/migrations
 COPY --from=build --chown=65532:65532 /data-skeleton /data
 
