@@ -103,6 +103,13 @@ export const HOST_CALLS = {
     /** `null` for an issue the plugin, or whoever it acts for, does not see. */
     result: issueDetailsSchema.nullable(),
   },
+  'issues.find': {
+    needs: 'issue.read',
+    /** As people write it (` web-12 ` names WEB-12): a text that is no key names no issue. */
+    args: z.object({ key: z.string().max(100).trim().toUpperCase() }),
+    /** `null` for no issue of that key the plugin, or whoever it acts for, sees. */
+    result: issueDetailsSchema.nullable(),
+  },
   'issues.comment': {
     needs: 'comment.create',
     args: z.object({

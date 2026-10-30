@@ -137,6 +137,8 @@ export function createTestToppo(
     switch (method) {
       case 'issues.get':
         return getIssue(args);
+      case 'issues.find':
+        return findIssue(args);
       case 'projects.settings':
         return projectSettings(args);
       case 'issues.setProperty':
@@ -228,6 +230,13 @@ export function createTestToppo(
   function getIssue(args: unknown): Promise<IssueDetails | null> {
     const { issueId } = HOST_CALLS['issues.get'].args.parse(args);
     return Promise.resolve(visible(issueId) ?? null);
+  }
+
+  /** The issue of a key, among those the run sees: the key read as Toppo reads it. */
+  function findIssue(args: unknown): Promise<IssueDetails | null> {
+    const { key } = HOST_CALLS['issues.find'].args.parse(args);
+    const found = [...issues.values()].find((issue) => issue.key === key);
+    return Promise.resolve((found && visible(found.id)) ?? null);
   }
 
   /** A comment, once per `once` key: an event handled twice comments once. */

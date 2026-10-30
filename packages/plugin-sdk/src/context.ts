@@ -41,6 +41,11 @@ export interface Context<
      */
     get(issueId: string): Promise<IssueOf<Pr> | null>;
     /**
+     * The issue of a key, as people write it (`web-12` names WEB-12), answered as `get` answers
+     * it; `null` when no issue it sees has that key, or the text is no key. Needs `issue.read`.
+     */
+    find(key: string): Promise<IssueOf<Pr> | null>;
+    /**
      * Comments on an issue, as the plugin's own user. `once` makes it single: an event handled
      * twice comments once. Needs `comment.create`.
      */
@@ -124,6 +129,8 @@ export function createContext<
       // Toppo answers the plugin's own properties: they are what it declares.
       get: async (issueId) =>
         (await callToppo(host, 'issues.get', { issueId })) as IssueOf<Properties> | null,
+      find: async (key) =>
+        (await callToppo(host, 'issues.find', { key })) as IssueOf<Properties> | null,
       comment: (issueId, body, { once } = {}) =>
         callToppo(
           host,

@@ -45,10 +45,10 @@ Every word a plugin shows is one of its messages, in English and French: `messag
 
 What the plugin reads and writes of Toppo's, as itself, in the projects it is approved in. They are its ceiling: acting for a person, it holds what both it and the person hold.
 
-| Need             | Lets it                                                |
-| ---------------- | ------------------------------------------------------ |
-| `issue.read`     | Read the issues of its projects: `ctx.issues.get`      |
-| `comment.create` | Comment on them, as its own user: `ctx.issues.comment` |
+| Need             | Lets it                                                   |
+| ---------------- | --------------------------------------------------------- |
+| `issue.read`     | Read the issues of its projects: `ctx.issues.get`, `find` |
+| `comment.create` | Comment on them, as its own user: `ctx.issues.comment`    |
 
 An action on an issue, an issue panel, an entity on issues and a property all take `issue.read`: the build refuses them without it.
 

@@ -62,7 +62,9 @@ Pour un service qui signe à sa façon, `ctx.crypto.hmac(algorithm, key, data, e
 
 La requête est `{ method, headers, query, body, json() }` : le corps tel qu’il est arrivé, non lu, puisqu’une signature porte sur ces caractères mêmes ; les en-têtes en minuscules, jamais un cookie. La route répond `{ status, body? }` : `200`, `201`, `202` ou `204`, ou `400`, `401`, `403`, `404`, `409` ou `422`, avec du JSON. Un `ctx.fail` répond `422`.
 
-Un service renvoie une livraison quand il n’a pas eu de réponse à temps : commentez avec `once` et l’identifiant de sa livraison (`x-github-delivery`, `webhook-id`), comme le fait un gestionnaire d’événement.
+Un service renvoie une livraison quand il n’a pas eu de réponse à temps : commentez avec `once` et l’identifiant de sa livraison (`x-github-delivery`, `webhook-id`), comme le fait un gestionnaire d’événement. Il nomme un ticket par sa clé, comme les gens l’écrivent dans le message d’un commit : `ctx.issues.find(key)` le trouve.
+
+<<< @/../apps/server/src/platform/plugins/fixtures/commit-links.fixture.ts#link
 
 | Limite   |                                                                |
 | -------- | -------------------------------------------------------------- |

@@ -124,6 +124,8 @@ function timeTracking() {
           return { count: 10n };
         case 'empty-comment':
           return await ctx.issues.comment(ISSUE, '   ');
+        case 'find':
+          return await ctx.issues.find(' web-42 ');
         case 'budget':
           return await ctx.projects.settings(PROJECT);
         case 'fetch': {
@@ -409,6 +411,16 @@ describe('a plugin served to Toppo', () => {
       result: { user: ADA, key: 'WEB-42', said: 'At most {limit} minutes a day.' },
     });
     expect(call).toHaveBeenCalledWith('issues.get', JSON.stringify({ issueId: ISSUE }));
+  });
+
+  it('finds an issue by its key, sent as Toppo reads keys', async () => {
+    const { host, call } = fakeHost({ 'issues.find': { ...snapshot, description: '' } });
+
+    expect(await act(host, 'oddities.run', { what: 'find' })).toMatchObject({
+      ok: true,
+      result: { key: 'WEB-42' },
+    });
+    expect(call).toHaveBeenCalledWith('issues.find', JSON.stringify({ key: 'WEB-42' }));
   });
 
   it('refuses in the plugin’s words, with their params, in the language asked', async () => {

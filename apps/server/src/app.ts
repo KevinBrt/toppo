@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Database } from '@toppo-tracker/db';
 import { verifySignature } from '@toppo-tracker/plugin-sdk/host';
+import { issueKeySchema } from '@toppo-tracker/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerAccountRoutes } from './features/account/account.routes.ts';
 import { registerAttachmentRoutes } from './features/attachments/attachments.routes.ts';
@@ -130,6 +131,13 @@ export function createHostCalls(): HostCalls {
       return issueKey === null
         ? null
         : await orNullIfNotFound(getIssueSnapshot.execute(context, { issueKey }));
+    },
+    // A text that is no key names no issue, as one no issue has: the plugin read it somewhere.
+    'issues.find': async (context, { key }) => {
+      const issueKey = issueKeySchema.safeParse(key);
+      return issueKey.success
+        ? await orNullIfNotFound(getIssueSnapshot.execute(context, { issueKey: issueKey.data }))
+        : null;
     },
     'issues.comment': async (context, { issueId, body, once }) => {
       const issueKey = await issueKeyOf(context.db, issueId);

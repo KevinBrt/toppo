@@ -54,9 +54,8 @@ const plugin = definePlugin({
   },
 });
 
-/** What a service tells of a commit: the issue it names, and what it says. */
+/** What a service tells of a commit: its hash, and its message, which names the issue. */
 const commitSchema = z.object({
-  issueId: z.uuid(),
   sha: z.string().regex(/^[0-9a-f]{7,40}$/),
   message: z.string().min(1).max(500),
 });
@@ -70,9 +69,13 @@ function jsonOf(body: string): unknown {
   }
 }
 
+// #region link
+/** An issue's key in a commit's message, as people write it: `Fix the download (web-12)`. */
+const ISSUE_KEY = /\b[A-Za-z][A-Za-z0-9]{1,9}-[1-9]\d{0,8}\b/;
+
 /**
- * Comments on the issue a commit names, once per delivery: a service sends a delivery again under
- * the same id, when it got no answer in time.
+ * Comments on the issue a commit's message names by its key, once per delivery: a service sends a
+ * delivery again under the same id, when it got no answer in time.
  */
 async function linkCommit(
   ctx: Context<typeof settings, typeof en>,
@@ -83,14 +86,17 @@ async function linkCommit(
   if (!(commit.success && delivery)) {
     return { status: 400 };
   }
-  const { issueId, sha, message } = commit.data;
-  if (!(await ctx.issues.get(issueId))) {
+  const { sha, message } = commit.data;
+  const key = ISSUE_KEY.exec(message)?.[0];
+  const issue = key === undefined ? null : await ctx.issues.find(key);
+  if (!issue) {
     return { status: 404 };
   }
   const comment = ctx.t('comments.commit', { sha: sha.slice(0, 7), message });
-  await ctx.issues.comment(issueId, comment, { once: delivery });
-  return { status: 202, body: { issueId } };
+  await ctx.issues.comment(issue.id, comment, { once: delivery });
+  return { status: 202, body: { issueKey: issue.key } };
 }
+// #endregion link
 
 // #region github
 plugin.defineRoute({

@@ -47,7 +47,7 @@ Ce que le plugin lit et écrit de Toppo, en son nom, dans les projets où il est
 
 | Besoin           | Lui permet de                                                     |
 | ---------------- | ----------------------------------------------------------------- |
-| `issue.read`     | Lire les tickets de ses projets : `ctx.issues.get`                |
+| `issue.read`     | Lire les tickets de ses projets : `ctx.issues.get`, `find`        |
 | `comment.create` | Les commenter, sous son propre utilisateur : `ctx.issues.comment` |
 
 Une action sur un ticket, un panneau de ticket, une entité sur les tickets et une propriété demandent tous `issue.read` : le build les refuse sans.

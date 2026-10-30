@@ -43,6 +43,7 @@ const MANIFEST = testManifest({
     { name: 'time.refuse', access: 'authenticated', input: {} },
     { name: 'time.crash', access: 'authenticated', input: {} },
     { name: 'project.settings', access: 'authenticated', input: {} },
+    { name: 'issue.find', access: 'authenticated', input: {} },
   ],
   events: [],
 });
@@ -69,6 +70,12 @@ const RUN = `
         await __host
           .call('projects.settings', JSON.stringify({ projectId: input.projectId }))
           .then((settings) => JSON.parse(settings), (error) => ({ refused: error.message })),
+      );
+    case 'issue.find':
+      return ok(
+        await __host
+          .call('issues.find', JSON.stringify({ key: input.key }))
+          .then((issue) => JSON.parse(issue)?.key ?? null, (error) => ({ refused: error.message })),
       );
     case 'time.refuse':
       return JSON.stringify({
@@ -118,6 +125,15 @@ async function issueIn(projectKey: string, who = 'ada'): Promise<string> {
   const key = created.json<{ key: string }>().key;
   const issue = await call('ada', 'GET', `/api/v1/issues/${key}`);
   return issue.json<{ id: string }>().id;
+}
+
+/** A new issue's key, as people name it. */
+async function newIssueKey(projectKey: string): Promise<string> {
+  const created = await call('ada', 'POST', `/api/v1/projects/${projectKey}/issues`, {
+    title: 'Invoices fail to download',
+  });
+  expect(created.statusCode, created.body).toBe(201);
+  return created.json<{ key: string }>().key;
 }
 
 async function failures(): Promise<number | undefined> {
@@ -280,6 +296,30 @@ describe('a plugin action', () => {
     expect(ours.json()).toStrictEqual({ result: {} });
     expect(theirs.json()).toStrictEqual({ result: { refused: 'PROJECT_NOT_FOUND' } });
     expect(anyone.json()).toStrictEqual({ result: {} });
+  });
+
+  it('finds an issue by its key, as people write it, where both the person and the plugin see it', async () => {
+    const ours = await newIssueKey('WEB');
+    const elsewhere = await newIssueKey('OPS');
+    const find = async (who: string, key: string) =>
+      (await act(who, 'issue.find', { key })).json<{ result: unknown }>().result;
+
+    expect(await find('grace', ours)).toBe(ours);
+    expect(await find('grace', ` ${ours.toLowerCase()} `)).toBe(ours);
+    // Not approved in OPS: as if it were not there, for Ada too.
+    expect(await find('ada', elsewhere)).toBeNull();
+    for (const key of ['WEB-999', 'WEB-0', 'not a key', 'TOOLONGAPROJECT-1']) {
+      expect(await find('ada', key)).toBeNull();
+    }
+    const approved = await call('ada', 'POST', '/api/v1/plugins/time-tracking/approve', {
+      packageSha256: await packageSha256Of(context.database, 'time-tracking'),
+      projects: 'all',
+    });
+    expect(approved.statusCode).toBe(204);
+    expect(await find('ada', elsewhere)).toBe(elsewhere);
+    // Grace works in WEB only.
+    expect(await find('grace', elsewhere)).toBeNull();
+    expect(await find('ada', 'W'.repeat(101))).toStrictEqual({ refused: 'INVALID_ARGUMENTS' });
   });
 
   it('checks a permission of the whole instance against the person’s own role', async () => {
