@@ -36,6 +36,57 @@ const targetSchema = z.discriminatedUnion('to', [
 
 export type ScreenTarget = z.infer<typeof targetSchema>;
 
+/**
+ * What Toppo opens for a screen, over the page, may hold: a dialog's input and what it closes
+ * with, as JSON, and a menu's items.
+ */
+export const OVERLAY_LIMITS = {
+  dialogInputBytes: 4 * 1024,
+  dialogResultBytes: 16 * 1024,
+  menuItems: 20,
+} as const;
+
+/** JSON of at most `bytes` characters. */
+const jsonWithin = (bytes: number) =>
+  z.json().refine((value) => JSON.stringify(value).length <= bytes, {
+    message: `At most ${bytes} characters of JSON`,
+  });
+
+/** Where in the frame something is, in its pixels: what a menu opens beside. */
+const rectSchema = z.strictObject({
+  x: z.number().min(-100_000).max(100_000),
+  y: z.number().min(-100_000).max(100_000),
+  width: z.number().min(0).max(100_000),
+  height: z.number().min(0).max(100_000),
+});
+
+/** One choice of a menu Toppo draws for a screen. */
+export const menuItemSchema = z.strictObject({
+  /** What the screen is answered when it is chosen. */
+  id: z.string().regex(/^[A-Za-z0-9._-]{1,40}$/),
+  label: z.string().min(1).max(100),
+  tone: z.enum(['default', 'danger']).default('default'),
+  disabled: z.boolean().default(false),
+});
+
+export type MenuItem = z.input<typeof menuItemSchema>;
+
+/** An issue picked in Toppo's search, as the screen that asked is answered. */
+export const pickedIssueSchema = z.object({
+  id: z.uuid(),
+  key: z.string(),
+  title: z.string(),
+  projectId: z.uuid(),
+  projectKey: z.string(),
+});
+
+export type PickedIssue = z.infer<typeof pickedIssueSchema>;
+
+/** Someone picked in Toppo's search. */
+export const pickedPersonSchema = z.object({ id: z.uuid(), name: z.string() });
+
+export type PickedPerson = z.infer<typeof pickedPersonSchema>;
+
 /** What a screen asks Toppo. */
 export const frameMessageSchema = z.discriminatedUnion('kind', [
   /** Loaded: Toppo answers with its context. */
@@ -59,6 +110,45 @@ export const frameMessageSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('search'), search: screenSearchSchema }),
   /** Somewhere to go, in Toppo. */
   z.strictObject({ kind: z.literal('open'), target: targetSchema }),
+  /** Asks the person to confirm, in a dialog of Toppo's: answered `true` or `false`. */
+  z.strictObject({
+    kind: z.literal('confirm'),
+    id: callId,
+    title: z.string().min(1).max(200),
+    description: z.string().max(1000).optional(),
+    confirmLabel: z.string().min(1).max(60).optional(),
+    tone: z.enum(['default', 'danger']).default('default'),
+  }),
+  /** Opens one of the plugin's dialogs: answered what it closed with, `null` when dismissed. */
+  z.strictObject({
+    kind: z.literal('dialog'),
+    id: callId,
+    name: z.string().regex(SCREEN_NAME),
+    input: jsonWithin(OVERLAY_LIMITS.dialogInputBytes),
+  }),
+  /** From a dialog: closes it, with what the screen that opened it is answered. */
+  z.strictObject({
+    kind: z.literal('close'),
+    result: jsonWithin(OVERLAY_LIMITS.dialogResultBytes).optional(),
+  }),
+  /** A menu Toppo draws over the page beside `anchor`: answered the item chosen, or `null`. */
+  z.strictObject({
+    kind: z.literal('menu'),
+    id: callId,
+    anchor: rectSchema,
+    items: z.array(menuItemSchema).min(1).max(OVERLAY_LIMITS.menuItems),
+  }),
+  /**
+   * Toppo's search of issues, or of people, in the projects where the plugin acts that the person
+   * sees: answered the issue picked (`null` for none), or the people (none, one, or several).
+   */
+  z.strictObject({
+    kind: z.literal('pick'),
+    id: callId,
+    of: z.enum(['issue', 'people']),
+    multiple: z.boolean().default(false),
+    projectId: z.uuid().optional(),
+  }),
 ]);
 
 export type FrameMessage = z.infer<typeof frameMessageSchema>;
@@ -91,6 +181,8 @@ export const hostMessageSchema = z.union([
     screen: z.string().regex(SCREEN_NAME),
     search: screenSearchSchema,
     ...shownSchema.shape,
+    /** What the screen that opened a dialog handed it; `null` for any other screen. */
+    input: z.json().nullable().default(null),
   }),
   z.object({ kind: z.literal('answer'), id: callId, ok: z.literal(true), result: z.unknown() }),
   z.object({

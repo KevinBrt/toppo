@@ -32,6 +32,7 @@ const words = {
   permissions: { log: 'Log time', read: 'Read reports' },
   pages: { report: 'Time', audit: 'Audit', budgets: 'Budgets' },
   panels: { entries: 'Time spent' },
+  dialogs: { logTime: 'Log time', auditEntry: 'Audit an entry' },
 };
 
 const MANIFEST = testManifest({
@@ -65,6 +66,22 @@ const MANIFEST = testManifest({
     },
   ],
   panels: [{ name: 'entries', on: 'issue', access: 'authenticated', title: 'panels.entries' }],
+  dialogs: [
+    {
+      name: 'logTime',
+      access: 'authenticated',
+      title: 'dialogs.logTime',
+      size: 'medium',
+      side: false,
+    },
+    {
+      name: 'auditEntry',
+      access: { permission: 'reports.read' },
+      title: 'dialogs.auditEntry',
+      size: 'large',
+      side: true,
+    },
+  ],
 });
 
 function call(who: string | null, url: string) {
@@ -310,5 +327,103 @@ describe('the names of people a screen shows', () => {
     expect(seen.json()).toStrictEqual({ people: [{ id: ids['grace'], name: 'Grace Hopper' }] });
     expect((await call('grace', '/api/v1/people?ids=ada')).statusCode).toBe(400);
     expect((await call(null, `/api/v1/people?ids=${ids['grace']}`)).statusCode).toBe(401);
+  });
+});
+
+describe('a plugin’s dialogs', () => {
+  it('are listed with its name to those who may open them, and served as its pages are', async () => {
+    const dialog = (name: string, title: string, size: string, side: boolean) => ({
+      name,
+      title: { en: title, fr: title },
+      size,
+      side,
+    });
+
+    expect(
+      (await call('ada', '/api/v1/plugin-screens/time-tracking/dialogs')).json(),
+    ).toStrictEqual({
+      plugin: { en: 'Time tracking', fr: 'Time tracking' },
+      dialogs: [
+        dialog('logTime', 'Log time', 'medium', false),
+        dialog('auditEntry', 'Audit an entry', 'large', true),
+      ],
+    });
+    expect(
+      (await call('grace', '/api/v1/plugin-screens/time-tracking/dialogs')).json(),
+    ).toMatchObject({
+      dialogs: [dialog('logTime', 'Log time', 'medium', false)],
+    });
+    expect((await call('ada', '/plugin-screens/time-tracking/logTime')).statusCode).toBe(200);
+    expect((await call('grace', '/plugin-screens/time-tracking/auditEntry')).statusCode).toBe(404);
+    expect((await call('ada', '/api/v1/plugin-screens/nobody/dialogs')).statusCode).toBe(404);
+  });
+});
+
+describe('Toppo’s search for a plugin’s screen', () => {
+  const pick = (who: string, of: 'issues' | 'people', query = '') =>
+    call(who, `/api/v1/plugins/time-tracking/pick/${of}${query}`);
+
+  it('finds the issues the person reads where the plugin acts, by key or title', async () => {
+    const web = {
+      id: ids['WEB-1'],
+      key: 'WEB-1',
+      title: 'Invoices fail to download',
+      projectKey: 'WEB',
+    };
+
+    expect((await pick('ada', 'issues')).json()).toMatchObject({ issues: [web] });
+    expect((await pick('ada', 'issues', '?search=web-1')).json()).toMatchObject({ issues: [web] });
+    expect((await pick('ada', 'issues', '?search=invoices')).json()).toMatchObject({
+      issues: [web],
+    });
+    expect((await pick('ada', 'issues', '?search=OPS-1')).json()).toStrictEqual({ issues: [] });
+    expect((await pick('grace', 'issues')).json()).toMatchObject({ issues: [web] });
+    // Linus reaches no project: nothing, whatever the plugin reaches.
+    await signIn('linus', 'linus@example.com');
+    expect((await pick('linus', 'issues')).json()).toStrictEqual({ issues: [] });
+  });
+
+  it('keeps to the one project the screen names', async () => {
+    const [web] = (await pick('ada', 'issues')).json<{ issues: { projectId: string }[] }>().issues;
+    const ops = '01a1569b-9900-7000-8000-0000000000ff';
+
+    expect((await pick('ada', 'issues', `?projectId=${web?.projectId}`)).json()).toMatchObject({
+      issues: [{ key: 'WEB-1' }],
+    });
+    expect((await pick('ada', 'issues', `?projectId=${ops}`)).json()).toStrictEqual({ issues: [] });
+    expect((await pick('ada', 'issues', '?projectId=WEB')).statusCode).toBe(400);
+  });
+
+  it('finds the people who share with the person a project where the plugin acts', async () => {
+    expect((await pick('ada', 'people')).json()).toStrictEqual({
+      people: [
+        { id: expect.any(String), name: 'Ada Lovelace' },
+        { id: ids['grace'], name: 'Grace Hopper' },
+      ],
+    });
+    expect((await pick('ada', 'people', '?search=hopp')).json()).toStrictEqual({
+      people: [{ id: ids['grace'], name: 'Grace Hopper' }],
+    });
+    expect((await pick('linus', 'people')).json()).toStrictEqual({ people: [] });
+  });
+
+  it('is for a plugin enabled, that reads issues to find them, and for the signed-in', async () => {
+    await context.database.db
+      .update(schema.plugins)
+      // As a plugin that reads no issues declares itself: without the panels beside them.
+      .set({ manifest: { ...MANIFEST, needs: [], panels: [] } })
+      .where(eq(schema.plugins.slug, 'time-tracking'));
+    try {
+      const refused = await pick('ada', 'issues');
+      expect(refused.statusCode).toBe(403);
+      expect(refused.json()).toMatchObject({ error: { code: 'PLUGIN_NEED_MISSING' } });
+    } finally {
+      await context.database.db
+        .update(schema.plugins)
+        .set({ manifest: MANIFEST })
+        .where(eq(schema.plugins.slug, 'time-tracking'));
+    }
+    expect((await call('ada', '/api/v1/plugins/nobody/pick/people')).statusCode).toBe(404);
+    expect((await call(null, '/api/v1/plugins/time-tracking/pick/issues')).statusCode).toBe(401);
   });
 });

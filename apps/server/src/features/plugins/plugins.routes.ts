@@ -6,10 +6,14 @@ import {
   issuePanelsResponseSchema,
   PLUGIN_ACTION_INPUT_MAX_BYTES,
   PLUGIN_SETTINGS_MAX_BYTES,
+  pickedIssuesResponseSchema,
+  pickedPeopleResponseSchema,
+  pickQuerySchema,
   pluginActionParamsSchema,
   pluginActionRequestSchema,
   pluginActionResponseSchema,
   pluginDetailsResponseSchema,
+  pluginDialogsResponseSchema,
   pluginPlacedScreensResponseSchema,
   pluginRouteParamsSchema,
   pluginScreensResponseSchema,
@@ -41,9 +45,12 @@ import { getPlugin } from './queries/get-plugin.query.ts';
 import { getPluginLogo } from './queries/get-plugin-logo.query.ts';
 import { listPlugins } from './queries/list-plugins.query.ts';
 import { listProjectPlugins } from './queries/list-project-plugins.query.ts';
+import { pickIssues } from './queries/pickers/pick-issues.query.ts';
+import { pickPeople } from './queries/pickers/pick-people.query.ts';
 import { getScreenBundle } from './queries/screens/get-screen-bundle.query.ts';
 import { getScreenFrame } from './queries/screens/get-screen-frame.query.ts';
 import { listIssuePanels } from './queries/screens/list-issue-panels.query.ts';
+import { listPluginDialogs } from './queries/screens/list-plugin-dialogs.query.ts';
 import { listPluginScreens } from './queries/screens/list-plugin-screens.query.ts';
 import { listProjectScreens } from './queries/screens/list-project-screens.query.ts';
 import { routeRequestOf } from './utils/route-request.util.ts';
@@ -262,6 +269,43 @@ export function registerPluginRoutes(app: FastifyInstance): void {
         ...request.params,
         input: request.body,
       }),
+  );
+
+  routes.get(
+    '/api/v1/plugin-screens/:pluginSlug/dialogs',
+    {
+      config: { access: listPluginDialogs.access },
+      schema: { params: pluginSlugParamsSchema, response: { 200: pluginDialogsResponseSchema } },
+    },
+    (request) => listPluginDialogs.execute(request.executionContext, request.params),
+  );
+
+  routes.get(
+    '/api/v1/plugins/:pluginSlug/pick/issues',
+    {
+      config: { access: pickIssues.access },
+      schema: {
+        params: pluginSlugParamsSchema,
+        querystring: pickQuerySchema,
+        response: { 200: pickedIssuesResponseSchema },
+      },
+    },
+    (request) =>
+      pickIssues.execute(request.executionContext, { ...request.params, ...request.query }),
+  );
+
+  routes.get(
+    '/api/v1/plugins/:pluginSlug/pick/people',
+    {
+      config: { access: pickPeople.access },
+      schema: {
+        params: pluginSlugParamsSchema,
+        querystring: pickQuerySchema,
+        response: { 200: pickedPeopleResponseSchema },
+      },
+    },
+    (request) =>
+      pickPeople.execute(request.executionContext, { ...request.params, ...request.query }),
   );
 
   // Open to anyone: the plugin checks the request is the service's. Bounded per client here, and

@@ -90,6 +90,7 @@ import {
   type PaletteColor,
   type PendingInvitation,
   type PluginDetailsResponse,
+  type PluginDialogsResponse,
   type PluginPermissionSection,
   type PluginScreen,
   type PluginScreensResponse,
@@ -220,6 +221,8 @@ export interface FakeServerState {
   issuePanels: Record<string, PluginScreen[]>;
   /** What plugins' actions answer, by `slug/action`: none unless a test sets some. */
   pluginActions: Record<string, FakeActionAnswer>;
+  /** Each plugin's dialogs the signed-in person may open, by slug: none unless a test sets some. */
+  pluginDialogs: Record<string, PluginDialogsResponse>;
   /** The webhooks of the instance, with their deliveries: none unless a test adds some. */
   webhooks: FakeWebhook[];
   invitations: PendingInvitation[];
@@ -597,6 +600,7 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
       projectScreens: {},
       issuePanels: {},
       pluginActions: {},
+      pluginDialogs: {},
       webhooks: [],
       invitations: [],
       invitationLinks: new Map(),
@@ -882,7 +886,8 @@ export function fakeServer(initial: Partial<FakeServerState> = {}): FakeServer {
     const answer = handler
       ? handler((body ?? {}) as Record<string, unknown>, url.searchParams)
       : // Before the projects': their paths would read `plugin-screens` as a project's part.
-        (pluginScreenRequest(state, method, url.pathname) ??
+        (pluginOverlayRequest(state, method, url.pathname, url.searchParams) ??
+        pluginScreenRequest(state, method, url.pathname) ??
         attachmentRequest(state, method, url.pathname, body, new Headers(init?.headers)) ??
         projectRequest(state, method, url.pathname, url.searchParams, body) ??
         issueRequest(state, method, url.pathname, url.searchParams, body) ??
@@ -3908,4 +3913,56 @@ function saveWebhook(state: FakeServerState, webhook: FakeWebhook): void {
   state.webhooks = state.webhooks.map((candidate) =>
     candidate.id === webhook.id ? webhook : candidate,
   );
+}
+
+const OVERLAY_PATH =
+  /^\/api\/v1\/(?:plugin-screens\/([^/]+)\/dialogs|plugins\/([^/]+)\/pick\/(issues|people))$/;
+
+/**
+ * `GET /api/v1/plugin-screens/:slug/dialogs`, as the test sets them, and Toppo's search for a
+ * plugin's screen (`…/pick/issues`, `…/pick/people`): the issues and people of the fake
+ * server whose key, title or name holds what is typed.
+ */
+function pluginOverlayRequest(
+  state: FakeServerState,
+  method: string,
+  path: string,
+  search: URLSearchParams,
+): Response | undefined {
+  const match = OVERLAY_PATH.exec(path);
+  if (!match || method !== 'GET') {
+    return undefined;
+  }
+  const refusal = asSignedIn(state);
+  if (refusal) {
+    return refusal;
+  }
+  const [, dialogsOf, , of] = match;
+  if (dialogsOf !== undefined) {
+    const dialogs = state.pluginDialogs[dialogsOf];
+    return dialogs ? json(dialogs) : apiError(404, 'SCREEN_NOT_FOUND');
+  }
+  const typed = (search.get('search') ?? '').toLowerCase();
+  if (of === 'people') {
+    return json({
+      people: state.users
+        .filter(({ name }) => name.toLowerCase().includes(typed))
+        .map(({ id, name }) => ({ id, name })),
+    });
+  }
+  return json({
+    issues: state.issues
+      .filter((issue) =>
+        `${issue.projectKey}-${issue.number} ${issue.title}`.toLowerCase().includes(typed),
+      )
+      .map((issue) => ({
+        id: `01a1569b-9900-7000-8000-0000000016${String(issue.number % 100).padStart(2, '0')}`,
+        key: `${issue.projectKey}-${issue.number}`,
+        title: issue.title,
+        projectId:
+          state.projects.find(({ key }) => key === issue.projectKey)?.id ??
+          '01a1569b-9900-7000-8000-000000000500',
+        projectKey: issue.projectKey,
+      })),
+  });
 }

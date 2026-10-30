@@ -61,6 +61,13 @@ describe('the toppo command', () => {
     expect(built.out).toContain('events: issue.statusChanged');
   });
 
+  it('lists the screens a plugin draws, each where it shows', async () => {
+    const built = await toppo('plugin', 'build', 'screens', '--out', out);
+
+    expect(built.code).toBe(0);
+    expect(built.out).toContain('screens: report (main), reportOver (dialog)');
+  });
+
   it('tells why a plugin cannot be built, without a stack', async () => {
     const failed = await toppo('plugin', 'build', 'no-version', '--out', out);
 

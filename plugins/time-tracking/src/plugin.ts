@@ -56,9 +56,19 @@ export const plugin = definePlugin({
             status: 'Budget',
           },
           days: '{days} d',
+          chart: 'Days spent by project, against each budget',
+          logTime: 'Log time',
           overBudget: 'Over budget',
           withinBudget: 'Within budget',
           noBudget: 'No budget',
+        },
+      },
+      dialogs: {
+        logTime: {
+          title: 'Log time',
+          noIssue: 'No issue chosen yet.',
+          choose: 'Choose an issue',
+          change: 'Another issue',
         },
       },
       panels: {
@@ -134,9 +144,19 @@ export const plugin = definePlugin({
             status: 'Budget',
           },
           days: '{days} j',
+          chart: 'Jours passés par projet, face à chaque budget',
+          logTime: 'Saisir du temps',
           overBudget: 'Budget dépassé',
           withinBudget: 'Dans le budget',
           noBudget: 'Pas de budget',
+        },
+      },
+      dialogs: {
+        logTime: {
+          title: 'Saisir du temps',
+          noIssue: 'Aucun ticket choisi pour l’instant.',
+          choose: 'Choisir un ticket',
+          change: 'Un autre ticket',
         },
       },
       panels: {

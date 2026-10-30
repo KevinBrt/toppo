@@ -86,6 +86,7 @@ function manifestOf({
   events,
   pages,
   panels,
+  dialogs,
   jobs,
   routes,
 }: PluginDefinition): Omit<Manifest, 'settings' | 'projectSettings' | 'entities'> &
@@ -129,6 +130,13 @@ function manifestOf({
       ...(nav === undefined ? {} : { nav }),
     })),
     panels: [...panels].map(([name, { on, access, title }]) => ({ name, on, access, title })),
+    dialogs: [...dialogs].map(([name, { access, title, size, side }]) => ({
+      name,
+      access,
+      title,
+      size,
+      side,
+    })),
     jobs: [...jobs].map(([name, { every, label }]) => ({ name, every, label })),
     http: httpOf(config.http),
     routes: [...routes.keys()].map((name) => ({ name })),

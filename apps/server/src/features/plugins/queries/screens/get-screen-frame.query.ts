@@ -49,7 +49,9 @@ async function mayOpenScreen(
   }
   const panel = plugin.manifest.panels.find(({ name }) => name === screen);
   if (!panel) {
-    return false;
+    // A dialog shows over whatever page opened it: opened as a page of the main sidebar is.
+    const dialog = plugin.manifest.dialogs.find(({ name }) => name === screen);
+    return dialog !== undefined && mayOpen(actor, plugin, dialog.access);
   }
   const project = await resolveIssue(db, actor, shown.issue);
   return (

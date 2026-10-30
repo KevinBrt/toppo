@@ -28,6 +28,7 @@ const manifest: Manifest = {
   properties: {},
   pages: [],
   panels: [],
+  dialogs: [],
   messages: { en: { permissions: { reportsRead: 'See reports' } }, fr: {} },
   actions: [{ name: 'timeEntry.log', access: { issue: 'issueId' }, input: { type: 'object' } }],
   events: ['issue.created'],

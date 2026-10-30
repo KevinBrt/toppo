@@ -65,6 +65,11 @@ const OPEN_API_ROUTES = [
   // Services outside Toppo call a plugin there: it checks they signed what they send, and acts as
   // itself within its approval; a plugin not enabled, or a route it does not declare, answers 404.
   'POST /api/v1/plugins/:pluginSlug/routes/:route',
+  // Toppo's search for a plugin's screen: what the caller reads, where the plugin acts, in SQL.
+  'GET /api/v1/plugins/:pluginSlug/pick/issues',
+  'GET /api/v1/plugins/:pluginSlug/pick/people',
+  // The dialogs of a plugin the caller may open, each checked as its frame is.
+  'GET /api/v1/plugin-screens/:pluginSlug/dialogs',
   // The names of people who share a project with the caller, filtered in the query.
   'GET /api/v1/people',
   // The pages of enabled plugins the caller may open, each checked as its frame is.

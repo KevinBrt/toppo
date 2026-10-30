@@ -43,12 +43,13 @@ Steps 1 to 5 (roles and permissions, projects and issues, views, collaboration, 
     - [x] indexes: typed slots to filter, sort and sum on a record's own fields;
     - [x] properties of issues, typed in or computed by a plugin;
     - [x] `plugins/time-tracking` keeps time entries and writes each issue's time spent.
-  - [ ] **3. Interface**:
+  - [x] **3. Interface**:
     - [x] screens in frames without an origin, served by Toppo with its runtime, and the bridge;
     - [x] `@toppo-tracker/plugin-ui`: components, `useActionQuery`, `useActionMutation`, `useScreen`, `usePeople`, `useT`;
     - [x] pages in the main sidebar, the settings and a project's settings, and panels on an issue;
     - [x] `plugins/time-tracking`: the issue panel, and a page of the time spent by project against its budget;
-    - [ ] dialogs, menus and side panels opened by Toppo outside the frame; pickers of people and issues; charts.
+    - [x] confirmations, menus, a plugin's dialogs and side panels, and searches of issues and people, drawn by Toppo over the page; charts;
+    - [x] `plugins/time-tracking`: a chart of the days against each budget, and time logged on any issue from the report, in a dialog.
   - [x] **4. Beyond the instance**:
     - [x] the core's guard of outbound requests, and `ctx.http.fetch` where a plugin declares, inside the network only as its approval names;
     - [x] secret settings, sealed once typed;

@@ -9,7 +9,7 @@ import type { EventType } from './protocol/events.ts';
 import type { accessSchema, Messages } from './protocol/manifest.ts';
 import type { PluginLogo } from './protocol/package.ts';
 import type { RouteRequest } from './routes/route.ts';
-import type { PageDefinition, PanelDefinition } from './screens/screens.ts';
+import type { DialogDefinition, PageDefinition, PanelDefinition } from './screens/screens.ts';
 
 /** What `definePlugin` keeps of a plugin, for `servePlugin` to answer Toppo with. */
 export interface PluginDefinition {
@@ -42,6 +42,8 @@ export interface PluginDefinition {
   /** Its screens, by name, in the order they were defined. */
   pages: Map<string, PageDefinition>;
   panels: Map<string, PanelDefinition>;
+  /** Its dialogs, by name, opened over the page by its screens. */
+  dialogs: Map<string, DialogDefinition>;
   /** What it does on its own, by name. */
   jobs: Map<
     string,

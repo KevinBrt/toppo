@@ -6,14 +6,20 @@ import type { Properties, PropertyNames } from './property.ts';
 import type { PluginNeed } from './protocol/calls.ts';
 import type { JobEvery } from './protocol/declarations/jobs.ts';
 import type { RouteAnswer } from './protocol/declarations/routes.ts';
-import type { ScreenIcon } from './protocol/declarations/screens.ts';
+import type { DialogSize, ScreenIcon } from './protocol/declarations/screens.ts';
 import type { EventPayload, EventType } from './protocol/events.ts';
 import type { Messages } from './protocol/manifest.ts';
 import type { PluginLogo } from './protocol/package.ts';
 import { HOST_GLOBAL, type HostGlobal, PLUGIN_GLOBAL } from './protocol/sandbox.ts';
 import type { Route, RouteRequest } from './routes/route.ts';
 import { provideUrl } from './sandbox/url.ts';
-import { type Page, type Panel, type ScreenComponent, serveScreens } from './screens/screens.ts';
+import {
+  type Dialog,
+  type Page,
+  type Panel,
+  type ScreenComponent,
+  serveScreens,
+} from './screens/screens.ts';
 import { servePlugin } from './serve.ts';
 
 type Scope = 'instance' | 'project';
@@ -167,6 +173,21 @@ export interface Plugin<
   /** A panel of the plugin beside one of Toppo's screens: an issue's. */
   definePanel(definition: ScreenDeclaration<M, P> & { on: Panel['on'] }): Panel;
   /**
+   * A dialog of the plugin, which Toppo opens over the page when one of its screens asks
+   * (`useDialog`): in the page's middle, or at its side as a panel. It reads what it was opened
+   * with by `input`, 4 KB of JSON at most, and closes with what `result` reads, 16 KB at most.
+   */
+  defineDialog<I extends z.ZodType, R extends z.ZodType = z.ZodVoid>(
+    definition: ScreenDeclaration<M, P> & {
+      input: I;
+      result?: R;
+      /** How wide it opens: `medium` by default. */
+      size?: DialogSize;
+      /** At the side of the page, as a panel, rather than in its middle. */
+      side?: boolean;
+    },
+  ): Dialog<I, R>;
+  /**
    * What the plugin does on its own, as itself, every hour, day or week, counted from its last
    * run: Toppo keeps no time zone to run it at an hour. Its work must bear being done twice: a
    * server stopped mid-way runs it again.
@@ -218,11 +239,12 @@ export function definePlugin<
     events: new Map(),
     pages: new Map(),
     panels: new Map(),
+    dialogs: new Map(),
     jobs: new Map(),
     routes: new Map(),
   };
   const assertNewScreen = (name: string) => {
-    if (definition.pages.has(name) || definition.panels.has(name)) {
+    if (definition.pages.has(name) || definition.panels.has(name) || definition.dialogs.has(name)) {
       throw new Error(`The screen ${name} is defined twice`);
     }
   };
@@ -274,6 +296,11 @@ export function definePlugin<
       definition.panels.set(name, { on, access, title, component });
       return { name, on };
     },
+    defineDialog({ name, access, title, component, input, result, size = 'medium', side = false }) {
+      assertNewScreen(name);
+      definition.dialogs.set(name, { access, title, component, size, side });
+      return { name, input, result };
+    },
     defineJob({ name, every, label, handler }) {
       if (definition.jobs.has(name)) {
         throw new Error(`The job ${name} is defined twice`);
@@ -302,7 +329,9 @@ export function definePlugin<
   serveScreens({
     id: config.id,
     messages: config.messages,
-    component: (name) => (definition.pages.get(name) ?? definition.panels.get(name))?.component,
+    component: (name) =>
+      (definition.pages.get(name) ?? definition.panels.get(name) ?? definition.dialogs.get(name))
+        ?.component,
   });
   return plugin;
 }

@@ -1,22 +1,26 @@
 import {
   Alert,
   Badge,
+  BarChart,
+  Button,
   Field,
   formatDuration,
   Page,
   Select,
   Table,
   useActionQuery,
+  useDialog,
   useScreen,
   useT,
 } from '@toppo-tracker/plugin-ui';
 import { projectReport } from '../actions/project-report.action.ts';
 import { plugin } from '../plugin.ts';
+import { logTimeDialog } from '../screens/log-time.dialog.ts';
 
 /**
  * The time logged across the projects the person sees, filtered by project (kept in Toppo's
- * address): each project's time in days against its budget, those over it marked, closed
- * issues apart from the others.
+ * address): each project's time in days against its budget, drawn and in a table, those over it
+ * marked, closed issues apart from the others. Time is logged from here on any issue, in a dialog.
  */
 export function TimeReportPage() {
   const t = useT(plugin);
@@ -24,15 +28,30 @@ export function TimeReportPage() {
   const projectId = search['project'];
   const report = useActionQuery(projectReport, projectId ? { projectId } : {});
   const hours = report.data?.hoursPerDay ?? 8;
-  const days = (minutes: number) =>
+  const inDays = (minutes: number) => minutes / 60 / hours;
+  const daysOf = (count: number) =>
     t('pages.report.days', {
-      days: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(
-        minutes / 60 / hours,
-      ),
+      days: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(count),
     });
+  const days = (minutes: number) => daysOf(inDays(minutes));
+
+  // #region log-time
+  const logTimeHere = useDialog(logTimeDialog);
+
+  async function logTimeOnAnIssue() {
+    // Dismissed, it answers `undefined`; logged, the minutes, and the report is asked again.
+    if (await logTimeHere.open(projectId ? { projectId } : {})) {
+      report.refetch();
+    }
+  }
+  // #endregion log-time
 
   return (
-    <Page title={t('pages.report.title')} description={t('pages.report.description', { hours })}>
+    <Page
+      title={t('pages.report.title')}
+      description={t('pages.report.description', { hours })}
+      actions={<Button onClick={() => void logTimeOnAnIssue()}>{t('pages.report.logTime')}</Button>}
+    >
       {report.error ? <Alert tone="danger">{t('errors.failed')}</Alert> : null}
       <Field label={t('pages.report.project')}>
         {(control) => (
@@ -50,6 +69,16 @@ export function TimeReportPage() {
           />
         )}
       </Field>
+      <BarChart
+        title={t('pages.report.chart')}
+        format={daysOf}
+        bars={(report.data?.projects ?? []).map((project) => ({
+          key: project.projectId,
+          label: project.projectKey,
+          value: inDays(project.spentMinutes),
+          limit: project.budgetDays,
+        }))}
+      />
       <Table
         caption={t('pages.report.caption')}
         empty={t('pages.report.empty')}

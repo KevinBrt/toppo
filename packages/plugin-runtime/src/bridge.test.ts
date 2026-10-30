@@ -73,6 +73,7 @@ describe('the bridge to Toppo', () => {
       search: {},
       issue: null,
       project: null,
+      input: null,
     };
     const early = vi.fn();
     const stop = bridge.onContext(early);

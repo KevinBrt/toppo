@@ -20,6 +20,15 @@ plugin.definePage({
   component: () => import('./web/report-page.tsx').then((module) => module.ReportPage),
 });
 
+/** The same screen, opened over the page by another one. */
+plugin.defineDialog({
+  name: 'reportOver',
+  access: 'authenticated',
+  title: 'report',
+  input: z.object({}),
+  component: () => import('./web/report-page.tsx').then((module) => module.ReportPage),
+});
+
 /** Done on the server only: what a screen runs, never reads. */
 function serverOnly(minutes: number): string {
   return `Server’s own secret ways, ${minutes} minutes`;

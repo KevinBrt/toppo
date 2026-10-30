@@ -105,7 +105,8 @@ export function declaredLogo(
  * `toppo plugin build` writes it.
  */
 export function assertScreensBundled(manifest: Manifest, opened: PluginPackage): void {
-  if (manifest.pages.length + manifest.panels.length > 0 && !opened.hasScreens) {
+  const screens = manifest.pages.length + manifest.panels.length + manifest.dialogs.length;
+  if (screens > 0 && !opened.hasScreens) {
     throw new HttpError(
       422,
       'PLUGIN_PACKAGE_INVALID',

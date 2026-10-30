@@ -1,10 +1,15 @@
 import {
   type FrameMessage,
+  frameMessageSchema,
   type HostMessage,
   hostMessageSchema,
+  type MenuItem,
   type ScreenContext,
   type ScreenFailure,
 } from '@toppo-tracker/plugin-sdk/protocol';
+import type { ConfirmOptions } from '@toppo-tracker/plugin-ui';
+
+type MenuMessage = Extract<FrameMessage, { kind: 'menu' }>;
 
 /** A call waiting for Toppo's answer. */
 interface Pending {
@@ -19,6 +24,19 @@ export interface Bridge {
   action(name: string, input: unknown, changes?: boolean): Promise<unknown>;
   /** The names of people, those the person looking may see. */
   people(ids: readonly string[]): Promise<{ id: string; name: string | null }[]>;
+  /** Has the person confirm, in a dialog of Toppo's: whether they did. */
+  confirm(options: ConfirmOptions): Promise<boolean>;
+  /** Opens one of the plugin's dialogs: what it closed with, `null` when dismissed. */
+  dialog(name: string, input: unknown): Promise<unknown>;
+  /** In a dialog, closes it, with what its opener is answered: JSON, or refused. */
+  close(result: unknown): void;
+  /** A menu Toppo draws over the page beside `anchor`: the item chosen, or `null`. */
+  menu(anchor: MenuMessage['anchor'], items: readonly MenuItem[]): Promise<string | null>;
+  /** Toppo's search of issues or people: what the person picked, `null` for nothing. */
+  pick(
+    of: 'issue' | 'people',
+    options: { projectId?: string; multiple?: boolean },
+  ): Promise<unknown>;
   /** Called with the screen's context, now if Toppo told it already, and at each change. */
   onContext(listener: (context: ScreenContext) => void): () => void;
 }
@@ -65,11 +83,17 @@ export function createBridge(host: Window = window.parent): Bridge {
   });
 
   const post = (message: FrameMessage) => host.postMessage(message, '*');
-  const call = (message: (id: number) => FrameMessage) =>
+  // Checked before it leaves: Toppo ignores what does not fit, and the call would wait forever.
+  const call = (message: (id: number) => unknown) =>
     new Promise<unknown>((resolve, reject) => {
       lastId += 1;
+      const checked = frameMessageSchema.safeParse(message(lastId));
+      if (!checked.success) {
+        reject({ code: 'INVALID_REQUEST' } satisfies ScreenFailure);
+        return;
+      }
       pending.set(lastId, { resolve, reject });
-      post(message(lastId));
+      post(checked.data);
     });
 
   return {
@@ -81,6 +105,23 @@ export function createBridge(host: Window = window.parent): Bridge {
         id: string;
         name: string | null;
       }[],
+    confirm: async (options) =>
+      (await call((id) => ({ kind: 'confirm', id, ...options }))) === true,
+    dialog: (name, input) => call((id) => ({ kind: 'dialog', id, name, input })),
+    close(result) {
+      const checked = frameMessageSchema.safeParse(
+        result === undefined ? { kind: 'close' } : { kind: 'close', result },
+      );
+      if (!checked.success) {
+        throw { code: 'INVALID_RESULT' } satisfies ScreenFailure;
+      }
+      post(checked.data);
+    },
+    menu: async (anchor, items) => {
+      const chosen = await call((id) => ({ kind: 'menu', id, anchor, items: [...items] }));
+      return typeof chosen === 'string' ? chosen : null;
+    },
+    pick: (of, options) => call((id) => ({ kind: 'pick', id, of, ...options })),
     onContext(listener) {
       listeners.add(listener);
       if (context) {

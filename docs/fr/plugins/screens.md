@@ -75,6 +75,56 @@ export function IssueTimePanel() {
 
 L’`error` d’une action qui a échoué est une `ScreenError` : son `code` est la clé de message du plugin (`ctx.fail`), ou l’un des codes de Toppo (`FORBIDDEN`, `VALIDATION_FAILED` avec ses `issues`). `setSearch` garde les choix d’une page dans l’adresse de Toppo, pour qu’elle se partage ; `open` ouvre un ticket ou une autre de ses pages.
 
+## Graphiques
+
+| Composant                            | Montre                                                                                                                                                                             |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<BarChart title bars format? />`    | Un chiffre par chose, en barres horizontales. `bars` : `{ key, label, value, limit? }` ; une limite (un budget) est marquée en travers de sa barre, et la dépasser est dit en mots |
+| `<LineChart title points format? />` | Un chiffre dans le temps, en ligne. `points` : `{ key, label, value }`, dans l’ordre ; le survol, ou les flèches du clavier, lisent chaque point                                   |
+| `<Meter label value max format? />`  | Un chiffre face à son maximum : les jours passés face à un budget                                                                                                                  |
+
+`format` écrit chaque valeur, comme `(days) => t('days', { days })`. Chacun est dessiné aux couleurs de Toppo, et dit aux lecteurs d’écran sous forme de tableau (un `meter` pour `Meter`). Le rapport de temps dessine les jours de chaque projet face à son budget avec un `BarChart`.
+
+## Dialogues
+
+<<< @/../plugins/time-tracking/src/screens/log-time.dialog.ts
+
+`plugin.defineDialog({ name, access, title, component, input, result?, size?, side? })` déclare un écran qu’un autre de ses écrans ouvre par-dessus la page : le dialogue de Toppo, sous son `title` et le nom de son plugin, le tient dans un cadre à lui.
+
+- **`input`** : le schéma de ce que lui passe l’écran qui l’ouvre, 4 Ko de JSON au plus.
+- **`result`** : le schéma de ce avec quoi il se ferme, 16 Ko au plus. Sans lui, il se ferme sans rien.
+- **`size`** : `'small'`, `'medium'` (par défaut) ou `'large'`. **`side: true`** l’ouvre sur le côté de la page, plutôt qu’en son milieu.
+- **`access`** : comme celui d’une page, vérifié à l’ouverture.
+
+10 dialogues au plus, nommés autrement que les pages et panneaux du plugin. L’écran qui l’ouvre :
+
+<<< @/../plugins/time-tracking/src/web/time-report-page.tsx#log-time
+
+Et l’écran du dialogue lui-même, qui lit ce avec quoi il a été ouvert, puis se ferme :
+
+<<< @/../plugins/time-tracking/src/web/log-time-dialog.tsx#dialog
+
+| Hooks                    | Répondent                                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `useDialog(dialog)`      | `{ open(input) }` : ce avec quoi le dialogue s’est fermé, lu par son schéma `result` ; `undefined` quand la personne l’a écarté |
+| `useDialogInput(dialog)` | Dans le dialogue, ce avec quoi il a été ouvert, lu par son schéma `input`                                                       |
+| `useCloseDialog(dialog)` | Dans le dialogue, `close(result)` : son ouvreur reçoit `result`, vérifié d’abord par le schéma `result`                         |
+
+Échap, le bouton de fermeture de Toppo ou un clic à côté l’écartent. Un dialogue n’en ouvre pas d’autre.
+
+## Ce que Toppo dessine par-dessus la page
+
+Un cadre dessine mal certaines choses : ce qui le déborde, ce que la personne doit distinguer des mots du plugin. Un écran demande à Toppo de les dessiner, et chacune dit quel plugin l’a demandée :
+
+| Hook ou composant               | Dessine                                                                                                                                           | Répond                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `useConfirm()`                  | `confirm({ title, description?, confirmLabel?, tone? })` : une confirmation ; `tone: 'danger'` pour ce qui ne se défait pas                       | `true` une fois confirmé, `false` sinon                                    |
+| `<Menu label items onSelect />` | Un bouton, et son menu à côté, jamais coupé par le cadre. `items` : `{ id, label, tone?, disabled? }`, 20 au plus                                 | `onSelect(id)`                                                             |
+| `usePickIssue()`                | `pick({ projectId? })` : la recherche de Toppo dans les tickets que la personne voit, dans les projets où agit le plugin. Il demande `issue.read` | `{ id, key, title, projectId, projectKey }`, ou `null`                     |
+| `usePickPeople()`               | `pick({ projectId?, multiple? })` : la recherche de Toppo dans les personnes qui partagent avec elle un projet où agit le plugin                  | Celles choisies, `{ id, name }[]` : une sauf `multiple`, aucune si écartée |
+
+Toppo cherche : l’écran n’apprend que ce que la personne a choisi. Il dessine une chose à la fois par écran, pour l’écran que la personne utilise seulement ; demandé autrement, il refuse avec `OVERLAY_REFUSED`.
+
 ## Ce qu’un écran ne peut pas faire
 
 Un écran tourne dans un cadre isolé sans origine, sous une politique de sécurité de contenu qui n’atteint rien :

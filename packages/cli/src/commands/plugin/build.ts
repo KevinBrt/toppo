@@ -123,7 +123,9 @@ export async function buildPlugin(
     ? { name: manifest.logo, bytes: await logoOf(directory, manifest.logo) }
     : undefined;
   const screens =
-    manifest.pages.length + manifest.panels.length > 0 ? await bundleScreens(directory) : undefined;
+    manifest.pages.length + manifest.panels.length + manifest.dialogs.length > 0
+      ? await bundleScreens(directory)
+      : undefined;
   const archive = packagePlugin(code, version, logo, screens);
   await mkdir(outDirectory, { recursive: true });
   const file = join(outDirectory, `${manifest.id}-${version}.zip`);
@@ -168,6 +170,7 @@ export const buildCommand: CliCommand = {
         `  screens: ${listed([
           ...manifest.pages.map((page) => `${page.name} (${page.zone})`),
           ...manifest.panels.map((panel) => `${panel.name} (${panel.on})`),
+          ...manifest.dialogs.map((dialog) => `${dialog.name} (dialog)`),
         ])}`,
       );
       return 0;

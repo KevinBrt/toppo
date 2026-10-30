@@ -12,7 +12,7 @@ Un plugin ajoute à ce que fait Toppo : les champs et les écrans propres à une
 | [Des routes](./outside-toppo#recevoir-des-requetes) | Reçoit ce que lui envoient des services hors de Toppo, une fois leur signature vérifiée |
 | [Des entités](./data#entites)                       | Garde ses propres enregistrements, sur un ticket ou un projet, que Toppo vérifie        |
 | [Des propriétés](./data#proprietes)                 | Ajoute des champs aux tickets, remplis par les gens ou par lui-même                     |
-| [Des écrans](./screens)                             | Affiche des pages et des panneaux, dessinés avec les composants de Toppo                |
+| [Des écrans](./screens)                             | Affiche des pages, des panneaux et des dialogues, dessinés avec les composants de Toppo |
 | [Des requêtes sortantes](./outside-toppo)           | Joint les sites qu’il déclare : une messagerie, un service                              |
 
 ## Comment Toppo le fait tourner
