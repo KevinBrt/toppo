@@ -16,7 +16,15 @@ let elsewhere = '';
 let closedPort = 0;
 const servers: Server[] = [];
 
-/** What a server answers, by path: what it received, redirects, too much, or nothing. */
+/** A redirect to `location`, with the status the request asks for: 302 unless it says. */
+function redirect(response: ServerResponse, url: URL, location: string): void {
+  response.writeHead(Number(url.searchParams.get('status') ?? 302), { location }).end();
+}
+
+/**
+ * What a server answers, by path: what it received, redirects (back here, to the other server, or
+ * inside the network, each a path of its own), too much, or nothing.
+ */
 function answer(request: IncomingMessage, response: ServerResponse, body: string): void {
   const url = new URL(request.url ?? '/', 'http://localhost');
   switch (url.pathname) {
@@ -25,11 +33,14 @@ function answer(request: IncomingMessage, response: ServerResponse, body: string
       response.setHeader('content-type', 'application/json');
       response.end(JSON.stringify({ method: request.method, headers: request.headers, body }));
       return;
-    case '/redirect':
-      response.writeHead(Number(url.searchParams.get('status') ?? 302), {
-        location: url.searchParams.get('to') ?? '/echo',
-      });
-      response.end();
+    case '/redirect/here':
+      redirect(response, url, '/echo');
+      return;
+    case '/redirect/elsewhere':
+      redirect(response, url, `${elsewhere}/echo`);
+      return;
+    case '/redirect/inside':
+      redirect(response, url, 'http://10.0.0.1/');
       return;
     case '/loop':
       response.writeHead(302, { location: '/loop' }).end();
@@ -183,15 +194,13 @@ describe('a request leaving Toppo', () => {
       mayReach: (url) => url.origin === here,
       mayReachInside: (url) => url.hostname === '127.0.0.1',
     };
-    const to = (target: string) => `${here}/redirect?to=${encodeURIComponent(target)}`;
-
     expect(await failureOf(outboundFetch(get(`${elsewhere}/echo`), hereOnly))).toBe(
       'HOST_NOT_DECLARED',
     );
-    expect(await failureOf(outboundFetch(get(to(`${elsewhere}/echo`)), hereOnly))).toBe(
+    expect(await failureOf(outboundFetch(get(`${here}/redirect/elsewhere`), hereOnly))).toBe(
       'HOST_NOT_DECLARED',
     );
-    expect(await failureOf(outboundFetch(get(to('http://10.0.0.1/')), LOOPBACK))).toBe(
+    expect(await failureOf(outboundFetch(get(`${here}/redirect/inside`), LOOPBACK))).toBe(
       'ADDRESS_NOT_ALLOWED',
     );
     expect(await failureOf(outboundFetch(get(`${here}/loop`), LOOPBACK))).toBe(
@@ -202,7 +211,7 @@ describe('a request leaving Toppo', () => {
   it('follows redirects as a browser does: a GET after a form, no credentials elsewhere', async () => {
     const seeOther = await outboundFetch(
       {
-        url: `${here}/redirect?status=303&to=/echo`,
+        url: `${here}/redirect/here?status=303`,
         method: 'POST',
         headers: { authorization: 'Bearer secret', 'content-type': 'text/plain' },
         body: 'logged',
@@ -210,7 +219,7 @@ describe('a request leaving Toppo', () => {
       LOOPBACK,
     );
     const moved = await outboundFetch(
-      get(`${here}/redirect?status=307&to=${encodeURIComponent(`${elsewhere}/echo`)}`, {
+      get(`${here}/redirect/elsewhere?status=307`, {
         headers: {
           authorization: 'Bearer secret',
           'x-api-key': 'secret',
