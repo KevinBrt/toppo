@@ -1,0 +1,2992 @@
+{
+  "name": "1.2.0",
+  "migration": "0058_plugin_person_records",
+  "tables": {
+    "accounts": [
+      {
+        "id": "01a18d77-cd84-7191-aaff-f613285f04a4",
+        "account_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "provider_id": "credential",
+        "user_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "password": "4573aec1c28118bbaf5913c0ce8bf36a:e86578e5f94c068b8bdf75adb46c5138a913407f792420c61b8ef02428e7f91aa81b9f8537893c80d6cb1586884bdca13856562cd871c97c322c9530da055f40",
+        "access_token": null,
+        "refresh_token": null,
+        "id_token": null,
+        "access_token_expires_at": null,
+        "refresh_token_expires_at": null,
+        "scope": null,
+        "created_at": "2026-10-30T15:40:01.512947+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00"
+      },
+      {
+        "id": "01a18d77-cec7-727f-a003-51edb9350e58",
+        "account_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "provider_id": "credential",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "password": "1cab3cc84094665c37a0666f21eee957:f540daf513c1cf183b80d2a4183fbb188db09afa261ddf6fba7c34e7e0340052757a472237356d6586e6a7635a2270b4d74ebba292d15d839041aaa6eb4ee965",
+        "access_token": null,
+        "refresh_token": null,
+        "id_token": null,
+        "access_token_expires_at": null,
+        "refresh_token_expires_at": null,
+        "scope": null,
+        "created_at": "2026-10-30T15:40:01.853522+00:00",
+        "updated_at": "2026-10-30T15:40:01.853522+00:00"
+      },
+      {
+        "id": "01a18d77-cf46-7587-a25d-e4272b72d4e1",
+        "account_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "provider_id": "credential",
+        "user_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "password": "4a2133d6e03be1040407b678bb5bd5aa:c188357e2c6933a199dc1da8e9cdc23e5fd9f4e3147da00fab8cea6f1e14d86b296b69a39dc3b152ed93429ec70cc9be05e6f3a3796f43f7f01ea41d79abd977",
+        "access_token": null,
+        "refresh_token": null,
+        "id_token": null,
+        "access_token_expires_at": null,
+        "refresh_token_expires_at": null,
+        "scope": null,
+        "created_at": "2026-10-30T15:40:01.990122+00:00",
+        "updated_at": "2026-10-30T15:40:01.990122+00:00"
+      },
+      {
+        "id": "01a18d77-cfc0-70f6-9ba5-d16df3486f3e",
+        "account_id": "01a18d77-cfbc-7644-b534-177b648ece68",
+        "provider_id": "credential",
+        "user_id": "01a18d77-cfbc-7644-b534-177b648ece68",
+        "password": "4665f335394247262bcda32a9feae105:37accdd04596c3a545f8a66aa5c5d453bef9819253145d7d575c0b7e891fe69cc5021486e6b5cb272a1ec490521263c876e14a7017ce84c93c850919dec4b059",
+        "access_token": null,
+        "refresh_token": null,
+        "id_token": null,
+        "access_token_expires_at": null,
+        "refresh_token_expires_at": null,
+        "scope": null,
+        "created_at": "2026-10-30T15:40:02.121265+00:00",
+        "updated_at": "2026-10-30T15:40:02.121265+00:00"
+      }
+    ],
+    "activities": [
+      {
+        "id": "01a18d77-d069-748c-80f4-d391bbf62c66",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.created",
+        "payload": {
+          "assigneeId": "01a18d77-cec2-7700-8bb1-f2131388109a"
+        },
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00"
+      },
+      {
+        "id": "01a18d77-d08b-73a4-a83f-ba86d0492ba9",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "actor_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "type": "issue.created",
+        "payload": {
+          "assigneeId": null
+        },
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.365165+00:00"
+      },
+      {
+        "id": "01a18d77-d0a8-75cc-add8-e45ce640eecc",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d0a3-717d-8341-6c5df11336ca",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.created",
+        "payload": {
+          "assigneeId": null
+        },
+        "created_at": "2026-10-30T15:40:02.400694+00:00",
+        "updated_at": "2026-10-30T15:40:02.400694+00:00"
+      },
+      {
+        "id": "01a18d77-d0e4-77f4-a911-14dc8d57b547",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "issue_id": "01a18d77-d0de-7107-bea9-e3e36e7d0fcc",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.created",
+        "payload": {
+          "assigneeId": "01a18d77-cec2-7700-8bb1-f2131388109a"
+        },
+        "created_at": "2026-10-30T15:40:02.462526+00:00",
+        "updated_at": "2026-10-30T15:40:02.462526+00:00"
+      },
+      {
+        "id": "01a18d77-d0ff-737e-8cea-7dcbd2527939",
+        "project_id": "01a18d77-cdfb-73de-ab90-3eb6edc8cde0",
+        "issue_id": "01a18d77-d0fa-7281-8a1a-1708dc3cfefa",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.created",
+        "payload": {
+          "assigneeId": null
+        },
+        "created_at": "2026-10-30T15:40:02.494262+00:00",
+        "updated_at": "2026-10-30T15:40:02.494262+00:00"
+      },
+      {
+        "id": "01a18d77-d117-71e6-8c84-ffd852551710",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.statusChanged",
+        "payload": {
+          "to": {
+            "id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+            "name": "In progress"
+          },
+          "from": {
+            "id": "01a16286-f097-76c3-99ef-142009179f39",
+            "name": "New"
+          }
+        },
+        "created_at": "2026-10-30T15:40:02.525794+00:00",
+        "updated_at": "2026-10-30T15:40:02.525794+00:00"
+      },
+      {
+        "id": "01a18d77-d12f-772b-aa6b-14900a382663",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.labelsChanged",
+        "payload": {
+          "added": [
+            {
+              "id": "01a18d77-ce08-7287-aad5-3c361373fa60",
+              "name": "Billing"
+            }
+          ],
+          "removed": []
+        },
+        "created_at": "2026-10-30T15:40:02.554114+00:00",
+        "updated_at": "2026-10-30T15:40:02.554114+00:00"
+      },
+      {
+        "id": "01a18d77-d143-7646-942f-a6549a86e916",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.propertyChanged",
+        "payload": {
+          "to": "1.2.1",
+          "from": "1.2.0",
+          "type": "text",
+          "property": {
+            "id": "01a18d77-ce32-75e6-8fc1-bdd863aa7b54",
+            "name": "Version"
+          }
+        },
+        "created_at": "2026-10-30T15:40:02.575222+00:00",
+        "updated_at": "2026-10-30T15:40:02.575222+00:00"
+      },
+      {
+        "id": "01a18d77-d155-7726-980a-d9871ed0a840",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.titleChanged",
+        "payload": {
+          "to": "Crash when exporting the invoices",
+          "from": "Crash when exporting invoices"
+        },
+        "created_at": "2026-10-30T15:40:02.595332+00:00",
+        "updated_at": "2026-10-30T15:40:02.595332+00:00"
+      },
+      {
+        "id": "01a18d77-d155-7727-bd2c-5de075f30c0b",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.descriptionChanged",
+        "payload": {
+          "to": "**Steps**\n\n1. Open the invoices\n2. Click *Export*\n\nIt crashes in Firefox.",
+          "from": "**Steps**\n\n1. Open the invoices\n2. Click *Export*\n\nIt crashes."
+        },
+        "created_at": "2026-10-30T15:40:02.595332+00:00",
+        "updated_at": "2026-10-30T15:40:02.595332+00:00"
+      },
+      {
+        "id": "01a18d77-d16b-7699-a83a-2c542c762507",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.categoryChanged",
+        "payload": {
+          "to": {
+            "id": "01a16286-f098-7e89-95b4-e2b2aa971d11",
+            "name": "Bug"
+          },
+          "from": {
+            "id": "01a16286-f098-7eba-93de-76873ba83fec",
+            "name": "Request"
+          }
+        },
+        "created_at": "2026-10-30T15:40:02.616833+00:00",
+        "updated_at": "2026-10-30T15:40:02.616833+00:00"
+      },
+      {
+        "id": "01a18d77-d16b-769a-ade0-e95201ac269a",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.priorityChanged",
+        "payload": {
+          "to": {
+            "id": "01a16286-f097-7031-b0a5-653999e6a1e3",
+            "name": "High",
+            "level": 3
+          },
+          "from": {
+            "id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+            "name": "Normal",
+            "level": 2
+          }
+        },
+        "created_at": "2026-10-30T15:40:02.616833+00:00",
+        "updated_at": "2026-10-30T15:40:02.616833+00:00"
+      },
+      {
+        "id": "01a18d77-d180-73cd-9a8c-f5e88bf9841d",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.assigneeChanged",
+        "payload": {
+          "to": "01a18d77-cfbc-7644-b534-177b648ece68",
+          "from": null
+        },
+        "created_at": "2026-10-30T15:40:02.641929+00:00",
+        "updated_at": "2026-10-30T15:40:02.641929+00:00"
+      },
+      {
+        "id": "01a18d77-d195-72e0-8480-c14de66e7f33",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "issue_id": "01a18d77-d0de-7107-bea9-e3e36e7d0fcc",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.statusChanged",
+        "payload": {
+          "to": {
+            "id": "01a16286-f097-7d2f-8165-6070ac26c187",
+            "name": "Resolved"
+          },
+          "from": {
+            "id": "01a16286-f097-76c3-99ef-142009179f39",
+            "name": "New"
+          }
+        },
+        "created_at": "2026-10-30T15:40:02.661132+00:00",
+        "updated_at": "2026-10-30T15:40:02.661132+00:00"
+      },
+      {
+        "id": "01a18d77-d1ae-7122-9468-8c72ad6de575",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.commented",
+        "payload": {
+          "commentId": "01a18d77-d1ab-732f-b303-27de325a5e36",
+          "mentioned": ["01a18d77-cd82-75b9-b32c-e660b6f01404"]
+        },
+        "created_at": "2026-10-30T15:40:02.690854+00:00",
+        "updated_at": "2026-10-30T15:40:02.690854+00:00"
+      },
+      {
+        "id": "01a18d77-d1c7-7170-b999-8b746cb875c1",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.commentEdited",
+        "payload": {
+          "commentId": "01a18d77-d1ab-732f-b303-27de325a5e36",
+          "mentioned": []
+        },
+        "created_at": "2026-10-30T15:40:02.716399+00:00",
+        "updated_at": "2026-10-30T15:40:02.716399+00:00"
+      },
+      {
+        "id": "01a18d77-d1d8-7701-9d2f-37e1ac138b0f",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "actor_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "type": "issue.commented",
+        "payload": {
+          "commentId": "01a18d77-d1d5-74ec-947c-4823effe0394",
+          "mentioned": []
+        },
+        "created_at": "2026-10-30T15:40:02.736936+00:00",
+        "updated_at": "2026-10-30T15:40:02.736936+00:00"
+      },
+      {
+        "id": "01a18d77-d1ef-71bb-ae3f-ad225bc2b8cc",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "actor_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "type": "issue.commented",
+        "payload": {
+          "commentId": "01a18d77-d1ed-74d6-b8dc-e47dcb6b2938",
+          "mentioned": []
+        },
+        "created_at": "2026-10-30T15:40:02.761908+00:00",
+        "updated_at": "2026-10-30T15:40:02.761908+00:00"
+      },
+      {
+        "id": "01a18d77-d202-7583-bc94-4ad2139af9b6",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "actor_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "type": "issue.commentDeleted",
+        "payload": {
+          "commentId": "01a18d77-d1d5-74ec-947c-4823effe0394"
+        },
+        "created_at": "2026-10-30T15:40:02.780324+00:00",
+        "updated_at": "2026-10-30T15:40:02.780324+00:00"
+      },
+      {
+        "id": "01a18d77-d218-708b-a322-1e761c00e0f4",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.attachmentAdded",
+        "payload": {
+          "attachmentId": "01a18d77-d215-7633-9149-01f9c83b7178"
+        },
+        "created_at": "2026-10-30T15:40:02.801569+00:00",
+        "updated_at": "2026-10-30T15:40:02.801569+00:00"
+      },
+      {
+        "id": "01a18d77-d229-717b-ae76-cd394d5d2c02",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.attachmentAdded",
+        "payload": {
+          "attachmentId": "01a18d77-d227-7395-9a75-8074efe9bfd0"
+        },
+        "created_at": "2026-10-30T15:40:02.821351+00:00",
+        "updated_at": "2026-10-30T15:40:02.821351+00:00"
+      },
+      {
+        "id": "01a18d77-d238-70f1-9ae4-fbb2ed9da6b6",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.attachmentRemoved",
+        "payload": {
+          "attachmentId": "01a18d77-d227-7395-9a75-8074efe9bfd0"
+        },
+        "created_at": "2026-10-30T15:40:02.838981+00:00",
+        "updated_at": "2026-10-30T15:40:02.838981+00:00"
+      },
+      {
+        "id": "01a18d77-d25f-72fb-a1b7-a5c6d6045add",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d0a3-717d-8341-6c5df11336ca",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.duplicateChanged",
+        "payload": {
+          "to": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+          "from": null
+        },
+        "created_at": "2026-10-30T15:40:02.874461+00:00",
+        "updated_at": "2026-10-30T15:40:02.874461+00:00"
+      },
+      {
+        "id": "01a18d77-d264-70a6-852b-c75752ae5391",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d0a3-717d-8341-6c5df11336ca",
+        "actor_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "type": "issue.statusChanged",
+        "payload": {
+          "to": {
+            "id": "01a16286-f097-7d2f-8165-6070ac26c187",
+            "name": "Resolved"
+          },
+          "from": {
+            "id": "01a16286-f097-76c3-99ef-142009179f39",
+            "name": "New"
+          }
+        },
+        "created_at": "2026-10-30T15:40:02.874461+00:00",
+        "updated_at": "2026-10-30T15:40:02.874461+00:00"
+      },
+      {
+        "id": "01a18d77-d275-7178-9194-8e056881d3e0",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.labelsChanged",
+        "payload": {
+          "added": [
+            {
+              "id": "01a18d77-ce08-7286-be9d-0cfa5bccfa9f",
+              "name": "Mobile"
+            }
+          ],
+          "removed": []
+        },
+        "created_at": "2026-10-30T15:40:02.901038+00:00",
+        "updated_at": "2026-10-30T15:40:02.901038+00:00"
+      },
+      {
+        "id": "01a18d77-d275-7179-a2c5-64f5e02587f2",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.labelsChanged",
+        "payload": {
+          "added": [
+            {
+              "id": "01a18d77-ce08-7286-be9d-0cfa5bccfa9f",
+              "name": "Mobile"
+            }
+          ],
+          "removed": []
+        },
+        "created_at": "2026-10-30T15:40:02.901038+00:00",
+        "updated_at": "2026-10-30T15:40:02.901038+00:00"
+      },
+      {
+        "id": "01a18d77-d289-71d7-beab-b8394a46c627",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": null,
+        "actor_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "type": "issue.deleted",
+        "payload": {
+          "key": "WEB-4",
+          "issueId": "01a18d77-d0c0-727e-8387-b1730318fac9"
+        },
+        "created_at": "2026-10-30T15:40:02.920862+00:00",
+        "updated_at": "2026-10-30T15:40:02.920862+00:00"
+      }
+    ],
+    "attachments": [
+      {
+        "id": "01a18d77-d215-7633-9149-01f9c83b7178",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "comment_id": null,
+        "uploader_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "file_name": "export.log",
+        "media_type": "text/plain",
+        "size": 35,
+        "storage_key": "c3ff8e5bcb713988969de43be67c8203cb2023e43440b9f457755e642d25bb9e",
+        "created_at": "2026-10-30T15:40:02.801569+00:00",
+        "updated_at": "2026-10-30T15:40:02.801569+00:00"
+      }
+    ],
+    "comments": [
+      {
+        "id": "01a18d77-d1ab-732f-b303-27de325a5e36",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "author_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "body": "@Ada Lovelace it comes from the PDF library, version 4.",
+        "edited_at": "2026-10-30T15:40:02.716399+00:00",
+        "created_at": "2026-10-30T15:40:02.690854+00:00",
+        "updated_at": "2026-10-30T15:40:02.716399+00:00"
+      },
+      {
+        "id": "01a18d77-d1ed-74d6-b8dc-e47dcb6b2938",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "author_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "body": "Still waiting.",
+        "edited_at": null,
+        "created_at": "2026-10-30T15:40:02.761908+00:00",
+        "updated_at": "2026-10-30T15:40:02.761908+00:00"
+      }
+    ],
+    "instance_settings": [
+      {
+        "id": 1,
+        "setup_completed_at": "2026-10-30T15:40:01.3+00:00",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "latest_version": null,
+        "latest_version_url": null,
+        "latest_version_checked_at": null
+      }
+    ],
+    "invitation_projects": [
+      {
+        "id": "01a18d77-ce90-71ec-bb5e-a8fcf06be3f9",
+        "invitation_id": "01a18d77-ce8d-7329-863b-6f395c51a746",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "created_at": "2026-10-30T15:40:01.838243+00:00",
+        "updated_at": "2026-10-30T15:40:01.838243+00:00"
+      },
+      {
+        "id": "01a18d77-ce90-71ed-99ef-e8ae8f3bc897",
+        "invitation_id": "01a18d77-ce8d-7329-863b-6f395c51a746",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "created_at": "2026-10-30T15:40:01.838243+00:00",
+        "updated_at": "2026-10-30T15:40:01.838243+00:00"
+      },
+      {
+        "id": "01a18d77-cf13-713a-8f75-afe466425105",
+        "invitation_id": "01a18d77-cf0f-7086-88b8-e672c22af65d",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "created_at": "2026-10-30T15:40:01.977376+00:00",
+        "updated_at": "2026-10-30T15:40:01.977376+00:00"
+      },
+      {
+        "id": "01a18d77-cf8f-772e-8c6c-ec92db366bb0",
+        "invitation_id": "01a18d77-cf8d-76a7-b5ca-22ddf0996a21",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "created_at": "2026-10-30T15:40:02.110792+00:00",
+        "updated_at": "2026-10-30T15:40:02.110792+00:00"
+      },
+      {
+        "id": "01a18d77-d005-704d-862d-a04cf33556d9",
+        "invitation_id": "01a18d77-d003-762f-baa3-675544d204b8",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "created_at": "2026-10-30T15:40:02.237839+00:00",
+        "updated_at": "2026-10-30T15:40:02.237839+00:00"
+      }
+    ],
+    "invitations": [
+      {
+        "id": "01a18d77-ce8d-7329-863b-6f395c51a746",
+        "email": "grace@example.com",
+        "role_id": "01a1569b-9801-747e-91c9-d058653f2a8e",
+        "token_hash": "b1e9d81402d8a3b286ecf4e56d39fe1712d92e43e6ee5bb5d8755ab0db0011c6",
+        "invited_by_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "expires_at": "2026-11-06T15:40:01.55+00:00",
+        "accepted_at": "2026-10-30T15:40:01.608+00:00",
+        "created_at": "2026-10-30T15:40:01.838243+00:00",
+        "updated_at": "2026-10-30T15:40:01.853522+00:00",
+        "all_projects": false
+      },
+      {
+        "id": "01a18d77-cf0f-7086-88b8-e672c22af65d",
+        "email": "rita@example.com",
+        "role_id": "01a1569b-9802-7f0a-b82f-656d1e2109c6",
+        "token_hash": "635df428a1d47554b123b813822f0cc3e61464369b6328c6324bd704afe96156",
+        "invited_by_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "expires_at": "2026-11-06T15:40:01.681+00:00",
+        "accepted_at": "2026-10-30T15:40:01.735+00:00",
+        "created_at": "2026-10-30T15:40:01.977376+00:00",
+        "updated_at": "2026-10-30T15:40:01.990122+00:00",
+        "all_projects": false
+      },
+      {
+        "id": "01a18d77-cf8d-76a7-b5ca-22ddf0996a21",
+        "email": "otto@example.com",
+        "role_id": "01a1569b-9801-747e-91c9-d058653f2a8e",
+        "token_hash": "aa98b49bfd9dda550516ccf699742661074e4b333b8bb9cc55f459de96a10bbe",
+        "invited_by_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "expires_at": "2026-11-06T15:40:01.805+00:00",
+        "accepted_at": "2026-10-30T15:40:01.857+00:00",
+        "created_at": "2026-10-30T15:40:02.110792+00:00",
+        "updated_at": "2026-10-30T15:40:02.121265+00:00",
+        "all_projects": false
+      },
+      {
+        "id": "01a18d77-d003-762f-baa3-675544d204b8",
+        "email": "pending@example.com",
+        "role_id": "01a1569b-9801-747e-91c9-d058653f2a8e",
+        "token_hash": "fe9fc3abf86c37448f280f6ae6fc09422012ed11b838255cdb03b640e2371518",
+        "invited_by_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "expires_at": "2026-11-06T15:40:01.924+00:00",
+        "accepted_at": null,
+        "created_at": "2026-10-30T15:40:02.237839+00:00",
+        "updated_at": "2026-10-30T15:40:02.237839+00:00",
+        "all_projects": false
+      }
+    ],
+    "issue_categories": [
+      {
+        "id": "01a16286-f098-7082-a99d-9636cf947dea",
+        "name": "Question",
+        "color": "gray",
+        "position": 2,
+        "is_default": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00"
+      },
+      {
+        "id": "01a16286-f098-7e89-95b4-e2b2aa971d11",
+        "name": "Bug",
+        "color": "gray",
+        "position": 0,
+        "is_default": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00"
+      },
+      {
+        "id": "01a16286-f098-7eba-93de-76873ba83fec",
+        "name": "Request",
+        "color": "gray",
+        "position": 1,
+        "is_default": true,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00"
+      }
+    ],
+    "issue_followers": [
+      {
+        "id": "01a18d77-d244-75ec-989c-c5a0f9135ba1",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "following": true,
+        "created_at": "2026-10-30T15:40:02.854722+00:00",
+        "updated_at": "2026-10-30T15:40:02.854722+00:00"
+      },
+      {
+        "id": "01a18d77-d263-7544-9cf7-bdc8e30e0e57",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "following": true,
+        "created_at": "2026-10-30T15:40:02.874461+00:00",
+        "updated_at": "2026-10-30T15:40:02.874461+00:00"
+      }
+    ],
+    "issue_labels": [
+      {
+        "id": "01a18d77-d12d-731b-a929-8ed5726f6d6d",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "label_id": "01a18d77-ce08-7287-aad5-3c361373fa60",
+        "created_at": "2026-10-30T15:40:02.554114+00:00",
+        "updated_at": "2026-10-30T15:40:02.554114+00:00"
+      },
+      {
+        "id": "01a18d77-d273-7182-acf1-8350af41251f",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "label_id": "01a18d77-ce08-7286-be9d-0cfa5bccfa9f",
+        "created_at": "2026-10-30T15:40:02.901038+00:00",
+        "updated_at": "2026-10-30T15:40:02.901038+00:00"
+      },
+      {
+        "id": "01a18d77-d273-7183-908f-5156ea03f90c",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "label_id": "01a18d77-ce08-7286-be9d-0cfa5bccfa9f",
+        "created_at": "2026-10-30T15:40:02.901038+00:00",
+        "updated_at": "2026-10-30T15:40:02.901038+00:00"
+      }
+    ],
+    "issue_words": [
+      {
+        "id": "01a18d77-d067-75e2-86c9-6cbb0b3e7f7c",
+        "word": "click",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d067-75e3-b48e-f80373d7e2ac",
+        "word": "crash",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d067-75e4-ac50-b541451e26a4",
+        "word": "crashes",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d067-75e5-9276-12d1fd22cbda",
+        "word": "export",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d067-75e6-ba81-36a52cd1df19",
+        "word": "exporting",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d067-75e7-a3d7-da2258c3ba49",
+        "word": "invoices",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d067-75e8-9b73-0e3b1e8e30df",
+        "word": "open",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d067-75e9-af32-a6f9fa1a5d30",
+        "word": "steps",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d067-75ea-bd84-0d92e6497358",
+        "word": "when",
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.321757+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d08a-77a0-8bd1-a5709838da44",
+        "word": "again",
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.365165+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d08a-77a1-8f12-bfa7ff7065d8",
+        "word": "cannot",
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.365165+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d08a-77a2-ac7d-beae032b84eb",
+        "word": "find",
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.365165+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d08a-77a3-a1a4-24b3bf53ed2a",
+        "word": "invoice",
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.365165+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d08a-77a4-a5eb-cec8772a2da9",
+        "word": "mailbox",
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.365165+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d08a-77a5-8e24-bb88ad1fa4a1",
+        "word": "please",
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.365165+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d08a-77a6-b607-3598b3a338a6",
+        "word": "send",
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.365165+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d0c5-7670-befe-59516e961d95",
+        "word": "home",
+        "created_at": "2026-10-30T15:40:02.430322+00:00",
+        "updated_at": "2026-10-30T15:40:02.430322+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d0c5-7671-b208-e32f517701d8",
+        "word": "page",
+        "created_at": "2026-10-30T15:40:02.430322+00:00",
+        "updated_at": "2026-10-30T15:40:02.430322+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d0c5-7672-bcad-d40fd8181cd4",
+        "word": "typo",
+        "created_at": "2026-10-30T15:40:02.430322+00:00",
+        "updated_at": "2026-10-30T15:40:02.430322+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      },
+      {
+        "id": "01a18d77-d0e3-7435-b38d-fb649fc7d907",
+        "word": "limit",
+        "created_at": "2026-10-30T15:40:02.462526+00:00",
+        "updated_at": "2026-10-30T15:40:02.462526+00:00",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d"
+      },
+      {
+        "id": "01a18d77-d0e3-7436-8fa5-e9ad9f8a1754",
+        "word": "rate",
+        "created_at": "2026-10-30T15:40:02.462526+00:00",
+        "updated_at": "2026-10-30T15:40:02.462526+00:00",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d"
+      },
+      {
+        "id": "01a18d77-d0fe-71c9-9b4c-384ae4c97d6f",
+        "word": "migrate",
+        "created_at": "2026-10-30T15:40:02.494262+00:00",
+        "updated_at": "2026-10-30T15:40:02.494262+00:00",
+        "project_id": "01a18d77-cdfb-73de-ab90-3eb6edc8cde0"
+      },
+      {
+        "id": "01a18d77-d0fe-71ca-8a21-064aa3de40ab",
+        "word": "pages",
+        "created_at": "2026-10-30T15:40:02.494262+00:00",
+        "updated_at": "2026-10-30T15:40:02.494262+00:00",
+        "project_id": "01a18d77-cdfb-73de-ab90-3eb6edc8cde0"
+      },
+      {
+        "id": "01a18d77-d154-7481-95cd-83b1fd144f2e",
+        "word": "firefox",
+        "created_at": "2026-10-30T15:40:02.595332+00:00",
+        "updated_at": "2026-10-30T15:40:02.595332+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9"
+      }
+    ],
+    "issues": [
+      {
+        "id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "number": 1,
+        "category_id": "01a16286-f098-7eba-93de-76873ba83fec",
+        "title": "Crash when exporting the invoices",
+        "description": "**Steps**\n\n1. Open the invoices\n2. Click *Export*\n\nIt crashes in Firefox.",
+        "status_id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "priority_id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+        "assignee_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "reporter_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "closed_at": null,
+        "created_at": "2026-10-30T15:40:02.321757+00:00",
+        "updated_at": "2026-10-30T15:40:02.901038+00:00",
+        "properties": {
+          "01a18d77-ce1b-7563-a495-94c4713e50ce": "01a18d77-ce1c-701b-b529-14a1d83ca0ce",
+          "01a18d77-ce26-70fa-93d0-603afa8d13a9": [
+            "01a18d77-ce27-7014-8bbd-72fe0ad5de3d",
+            "01a18d77-ce27-7015-aa8c-c36f7ce574cb"
+          ],
+          "01a18d77-ce32-75e6-8fc1-bdd863aa7b54": "1.2.1",
+          "01a18d77-ce3c-7278-b844-0397aaf39850": 3.5,
+          "01a18d77-ce45-7009-9fd4-7938ab251d07": "2026-11-02",
+          "01a18d77-ce4d-71ae-9f88-b4db5edbf0a5": "01a18d77-cec2-7700-8bb1-f2131388109a",
+          "01a18d77-ce55-7602-95f7-708a131268d3": true,
+          "01a18d77-d380-73df-baae-a1a85406ea44": 135
+        },
+        "duplicate_of_id": null
+      },
+      {
+        "id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "number": 2,
+        "category_id": "01a16286-f098-7e89-95b4-e2b2aa971d11",
+        "title": "Please send my invoice again",
+        "description": "I cannot find it in my mailbox.",
+        "status_id": "01a16286-f097-76c3-99ef-142009179f39",
+        "priority_id": "01a16286-f097-7031-b0a5-653999e6a1e3",
+        "assignee_id": "01a18d77-cfbc-7644-b534-177b648ece68",
+        "reporter_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "closed_at": null,
+        "created_at": "2026-10-30T15:40:02.365165+00:00",
+        "updated_at": "2026-10-30T15:40:02.901038+00:00",
+        "properties": {
+          "01a18d77-d380-73df-baae-a1a85406ea44": 30
+        },
+        "duplicate_of_id": null
+      },
+      {
+        "id": "01a18d77-d0a3-717d-8341-6c5df11336ca",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "number": 3,
+        "category_id": "01a16286-f098-7eba-93de-76873ba83fec",
+        "title": "Export of invoices crashes",
+        "description": "",
+        "status_id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "priority_id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+        "assignee_id": null,
+        "reporter_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "closed_at": "2026-10-30T15:40:02.526+00:00",
+        "created_at": "2026-10-30T15:40:02.400694+00:00",
+        "updated_at": "2026-10-30T15:40:02.874461+00:00",
+        "properties": {},
+        "duplicate_of_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca"
+      },
+      {
+        "id": "01a18d77-d0de-7107-bea9-e3e36e7d0fcc",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "number": 1,
+        "category_id": "01a16286-f098-7eba-93de-76873ba83fec",
+        "title": "Rate limit too low",
+        "description": "",
+        "status_id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "priority_id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+        "assignee_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "reporter_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "closed_at": "2026-10-30T15:40:02.324+00:00",
+        "created_at": "2026-10-30T15:40:02.462526+00:00",
+        "updated_at": "2026-10-30T15:40:02.661132+00:00",
+        "properties": {},
+        "duplicate_of_id": null
+      },
+      {
+        "id": "01a18d77-d0fa-7281-8a1a-1708dc3cfefa",
+        "project_id": "01a18d77-cdfb-73de-ab90-3eb6edc8cde0",
+        "number": 1,
+        "category_id": "01a16286-f098-7eba-93de-76873ba83fec",
+        "title": "Migrate the old pages",
+        "description": "",
+        "status_id": "01a16286-f097-76c3-99ef-142009179f39",
+        "priority_id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+        "assignee_id": null,
+        "reporter_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "closed_at": null,
+        "created_at": "2026-10-30T15:40:02.494262+00:00",
+        "updated_at": "2026-10-30T15:40:02.494262+00:00",
+        "properties": {},
+        "duplicate_of_id": null
+      }
+    ],
+    "jobs": [
+      {
+        "id": "01a18d77-ccc8-728c-8d86-3450a120535a",
+        "type": "files.sweep",
+        "payload": {},
+        "run_at": "2026-10-30T16:40:01.379178+00:00",
+        "attempts": 0,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": null,
+        "unique_key": "files.sweep",
+        "created_at": "2026-10-30T15:40:01.360948+00:00",
+        "updated_at": "2026-10-30T15:40:01.379178+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-cccc-74e5-9dfa-3cec5c9bb20b",
+        "type": "plugins.packages.sweep",
+        "payload": {},
+        "run_at": "2026-10-30T16:40:01.414859+00:00",
+        "attempts": 0,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": null,
+        "unique_key": "plugins.packages.sweep",
+        "created_at": "2026-10-30T15:40:01.365428+00:00",
+        "updated_at": "2026-10-30T15:40:01.414859+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-cccd-7739-9fb1-6946a6366322",
+        "type": "notifications.prune",
+        "payload": {},
+        "run_at": "2026-10-31T15:40:01.428743+00:00",
+        "attempts": 0,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": null,
+        "unique_key": "notifications.prune",
+        "created_at": "2026-10-30T15:40:01.366628+00:00",
+        "updated_at": "2026-10-30T15:40:01.428743+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-ccce-75c7-aeca-6469ce406001",
+        "type": "search.rebuildWords",
+        "payload": {},
+        "run_at": "2026-10-31T15:40:01.444926+00:00",
+        "attempts": 0,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": null,
+        "unique_key": "search.rebuildWords",
+        "created_at": "2026-10-30T15:40:01.367737+00:00",
+        "updated_at": "2026-10-30T15:40:01.444926+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-ccd0-7618-aa91-e6985ec783f7",
+        "type": "updates.check",
+        "payload": {},
+        "run_at": "2026-10-31T15:40:01.461298+00:00",
+        "attempts": 0,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": null,
+        "unique_key": "updates.check",
+        "created_at": "2026-10-30T15:40:01.368992+00:00",
+        "updated_at": "2026-10-30T15:40:01.461298+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-ccd1-7174-9cb2-0479ecf31e91",
+        "type": "rateLimits.prune",
+        "payload": {},
+        "run_at": "2026-10-30T16:40:01.477493+00:00",
+        "attempts": 0,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": null,
+        "unique_key": "rateLimits.prune",
+        "created_at": "2026-10-30T15:40:01.370027+00:00",
+        "updated_at": "2026-10-30T15:40:01.477493+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-ccd2-7271-8465-c4eba0d7d627",
+        "type": "plugin.onceKeys.sweep",
+        "payload": {},
+        "run_at": "2026-10-31T15:40:01.49501+00:00",
+        "attempts": 0,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": null,
+        "unique_key": "plugin.onceKeys.sweep",
+        "created_at": "2026-10-30T15:40:01.371049+00:00",
+        "updated_at": "2026-10-30T15:40:01.49501+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-ccd2-7272-8c8e-253f4e9426ae",
+        "type": "plugin.jobs.schedule",
+        "payload": {},
+        "run_at": "2026-10-30T16:40:01.509482+00:00",
+        "attempts": 0,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": null,
+        "unique_key": "plugin.jobs.schedule",
+        "created_at": "2026-10-30T15:40:01.372035+00:00",
+        "updated_at": "2026-10-30T15:40:01.509482+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-d296-73ce-bef2-00a4a40370b7",
+        "type": "webhook.deliver",
+        "payload": {
+          "deliveryId": "01a18d77-d294-773d-8a48-1326ec682ef4"
+        },
+        "run_at": "2026-10-30T15:40:38.903285+00:00",
+        "attempts": 1,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": "The webhook 01a18d77-d01b-7103-b411-6d14ee09eb86 was not delivered: NETWORK_ERROR",
+        "unique_key": null,
+        "created_at": "2026-10-30T15:40:02.939356+00:00",
+        "updated_at": "2026-10-30T15:40:03.521285+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-d54e-700b-b28f-4cf9e0498a3b",
+        "type": "webhook.deliver",
+        "payload": {
+          "deliveryId": "01a18d77-d54c-76d7-b0ca-1712c74866cf"
+        },
+        "run_at": "2026-10-30T15:40:39.038049+00:00",
+        "attempts": 1,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": "The webhook 01a18d77-d01b-7103-b411-6d14ee09eb86 was not delivered: NETWORK_ERROR",
+        "unique_key": null,
+        "created_at": "2026-10-30T15:40:03.672246+00:00",
+        "updated_at": "2026-10-30T15:40:05.667049+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-d57a-742d-bf8f-b3e4b078dfbe",
+        "type": "webhook.deliver",
+        "payload": {
+          "deliveryId": "01a18d77-d579-7333-8302-dc4be2b11641"
+        },
+        "run_at": "2026-10-30T15:40:37.940949+00:00",
+        "attempts": 1,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": "The webhook 01a18d77-d01b-7103-b411-6d14ee09eb86 was not delivered: NETWORK_ERROR",
+        "unique_key": null,
+        "created_at": "2026-10-30T15:40:03.721493+00:00",
+        "updated_at": "2026-10-30T15:40:05.680949+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-d59a-7395-90cc-2eb413c11c5b",
+        "type": "webhook.deliver",
+        "payload": {
+          "deliveryId": "01a18d77-d598-7182-b2ec-b23306a89960"
+        },
+        "run_at": "2026-10-30T15:40:36.796395+00:00",
+        "attempts": 1,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": "The webhook 01a18d77-d01b-7103-b411-6d14ee09eb86 was not delivered: NETWORK_ERROR",
+        "unique_key": null,
+        "created_at": "2026-10-30T15:40:03.755034+00:00",
+        "updated_at": "2026-10-30T15:40:05.683395+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-d62a-7709-ab5e-797e15a1bab2",
+        "type": "webhook.deliver",
+        "payload": {
+          "deliveryId": "01a18d77-d628-737c-b9e8-451204c78689"
+        },
+        "run_at": "2026-10-30T15:40:40.278432+00:00",
+        "attempts": 1,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": "The webhook 01a18d77-d01b-7103-b411-6d14ee09eb86 was not delivered: NETWORK_ERROR",
+        "unique_key": null,
+        "created_at": "2026-10-30T15:40:03.90286+00:00",
+        "updated_at": "2026-10-30T15:40:05.691432+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-d6de-7162-a959-c8a73b0bf72f",
+        "type": "webhook.deliver",
+        "payload": {
+          "deliveryId": "01a18d77-d6dc-73d9-9ee3-26a53903e9e0"
+        },
+        "run_at": "2026-10-30T15:40:34.420733+00:00",
+        "attempts": 1,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": "The webhook 01a18d77-d01b-7103-b411-6d14ee09eb86 was not delivered: NETWORK_ERROR",
+        "unique_key": null,
+        "created_at": "2026-10-30T15:40:04.098047+00:00",
+        "updated_at": "2026-10-30T15:40:05.692733+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-d738-76a8-84aa-adb70d24ace0",
+        "type": "webhook.deliver",
+        "payload": {
+          "deliveryId": "01a18d77-d737-72cc-bed1-3502bc49ca20"
+        },
+        "run_at": "2026-10-30T15:40:38.283979+00:00",
+        "attempts": 1,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": "The webhook 01a18d77-d01b-7103-b411-6d14ee09eb86 was not delivered: NETWORK_ERROR",
+        "unique_key": null,
+        "created_at": "2026-10-30T15:40:04.19552+00:00",
+        "updated_at": "2026-10-30T15:40:05.700979+00:00",
+        "priority": 0
+      },
+      {
+        "id": "01a18d77-d793-72a6-919b-8772c9ed37c5",
+        "type": "webhook.deliver",
+        "payload": {
+          "deliveryId": "01a18d77-d792-7455-9bac-a95ff115413c"
+        },
+        "run_at": "2026-10-30T15:40:35.743114+00:00",
+        "attempts": 1,
+        "max_attempts": 5,
+        "status": "pending",
+        "last_error": "The webhook 01a18d77-d01b-7103-b411-6d14ee09eb86 was not delivered: NETWORK_ERROR",
+        "unique_key": null,
+        "created_at": "2026-10-30T15:40:04.293753+00:00",
+        "updated_at": "2026-10-30T15:40:05.702114+00:00",
+        "priority": 0
+      }
+    ],
+    "labels": [
+      {
+        "id": "01a18d77-ce08-7286-be9d-0cfa5bccfa9f",
+        "name": "Mobile",
+        "color": "blue",
+        "created_at": "2026-10-30T15:40:01.699595+00:00",
+        "updated_at": "2026-10-30T15:40:01.699595+00:00"
+      },
+      {
+        "id": "01a18d77-ce08-7287-aad5-3c361373fa60",
+        "name": "Billing",
+        "color": "green",
+        "created_at": "2026-10-30T15:40:01.699595+00:00",
+        "updated_at": "2026-10-30T15:40:01.699595+00:00"
+      },
+      {
+        "id": "01a18d77-ce08-7288-a271-d32f1b33418b",
+        "name": "Security",
+        "color": "pink",
+        "created_at": "2026-10-30T15:40:01.699595+00:00",
+        "updated_at": "2026-10-30T15:40:01.699595+00:00"
+      }
+    ],
+    "mail_settings": [],
+    "notifications": [
+      {
+        "id": "01a18d77-d53d-7681-934f-9bcc3ca1e40f",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "activity_id": "01a18d77-d069-748c-80f4-d391bbf62c66",
+        "reason": "assigned",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:03.657983+00:00",
+        "updated_at": "2026-10-30T15:40:03.657983+00:00"
+      },
+      {
+        "id": "01a18d77-d53d-7682-bc00-b39d97a76cac",
+        "user_id": "01a18d77-cfbc-7644-b534-177b648ece68",
+        "activity_id": "01a18d77-d069-748c-80f4-d391bbf62c66",
+        "reason": "newIssue",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:03.657983+00:00",
+        "updated_at": "2026-10-30T15:40:03.657983+00:00"
+      },
+      {
+        "id": "01a18d77-d568-748d-84fd-e4c611b8caf5",
+        "user_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "activity_id": "01a18d77-d08b-73a4-a83f-ba86d0492ba9",
+        "reason": "newIssue",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:03.70531+00:00",
+        "updated_at": "2026-10-30T15:40:03.70531+00:00"
+      },
+      {
+        "id": "01a18d77-d568-748e-a868-1869e6fa55f5",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "activity_id": "01a18d77-d08b-73a4-a83f-ba86d0492ba9",
+        "reason": "newIssue",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:03.70531+00:00",
+        "updated_at": "2026-10-30T15:40:03.70531+00:00"
+      },
+      {
+        "id": "01a18d77-d587-734f-92e4-951c3478b394",
+        "user_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "activity_id": "01a18d77-d0a8-75cc-add8-e45ce640eecc",
+        "reason": "newIssue",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:03.738375+00:00",
+        "updated_at": "2026-10-30T15:40:03.738375+00:00"
+      },
+      {
+        "id": "01a18d77-d5c5-72e3-8ed3-f5431e731cd9",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "activity_id": "01a18d77-d0e4-77f4-a911-14dc8d57b547",
+        "reason": "assigned",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:03.803821+00:00",
+        "updated_at": "2026-10-30T15:40:03.803821+00:00"
+      },
+      {
+        "id": "01a18d77-d609-7493-a9af-6a916dff30fa",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "activity_id": "01a18d77-d117-71e6-8c84-ffd852551710",
+        "reason": "following",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:03.869815+00:00",
+        "updated_at": "2026-10-30T15:40:03.869815+00:00"
+      },
+      {
+        "id": "01a18d77-d69d-723f-9342-fcd5270600ba",
+        "user_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "activity_id": "01a18d77-d180-73cd-9a8c-f5e88bf9841d",
+        "reason": "participating",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:04.032372+00:00",
+        "updated_at": "2026-10-30T15:40:04.032372+00:00"
+      },
+      {
+        "id": "01a18d77-d6ab-7032-9aed-40bdfda476f7",
+        "user_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "activity_id": "01a18d77-d195-72e0-8480-c14de66e7f33",
+        "reason": "participating",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:04.048745+00:00",
+        "updated_at": "2026-10-30T15:40:04.048745+00:00"
+      },
+      {
+        "id": "01a18d77-d6cb-76b8-b177-1d9a3813a234",
+        "user_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "activity_id": "01a18d77-d1ae-7122-9468-8c72ad6de575",
+        "reason": "mentioned",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:04.08199+00:00",
+        "updated_at": "2026-10-30T15:40:04.08199+00:00"
+      },
+      {
+        "id": "01a18d77-d707-7710-8996-7bc18f1c2217",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "activity_id": "01a18d77-d1d8-7701-9d2f-37e1ac138b0f",
+        "reason": "following",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:04.146738+00:00",
+        "updated_at": "2026-10-30T15:40:04.146738+00:00"
+      },
+      {
+        "id": "01a18d77-d725-770a-acb7-065d7301627b",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "activity_id": "01a18d77-d1ef-71bb-ae3f-ad225bc2b8cc",
+        "reason": "following",
+        "read_at": null,
+        "created_at": "2026-10-30T15:40:04.178904+00:00",
+        "updated_at": "2026-10-30T15:40:04.178904+00:00"
+      }
+    ],
+    "plugin_http_calls": [],
+    "plugin_once_keys": [],
+    "plugin_project_settings": [
+      {
+        "id": "01a18d77-d43c-7702-a17b-6ce81dcc7b50",
+        "plugin_id": "01a18d77-d351-7090-8066-6c20e11506b6",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "settings": {
+          "budgetDays": 20
+        },
+        "refused": false,
+        "created_at": "2026-10-30T15:40:03.390362+00:00",
+        "updated_at": "2026-10-30T15:40:03.390362+00:00"
+      }
+    ],
+    "plugin_projects": [
+      {
+        "id": "01a18d77-d382-708e-9c40-7b0485ce035c",
+        "plugin_id": "01a18d77-d351-7090-8066-6c20e11506b6",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "created_at": "2026-10-30T15:40:03.178316+00:00",
+        "updated_at": "2026-10-30T15:40:03.178316+00:00"
+      }
+    ],
+    "plugin_record_slots": [
+      {
+        "id": "01a18d77-d35b-7405-a643-1b372f34a9e1",
+        "plugin_slug": "time-tracking",
+        "entity": "timeEntry",
+        "field": "spentOn",
+        "slot": "date1",
+        "declared": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+        },
+        "filled_at": "2026-10-30T15:40:02.95269+00:00",
+        "created_at": "2026-10-30T15:40:02.95269+00:00",
+        "updated_at": "2026-10-30T15:40:02.95269+00:00"
+      }
+    ],
+    "plugin_records": [
+      {
+        "id": "01a18d77-d486-7267-839b-aa6340f1b3ce",
+        "plugin_slug": "time-tracking",
+        "entity": "timeEntry",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "created_by_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "data": {
+          "note": "Found the PDF library",
+          "minutes": 90,
+          "spentOn": "2026-10-28"
+        },
+        "created_at": "2026-10-30T15:40:03.458637+00:00",
+        "updated_at": "2026-10-30T15:40:03.458637+00:00",
+        "date_1": "2026-10-28T00:00:00+00:00",
+        "date_2": null,
+        "date_3": null,
+        "number_1": null,
+        "number_2": null,
+        "number_3": null,
+        "text_1": null,
+        "text_2": null,
+        "text_3": null,
+        "ref_1": null,
+        "ref_2": null,
+        "person_id": null
+      },
+      {
+        "id": "01a18d77-d4d6-7250-87e1-5759c3c29f77",
+        "plugin_slug": "time-tracking",
+        "entity": "timeEntry",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+        "created_by_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "data": {
+          "minutes": 45,
+          "spentOn": "2026-10-29"
+        },
+        "created_at": "2026-10-30T15:40:03.54584+00:00",
+        "updated_at": "2026-10-30T15:40:03.54584+00:00",
+        "date_1": "2026-10-29T00:00:00+00:00",
+        "date_2": null,
+        "date_3": null,
+        "number_1": null,
+        "number_2": null,
+        "number_3": null,
+        "text_1": null,
+        "text_2": null,
+        "text_3": null,
+        "ref_1": null,
+        "ref_2": null,
+        "person_id": null
+      },
+      {
+        "id": "01a18d77-d516-75a9-8b62-083b66d233f2",
+        "plugin_slug": "time-tracking",
+        "entity": "timeEntry",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "issue_id": "01a18d77-d085-7546-962f-e5c46dc32176",
+        "created_by_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "data": {
+          "minutes": 30,
+          "spentOn": "2026-10-29"
+        },
+        "created_at": "2026-10-30T15:40:03.613803+00:00",
+        "updated_at": "2026-10-30T15:40:03.613803+00:00",
+        "date_1": "2026-10-29T00:00:00+00:00",
+        "date_2": null,
+        "date_3": null,
+        "number_1": null,
+        "number_2": null,
+        "number_3": null,
+        "text_1": null,
+        "text_2": null,
+        "text_3": null,
+        "ref_1": null,
+        "ref_2": null,
+        "person_id": null
+      }
+    ],
+    "plugins": [
+      {
+        "id": "01a18d77-d351-7090-8066-6c20e11506b6",
+        "slug": "time-tracking",
+        "version": "0.1.0",
+        "state": "enabled",
+        "manifest": {
+          "id": "time-tracking",
+          "name": "plugin.name",
+          "description": "plugin.description",
+          "logo": "logo.png",
+          "apiVersion": "^1.0",
+          "needs": ["issue.read"],
+          "permissions": {
+            "entries.log": {
+              "scope": "project",
+              "label": "permissions.log"
+            }
+          },
+          "settings": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+              "hoursPerDay": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 24,
+                "default": 8
+              },
+              "summaryUrl": {
+                "type": "string",
+                "format": "uri",
+                "writeOnly": true
+              },
+              "summaryLanguage": {
+                "type": "string",
+                "enum": ["en", "fr"],
+                "default": "en"
+              }
+            }
+          },
+          "projectSettings": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+              "budgetDays": {
+                "type": "number",
+                "maximum": 100000,
+                "exclusiveMinimum": 0
+              }
+            }
+          },
+          "entities": {
+            "timeEntry": {
+              "attachedTo": "issue",
+              "fields": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "spentOn": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": ["minutes", "spentOn"]
+              },
+              "indexes": ["spentOn"],
+              "limits": {}
+            }
+          },
+          "properties": {
+            "timeSpent": {
+              "name": "properties.timeSpent",
+              "type": "number",
+              "display": "duration",
+              "writtenBy": "plugin"
+            }
+          },
+          "messages": {
+            "en": {
+              "plugin": {
+                "name": "Time tracking",
+                "description": "Log the time spent on each issue, and see where it went."
+              },
+              "permissions": {
+                "log": "Log time"
+              },
+              "properties": {
+                "timeSpent": "Time spent"
+              },
+              "pages": {
+                "report": {
+                  "title": "Time",
+                  "nav": "Time",
+                  "description": "The time logged in the projects you see, in days of {hours} hours, against each project’s budget.",
+                  "project": "Project",
+                  "allProjects": "All projects",
+                  "caption": "Time by project",
+                  "empty": "No time logged yet.",
+                  "columns": {
+                    "project": "Project",
+                    "spent": "Spent",
+                    "budget": "Budget",
+                    "closed": "Closed issues",
+                    "open": "Other issues",
+                    "status": "Budget"
+                  },
+                  "days": "{days} d",
+                  "chart": "Days spent by project, against each budget",
+                  "logTime": "Log time",
+                  "overBudget": "Over budget",
+                  "withinBudget": "Within budget",
+                  "noBudget": "No budget"
+                }
+              },
+              "dialogs": {
+                "logTime": {
+                  "title": "Log time",
+                  "noIssue": "No issue chosen yet.",
+                  "choose": "Choose an issue",
+                  "change": "Another issue"
+                }
+              },
+              "panels": {
+                "issueTime": {
+                  "title": "Time spent",
+                  "total": "Total",
+                  "caption": "Time logged on this issue",
+                  "empty": "No time logged on this issue yet.",
+                  "columns": {
+                    "who": "Who",
+                    "day": "Day",
+                    "time": "Time",
+                    "note": "Note"
+                  },
+                  "time": "Time spent",
+                  "day": "Day",
+                  "note": "Note",
+                  "log": "Log time",
+                  "logged": "Time logged."
+                }
+              },
+              "errors": {
+                "forbidden": "You may not log time on this issue.",
+                "invalid": "Check the time and the day.",
+                "failed": "This could not be done. Try again."
+              },
+              "settings": {
+                "hoursPerDay": {
+                  "label": "Hours in a working day",
+                  "help": "The time logged counts in days of this many hours, as projects’ budgets do."
+                },
+                "summaryUrl": {
+                  "label": "Weekly summary, to a chat",
+                  "help": "The address of an incoming webhook (Slack, Mattermost, Rocket.Chat): each week, the time of the week by project. Kept secret."
+                },
+                "summaryLanguage": {
+                  "label": "Language of the summary",
+                  "options": {
+                    "en": "English",
+                    "fr": "French"
+                  }
+                }
+              },
+              "jobs": {
+                "weeklySummary": "Sends the time of the week to a chat"
+              },
+              "summary": {
+                "title": "Time logged from {from} to {to}:",
+                "line": "• {project}: {week} h this week, {spent} d in all",
+                "lineBudget": "• {project}: {week} h this week, {spent} d of {budget} d",
+                "lineOver": "• {project}: {week} h this week, {spent} d of {budget} d, over budget"
+              },
+              "projectSettings": {
+                "budgetDays": {
+                  "label": "Budget, in days",
+                  "help": "The working days this project may take, all issues together. No time is refused."
+                }
+              }
+            },
+            "fr": {
+              "plugin": {
+                "name": "Suivi du temps",
+                "description": "Saisissez le temps passé sur chaque ticket, et voyez où il est allé."
+              },
+              "permissions": {
+                "log": "Saisir du temps"
+              },
+              "properties": {
+                "timeSpent": "Temps passé"
+              },
+              "pages": {
+                "report": {
+                  "title": "Temps",
+                  "nav": "Temps",
+                  "description": "Le temps saisi dans les projets que vous voyez, en journées de {hours} heures, face au budget de chaque projet.",
+                  "project": "Projet",
+                  "allProjects": "Tous les projets",
+                  "caption": "Temps par projet",
+                  "empty": "Aucun temps saisi pour l’instant.",
+                  "columns": {
+                    "project": "Projet",
+                    "spent": "Passé",
+                    "budget": "Budget",
+                    "closed": "Tickets fermés",
+                    "open": "Autres tickets",
+                    "status": "Budget"
+                  },
+                  "days": "{days} j",
+                  "chart": "Jours passés par projet, face à chaque budget",
+                  "logTime": "Saisir du temps",
+                  "overBudget": "Budget dépassé",
+                  "withinBudget": "Dans le budget",
+                  "noBudget": "Pas de budget"
+                }
+              },
+              "dialogs": {
+                "logTime": {
+                  "title": "Saisir du temps",
+                  "noIssue": "Aucun ticket choisi pour l’instant.",
+                  "choose": "Choisir un ticket",
+                  "change": "Un autre ticket"
+                }
+              },
+              "panels": {
+                "issueTime": {
+                  "title": "Temps passé",
+                  "total": "Total",
+                  "caption": "Temps saisi sur ce ticket",
+                  "empty": "Aucun temps saisi sur ce ticket pour l’instant.",
+                  "columns": {
+                    "who": "Qui",
+                    "day": "Jour",
+                    "time": "Temps",
+                    "note": "Note"
+                  },
+                  "time": "Temps passé",
+                  "day": "Jour",
+                  "note": "Note",
+                  "log": "Saisir du temps",
+                  "logged": "Temps saisi."
+                }
+              },
+              "errors": {
+                "forbidden": "Vous ne pouvez pas saisir de temps sur ce ticket.",
+                "invalid": "Vérifiez le temps et le jour.",
+                "failed": "Cela n’a pas pu se faire. Réessayez."
+              },
+              "settings": {
+                "hoursPerDay": {
+                  "label": "Heures dans une journée de travail",
+                  "help": "Le temps saisi se compte en journées de ce nombre d’heures, comme les budgets des projets."
+                },
+                "summaryUrl": {
+                  "label": "Résumé de la semaine, vers un chat",
+                  "help": "L’adresse d’un webhook entrant (Slack, Mattermost, Rocket.Chat) : chaque semaine, le temps de la semaine par projet. Gardée secrète."
+                },
+                "summaryLanguage": {
+                  "label": "Langue du résumé",
+                  "options": {
+                    "en": "Anglais",
+                    "fr": "Français"
+                  }
+                }
+              },
+              "jobs": {
+                "weeklySummary": "Envoie le temps de la semaine à un chat"
+              },
+              "summary": {
+                "title": "Temps saisi du {from} au {to} :",
+                "line": "• {project} : {week} h cette semaine, {spent} j en tout",
+                "lineBudget": "• {project} : {week} h cette semaine, {spent} j sur {budget} j",
+                "lineOver": "• {project} : {week} h cette semaine, {spent} j sur {budget} j, budget dépassé"
+              },
+              "projectSettings": {
+                "budgetDays": {
+                  "label": "Budget, en jours",
+                  "help": "Les journées de travail que ce projet peut prendre, tous tickets confondus. Aucun temps n’est refusé."
+                }
+              }
+            }
+          },
+          "actions": [
+            {
+              "name": "timeEntry.list",
+              "access": {
+                "issue": "issueId"
+              },
+              "input": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "issueId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": ["issueId"]
+              }
+            },
+            {
+              "name": "timeEntry.log",
+              "access": {
+                "issue": "issueId",
+                "permission": "entries.log"
+              },
+              "input": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1440
+                  },
+                  "spentOn": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "issueId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": ["minutes", "spentOn", "issueId"]
+              }
+            },
+            {
+              "name": "report.projects",
+              "access": "authenticated",
+              "input": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "projectId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                }
+              }
+            }
+          ],
+          "pages": [
+            {
+              "name": "report",
+              "zone": "main",
+              "access": "authenticated",
+              "title": "pages.report.title",
+              "nav": {
+                "label": "pages.report.nav",
+                "icon": "clock"
+              }
+            }
+          ],
+          "panels": [
+            {
+              "name": "issueTime",
+              "on": "issue",
+              "access": "authenticated",
+              "title": "panels.issueTime.title"
+            }
+          ],
+          "dialogs": [
+            {
+              "name": "logTime",
+              "access": "authenticated",
+              "title": "dialogs.logTime.title",
+              "size": "small",
+              "side": false
+            }
+          ],
+          "events": [],
+          "jobs": [
+            {
+              "name": "weeklySummary",
+              "every": "week",
+              "label": "jobs.weeklySummary"
+            }
+          ],
+          "http": {
+            "fromSettings": ["summaryUrl"]
+          },
+          "routes": []
+        },
+        "package_sha256": "d6ab933b0529fff74b1e2a2bb45339a4386ba044f1b03bfd402b84215859d4f1",
+        "all_projects": false,
+        "settings": {
+          "summaryUrl": {
+            "sealed": "v1.j5Wsj7U7iZ1eXr07.9y3cNfBGlQDCenoN_zYjXQ._qgLFIHEAquVQsLharIG6jnAEsLSoQtFWqJI2_1v1BkR7ND7xVnK"
+          },
+          "hoursPerDay": 7,
+          "summaryLanguage": "fr"
+        },
+        "approved_by_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "approved_at": "2026-10-30T15:40:03.178316+00:00",
+        "failures": 0,
+        "last_error": null,
+        "created_at": "2026-10-30T15:40:02.95269+00:00",
+        "updated_at": "2026-10-30T15:40:03.374617+00:00",
+        "logo": "\\x89504e470d0a1a0a0000000d49484452000001000000010008060000005c72a86600000f8a4944415478daed9d2f8c6c5911878f1dd7123912390efbdcda4e3a41923188752f216b372330a811a077c42ad424a4cd0ad2c91a42100f12d62018120c2124030941601a6ae91beeebd7afff9d3ae7d49fef26bff004fb5edf7b4f7db7aa4e559db25edd14a7ba5baf6e96fffdf3c37a75f3b45edd6c767a5daf6eb60835d0eb6c9d3dedd6de72b7165dda91971fba58af6eeed7ab9bc7f5eae61d0b1119d5bbdd1abddfad590050f985c7e0510420dc0180f374bb73ab5e583c28985e766bfb16007ca837ebd5cd338b0425d1f36ecda707c03d5f7b94dc2bb8cf08000c1f21032018e1ea6f78e1081dd4a67768d0731bef91178cd0597aecb58dd8c3f89714e7207455d1d1d23300f8ea2364dc1b6859c443010f427a0545775e0080cb8f90939040dbf8dff2a2106aaab75601f0c4cb41a88b9eac0100e347c82104307e84124300e347283104307e841243806c3f42897707aedde7e78123644fcbd600b8a3c80721d3c54277ad00b0a0bc17211765c38b1600a0b107213f0d44aa0020ee4728603ee05cd79fb81f217ff98085060070fd110a1a0a9c33c38f0789905fbda90100033c11f2adcdb500b8e7e1211442f7d70080b9fd08c5d0cba500e0eb8f50022f80af3f4289bd0032ff46f5abcf3fd9fe79f3e5f65f7ffdd3d6eb25bf5dee41ee85776a7347e0100038a577a0befed1f7b67ffbfdd7db6897dc93dc1bef78a89e4f01e0968734d6f8fffdcfbf6fa35e726f4060b86e8f01e0810784f10381d07a380600927f8314d1ed3f160ef0ce6d2403f7877df0800625fcb25d240687eaee100068fa1924c99467bbe49e79f7e39b84e60060dacf2079deeaabd922e4dd0f9d1af41e00163c9471ca7af1ee876a310700a5bf000000242c0d26fe27042004489c0720fe2709481230711e6002000f846d40b601f3a9b0ff4f2110854089eb0118f94d2930a5c079b5a4fe1f0860fc89fb0238e69b7660da81f3ea89c9bf0c046120485e6d0000054614ec240700c77e0100009053afd400000000905800000000000080000000000008000000008000000000000800000000800000cf120020371584a23ffcfcc76a0090bf6bfa7b79c6000019d02f3ffdeef6373ff9feb7c62975f63d4b86e5df927f53fe6df90df25b782700003536f8dffeec8766fb03a6ba7ff98d000100202577fe8feb9fba6c0892df2cbf9db00100a02bba0023cd05907ba12b1000a023eebdc4d319a603cb3dcabd12260000bef69f7fb2fdcbaf7f91f65c00b977bc0200904e9228cb7816c031af409ec9a8094cdf7cf1d9b75e89fc6fb6a9450000c34f098263ef6224900000860f081a1ae0573ff8ced93317331c5e02001ac7f8187e1d0834730462fcff78f9dd45bf213a040040a3ac7ea6833e7a4c14aedd35b8c6f8a72b7238000094a55983cff5614f426fe3df063fc81400e0ee870e0b6a8d7fbaa2ee0e00000549c92b57df4b9e792fe3974bb6080100fa600f596b81715d7ec9b3ffd89759d3f86bc20f0010786bcf6abdbe2cfca95d77decb3f69bfa3707e82cf5cd37f2f7f9755d0c93bd84fd2691b3f1e007a4f622c9662e2a90db7479c2aff86c5b6e469bbae85f19303404d17d7a55f3c4b7df7f33905a33d2279372dde0fbb0068e8d1dd93d1cbf41debcf497e63b47666ea00924b16f588052ddd721e8cfed873f3deed28f90f2a019327fb7a7fed658b2b52bfbcdc8bdc9337af40c20909fb0000c6dfc5f025e31e79c1c9bdc93d7a004106e30700068c3f83e17b034116e30700838d5fdce24c867f0804d6aa2833193f001864fc1add6d744f62fc00c099f18bcbeb39ab1f75b725abf10380bdc5d77a4bcfc2029b32f2f38219f9b3959d077946bdb70eb31a3f00e850e4237faf953af253fd0b87eaea47499e590f6f20b3f10380dd17a7d5423bd6ad6639bcb10281d6dd96d98d1f00ac6e9a2d302b2effe4f65f0239f9ff5a4952b60c09e4dd732e005d7dea97b5def16bb6dace19b81161d45a86c9bf00a063c6df62e3c8355e8ec5af63a67706009c25fde4efb37accd5b597d5d98b2dde5db613815203403beeb7be802201a015c0b3e603d20140bbf4d4c3d7231a005a41c05ade030034701f33ba8e1101d00a02d94e2b4e0500ed19765e164b5400b4807ae4f15fa901a0bd8de429731c19002d7607a28e004f0b00296ac9bc40a203a005e0b3746ba6008066aba954a579bbff0c001069560c469f059806009a31a2d7daf12c00d01edb9e21215848fcc52f16c90200ed9d810c09c1d000d04c0e793e1a2a1300a65662ca840180dad7df63dc9f19009af980e85e40e1eb7fdaf5f7de339e11009a731e381928f1d73fc20cbf8c00d01cf3c6d98049bffe51b682b20240730b38aa1750f8fac72f06c90c00ad22b0a85e40380068edfb47ea0ccb0c00cd0ed0887501e100a091fd8d90f80300fa0941efbb41e101a0e5ee456b06c90e00cd5e81683d0285971cfbeb0f0074bd80681f8742f22f7e2b2800d0fb40444b0616927fb1bffe0040df0b88940c0c03008d19ff5167c20100dd1d8148670984018006d9a30e810000ba8962596b002098fb1f718b0700b4db2a8e120614dcba3835ff00a05f8f4094703104006ab3ff915c3a00d027648cb21b5088e9e21f100900da248d23e48cdc0340a3f32fb2fb0f00da8501113a044b76924777ffad034066f849424dd4fb8b5a1b0644f01c4bf6f83fc3f9f0d60020462f49b443ef4efaf77b65d86b3f1e11f200257bfc9fe16c780b00907725c33acf1ddbdd23cbae113e7acf0394ec715c8613604601404a6fc5c8aedd776f3d8959e303e23d7fe41a00b5cd1d590e82ec0d00310a71af6b63ec1ebd19b521a4f7e631d700a89df79621feef058063717dcdd5da0ba8cd03789f1b5932270033c4ff2d0170695c6fd1c06af300debdc89271614f97d7a3be4602a036aeb706005903b5170070da0094c1f8b500a015d75b74b1333706a50580b8ad00e0b487d422aeb7d674531bc20000873b0059ce7fd7f8c28dbc7a18576d32d9f34e405a00449cfd170d00bd6634645e4b6e01509b840200b62f71cb7bcd67ac0580e761326e0150ebb6453ce5250a0024d9d873386b6d3ec9733809000080894b128d92f01b519a0d001216010180f1976c29cad77ef4bba80580e762a092755167317e8b009098d95a1566d6f504000040b7a49e940d5b3d7805000000001028ae673d01000030000056e27ad6130000001d016031ae673d010000a050eb7e2aae8f30550900f0c2c24ae3e4a4fdb83e5a2b3500e08585957ca16bda78a7b89ee3d3000085404e75cde49b29aeb7ba75472110a5c000e042089cf20422c5f5940203000070201c90187e9e18943f478ceb0100edc0b40323da8119080200106b09000471db1023c1180aca5050c4505000402d001a5d0300009cbeb8ac596ff47f713088e31fcfd160684481549422a03587837e89112417878326debec9723c386ae745723cf84049734aed95a9e4157d5815597b796f902ad95f207900e2ffcc1f9092dd85230f40fc9f39842cd95fa274c7610c39557bd479848f47c18ddb861e7481dae58f22848f85440e6100ee7fde047289f0326bf3008401b8ff59b79043004063e8256100eeff2597ac390010a831c8f35007d477984ca4895205978ea2208a7ff2868c85a44e3cb70eb50d1723258dc30040230c10b2471f819d59f26e353cc54803654ba4175cbb1bc0acc0d8aa6d1e8bd8405678c178017cfdf37e200a091ebc00befe7913c525da8bd6d8e2c10be0eb9f65ab381c00349281ec0890f9cf729a5489f8c2359281d405101666981e1512001a1d821c1e1243b57323a30f8e29515fbc9617408f40ee9affe8b323c30240cb0b2021983bf1177d6c5c89bc08b4bc001a8572ee0665981c1d1a005a5e805cdf7cf11986e544f2aeb4aee843634bf4c5a0e505883bc95162f625ef48cbf5cf706e44780068d5054c270a930fb01df7d79ef41b7ddf3f1d0034b782c807e488fb336d01a70080563108bd02f16bfdb31581151608c92192bd79015f322d14ad8460a61831538e27e381b185c5c2ce0019ffbc502fd9168d566718108867fc193b404bc6c5a3b95504046218bfac898ccfb2b080f420404ea04f18d7e2dd650578c9ba90b433c7ec0ef0ce008033699c25409d80cf6d5c0e8605004df201f38a41ca8675ca7b352bfc88fb0140b3bef1430b8ce4605daea615a099f300009a2605e70b8d56e2eb5a7a5bbe13c00c009a8c8f2224b0ebf233e60d000cc932cfbf3c2cbee3106ef5d527e30f004c40606a3565e4f8fbdd9a9a2ddb183f00300f81a9f434735820f7ae5d9a8df103005710109757f6b8338140ee55eeb9b5bb8ff103001710c80282de868ff1030057109840206e71a41c81dc8bdc534fc3c7f8cf07c02b0f627c76fa635b879e770de4b7b7ded263b7a54aaf02800d0f626cb1d0390b5a6ad63d2c6af98df25b473e2b8a7cced606005c18c3b62a4dbd1406e2de5a0813e437c86f1969f4f3d26b8aad2e07c0130fc24617e1b533ec2620f4f8f2c9bf3119bcf68c45bafabaeb4900f0c083b82e3938fa8b77ec4b288535927117c9108d49e70cdc9834fdf7f2778df67c8e794424fbaed6830060c983b0d7adc645b765072d0500773c085b8346b9ceaba264ed55eb4e00402d80d2ac3a4b3171d44b9e31b317d5542600bce361d81e5dc5c5a83565bd9b03e09107e2afbb2dcb45f764133dce0170cf03212cc0dd4fa5fb3900163c90b65b8680e032c3676bafb916730090070004187eb2f87f1f00e4010001869f28fedf0700f50003720423bae5ac5c72efc4f863f6ff0f0140f4c2c319b36b205b5c19bc02b947b957b2fac3f432b7f97d00d01760c02bb0d059a75daf2ff7c4d7de46fdff3100dcf2806cc1404a5e3d7a06f29be5b763f4e6747b0c00a2671e92cd30c1621beedce02dcd294007f5bc6fef8700f08607e50308327d676ad7ed0905f9b7a67663f90d18bc1bbd39070024039d870df35e7ec9b48bb19e0b89c9b845f2dfeecf14e019c748fe9d0200a5c108052cfd3d170078010805fffa9f02005e004281bffea700c0c46084fc6b73ccc64f01801d01848265fe2f01004d42080568faa901c082e3c31072a7d7a9e7bf16008c0e47c89f96e7d8f6b9002014402890eb7f0d00164c0d42c8c5b49f450b004c4343c807206437eebfbbc4a62f0500f900849cc7fdb50010bde56123644a6fafb1e56b01c0b1e208d9d1d3b5765c030020809063e3d700001040c8a9f16b01000820e4d0f835010004107266fcda0060770021a3d9fe5e0098ea0428164248bfc867a96daf2d0030550c52368c905e79ef5d0b5b6d0580a97780062284ea1b7b16adecb4250008091032e6f28f0000de004286befa2300309f31c8a051840e6b736a869f7700cc478e73ee0042ffd3cbb1d1dd11010008101a68f85600300f0d38951865d1736f57df3a0026c9d9e50f780528e8d7fe61b7c6cdd89c3500ec17133d5250849c17f03cb62ae2890e80fd6dc47b80809c18fc7daf6dbc2c00f89887b0dcb9554fbb2d940d4547a87171ceb4ce9e766b6f69f90b7f4aff0197cbd2fccc2944910000000049454e44ae426082",
+        "logo_type": "image/png",
+        "settings_refused": false,
+        "private_hosts": []
+      }
+    ],
+    "priorities": [
+      {
+        "id": "01a16286-f097-7031-b0a5-653999e6a1e3",
+        "level": 3,
+        "name": "High",
+        "is_default": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00"
+      },
+      {
+        "id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+        "level": 2,
+        "name": "Normal",
+        "is_default": true,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00"
+      },
+      {
+        "id": "01a16286-f097-7420-b8b5-53e31ece4809",
+        "level": 1,
+        "name": "Low",
+        "is_default": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00"
+      },
+      {
+        "id": "01a16286-f098-702e-b31c-00b4639a6236",
+        "level": 4,
+        "name": "Urgent",
+        "is_default": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00"
+      }
+    ],
+    "project_members": [
+      {
+        "id": "01a18d77-cde7-70a2-8814-7540289a1910",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "user_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "role_id": null,
+        "created_at": "2026-10-30T15:40:01.663226+00:00",
+        "updated_at": "2026-10-30T15:40:01.663226+00:00"
+      },
+      {
+        "id": "01a18d77-cdf2-73ac-9537-d5aa75308a86",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "user_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "role_id": null,
+        "created_at": "2026-10-30T15:40:01.67575+00:00",
+        "updated_at": "2026-10-30T15:40:01.67575+00:00"
+      },
+      {
+        "id": "01a18d77-cdfe-7347-a965-7a8a738cb7f2",
+        "project_id": "01a18d77-cdfb-73de-ab90-3eb6edc8cde0",
+        "user_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "role_id": null,
+        "created_at": "2026-10-30T15:40:01.687517+00:00",
+        "updated_at": "2026-10-30T15:40:01.687517+00:00"
+      },
+      {
+        "id": "01a18d77-cec6-75dc-99fa-e1b249c3ead3",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "role_id": null,
+        "created_at": "2026-10-30T15:40:01.853522+00:00",
+        "updated_at": "2026-10-30T15:40:01.853522+00:00"
+      },
+      {
+        "id": "01a18d77-cec6-75dd-be06-e22e775cc11e",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "user_id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "role_id": null,
+        "created_at": "2026-10-30T15:40:01.853522+00:00",
+        "updated_at": "2026-10-30T15:40:01.853522+00:00"
+      },
+      {
+        "id": "01a18d77-cf44-7491-8d93-f957b3d90a63",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "user_id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "role_id": null,
+        "created_at": "2026-10-30T15:40:01.990122+00:00",
+        "updated_at": "2026-10-30T15:40:01.990122+00:00"
+      },
+      {
+        "id": "01a18d77-cfbf-7537-a813-a3c99ba34041",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "user_id": "01a18d77-cfbc-7644-b534-177b648ece68",
+        "role_id": null,
+        "created_at": "2026-10-30T15:40:02.121265+00:00",
+        "updated_at": "2026-10-30T15:40:02.121265+00:00"
+      }
+    ],
+    "project_properties": [
+      {
+        "id": "01a18d77-ce6e-7564-8775-552f5730118e",
+        "project_id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "property_id": "01a18d77-ce3c-7278-b844-0397aaf39850",
+        "hidden": true,
+        "own_options": false,
+        "created_at": "2026-10-30T15:40:01.805094+00:00",
+        "updated_at": "2026-10-30T15:40:01.805094+00:00"
+      }
+    ],
+    "projects": [
+      {
+        "id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "key": "WEB",
+        "name": "Website",
+        "description": "The website.",
+        "archived_at": null,
+        "next_issue_number": 5,
+        "created_at": "2026-10-30T15:40:01.663226+00:00",
+        "updated_at": "2026-10-30T15:40:02.430322+00:00",
+        "color": "blue",
+        "category_hidden": false,
+        "category_required": false,
+        "priority_hidden": false,
+        "priority_required": false
+      },
+      {
+        "id": "01a18d77-cdf0-7367-9865-497ec57d790d",
+        "key": "API",
+        "name": "Public API",
+        "description": "The public api.",
+        "archived_at": null,
+        "next_issue_number": 2,
+        "created_at": "2026-10-30T15:40:01.67575+00:00",
+        "updated_at": "2026-10-30T15:40:02.462526+00:00",
+        "color": "orange",
+        "category_hidden": false,
+        "category_required": false,
+        "priority_hidden": false,
+        "priority_required": false
+      },
+      {
+        "id": "01a18d77-cdfb-73de-ab90-3eb6edc8cde0",
+        "key": "OLD",
+        "name": "Old intranet",
+        "description": "The old intranet.",
+        "archived_at": "2026-10-30T15:40:03.272+00:00",
+        "next_issue_number": 2,
+        "created_at": "2026-10-30T15:40:01.687517+00:00",
+        "updated_at": "2026-10-30T15:40:03.676283+00:00",
+        "color": "violet",
+        "category_hidden": false,
+        "category_required": false,
+        "priority_hidden": false,
+        "priority_required": false
+      }
+    ],
+    "properties": [
+      {
+        "id": "01a18d77-ce1b-7563-a495-94c4713e50ce",
+        "name": "Browser",
+        "type": "list",
+        "shown_in_list": true,
+        "asked_at_creation": true,
+        "required": false,
+        "created_at": "2026-10-30T15:40:01.717661+00:00",
+        "updated_at": "2026-10-30T15:40:01.717661+00:00",
+        "project_id": null,
+        "plugin_slug": null,
+        "plugin_property": null,
+        "written_by": "people",
+        "display": null
+      },
+      {
+        "id": "01a18d77-ce26-70fa-93d0-603afa8d13a9",
+        "name": "Platforms",
+        "type": "multiSelect",
+        "shown_in_list": true,
+        "asked_at_creation": true,
+        "required": false,
+        "created_at": "2026-10-30T15:40:01.730476+00:00",
+        "updated_at": "2026-10-30T15:40:01.730476+00:00",
+        "project_id": null,
+        "plugin_slug": null,
+        "plugin_property": null,
+        "written_by": "people",
+        "display": null
+      },
+      {
+        "id": "01a18d77-ce32-75e6-8fc1-bdd863aa7b54",
+        "name": "Version",
+        "type": "text",
+        "shown_in_list": true,
+        "asked_at_creation": true,
+        "required": false,
+        "created_at": "2026-10-30T15:40:01.742819+00:00",
+        "updated_at": "2026-10-30T15:40:01.742819+00:00",
+        "project_id": null,
+        "plugin_slug": null,
+        "plugin_property": null,
+        "written_by": "people",
+        "display": null
+      },
+      {
+        "id": "01a18d77-ce3c-7278-b844-0397aaf39850",
+        "name": "Estimate",
+        "type": "number",
+        "shown_in_list": true,
+        "asked_at_creation": true,
+        "required": false,
+        "created_at": "2026-10-30T15:40:01.753334+00:00",
+        "updated_at": "2026-10-30T15:40:01.753334+00:00",
+        "project_id": null,
+        "plugin_slug": null,
+        "plugin_property": null,
+        "written_by": "people",
+        "display": null
+      },
+      {
+        "id": "01a18d77-ce45-7009-9fd4-7938ab251d07",
+        "name": "Due",
+        "type": "date",
+        "shown_in_list": true,
+        "asked_at_creation": true,
+        "required": false,
+        "created_at": "2026-10-30T15:40:01.763331+00:00",
+        "updated_at": "2026-10-30T15:40:01.763331+00:00",
+        "project_id": null,
+        "plugin_slug": null,
+        "plugin_property": null,
+        "written_by": "people",
+        "display": null
+      },
+      {
+        "id": "01a18d77-ce4d-71ae-9f88-b4db5edbf0a5",
+        "name": "Reviewer",
+        "type": "user",
+        "shown_in_list": true,
+        "asked_at_creation": true,
+        "required": false,
+        "created_at": "2026-10-30T15:40:01.772419+00:00",
+        "updated_at": "2026-10-30T15:40:01.772419+00:00",
+        "project_id": null,
+        "plugin_slug": null,
+        "plugin_property": null,
+        "written_by": "people",
+        "display": null
+      },
+      {
+        "id": "01a18d77-ce55-7602-95f7-708a131268d3",
+        "name": "Regression",
+        "type": "checkbox",
+        "shown_in_list": true,
+        "asked_at_creation": true,
+        "required": false,
+        "created_at": "2026-10-30T15:40:01.781096+00:00",
+        "updated_at": "2026-10-30T15:40:01.781096+00:00",
+        "project_id": null,
+        "plugin_slug": null,
+        "plugin_property": null,
+        "written_by": "people",
+        "display": null
+      },
+      {
+        "id": "01a18d77-ce79-755d-9185-2785b69b647a",
+        "name": "Customer",
+        "type": "text",
+        "shown_in_list": true,
+        "asked_at_creation": true,
+        "required": false,
+        "created_at": "2026-10-30T15:40:01.818867+00:00",
+        "updated_at": "2026-10-30T15:40:01.818867+00:00",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "plugin_slug": null,
+        "plugin_property": null,
+        "written_by": "people",
+        "display": null
+      },
+      {
+        "id": "01a18d77-d380-73df-baae-a1a85406ea44",
+        "name": "Time spent",
+        "type": "number",
+        "shown_in_list": false,
+        "asked_at_creation": false,
+        "required": false,
+        "created_at": "2026-10-30T15:40:03.178316+00:00",
+        "updated_at": "2026-10-30T15:40:03.178316+00:00",
+        "project_id": null,
+        "plugin_slug": "time-tracking",
+        "plugin_property": "timeSpent",
+        "written_by": "plugin",
+        "display": "duration"
+      }
+    ],
+    "property_options": [
+      {
+        "id": "01a18d77-ce1c-701b-b529-14a1d83ca0ce",
+        "property_id": "01a18d77-ce1b-7563-a495-94c4713e50ce",
+        "name": "Firefox",
+        "color": "orange",
+        "position": 0,
+        "created_at": "2026-10-30T15:40:01.717661+00:00",
+        "updated_at": "2026-10-30T15:40:01.717661+00:00",
+        "project_id": null
+      },
+      {
+        "id": "01a18d77-ce1c-701c-8b7e-a277b6d9fffe",
+        "property_id": "01a18d77-ce1b-7563-a495-94c4713e50ce",
+        "name": "Chrome",
+        "color": "blue",
+        "position": 1,
+        "created_at": "2026-10-30T15:40:01.717661+00:00",
+        "updated_at": "2026-10-30T15:40:01.717661+00:00",
+        "project_id": null
+      },
+      {
+        "id": "01a18d77-ce27-7014-8bbd-72fe0ad5de3d",
+        "property_id": "01a18d77-ce26-70fa-93d0-603afa8d13a9",
+        "name": "Web",
+        "color": "cyan",
+        "position": 0,
+        "created_at": "2026-10-30T15:40:01.730476+00:00",
+        "updated_at": "2026-10-30T15:40:01.730476+00:00",
+        "project_id": null
+      },
+      {
+        "id": "01a18d77-ce27-7015-aa8c-c36f7ce574cb",
+        "property_id": "01a18d77-ce26-70fa-93d0-603afa8d13a9",
+        "name": "iOS",
+        "color": "gray",
+        "position": 1,
+        "created_at": "2026-10-30T15:40:01.730476+00:00",
+        "updated_at": "2026-10-30T15:40:01.730476+00:00",
+        "project_id": null
+      },
+      {
+        "id": "01a18d77-ce27-7016-bcaf-c8cae4ffa286",
+        "property_id": "01a18d77-ce26-70fa-93d0-603afa8d13a9",
+        "name": "Android",
+        "color": "green",
+        "position": 2,
+        "created_at": "2026-10-30T15:40:01.730476+00:00",
+        "updated_at": "2026-10-30T15:40:01.730476+00:00",
+        "project_id": null
+      }
+    ],
+    "roles": [
+      {
+        "id": "01a1569b-9800-7e64-8269-eb18fddc30ee",
+        "name": "Administrator",
+        "permissions": [],
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "grants_all": true,
+        "color": "blue",
+        "notify_new_issues": true
+      },
+      {
+        "id": "01a1569b-9801-747e-91c9-d058653f2a8e",
+        "name": "Team",
+        "permissions": [
+          "issue.read",
+          "issue.read.own",
+          "issue.create",
+          "issue.update",
+          "issue.assign",
+          "comment.create",
+          "time-tracking.entries.log"
+        ],
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:03.41097+00:00",
+        "grants_all": false,
+        "color": "green",
+        "notify_new_issues": true
+      },
+      {
+        "id": "01a1569b-9802-7f0a-b82f-656d1e2109c6",
+        "name": "Requester",
+        "permissions": ["issue.read.own", "issue.create", "comment.create"],
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "grants_all": false,
+        "color": "gray",
+        "notify_new_issues": false
+      },
+      {
+        "id": "01a18d77-ce82-7022-923b-50642c361884",
+        "name": "Reviewer",
+        "permissions": [],
+        "created_at": "2026-10-30T15:40:01.828834+00:00",
+        "updated_at": "2026-10-30T15:40:01.828834+00:00",
+        "grants_all": false,
+        "color": "violet",
+        "notify_new_issues": false
+      }
+    ],
+    "statuses": [
+      {
+        "id": "01a16286-f097-7230-ae0a-2665141a1c79",
+        "name": "To do",
+        "color": "blue",
+        "project_id": null,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "closes": false
+      },
+      {
+        "id": "01a16286-f097-76c3-99ef-142009179f39",
+        "name": "New",
+        "color": "cyan",
+        "project_id": null,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "closes": false
+      },
+      {
+        "id": "01a16286-f097-7910-adf1-e82c47706491",
+        "name": "Waiting",
+        "color": "amber",
+        "project_id": null,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "closes": false
+      },
+      {
+        "id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "name": "In progress",
+        "color": "violet",
+        "project_id": null,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "closes": false
+      },
+      {
+        "id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "name": "Resolved",
+        "color": "green",
+        "project_id": null,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "closes": true
+      }
+    ],
+    "users": [
+      {
+        "id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "name": "Ada Lovelace",
+        "email": "ada@example.com",
+        "email_verified": true,
+        "image": null,
+        "instance_role_id": "01a1569b-9800-7e64-8269-eb18fddc30ee",
+        "created_at": "2026-10-30T15:40:01.512947+00:00",
+        "updated_at": "2026-10-30T15:40:01.512947+00:00",
+        "deactivated_at": null,
+        "deleted_at": null,
+        "all_projects": false,
+        "locale": "en",
+        "email_muted_events": [],
+        "plugin_slug": null
+      },
+      {
+        "id": "01a18d77-cec2-7700-8bb1-f2131388109a",
+        "name": "Grace Hopper",
+        "email": "grace@example.com",
+        "email_verified": false,
+        "image": null,
+        "instance_role_id": "01a1569b-9801-747e-91c9-d058653f2a8e",
+        "created_at": "2026-10-30T15:40:01.853522+00:00",
+        "updated_at": "2026-10-30T15:40:02.256913+00:00",
+        "deactivated_at": null,
+        "deleted_at": null,
+        "all_projects": false,
+        "locale": "en",
+        "email_muted_events": ["statusChanged", "duplicateChanged"],
+        "plugin_slug": null
+      },
+      {
+        "id": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+        "name": "Rita Client",
+        "email": "rita@example.com",
+        "email_verified": false,
+        "image": null,
+        "instance_role_id": "01a1569b-9802-7f0a-b82f-656d1e2109c6",
+        "created_at": "2026-10-30T15:40:01.990122+00:00",
+        "updated_at": "2026-10-30T15:40:02.250216+00:00",
+        "deactivated_at": null,
+        "deleted_at": null,
+        "all_projects": false,
+        "locale": "fr",
+        "email_muted_events": [],
+        "plugin_slug": null
+      },
+      {
+        "id": "01a18d77-cfbc-7644-b534-177b648ece68",
+        "name": "Otto Former",
+        "email": "otto@example.com",
+        "email_verified": false,
+        "image": null,
+        "instance_role_id": "01a1569b-9801-747e-91c9-d058653f2a8e",
+        "created_at": "2026-10-30T15:40:02.121265+00:00",
+        "updated_at": "2026-10-30T15:40:03.663551+00:00",
+        "deactivated_at": "2026-10-30T15:40:03.262+00:00",
+        "deleted_at": null,
+        "all_projects": false,
+        "locale": "en",
+        "email_muted_events": [],
+        "plugin_slug": null
+      },
+      {
+        "id": "01a18d77-d37a-74f7-9ba6-08040aac316f",
+        "name": "Time tracking",
+        "email": "time-tracking@plugins.invalid",
+        "email_verified": false,
+        "image": null,
+        "instance_role_id": null,
+        "created_at": "2026-10-30T15:40:03.178316+00:00",
+        "updated_at": "2026-10-30T15:40:03.178316+00:00",
+        "deactivated_at": null,
+        "deleted_at": null,
+        "all_projects": false,
+        "locale": "en",
+        "email_muted_events": [],
+        "plugin_slug": "time-tracking"
+      }
+    ],
+    "webhook_deliveries": [
+      {
+        "id": "01a18d77-d294-773d-8a48-1326ec682ef4",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "message_id": "01a18d77-d294-773c-8b2a-c0c1af936913",
+        "event_type": "webhook.test",
+        "payload": {
+          "data": {
+            "sentBy": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+            "webhook": {
+              "id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+              "name": "Deployments"
+            }
+          },
+          "type": "webhook.test",
+          "timestamp": "2026-10-30T15:40:02.580Z"
+        },
+        "status": "pending",
+        "attempts": 1,
+        "response_status": null,
+        "error": "NETWORK_ERROR",
+        "duration_ms": 17,
+        "created_at": "2026-10-30T15:40:02.939356+00:00",
+        "updated_at": "2026-10-30T15:40:03.544938+00:00"
+      },
+      {
+        "id": "01a18d77-d54c-76d7-b0ca-1712c74866cf",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "message_id": "01a18d77-d069-748c-80f4-d391bbf62c66",
+        "event_type": "issue.created",
+        "payload": {
+          "data": {
+            "event": {
+              "id": "01a18d77-d069-748c-80f4-d391bbf62c66",
+              "type": "issue.created",
+              "actorId": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+              "occurredAt": "2026-10-30T15:40:02.321Z"
+            },
+            "issue": {
+              "id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+              "key": "WEB-1",
+              "title": "Crash when exporting the invoices",
+              "status": {
+                "id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+                "name": "In progress",
+                "closes": false
+              },
+              "category": {
+                "id": "01a16286-f098-7eba-93de-76873ba83fec",
+                "name": "Request"
+              },
+              "closedAt": null,
+              "priority": {
+                "id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+                "name": "Normal",
+                "level": 2
+              },
+              "createdAt": "2026-10-30T15:40:02.321Z",
+              "projectId": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+              "updatedAt": "2026-10-30T15:40:02.901Z",
+              "assigneeId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+              "projectKey": "WEB",
+              "reporterId": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+              "description": "**Steps**\n\n1. Open the invoices\n2. Click *Export*\n\nIt crashes in Firefox."
+            },
+            "change": {}
+          },
+          "type": "issue.created",
+          "timestamp": "2026-10-30T15:40:02.321Z"
+        },
+        "status": "pending",
+        "attempts": 1,
+        "response_status": null,
+        "error": "NETWORK_ERROR",
+        "duration_ms": 1,
+        "created_at": "2026-10-30T15:40:03.672246+00:00",
+        "updated_at": "2026-10-30T15:40:05.672409+00:00"
+      },
+      {
+        "id": "01a18d77-d579-7333-8302-dc4be2b11641",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "message_id": "01a18d77-d08b-73a4-a83f-ba86d0492ba9",
+        "event_type": "issue.created",
+        "payload": {
+          "data": {
+            "event": {
+              "id": "01a18d77-d08b-73a4-a83f-ba86d0492ba9",
+              "type": "issue.created",
+              "actorId": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+              "occurredAt": "2026-10-30T15:40:02.365Z"
+            },
+            "issue": {
+              "id": "01a18d77-d085-7546-962f-e5c46dc32176",
+              "key": "WEB-2",
+              "title": "Please send my invoice again",
+              "status": {
+                "id": "01a16286-f097-76c3-99ef-142009179f39",
+                "name": "New",
+                "closes": false
+              },
+              "category": {
+                "id": "01a16286-f098-7e89-95b4-e2b2aa971d11",
+                "name": "Bug"
+              },
+              "closedAt": null,
+              "priority": {
+                "id": "01a16286-f097-7031-b0a5-653999e6a1e3",
+                "name": "High",
+                "level": 3
+              },
+              "createdAt": "2026-10-30T15:40:02.365Z",
+              "projectId": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+              "updatedAt": "2026-10-30T15:40:02.901Z",
+              "assigneeId": "01a18d77-cfbc-7644-b534-177b648ece68",
+              "projectKey": "WEB",
+              "reporterId": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+              "description": "I cannot find it in my mailbox."
+            },
+            "change": {}
+          },
+          "type": "issue.created",
+          "timestamp": "2026-10-30T15:40:02.365Z"
+        },
+        "status": "pending",
+        "attempts": 1,
+        "response_status": null,
+        "error": "NETWORK_ERROR",
+        "duration_ms": 1,
+        "created_at": "2026-10-30T15:40:03.721493+00:00",
+        "updated_at": "2026-10-30T15:40:05.68695+00:00"
+      },
+      {
+        "id": "01a18d77-d598-7182-b2ec-b23306a89960",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "message_id": "01a18d77-d0a8-75cc-add8-e45ce640eecc",
+        "event_type": "issue.created",
+        "payload": {
+          "data": {
+            "event": {
+              "id": "01a18d77-d0a8-75cc-add8-e45ce640eecc",
+              "type": "issue.created",
+              "actorId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+              "occurredAt": "2026-10-30T15:40:02.400Z"
+            },
+            "issue": {
+              "id": "01a18d77-d0a3-717d-8341-6c5df11336ca",
+              "key": "WEB-3",
+              "title": "Export of invoices crashes",
+              "status": {
+                "id": "01a16286-f097-7d2f-8165-6070ac26c187",
+                "name": "Resolved",
+                "closes": true
+              },
+              "category": {
+                "id": "01a16286-f098-7eba-93de-76873ba83fec",
+                "name": "Request"
+              },
+              "closedAt": "2026-10-30T15:40:02.526Z",
+              "priority": {
+                "id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+                "name": "Normal",
+                "level": 2
+              },
+              "createdAt": "2026-10-30T15:40:02.400Z",
+              "projectId": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+              "updatedAt": "2026-10-30T15:40:02.874Z",
+              "assigneeId": null,
+              "projectKey": "WEB",
+              "reporterId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+              "description": ""
+            },
+            "change": {}
+          },
+          "type": "issue.created",
+          "timestamp": "2026-10-30T15:40:02.400Z"
+        },
+        "status": "pending",
+        "attempts": 1,
+        "response_status": null,
+        "error": "NETWORK_ERROR",
+        "duration_ms": 1,
+        "created_at": "2026-10-30T15:40:03.755034+00:00",
+        "updated_at": "2026-10-30T15:40:05.688302+00:00"
+      },
+      {
+        "id": "01a18d77-d628-737c-b9e8-451204c78689",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "message_id": "01a18d77-d117-71e6-8c84-ffd852551710",
+        "event_type": "issue.statusChanged",
+        "payload": {
+          "data": {
+            "event": {
+              "id": "01a18d77-d117-71e6-8c84-ffd852551710",
+              "type": "issue.statusChanged",
+              "actorId": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+              "occurredAt": "2026-10-30T15:40:02.525Z"
+            },
+            "issue": {
+              "id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+              "key": "WEB-1",
+              "title": "Crash when exporting the invoices",
+              "status": {
+                "id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+                "name": "In progress",
+                "closes": false
+              },
+              "category": {
+                "id": "01a16286-f098-7eba-93de-76873ba83fec",
+                "name": "Request"
+              },
+              "closedAt": null,
+              "priority": {
+                "id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+                "name": "Normal",
+                "level": 2
+              },
+              "createdAt": "2026-10-30T15:40:02.321Z",
+              "projectId": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+              "updatedAt": "2026-10-30T15:40:02.901Z",
+              "assigneeId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+              "projectKey": "WEB",
+              "reporterId": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+              "description": "**Steps**\n\n1. Open the invoices\n2. Click *Export*\n\nIt crashes in Firefox."
+            },
+            "change": {
+              "to": {
+                "id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+                "name": "In progress"
+              },
+              "from": {
+                "id": "01a16286-f097-76c3-99ef-142009179f39",
+                "name": "New"
+              }
+            }
+          },
+          "type": "issue.statusChanged",
+          "timestamp": "2026-10-30T15:40:02.525Z"
+        },
+        "status": "pending",
+        "attempts": 1,
+        "response_status": null,
+        "error": "NETWORK_ERROR",
+        "duration_ms": 1,
+        "created_at": "2026-10-30T15:40:03.90286+00:00",
+        "updated_at": "2026-10-30T15:40:05.695942+00:00"
+      },
+      {
+        "id": "01a18d77-d6dc-73d9-9ee3-26a53903e9e0",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "message_id": "01a18d77-d1ae-7122-9468-8c72ad6de575",
+        "event_type": "issue.commented",
+        "payload": {
+          "data": {
+            "event": {
+              "id": "01a18d77-d1ae-7122-9468-8c72ad6de575",
+              "type": "issue.commented",
+              "actorId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+              "occurredAt": "2026-10-30T15:40:02.690Z"
+            },
+            "issue": {
+              "id": "01a18d77-d062-7067-9ddc-d0db54ff37ca",
+              "key": "WEB-1",
+              "title": "Crash when exporting the invoices",
+              "status": {
+                "id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+                "name": "In progress",
+                "closes": false
+              },
+              "category": {
+                "id": "01a16286-f098-7eba-93de-76873ba83fec",
+                "name": "Request"
+              },
+              "closedAt": null,
+              "priority": {
+                "id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+                "name": "Normal",
+                "level": 2
+              },
+              "createdAt": "2026-10-30T15:40:02.321Z",
+              "projectId": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+              "updatedAt": "2026-10-30T15:40:02.901Z",
+              "assigneeId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+              "projectKey": "WEB",
+              "reporterId": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+              "description": "**Steps**\n\n1. Open the invoices\n2. Click *Export*\n\nIt crashes in Firefox."
+            },
+            "change": {
+              "comment": {
+                "id": "01a18d77-d1ab-732f-b303-27de325a5e36",
+                "body": "@Ada Lovelace it comes from the PDF library, version 4.",
+                "authorId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+                "mentioned": ["01a18d77-cd82-75b9-b32c-e660b6f01404"]
+              }
+            }
+          },
+          "type": "issue.commented",
+          "timestamp": "2026-10-30T15:40:02.690Z"
+        },
+        "status": "pending",
+        "attempts": 1,
+        "response_status": null,
+        "error": "NETWORK_ERROR",
+        "duration_ms": 1,
+        "created_at": "2026-10-30T15:40:04.098047+00:00",
+        "updated_at": "2026-10-30T15:40:05.697056+00:00"
+      },
+      {
+        "id": "01a18d77-d737-72cc-bed1-3502bc49ca20",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "message_id": "01a18d77-d1ef-71bb-ae3f-ad225bc2b8cc",
+        "event_type": "issue.commented",
+        "payload": {
+          "data": {
+            "event": {
+              "id": "01a18d77-d1ef-71bb-ae3f-ad225bc2b8cc",
+              "type": "issue.commented",
+              "actorId": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+              "occurredAt": "2026-10-30T15:40:02.761Z"
+            },
+            "issue": {
+              "id": "01a18d77-d085-7546-962f-e5c46dc32176",
+              "key": "WEB-2",
+              "title": "Please send my invoice again",
+              "status": {
+                "id": "01a16286-f097-76c3-99ef-142009179f39",
+                "name": "New",
+                "closes": false
+              },
+              "category": {
+                "id": "01a16286-f098-7e89-95b4-e2b2aa971d11",
+                "name": "Bug"
+              },
+              "closedAt": null,
+              "priority": {
+                "id": "01a16286-f097-7031-b0a5-653999e6a1e3",
+                "name": "High",
+                "level": 3
+              },
+              "createdAt": "2026-10-30T15:40:02.365Z",
+              "projectId": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+              "updatedAt": "2026-10-30T15:40:02.901Z",
+              "assigneeId": "01a18d77-cfbc-7644-b534-177b648ece68",
+              "projectKey": "WEB",
+              "reporterId": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+              "description": "I cannot find it in my mailbox."
+            },
+            "change": {
+              "comment": {
+                "id": "01a18d77-d1ed-74d6-b8dc-e47dcb6b2938",
+                "body": "Still waiting.",
+                "authorId": "01a18d77-cf41-7641-b3b6-48df95216aa7",
+                "mentioned": []
+              }
+            }
+          },
+          "type": "issue.commented",
+          "timestamp": "2026-10-30T15:40:02.761Z"
+        },
+        "status": "pending",
+        "attempts": 1,
+        "response_status": null,
+        "error": "NETWORK_ERROR",
+        "duration_ms": 1,
+        "created_at": "2026-10-30T15:40:04.19552+00:00",
+        "updated_at": "2026-10-30T15:40:05.704944+00:00"
+      },
+      {
+        "id": "01a18d77-d792-7455-9bac-a95ff115413c",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "message_id": "01a18d77-d264-70a6-852b-c75752ae5391",
+        "event_type": "issue.statusChanged",
+        "payload": {
+          "data": {
+            "event": {
+              "id": "01a18d77-d264-70a6-852b-c75752ae5391",
+              "type": "issue.statusChanged",
+              "actorId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+              "occurredAt": "2026-10-30T15:40:02.874Z"
+            },
+            "issue": {
+              "id": "01a18d77-d0a3-717d-8341-6c5df11336ca",
+              "key": "WEB-3",
+              "title": "Export of invoices crashes",
+              "status": {
+                "id": "01a16286-f097-7d2f-8165-6070ac26c187",
+                "name": "Resolved",
+                "closes": true
+              },
+              "category": {
+                "id": "01a16286-f098-7eba-93de-76873ba83fec",
+                "name": "Request"
+              },
+              "closedAt": "2026-10-30T15:40:02.526Z",
+              "priority": {
+                "id": "01a16286-f097-741e-8499-8d3adbd5c2d6",
+                "name": "Normal",
+                "level": 2
+              },
+              "createdAt": "2026-10-30T15:40:02.400Z",
+              "projectId": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+              "updatedAt": "2026-10-30T15:40:02.874Z",
+              "assigneeId": null,
+              "projectKey": "WEB",
+              "reporterId": "01a18d77-cec2-7700-8bb1-f2131388109a",
+              "description": ""
+            },
+            "change": {
+              "to": {
+                "id": "01a16286-f097-7d2f-8165-6070ac26c187",
+                "name": "Resolved"
+              },
+              "from": {
+                "id": "01a16286-f097-76c3-99ef-142009179f39",
+                "name": "New"
+              }
+            }
+          },
+          "type": "issue.statusChanged",
+          "timestamp": "2026-10-30T15:40:02.874Z"
+        },
+        "status": "pending",
+        "attempts": 1,
+        "response_status": null,
+        "error": "NETWORK_ERROR",
+        "duration_ms": 1,
+        "created_at": "2026-10-30T15:40:04.293753+00:00",
+        "updated_at": "2026-10-30T15:40:05.706114+00:00"
+      }
+    ],
+    "webhook_projects": [
+      {
+        "id": "01a18d77-d01c-7682-9550-388baf7ea713",
+        "webhook_id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "project_id": "01a18d77-cde5-758f-80ab-420fcfb8dfd9",
+        "created_at": "2026-10-30T15:40:02.264306+00:00",
+        "updated_at": "2026-10-30T15:40:02.264306+00:00"
+      }
+    ],
+    "webhooks": [
+      {
+        "id": "01a18d77-d01b-7103-b411-6d14ee09eb86",
+        "name": "Deployments",
+        "url": "https://hooks.example.invalid/toppo",
+        "secret_sealed": "v1.qkKpsg8_DpnpwayO.m4gtAyaWQYXMxxKKztBt2w.Gi0uVEV1sBnWGJn1ekcVqLB5iW8QqMnlIEmPpfRWipzoSeAVtAfYuCSPNNN6ag08JLU",
+        "events": ["issue.created", "issue.commented", "issue.statusChanged"],
+        "all_projects": false,
+        "allow_private": false,
+        "enabled": true,
+        "failures": 0,
+        "last_error": null,
+        "created_by_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "created_at": "2026-10-30T15:40:02.264306+00:00",
+        "updated_at": "2026-10-30T15:40:02.264306+00:00"
+      },
+      {
+        "id": "01a18d77-d026-760c-b559-e92df0b7a517",
+        "name": "Team chat",
+        "url": "https://chat.example.invalid/hooks/toppo",
+        "secret_sealed": "v1.xyLgUib4r0Re-KBG.8BcaGoRFCIAlVasR2Lv6bA.aE6GonULyWOLzviDb_KzCY2ExBYNr1dwq6wRJ3rMmXLACc5xqhJpL65dj3S0suH-f6c",
+        "events": ["issue.created"],
+        "all_projects": true,
+        "allow_private": false,
+        "enabled": false,
+        "failures": 0,
+        "last_error": null,
+        "created_by_id": "01a18d77-cd82-75b9-b32c-e660b6f01404",
+        "created_at": "2026-10-30T15:40:02.277387+00:00",
+        "updated_at": "2026-10-30T15:40:02.285927+00:00"
+      }
+    ],
+    "workflow_statuses": [
+      {
+        "id": "01a16286-f097-728e-8429-a636fe6a8ba0",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "status_id": "01a16286-f097-76c3-99ef-142009179f39",
+        "position": 0,
+        "is_initial": true,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a16286-f097-76fd-a12f-c4e528008154",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "status_id": "01a16286-f097-7910-adf1-e82c47706491",
+        "position": 3,
+        "is_initial": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a16286-f097-7896-93d3-94335035dec0",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "status_id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "position": 4,
+        "is_initial": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a16286-f097-7b84-b497-9e484c1b6b09",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "status_id": "01a16286-f097-7230-ae0a-2665141a1c79",
+        "position": 1,
+        "is_initial": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a16286-f097-7ce6-80c3-8b1f10af70f4",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "status_id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "position": 2,
+        "is_initial": false,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      }
+    ],
+    "workflow_transitions": [
+      {
+        "id": "01a162b9-6774-779e-af72-dfed260a5c10",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-76c3-99ef-142009179f39",
+        "to_status_id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6774-7bf8-94e3-01971393af31",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-76c3-99ef-142009179f39",
+        "to_status_id": "01a16286-f097-7230-ae0a-2665141a1c79",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6774-7e26-bf50-c71fdffb408f",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-7230-ae0a-2665141a1c79",
+        "to_status_id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6774-7f51-80fc-08577a26042d",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-76c3-99ef-142009179f39",
+        "to_status_id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6775-70ed-b915-e803652731fd",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-7910-adf1-e82c47706491",
+        "to_status_id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6775-729a-b3dc-817d5454dbaf",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-7230-ae0a-2665141a1c79",
+        "to_status_id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6775-7391-afb8-1c8478f22b00",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "to_status_id": "01a16286-f097-7230-ae0a-2665141a1c79",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6775-7459-9fab-ebafaa245a05",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "to_status_id": "01a16286-f097-7230-ae0a-2665141a1c79",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6775-762c-8300-2f750b78d197",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-7910-adf1-e82c47706491",
+        "to_status_id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6775-76c4-8640-0570292c975a",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "to_status_id": "01a16286-f097-7910-adf1-e82c47706491",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      },
+      {
+        "id": "01a162b9-6775-7bac-bcbb-d8fb7d96e477",
+        "workflow_id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "from_status_id": "01a16286-f097-797e-8ffe-9d08ab570fed",
+        "to_status_id": "01a16286-f097-7d2f-8165-6070ac26c187",
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00"
+      }
+    ],
+    "workflows": [
+      {
+        "id": "01a16286-f096-7c5d-94b4-022c1ffb35a5",
+        "project_id": null,
+        "created_at": "2026-10-30T15:40:00.88823+00:00",
+        "updated_at": "2026-10-30T15:40:00.88823+00:00",
+        "mode": "defined"
+      }
+    ]
+  }
+}
