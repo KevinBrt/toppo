@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/KevinBrt/toppo/compare/v1.0.1...v1.1.0) (2026-10-30)
+
+
+### Features
+
+* **plugins:** let teams extend Toppo with plugins ([259ad53](https://github.com/KevinBrt/toppo/commit/259ad537aa4435da7485746125b5452ccf0f5c3c))
+* **webhooks:** send signed webhooks of issue events ([259ad53](https://github.com/KevinBrt/toppo/commit/259ad537aa4435da7485746125b5452ccf0f5c3c))
+
 ## [1.0.1](https://github.com/KevinBrt/toppo/compare/v1.0.0...v1.0.1) (2026-10-28)
 
 
