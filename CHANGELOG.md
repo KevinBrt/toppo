@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/KevinBrt/toppo/compare/v1.1.0...v1.2.0) (2026-10-30)
+
+
+### Features
+
+* **plugins:** records on a person and ctx.people.can ([#60](https://github.com/KevinBrt/toppo/issues/60)) ([ede7ff0](https://github.com/KevinBrt/toppo/commit/ede7ff09df672e2a404c90a1869425c043f33973))
+
 ## [1.1.0](https://github.com/KevinBrt/toppo/compare/v1.0.1...v1.1.0) (2026-10-30)
 
 
