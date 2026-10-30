@@ -307,7 +307,18 @@ describe('what Toppo draws over the page for a plugin’s screen', () => {
     await dialog.getByRole('button', { name: 'Delete' }).click();
     await expect.poll(answers).toStrictEqual([{ kind: 'answer', id: 7, ok: true, result: true }]);
     await expect.element(dialog).not.toBeInTheDocument();
-    expect(document.activeElement).toBe(frame);
+    // Back beside the screen, not into it: it asks again once the person uses it again.
+    await expect.poll(() => document.activeElement).toBe(frame.parentElement);
+    fromFrame(frame, { kind: 'confirm', id: 17, title: 'Delete another?' });
+    await expect.poll(answers).toContainEqual({
+      kind: 'answer',
+      id: 17,
+      ok: false,
+      error: { code: 'OVERLAY_REFUSED' },
+    });
+    frame.focus();
+    fromFrame(frame, { kind: 'confirm', id: 18, title: 'Delete another?' });
+    await expect.element(screen.getByRole('dialog', { name: 'Delete another?' })).toBeVisible();
   });
 
   it('opens one of the plugin’s dialogs with its own frame, and answers what it closed with', async () => {
@@ -324,6 +335,7 @@ describe('what Toppo draws over the page for a plugin’s screen', () => {
       .toStrictEqual([{ kind: 'answer', id: 8, ok: true, result: { minutes: 30 } }]);
     await expect.element(dialog).not.toBeInTheDocument();
 
+    frame.focus();
     fromFrame(frame, { kind: 'dialog', id: 9, name: 'logTime', input: null });
     await expect.element(screen.getByRole('dialog', { name: 'Log time' })).toBeVisible();
     // Dismissed by the person: its opener is answered nothing.
@@ -353,6 +365,27 @@ describe('what Toppo draws over the page for a plugin’s screen', () => {
       .toStrictEqual([{ kind: 'answer', id: 10, ok: true, result: 'delete' }]);
   });
 
+  it('draws a menu over the screen’s own frame only, wherever it says its button is', async () => {
+    const { frame, screen } = await panel();
+
+    fromFrame(frame, {
+      kind: 'menu',
+      id: 19,
+      anchor: { x: 99_999, y: -99_999, width: 32, height: 32 },
+      items: [{ id: 'edit', label: 'Edit' }],
+    });
+
+    await expect.element(screen.getByRole('menuitem', { name: 'Edit' })).toBeVisible();
+    const box = frame.getBoundingClientRect();
+    // Where Toppo placed the screen's button, the menu opening beside it.
+    const button = document
+      .querySelector('span.fixed[aria-haspopup="menu"]')
+      ?.getBoundingClientRect();
+    expect(button).toBeDefined();
+    expect(button?.left).toBeLessThanOrEqual(box.right);
+    expect(button?.top).toBeGreaterThanOrEqual(box.top);
+  });
+
   it('searches issues and people for the screen, and answers what was picked', async () => {
     const { fake, frame, answers, screen } = await panel();
 
@@ -374,6 +407,7 @@ describe('what Toppo draws over the page for a plugin’s screen', () => {
       expect.objectContaining({ path: '/api/v1/plugins/time-tracking/pick/issues?search=slow' }),
     );
 
+    frame.focus();
     fromFrame(frame, { kind: 'pick', id: 12, of: 'people', multiple: true });
     const people = screen.getByRole('dialog', { name: 'Choose people' });
     await people.getByRole('button', { name: 'Ada Lovelace' }).click();

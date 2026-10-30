@@ -6,7 +6,7 @@ import {
 } from '@toppo-tracker/shared';
 import { desc, eq } from 'drizzle-orm';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
-import { webhookNotFound, webhookSummaries } from '../utils/webhook-rows.util.ts';
+import { summaryColumns, webhookNotFound, webhookSummaries } from '../utils/webhook-rows.util.ts';
 
 const { webhookDeliveries, webhooks } = schema;
 
@@ -19,7 +19,7 @@ export const getWebhook = defineQuery({
   access: { permission: 'instance.webhooks.manage' },
   input: webhookIdParamsSchema,
   async handler({ db }, { webhookId }): Promise<WebhookDetailsResponse> {
-    const [row] = await db.select().from(webhooks).where(eq(webhooks.id, webhookId));
+    const [row] = await db.select(summaryColumns).from(webhooks).where(eq(webhooks.id, webhookId));
     if (!row) {
       throw webhookNotFound();
     }

@@ -4,7 +4,7 @@ import Fastify from 'fastify';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { setupTestDatabase, testServices } from '../../test-helpers.ts';
-import { runNextJob, startJobWorker, type WorkerContext } from './job-worker.ts';
+import { runNextJob, startJobWorker, startJobWorkers, type WorkerContext } from './job-worker.ts';
 import { defineJob, enqueue, type RunnableJob, scheduleRecurringJobs } from './jobs.ts';
 
 const { jobs } = schema;
@@ -66,8 +66,28 @@ const paced = defineJob({
   },
 });
 
+/** Lets the calls waiting on a service outside Toppo answer. */
+let answer: () => void = () => undefined;
+
+/** Waits on a service outside Toppo until the test lets it answer. */
+const call = defineJob({
+  type: 'test.call',
+  payload: z.object({ name: z.string() }),
+  waitsOutside: true,
+  async handler(_scope, { name }) {
+    await new Promise<void>((answered) => {
+      const before = answer;
+      answer = () => {
+        before();
+        answered();
+      };
+    });
+    done.push(`called ${name}`);
+  },
+});
+
 function worker(
-  all: readonly RunnableJob[] = [greet, flaky, hourly, urgent, paced],
+  all: readonly RunnableJob[] = [greet, flaky, hourly, urgent, paced, call],
 ): WorkerContext {
   return { db: context.database.db, jobs: all, log, services: testServices() };
 }
@@ -281,5 +301,24 @@ describe('startJobWorker', () => {
     await enqueue(context.database.db, greet, { name: 'nobody' });
 
     expect(await stored()).toMatchObject([{ type: 'test.greet', status: 'pending' }]);
+  });
+});
+
+describe('startJobWorkers', () => {
+  it('runs the jobs waiting on a service outside Toppo apart: a slow one holds up no other', async () => {
+    const running = startJobWorkers(worker());
+    try {
+      await enqueue(context.database.db, call, { name: 'a slow receiver' });
+      await enqueue(context.database.db, call, { name: 'another' });
+      await enqueue(context.database.db, greet, { name: 'Grace' });
+
+      await vi.waitFor(() => expect(done).toStrictEqual(['hello Grace']), { timeout: 5000 });
+      answer();
+      await vi.waitFor(() => expect(done).toHaveLength(3), { timeout: 5000 });
+      expect(done).toContain('called a slow receiver');
+    } finally {
+      answer();
+      await running.stop();
+    }
   });
 });

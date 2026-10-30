@@ -71,10 +71,11 @@ export const sendPluginRequest = defineDetachedCommand({
  * the port of its scheme or the one an address in its settings gives: never another service of
  * the same host.
  */
-function policyOf({ manifest, settings, privateHosts }: ActingPlugin): OutboundPolicy {
+function policyOf({ slug, manifest, settings, privateHosts }: ActingPlugin): OutboundPolicy {
   const addresses = settingAddresses(manifest.http, settings);
   const hosts = declaredHosts(manifest.http, addresses);
   return {
+    caller: `plugin:${slug}`,
     mayReach: (url) => hosts === 'any' || hosts.includes(url.hostname),
     mayReachInside: (url) =>
       privateHosts.includes(bareHost(url)) &&

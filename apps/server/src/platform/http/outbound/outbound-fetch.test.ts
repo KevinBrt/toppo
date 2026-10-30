@@ -75,10 +75,15 @@ afterAll(async () => {
 
 /** The loopback, allowed by name as an administrator would allow a team's own server. */
 const LOOPBACK: OutboundPolicy = {
+  caller: 'test',
   mayReach: () => true,
   mayReachInside: (url) => url.hostname === '127.0.0.1',
 };
-const PUBLIC_ONLY: OutboundPolicy = { mayReach: () => true, mayReachInside: () => false };
+const PUBLIC_ONLY: OutboundPolicy = {
+  caller: 'test',
+  mayReach: () => true,
+  mayReachInside: () => false,
+};
 
 function get(url: string, extra: Partial<OutboundRequest> = {}): OutboundRequest {
   return { url, method: 'GET', ...extra };
@@ -145,6 +150,7 @@ describe('a request leaving Toppo', () => {
 
   it('reaches a host inside the network only as named, not another one beside it', async () => {
     const named: OutboundPolicy = {
+      caller: 'test',
       mayReach: () => true,
       mayReachInside: (url) => url.hostname === 'localhost',
     };
@@ -153,8 +159,27 @@ describe('a request leaving Toppo', () => {
     expect((await outboundFetch(get(`${here}/echo`), LOOPBACK)).status).toBe(200);
   });
 
+  it('sends in clear inside the network only, when its policy says so', async () => {
+    const inClearInside: OutboundPolicy = {
+      caller: 'test',
+      mayReach: () => true,
+      mayReachInside: () => true,
+      clearInsideOnly: true,
+    };
+
+    expect((await outboundFetch(get(`${here}/echo`), inClearInside)).status).toBe(200);
+    // A public address, in clear: refused before anything is sent.
+    expect(await failureOf(outboundFetch(get('http://93.184.215.14/'), inClearInside))).toBe(
+      'ADDRESS_NOT_ALLOWED',
+    );
+    expect(await failureOf(outboundFetch(get('http://localhost:9/'), inClearInside))).not.toBe(
+      'ADDRESS_NOT_ALLOWED',
+    );
+  });
+
   it('goes only where its policy allows, at each redirect too', async () => {
     const hereOnly: OutboundPolicy = {
+      caller: 'test',
       mayReach: (url) => url.origin === here,
       mayReachInside: (url) => url.hostname === '127.0.0.1',
     };

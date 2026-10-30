@@ -36,14 +36,20 @@ const FRAME_MAX_HEIGHT = 20_000;
 /** What a screen asks Toppo to draw over the page. */
 type OverlayRequest = Extract<FrameMessage, { kind: 'confirm' | 'dialog' | 'menu' | 'pick' }>;
 
+/** Where a frame is on the page. */
+type FrameBox = Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>;
+
+/** `value`, from 0 to `most`. */
+const within = (value: number, most: number) => Math.min(Math.max(value, 0), most);
+
 /**
  * What Toppo draws for what a screen asked, its plugin's name and dialogs known: a menu beside
- * its button, which the frame (`box`, on the page) measured in its own pixels.
+ * its button, which the frame measured in its own pixels, never beyond the frame's `box`.
  */
 function overlayFor(
   request: OverlayRequest,
   { plugin, dialogs }: PluginDialogsResponse,
-  box: { left: number; top: number },
+  box: FrameBox,
 ): Overlay {
   switch (request.kind) {
     case 'dialog': {
@@ -54,12 +60,18 @@ function overlayFor(
       return { kind: 'dialog', plugin, request, dialog };
     }
     case 'menu': {
-      const { x, y, width, height } = request.anchor;
+      const x = within(request.anchor.x, box.width);
+      const y = within(request.anchor.y, box.height);
       return {
         kind: 'menu',
         plugin,
         request,
-        at: { x: box.left + x, y: box.top + y, width, height },
+        at: {
+          x: box.left + x,
+          y: box.top + y,
+          width: within(request.anchor.width, box.width - x),
+          height: within(request.anchor.height, box.height - y),
+        },
       };
     }
     case 'confirm':
@@ -126,6 +138,7 @@ export function PluginFrame({
   const { t, locale } = useI18n();
   const queryClient = useQueryClient();
   const frame = useRef<HTMLIFrameElement>(null);
+  const place = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
   const [ready, setReady] = useState(false);
   const [left, setLeft] = useState(false);
@@ -156,7 +169,12 @@ export function PluginFrame({
     overlaid.current = true;
     try {
       const known = await queryClient.fetchQuery(PluginsQueries.dialogs(pluginSlug));
-      const box = frame.current?.getBoundingClientRect() ?? { left: 0, top: 0 };
+      const box = frame.current?.getBoundingClientRect() ?? {
+        left: 0,
+        top: 0,
+        width: 0,
+        height: 0,
+      };
       setOverlay(overlayFor(request, known, box));
     } catch {
       // Not known, not reachable, or not the person's to open: the screen is told so.
@@ -177,15 +195,16 @@ export function PluginFrame({
     refocus.current = true;
   }
 
-  // Back to the screen that asked, once what was drawn is gone (a dialog gives focus back as it
-  // goes): the person goes on where they were, and the screen may ask again.
+  // Back beside the screen that asked, once what was drawn is gone (a dialog gives focus back as it
+  // goes): the person goes on where they were. Not into the frame itself: the screen asks again
+  // only once the person uses it again, never drawing one thing after another on its own.
   const refocus = useRef(false);
   useEffect(() => {
     if (overlay || !refocus.current) {
       return;
     }
     refocus.current = false;
-    const timer = setTimeout(() => frame.current?.focus());
+    const timer = setTimeout(() => place.current?.focus());
     return () => clearTimeout(timer);
   }, [overlay]);
 
@@ -279,7 +298,7 @@ export function PluginFrame({
     return <Alert tone="danger">{t('plugins.screenLeft')}</Alert>;
   }
   return (
-    <>
+    <div ref={place} tabIndex={-1} className="outline-none">
       <iframe
         ref={frame}
         title={title}
@@ -314,6 +333,6 @@ export function PluginFrame({
           )}
         />
       ) : null}
-    </>
+    </div>
   );
 }

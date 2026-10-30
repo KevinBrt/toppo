@@ -45,6 +45,8 @@ export interface RunnableJob {
   readonly priority: number;
   /** How long between two runs of a recurring job, in milliseconds; `null` for a job run once. */
   readonly every: number | null;
+  /** Waits on a service outside Toppo: run in a lane of its own (`startJobWorkers`). */
+  readonly waitsOutside: boolean;
   /** Checks the stored payload, then does the work. */
   run(scope: JobScope, payload: unknown): Promise<JobOutcome | undefined>;
 }
@@ -65,6 +67,11 @@ interface JobDefinition<Payload extends z.ZodObject> {
   priority?: number;
   /** Makes the job recurring: one job of its type, run again this many milliseconds later. */
   every?: number;
+  /**
+   * Waits on a service outside Toppo, as long as it takes to answer: run in a lane of its own, so
+   * that a slow one holds up no other job.
+   */
+  waitsOutside?: boolean;
   /** Answers nothing, or a `JobOutcome` to run again later. */
   handler(scope: JobScope, payload: z.output<Payload>): Promise<unknown>;
 }
@@ -81,6 +88,7 @@ export function defineJob<Payload extends z.ZodObject>(
     maxAttempts: definition.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
     priority: definition.priority ?? 0,
     every: definition.every ?? null,
+    waitsOutside: definition.waitsOutside ?? false,
     async run(scope, payload) {
       const outcome = jobOutcomeSchema.safeParse(
         await definition.handler(scope, definition.payload.parse(payload)),

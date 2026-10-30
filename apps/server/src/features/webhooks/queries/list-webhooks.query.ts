@@ -3,7 +3,7 @@ import { WEBHOOKS_MAX, type WebhooksResponse } from '@toppo-tracker/shared';
 import { asc } from 'drizzle-orm';
 import { z } from 'zod';
 import { defineQuery } from '../../../platform/cqrs/cqrs.ts';
-import { webhookSummaries } from '../utils/webhook-rows.util.ts';
+import { summaryColumns, webhookSummaries } from '../utils/webhook-rows.util.ts';
 
 const { webhooks } = schema;
 
@@ -14,7 +14,7 @@ export const listWebhooks = defineQuery({
   input: z.object({}),
   async handler({ db }): Promise<WebhooksResponse> {
     const rows = await db
-      .select()
+      .select(summaryColumns)
       .from(webhooks)
       .orderBy(asc(webhooks.name), asc(webhooks.id))
       .limit(WEBHOOKS_MAX);

@@ -8,6 +8,7 @@ import {
   openSettings,
   secretNamesOf,
   settingsToStore,
+  settingsWithoutSecrets,
 } from '../../utils/settings/secret-settings.util.ts';
 import {
   assertSettingsDeclared,
@@ -21,7 +22,8 @@ const { plugins } = schema;
  * Saves a plugin's settings once its own schema accepted them, in its sandbox: in any state, so
  * that it is set up before it runs. It holds no transaction while the plugin checks them.
  * Settings refused since an upgrade are so corrected. A secret is sealed as it is kept; one left
- * out keeps what it held, checked with the rest.
+ * out keeps what it held, checked with the rest by approved code only: code waiting for an
+ * approval checks the others, never reading a secret.
  */
 export const savePluginSettings = defineDetachedCommand({
   name: 'plugin.saveSettings',
@@ -33,6 +35,7 @@ export const savePluginSettings = defineDetachedCommand({
         sha256: plugins.packageSha256,
         manifest: plugins.manifest,
         settings: plugins.settings,
+        approvedAt: plugins.approvedAt,
       })
       .from(plugins)
       .where(eq(plugins.slug, pluginSlug));
@@ -52,7 +55,9 @@ export const savePluginSettings = defineDetachedCommand({
       { services, log },
       { slug: pluginSlug, sha256: plugin.sha256 },
       'instance',
-      openSettings(stored, manifest, services.secrets),
+      plugin.approvedAt === null
+        ? settingsWithoutSecrets(stored)
+        : openSettings(stored, manifest, services.secrets),
     );
     await storePluginSettings.execute(
       { db, actor, log, services },

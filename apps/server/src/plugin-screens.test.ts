@@ -407,6 +407,24 @@ describe('Toppo’s search for a plugin’s screen', () => {
     expect((await pick('linus', 'people')).json()).toStrictEqual({ people: [] });
   });
 
+  it('keeps a project’s people from someone who sees only their own issues there', async () => {
+    ids['margaret'] = await createTestUser(context.database, {
+      name: 'Margaret Hamilton',
+      email: 'margaret@example.com',
+      password: PASSWORD,
+      instanceRoleId: DEFAULT_ROLE_IDS.requester,
+    });
+    await post('/api/v1/projects/WEB/members', { userIds: [ids['margaret']], roleId: null });
+    await signIn('margaret', 'margaret@example.com');
+
+    // As Toppo's own lists of people keep them private from her: she learns no one, not even Grace.
+    expect((await pick('margaret', 'people')).json()).toStrictEqual({ people: [] });
+    expect((await pick('margaret', 'people', '?search=hopp')).json()).toStrictEqual({ people: [] });
+    expect((await pick('ada', 'people', '?search=hamil')).json()).toStrictEqual({
+      people: [{ id: ids['margaret'], name: 'Margaret Hamilton' }],
+    });
+  });
+
   it('is for a plugin enabled, that reads issues to find them, and for the signed-in', async () => {
     await context.database.db
       .update(schema.plugins)

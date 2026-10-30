@@ -45,7 +45,12 @@ const SCREEN_ONLY = /^(react|react-dom|@toppo-tracker\/plugin-ui)(\/|$)/;
 type Target = 'server' | 'screens';
 
 /** The definitions whose `handler` runs in Toppo's sandbox only, never in a screen. */
-const SERVER_DEFINITIONS = new Set(['defineAction', 'defineEventHandler', 'defineJob']);
+const SERVER_DEFINITIONS = new Set([
+  'defineAction',
+  'defineEventHandler',
+  'defineJob',
+  'defineRoute',
+]);
 
 /** A property of an AST node, read without trusting its shape. */
 const field = (node: unknown, key: string): unknown =>
@@ -69,7 +74,7 @@ function handlerRange(node: unknown): [number, number] | undefined {
   return Array.isArray(range) ? [Number(range[0]), Number(range[1])] : undefined;
 }
 
-/** The handlers of the actions, event handlers and jobs a module defines, last first. */
+/** The handlers of the actions, event handlers, jobs and routes a module defines, last first. */
 function serverHandlersIn(program: unknown): [number, number][] {
   const found: [number, number][] = [];
   const visit = (node: unknown): void => {

@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { signedHeaders, verifySignature } from '@toppo-tracker/plugin-sdk/host';
 import { describe, expect, it } from 'vitest';
 import { nodeCrypto } from './node-crypto.ts';
@@ -62,6 +63,25 @@ describe('the signatures Toppo writes and checks', () => {
         NOW,
       ),
     ).toBe(false);
+  });
+
+  it('refuses a key that is not base64, which would sign with no key at all', () => {
+    // What anyone can sign: with an empty key.
+    const forged = createHmac('sha256', Buffer.alloc(0))
+      .update(`msg_1.${NOW}.${BODY}`)
+      .digest('base64');
+    const headers = {
+      'webhook-id': 'msg_1',
+      'webhook-timestamp': String(NOW),
+      'webhook-signature': `v1,${forged}`,
+    };
+
+    for (const secret of ['whsec_', 'whsec_!!!!', 'whsec_not base64']) {
+      const check = { scheme: 'standard-webhooks', secret } as const;
+      expect(() => verifySignature(nodeCrypto, { headers, body: BODY }, check, NOW)).toThrow(
+        'The key is not base64',
+      );
+    }
   });
 
   it('compares texts in constant time, whatever their lengths', () => {

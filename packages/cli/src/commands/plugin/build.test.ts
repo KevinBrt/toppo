@@ -88,8 +88,13 @@ describe('toppo plugin build', () => {
     ]);
     expect(server).not.toContain('Hours spent on the screen');
     expect(web).toContain('Hours spent on the screen');
-    // Served to anyone with its address: what actions, event handlers and jobs do stays on the server.
-    for (const serverOnly of ['secret ways', 'Told of the issue', 'Done each week']) {
+    // Served to anyone with its address: what actions, event handlers, jobs and routes do stays on the server.
+    for (const serverOnly of [
+      'secret ways',
+      'Told of the issue',
+      'Done each week',
+      'Received on the',
+    ]) {
       expect(server).toContain(serverOnly);
       expect(web).not.toContain(serverOnly);
     }

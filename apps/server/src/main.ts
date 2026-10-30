@@ -7,7 +7,7 @@ import { generateSetupCode } from './features/setup/utils/setup-code.util.ts';
 import { createAuth } from './platform/auth/auth.ts';
 import { type Config, ConfigError, loadConfig } from './platform/config/config.ts';
 import { resolveSecret } from './platform/config/secret.ts';
-import { startJobWorker } from './platform/jobs/job-worker.ts';
+import { startJobWorkers } from './platform/jobs/job-worker.ts';
 import { scheduleRecurringJobs } from './platform/jobs/jobs.ts';
 import { createPackageStore } from './platform/plugins/packages/package-store.ts';
 import { createPluginRuntime } from './platform/plugins/runtime/plugin-runtime.ts';
@@ -117,7 +117,7 @@ try {
   await database.migrate(MIGRATIONS_FOLDER);
   await app.listen({ host: config.host, port: config.port });
   await scheduleRecurringJobs(database.db, jobs);
-  worker = startJobWorker({ db: database.db, jobs, log: app.log, services });
+  worker = startJobWorkers({ db: database.db, jobs, log: app.log, services });
 
   const { required } = await getSetupStatus.execute(
     { db: database.db, actor: null, log: app.log, services },

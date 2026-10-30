@@ -4,10 +4,11 @@ import type { SignatureCheck } from '@toppo-tracker/plugin-sdk';
 import { signedHeaders } from '@toppo-tracker/plugin-sdk/host';
 import { ROUTE_LIMITS } from '@toppo-tracker/plugin-sdk/protocol';
 import { eq, sql } from 'drizzle-orm';
-import type { FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { strToU8 } from 'fflate';
 import { rolldown } from 'rolldown';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { receivePluginRequest } from './features/plugins/commands/receive-plugin-request.command.ts';
 import { nodeCrypto } from './platform/http/signatures/node-crypto.ts';
 import { testManifest, testPackage } from './platform/plugins/packages/test-package.ts';
 import {
@@ -17,6 +18,7 @@ import {
   packageSha256Of,
   setupTestDatabase,
   TEST_SETUP_CODE,
+  testServices,
 } from './test-helpers.ts';
 
 /*
@@ -345,6 +347,39 @@ describe('a plugin’s route', () => {
       .from(schema.plugins)
       .where(eq(schema.plugins.slug, 'odd-hooks'));
     expect(plugin).toStrictEqual({ state: 'enabled', failures: 0 });
+  });
+
+  it('logs how it failed, never what the plugin answered', async () => {
+    const log = Fastify({ logger: false }).log;
+    const warned = vi.spyOn(log, 'warn');
+    const services = testServices();
+    // A status no route answers, with a secret the plugin was given.
+    const answered = {
+      ok: true,
+      value: { ok: true, result: { status: 302, body: SECRETS.hooksSecret } },
+    } as const;
+    const runtime = { run: () => Promise.resolve(answered) };
+
+    await expect(
+      receivePluginRequest.execute(
+        {
+          db: context.database.db,
+          actor: null,
+          log,
+          services: { ...services, plugins: { ...services.plugins, runtime } },
+        },
+        {
+          pluginSlug: 'odd-hooks',
+          route: 'odd.receive',
+          request: { method: 'POST', headers: {}, query: {}, body: '{}' },
+        },
+      ),
+    ).rejects.toMatchObject({ statusCode: 502 });
+    expect(warned).toHaveBeenCalledWith(
+      { plugin: 'odd-hooks', route: 'odd.receive', failure: 'INVALID_ANSWER' },
+      'Plugin failed',
+    );
+    expect(JSON.stringify(warned.mock.calls)).not.toContain(SECRETS.hooksSecret);
   });
 
   it('is found only on an enabled plugin that declares it', async () => {

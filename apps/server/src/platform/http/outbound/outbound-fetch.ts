@@ -42,6 +42,11 @@ export interface OutboundRequest {
 
 /** Where a caller may go, beyond what no request reaches. */
 export interface OutboundPolicy {
+  /**
+   * Who asks, as Toppo shares its lookups between callers: `plugin:<slug>`, `webhook:<id>`. Each
+   * has at most one under way, so that one whose hosts never answer holds up no other.
+   */
+  caller: string;
   /** Whether it may reach this address at all: the hosts a plugin declared, for one. */
   mayReach(url: URL): boolean;
   /**
@@ -49,6 +54,8 @@ export interface OutboundPolicy {
    * administrator, on a port they could see.
    */
   mayReachInside(url: URL): boolean;
+  /** Plain http to addresses inside the network only: what it sends never crosses it in clear. */
+  clearInsideOnly?: boolean;
 }
 
 export interface OutboundLimits {
@@ -192,20 +199,42 @@ function headersSent(headers: Readonly<Record<string, string>>): Record<string, 
   return { 'user-agent': 'Toppo', ...Object.fromEntries(kept) };
 }
 
-/** The system resolver, a few lookups at a time for all requests leaving Toppo. */
+/** The system resolver, a few lookups at a time for all requests leaving Toppo, one per caller. */
 const resolveHost = boundedLookups((hostname, options, callback) =>
   lookup(hostname, options, callback),
 );
 
+/** Where a connection may go once its host is resolved. */
+interface Reach {
+  /** Inside the network too: its host named by an administrator. */
+  inside: boolean;
+  /** Inside the network only: plain http that must not leave it. */
+  insideOnly: boolean;
+}
+
+/** Why `address` is no place for this connection, if it is not. */
+function refusal(address: string, hostname: string, reach: Reach): OutboundError | null {
+  const internal = isInternalAddress(address);
+  if (internal && !reach.inside) {
+    return new OutboundError('ADDRESS_NOT_ALLOWED', `${hostname} lies inside the network`);
+  }
+  if (!internal && reach.insideOnly) {
+    return new OutboundError('ADDRESS_NOT_ALLOWED', `${hostname} lies outside the network`);
+  }
+  return null;
+}
+
 /**
- * Resolves a host as the connection asks, and refuses it if any of its addresses lies inside the
- * network, unless an administrator named it: the connection goes to what was checked.
+ * Resolves a host as the connection asks, and refuses it if any of its addresses is no place for
+ * it (inside the network unless an administrator named it): the connection goes to what was
+ * checked.
  */
-function guardedLookup(allowInternal: boolean, signal: AbortSignal): LookupFunction {
+function guardedLookup(reach: Reach, caller: string, signal: AbortSignal): LookupFunction {
   return (hostname, options, callback) => {
     resolveHost(
       hostname,
       { family: options.family, hints: options.hints, all: true },
+      caller,
       signal,
       (error, found) => {
         if (error) {
@@ -213,12 +242,11 @@ function guardedLookup(allowInternal: boolean, signal: AbortSignal): LookupFunct
           return;
         }
         const [first] = found;
-        if (!first || (!allowInternal && found.some(({ address }) => isInternalAddress(address)))) {
-          callback(
-            new OutboundError('ADDRESS_NOT_ALLOWED', `${hostname} lies inside the network`),
-            '',
-            0,
-          );
+        const refused = first
+          ? found.map(({ address }) => refusal(address, hostname, reach)).find(Boolean)
+          : new OutboundError('ADDRESS_NOT_ALLOWED', `${hostname} has no address`);
+        if (!first || refused) {
+          callback(refused ?? null, '', 0);
           return;
         }
         if (options.all) {
@@ -251,12 +279,16 @@ function exchange(
   signal: AbortSignal,
 ): Promise<Reply> {
   const hostname = bareHost(url);
-  const allowInternal = policy.mayReachInside(url);
+  const reach: Reach = {
+    inside: policy.mayReachInside(url),
+    insideOnly: url.protocol === 'http:' && policy.clearInsideOnly === true,
+  };
   return new Promise<Reply>((resolve, reject) => {
     const fail = (error: unknown) => reject(failureOf(error, signal));
     // An address written as such is never resolved: checked here instead.
-    if (isIP(hostname) !== 0 && !allowInternal && isInternalAddress(hostname)) {
-      fail(new OutboundError('ADDRESS_NOT_ALLOWED', `${hostname} lies inside the network`));
+    const refused = isIP(hostname) === 0 ? null : refusal(hostname, hostname, reach);
+    if (refused) {
+      fail(refused);
       return;
     }
     const body = sent.body === null ? null : Buffer.from(sent.body, 'utf8');
@@ -273,7 +305,7 @@ function exchange(
             'accept-encoding': 'identity',
             ...(body ? { 'content-length': String(body.length) } : {}),
           },
-          lookup: guardedLookup(allowInternal, signal),
+          lookup: guardedLookup(reach, policy.caller, signal),
           // A connection of its own: one kept alive would skip the check of the next request.
           agent: false,
           signal,

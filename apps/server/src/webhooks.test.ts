@@ -306,6 +306,17 @@ describe('a webhook', () => {
     ]);
   });
 
+  it('sends in clear http inside the network only, even where it may reach inside', async () => {
+    // A public address: issues' words would cross the internet in clear.
+    const { id } = await addWebhook({ url: 'http://93.184.215.14/hooks', allowPrivate: true });
+    await report('WEB');
+    await runJobs();
+
+    expect((await details(id)).deliveries).toMatchObject([
+      { status: 'pending', error: 'ADDRESS_NOT_ALLOWED', responseStatus: null },
+    ]);
+  });
+
   it('never follows a redirect', async () => {
     const { id } = await addWebhook({ url: `${base}/redirect` });
     await report('WEB');

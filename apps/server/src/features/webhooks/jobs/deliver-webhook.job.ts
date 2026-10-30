@@ -32,6 +32,7 @@ export const deliverWebhookJob = defineJob({
   type: 'webhook.deliver',
   payload: z.object({ deliveryId: z.uuid() }),
   maxAttempts: ATTEMPTS,
+  waitsOutside: true,
   async handler({ db, attempt, log, services }, { deliveryId }) {
     const [found] = await db
       .select({ delivery: webhookDeliveries, webhook: webhooks })
@@ -75,7 +76,13 @@ export const deliverWebhookJob = defineJob({
           },
           body,
         },
-        { mayReach: () => true, mayReachInside: () => webhook.allowPrivate },
+        {
+          caller: `webhook:${webhook.id}`,
+          mayReach: () => true,
+          mayReachInside: () => webhook.allowPrivate,
+          // Issues' words in clear, to a receiver inside the network only.
+          clearInsideOnly: true,
+        },
         LIMITS,
       );
       outcome = { responseStatus: answer.status };

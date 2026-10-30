@@ -6,7 +6,7 @@ import {
   pluginSlugParamsSchema,
 } from '@toppo-tracker/shared';
 import { and, asc, isNull, sql } from 'drizzle-orm';
-import { reachableBy, reachedByPerson } from '../../../../platform/auth/project-access.ts';
+import { grantedIn, reachedByPerson } from '../../../../platform/auth/project-access.ts';
 import { defineQuery } from '../../../../platform/cqrs/cqrs.ts';
 import { pickedIn, pickingPlugin } from '../../utils/pickers/picking-plugin.util.ts';
 
@@ -15,7 +15,9 @@ const { projects, users } = schema;
 /**
  * Toppo's search of people for a plugin's screen: those who share with the signed-in person a
  * project where the plugin acts (the one the screen names, if it does), still active, by their
- * name, in its order. Never a plugin's own user, nor anyone erased. A few, never a page.
+ * name, in its order. Never a plugin's own user, nor anyone erased. A few, never a page. Only in
+ * the projects whose every issue the person reads: who works on a project stays private from
+ * those who see their own issues there, as Toppo's own lists of people keep it.
  */
 export const pickPeople = defineQuery({
   name: 'plugin.pickPeople',
@@ -33,7 +35,7 @@ export const pickPeople = defineQuery({
           isNull(users.pluginSlug),
           search === '' ? undefined : containsText([users.name], search),
           sql`exists (select 1 from ${projects} where ${and(
-            reachableBy(actor.id),
+            grantedIn(actor.id, ['issue.read']),
             reachedByPerson(),
             pickedIn(plugin, projects.id, projectId),
           )})`,

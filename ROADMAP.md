@@ -79,6 +79,18 @@ Known compromises to revisit, not blocking:
 - OpenAPI description of `/api/v1`, generated from the Zod schemas (`z.toJSONSchema`), is not published yet.
 - Dark theme: possible later by redefining the tokens in `packages/ui/src/theme.css`.
 - Plugins' pages with typed parameters (a Zod schema of their search, links checked), and several entries of one page: comfort for authors, nothing asks for them yet.
+- Left by the security review of webhooks, routes and screens (2026-10-30), none a boundary crossed today:
+  - **Sandbox:** a discarded worker's late messages are not ignored, and the host calls in progress at the end of a run are not cancelled (an `AbortSignal` from the run down to `outboundFetch`).
+  - **Webhook deliveries:**
+    - a delivery waits on its receiver inside the job's open transaction;
+    - one interrupted too many times stays `pending`, never pruned;
+    - stored payloads outlive their comment or issue, and are sent again without re-checking the webhook's projects.
+  - **Plugins' routes:**
+    - the per-plugin budget is spent before the plugin checks a signature;
+    - a route's deadline leaves out its wait in the plugin's queue;
+    - a queued run keeps the reach it was admitted with.
+  - **Secret box:** one key for every kind of secret, with no purpose bound to each.
+  - **Plugin names:** a plugin may be named like Toppo itself.
 - Statuses on phones: the “Closes the issue” column has no visible header (its boxes are labelled for screen readers only).
 - Lost passwords without email: no way back in for now, the only administrator's included (decided 2026-10-25). Proposed for later: a one-time reset link an administrator creates from the members list (like an invitation), and a recovery code printed in the logs on demand for the last administrator.
 - Invitations are not rate limited (decided 2026-10-27): a limit per recipient would stop one address from being flooded without slowing a large wave of invitations.

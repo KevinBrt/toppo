@@ -43,5 +43,6 @@ ${paragraphs.map((paragraph) => `<p style="margin:0 0 16px;font-size:15px;line-h
 <p style="max-width:560px;margin:16px auto 0;font-size:12px;line-height:1.5;color:#5b6270;text-align:center">${escapeHtml(footer)}</p>
 </body>
 </html>`;
-  return { subject, text, html };
+  // On one line whatever the names in it hold: a line break would end the header.
+  return { subject: subject.replaceAll(/\s+/gu, ' ').trim(), text, html };
 }
