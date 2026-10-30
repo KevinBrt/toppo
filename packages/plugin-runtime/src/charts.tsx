@@ -122,7 +122,10 @@ export function BarChart({ title, bars, format }: BarChartProps) {
                 {bounded ? (
                   <div
                     className="absolute -top-1 -bottom-1 w-0.5 bg-muted-foreground"
-                    style={{ left: `calc(${share(limit, top)}% - 1px)` }}
+                    // Within its bar at either end: past it, a frame would scroll for a pixel.
+                    style={{
+                      left: `clamp(0px, calc(${share(limit, top)}% - 1px), calc(100% - 2px))`,
+                    }}
                   />
                 ) : null}
               </div>
