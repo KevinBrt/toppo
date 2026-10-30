@@ -28,8 +28,9 @@ test('an administrator adds a webhook, copies its secret, tests it, then deletes
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
   await page.getByRole('button', { name: 'Send a test' }).click();
   await expect(page.getByText('Test queued: it shows in the deliveries.')).toBeVisible();
+  // Among those of the issues other journeys create meanwhile, which it hears of too.
   const deliveries = page.getByRole('region', { name: 'Latest deliveries' });
-  await expect(deliveries.getByRole('row').nth(1)).toContainText('webhook.test');
+  await expect(deliveries.getByRole('row').filter({ hasText: 'webhook.test' })).toHaveCount(1);
   await expectAccessible(page);
 
   // On a phone's width too, nothing scrolls sideways: the deliveries scroll in their own frame.
