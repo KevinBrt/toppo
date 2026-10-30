@@ -1,8 +1,9 @@
 /**
- * Publishes plugin authors' packages to npm, each after what it depends on, those of a version
- * npm has already left as they are: run by `publish-plugin-packages.yml` only, which npm trusts
- * to publish them (trusted publishing: no token, a signed provenance). `--dry-run` checks
- * everything but publishes nothing.
+ * Stages plugin authors' packages on npm, each after what it depends on, those of a version npm
+ * has already left as they are: run by `publish-plugin-packages.yml` only, which npm trusts to
+ * stage them (trusted publishing: no token, a signed provenance). None goes live before a
+ * maintainer approves it on npmjs.com, with their second factor: neither this workflow nor what
+ * it runs can publish on its own. `--dry-run` checks everything but stages nothing.
  */
 import { npm, packPluginPackages } from './pack-plugin-packages.ts';
 
@@ -27,6 +28,11 @@ for (const [name, tarball] of packPluginPackages()) {
     console.log(`${name} ${version}: on npm already`);
     continue;
   }
-  npm(['publish', tarball, '--access', 'public', ...(dryRun ? ['--dry-run'] : [])], process.cwd());
-  console.log(`${name} ${version}: ${dryRun ? 'would be published' : 'published'}`);
+  npm(
+    ['stage', 'publish', tarball, '--access', 'public', ...(dryRun ? ['--dry-run'] : [])],
+    process.cwd(),
+  );
+  console.log(
+    `${name} ${version}: ${dryRun ? 'would be staged' : 'staged, to approve on npmjs.com'}`,
+  );
 }
