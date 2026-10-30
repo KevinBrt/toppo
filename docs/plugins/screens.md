@@ -75,6 +75,56 @@ export function IssueTimePanel() {
 
 A failed action's `error` is a `ScreenError`: its `code` is the plugin's own message key (`ctx.fail`), or one of Toppo's (`FORBIDDEN`, `VALIDATION_FAILED` with its `issues`). `setSearch` keeps a page's choices in Toppo's address, so that it can be shared; `open` opens an issue or another of its pages.
 
+## Charts
+
+| Component                            | Shows                                                                                                                                                     |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<BarChart title bars format? />`    | A figure per thing, as bars across. `bars`: `{ key, label, value, limit? }`; a limit (a budget) is marked across its bar, and passing it is said in words |
+| `<LineChart title points format? />` | A figure over time, as a line. `points`: `{ key, label, value }`, in order; hovering, or the arrow keys, read each point                                  |
+| `<Meter label value max format? />`  | A figure against its most: the days spent against a budget                                                                                                |
+
+`format` writes each value, as `(days) => t('days', { days })`. Each is drawn in Toppo's colors, and told to screen readers as a table (a `meter` for `Meter`). The time report draws each project's days against its budget with a `BarChart`.
+
+## Dialogs
+
+<<< @/../plugins/time-tracking/src/screens/log-time.dialog.ts
+
+`plugin.defineDialog({ name, access, title, component, input, result?, size?, side? })` declares a screen that another of its screens opens over the page: Toppo's dialog, under its `title` and its plugin's name, holds it in a frame of its own.
+
+- **`input`**: the schema of what the screen that opens it hands it, 4 KB of JSON at most.
+- **`result`**: the schema of what it closes with, 16 KB at most. Without it, it closes with nothing.
+- **`size`**: `'small'`, `'medium'` (the default) or `'large'`. **`side: true`** opens it at the side of the page, rather than in its middle.
+- **`access`**: as a page's, checked as it opens.
+
+10 dialogs at most, named apart from the plugin's pages and panels. The screen that opens it:
+
+<<< @/../plugins/time-tracking/src/web/time-report-page.tsx#log-time
+
+And the dialog's own screen, which reads what it was opened with, then closes:
+
+<<< @/../plugins/time-tracking/src/web/log-time-dialog.tsx#dialog
+
+| Hooks                    | Answer                                                                                                                |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `useDialog(dialog)`      | `{ open(input) }`: what the dialog closed with, read by its `result` schema; `undefined` when the person dismissed it |
+| `useDialogInput(dialog)` | In the dialog, what it was opened with, read by its `input` schema                                                    |
+| `useCloseDialog(dialog)` | In the dialog, `close(result)`: its opener is answered `result`, checked by the `result` schema first                 |
+
+Escape, Toppo's close button or a click outside dismiss it. A dialog does not open another dialog.
+
+## What Toppo draws over the page
+
+Some things a frame draws badly: what overflows it, what the person must tell apart from the plugin's own words. A screen asks Toppo to draw them, and each says which plugin asked:
+
+| Hook or component               | Draws                                                                                                                           | Answers                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `useConfirm()`                  | `confirm({ title, description?, confirmLabel?, tone? })`: a confirmation; `tone: 'danger'` for what cannot be undone            | `true` once confirmed, `false` otherwise                                 |
+| `<Menu label items onSelect />` | A button, and its menu beside it, never cut by the frame. `items`: `{ id, label, tone?, disabled? }`, 20 at most                | `onSelect(id)`                                                           |
+| `usePickIssue()`                | `pick({ projectId? })`: Toppo's search of the issues the person sees, in the projects the plugin acts in. It takes `issue.read` | `{ id, key, title, projectId, projectKey }`, or `null`                   |
+| `usePickPeople()`               | `pick({ projectId?, multiple? })`: Toppo's search of the people who share with the person a project the plugin acts in          | Those picked, `{ id, name }[]`: one unless `multiple`, none if dismissed |
+
+Toppo searches: the screen learns only what the person picked. It draws one thing at a time per screen, for the screen the person is using only; asked otherwise, it refuses with `OVERLAY_REFUSED`.
+
 ## What a screen may not do
 
 A screen runs in a sandboxed frame without an origin, under a Content Security Policy that reaches nothing:

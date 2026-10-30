@@ -79,6 +79,7 @@ describe('the time tracking plugin', () => {
     try {
       await import('./screens/time-report.page.ts');
       await import('./screens/issue-time.panel.ts');
+      await import('./screens/log-time.dialog.ts');
     } finally {
       vi.unstubAllGlobals();
     }
@@ -87,6 +88,7 @@ describe('the time tracking plugin', () => {
     expect(screens?.id).toBe('time-tracking');
     expect(await screens?.component('report')?.()).toHaveProperty('name', 'TimeReportPage');
     expect(await screens?.component('issueTime')?.()).toHaveProperty('name', 'IssueTimePanel');
+    expect(await screens?.component('logTime')?.()).toHaveProperty('name', 'LogTimeDialog');
     expect(screens?.component('elsewhere')).toBeUndefined();
   });
 

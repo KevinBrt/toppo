@@ -1,5 +1,11 @@
+import type { z } from 'zod';
 import { SCREEN_RUNTIME_GLOBAL } from '../protocol/bridge.ts';
-import type { PageZone, PanelPlace, ScreenIcon } from '../protocol/declarations/screens.ts';
+import type {
+  DialogSize,
+  PageZone,
+  PanelPlace,
+  ScreenIcon,
+} from '../protocol/declarations/screens.ts';
 import type { Messages } from '../protocol/manifest.ts';
 
 /**
@@ -34,6 +40,21 @@ export interface PageDefinition extends ScreenDefinition {
 
 export interface PanelDefinition extends ScreenDefinition {
   on: PanelPlace;
+}
+
+/**
+ * A dialog of the plugin, as `plugin.defineDialog` declares it: opened by its screens, with
+ * what `input` reads, closing with what `result` reads.
+ */
+export interface Dialog<I extends z.ZodType = z.ZodType, R extends z.ZodType = z.ZodType> {
+  readonly name: string;
+  readonly input: I;
+  readonly result: R | undefined;
+}
+
+export interface DialogDefinition extends ScreenDefinition {
+  size: DialogSize;
+  side: boolean;
 }
 
 /** What a plugin's screens give Toppo's runtime, in their frame. */

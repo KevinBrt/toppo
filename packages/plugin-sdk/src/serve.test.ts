@@ -161,6 +161,15 @@ function timeTracking() {
     title: 'properties.timeSpent',
     component: () => Promise.resolve('EntriesPanel'),
   });
+  plugin.defineDialog({
+    name: 'logTime',
+    access: { permission: 'entries.log' },
+    title: 'plugin.name',
+    input: z.object({ issueId: z.uuid().optional() }),
+    result: z.object({ minutes: z.int() }),
+    side: true,
+    component: () => Promise.resolve('LogTimeDialog'),
+  });
   plugin.defineJob({
     name: 'weeklySummary',
     every: 'week',
@@ -269,6 +278,15 @@ describe('a plugin served to Toppo', () => {
           title: 'properties.timeSpent',
         },
       ],
+      dialogs: [
+        {
+          name: 'logTime',
+          access: { permission: 'entries.log' },
+          title: 'plugin.name',
+          size: 'medium',
+          side: true,
+        },
+      ],
       jobs: [{ name: 'weeklySummary', every: 'week', label: 'jobs.weeklySummary' }],
       http: { fromSettings: ['webhookUrl'] },
     });
@@ -289,6 +307,7 @@ describe('a plugin served to Toppo', () => {
     expect(served.map(({ id }) => id)).toStrictEqual(['time-tracking']);
     expect(await served[0]?.component('report')?.()).toBe('ReportPage');
     expect(await served[0]?.component('entries')?.()).toBe('EntriesPanel');
+    expect(await served[0]?.component('logTime')?.()).toBe('LogTimeDialog');
     expect(served[0]?.component('elsewhere')).toBeUndefined();
     expect(() =>
       timeTracking().definePanel({
@@ -299,6 +318,15 @@ describe('a plugin served to Toppo', () => {
         component: () => Promise.resolve(null),
       }),
     ).toThrow('The screen report is defined twice');
+    expect(() =>
+      timeTracking().defineDialog({
+        name: 'entries',
+        access: 'authenticated',
+        title: 'plugin.name',
+        input: z.object({}),
+        component: () => Promise.resolve(null),
+      }),
+    ).toThrow('The screen entries is defined twice');
   });
 
   it('checks settings typed for the instance or a project, by its own schemas, whatever is saved', async () => {

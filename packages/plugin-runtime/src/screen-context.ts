@@ -26,6 +26,11 @@ export const RUNTIME_WORDS = {
     hours: 'Hours',
     minutes: 'Minutes',
     noRows: 'Nothing to show.',
+    over: 'Over',
+    of: 'of',
+    name: 'Name',
+    value: 'Value',
+    limit: 'Limit',
   },
   fr: {
     someone: 'Quelqu’un',
@@ -33,6 +38,11 @@ export const RUNTIME_WORDS = {
     hours: 'Heures',
     minutes: 'Minutes',
     noRows: 'Rien à afficher.',
+    over: 'Dépassé',
+    of: 'sur',
+    name: 'Nom',
+    value: 'Valeur',
+    limit: 'Limite',
   },
 } as const;
 

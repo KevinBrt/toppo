@@ -1,14 +1,22 @@
-import { type Action, z } from '@toppo-tracker/plugin-sdk';
+import { type Action, type Dialog, z } from '@toppo-tracker/plugin-sdk';
 import { SCREEN_RUNTIME_GLOBAL } from '@toppo-tracker/plugin-sdk/protocol';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ScreenState, ScreenUi } from './contract.ts';
 import {
+  BarChart,
   Button,
   formatDuration,
+  Menu,
   ScreenError,
   useActionMutation,
   useActionQuery,
+  useCloseDialog,
+  useConfirm,
+  useDialog,
+  useDialogInput,
   usePeople,
+  usePickIssue,
+  usePickPeople,
   useScreen,
   useT,
 } from './index.ts';
@@ -22,6 +30,14 @@ const logTime: Action<z.ZodObject<{ minutes: z.ZodInt }>, { total: number }> = {
   name: 'timeEntry.log',
   input: z.object({ minutes: z.int().min(1) }),
 };
+
+const logTimeDialog = {
+  name: 'logTime',
+  input: z.object({ projectId: z.uuid().optional() }),
+  result: z.object({ minutes: z.int() }),
+} satisfies Dialog;
+
+const PROJECT = '0190a1a2-0000-7000-8000-000000000100';
 
 const SCREEN: ScreenState = {
   locale: 'fr',
@@ -122,5 +138,80 @@ describe('plugin-ui', () => {
 
     expect(usePeople(['0190a1a2-0000-7000-8000-000000000001'])).toBe(names);
     expect(formatDuration(90)).toBe('90 minutes');
+  });
+
+  it('hands Toppo’s overlays to the runtime: menus, charts, confirmations', async () => {
+    const confirm = vi.fn(() => Promise.resolve(true));
+    runtime({ Menu: FakeButton, BarChart: FakeButton, useConfirm: () => confirm });
+    const onSelect = vi.fn();
+
+    expect(Menu({ label: 'More', items: [{ id: 'edit', label: 'Edit' }], onSelect }).type).toBe(
+      FakeButton,
+    );
+    expect(BarChart({ title: 'Days spent', bars: [] }).type).toBe(FakeButton);
+    expect(await useConfirm()({ title: 'Delete?', tone: 'danger' })).toBe(true);
+    expect(confirm).toHaveBeenCalledWith({ title: 'Delete?', tone: 'danger' });
+  });
+
+  it('opens a dialog by its name, and reads what it closed with by its schema', async () => {
+    const open = vi.fn<(name: string, input: unknown) => Promise<unknown>>();
+    runtime({ useOpenDialog: () => open });
+    const dialog = useDialog(logTimeDialog);
+
+    open.mockResolvedValueOnce({ minutes: 30 });
+    expect(await dialog.open({ projectId: PROJECT })).toStrictEqual({ minutes: 30 });
+    open.mockResolvedValueOnce(null);
+    expect(await dialog.open({})).toBeUndefined();
+    open.mockResolvedValueOnce({ minutes: 'thirty' });
+    await expect(dialog.open({})).rejects.toMatchObject({ code: 'INVALID_RESULT' });
+    open.mockResolvedValueOnce({ anything: true });
+    expect(await useDialog({ ...logTimeDialog, result: undefined }).open({})).toBeUndefined();
+    expect(open).toHaveBeenCalledWith('logTime', { projectId: PROJECT });
+  });
+
+  it('reads a dialog’s input by its schema, and closes it with a result that fits', () => {
+    const close = vi.fn();
+    let input: unknown = { projectId: PROJECT };
+    runtime({ useDialogInput: () => input, useCloseDialog: () => close });
+
+    expect(useDialogInput(logTimeDialog)).toStrictEqual({ projectId: PROJECT });
+    input = { projectId: 'WEB' };
+    expect(() => useDialogInput(logTimeDialog)).toThrow(ScreenError);
+
+    useCloseDialog(logTimeDialog)({ minutes: 45 });
+    useCloseDialog(logTimeDialog)();
+    expect(close.mock.calls).toStrictEqual([[{ minutes: 45 }], [undefined]]);
+    expect(() =>
+      useCloseDialog(logTimeDialog)({ minutes: 'soon' } as unknown as { minutes: number }),
+    ).toThrow(ScreenError);
+  });
+
+  it('picks issues and people in Toppo’s search, as Toppo answers them', async () => {
+    const issue = {
+      id: '0190a1a2-0000-7000-8000-000000000042',
+      key: 'WEB-42',
+      title: 'Invoices fail to download',
+      projectId: PROJECT,
+      projectKey: 'WEB',
+    };
+    const pick = vi.fn<(of: string, options: object) => Promise<unknown>>();
+    runtime({ usePick: () => pick });
+
+    pick.mockResolvedValueOnce(issue);
+    expect(await usePickIssue()({ projectId: PROJECT })).toStrictEqual(issue);
+    pick.mockResolvedValueOnce(null);
+    expect(await usePickIssue()()).toBeNull();
+    pick.mockResolvedValueOnce([{ id: issue.id, name: 'Ada Lovelace' }]);
+    expect(await usePickPeople()({ multiple: true })).toStrictEqual([
+      { id: issue.id, name: 'Ada Lovelace' },
+    ]);
+    pick.mockResolvedValueOnce(null);
+    expect(await usePickPeople()()).toStrictEqual([]);
+    expect(pick.mock.calls).toStrictEqual([
+      ['issue', { projectId: PROJECT }],
+      ['issue', {}],
+      ['people', { multiple: true }],
+      ['people', {}],
+    ]);
   });
 });

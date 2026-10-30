@@ -174,10 +174,41 @@ test('an administrator installs a plugin, approves it on a project, uses it, the
     .click();
   const report = page.frameLocator('iframe[title="Time"]');
   await expect(report.getByRole('heading', { level: 1, name: 'Time' })).toBeVisible();
-  await expect(report.getByRole('row', { name: new RegExp(key) })).toContainText('Within budget');
+  const byProject = report.getByRole('table', { name: 'Time by project' });
+  await expect(byProject.getByRole('row', { name: new RegExp(key) })).toContainText(
+    'Within budget',
+  );
+  // Drawn, and told to screen readers: 2 h 15 is 0.3 of the 7-hour days set, against 22.5.
+  const charted = report
+    .getByRole('table', { name: 'Days spent by project, against each budget' })
+    .getByRole('row', { name: new RegExp(key) });
+  await expect(charted).toContainText('0.3 d');
+  await expect(charted).toContainText('22.5 d');
   await report.getByRole('combobox', { name: 'Project' }).selectOption({ label: key });
   await expect(page).toHaveURL(/project=/);
   await expectAccessible(page);
+
+  // Time logged from the report on any issue: in one of the plugin's dialogs, drawn by Toppo,
+  // the issue picked in Toppo's search, among those of the project shown.
+  await report.getByRole('button', { name: 'Log time' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Log time' });
+  await expect(dialog.getByText('Asked by Time tracking')).toBeVisible();
+  const logging = dialog.frameLocator('iframe[title="Log time"]');
+  await logging.getByRole('button', { name: 'Choose an issue' }).click();
+  const picker = page.getByRole('dialog', { name: 'Choose an issue' });
+  await picker.getByRole('textbox', { name: 'Search' }).fill(issueKey);
+  await expectAccessible(page);
+  await picker.getByRole('button', { name: new RegExp(issueKey) }).click();
+  await expect(picker).toBeHidden();
+  await expect(logging.getByText(`${issueKey} · Search is slow`)).toBeVisible();
+  await logging.getByRole('spinbutton', { name: 'Hours' }).fill('4');
+  await logging.getByRole('spinbutton', { name: 'Minutes' }).fill('45');
+  await expectAccessible(page);
+  await logging.getByRole('button', { name: 'Log time' }).click();
+  await expect(dialog).toBeHidden();
+  // 2 h 15 and 4 h 45: one day of 7 hours.
+  await expect(charted).toContainText('1 d');
+  await expect(byProject.getByRole('row', { name: new RegExp(key) })).toContainText('1 d');
 
   const outside = await page.request.post(LOG_TIME, {
     headers: { origin },

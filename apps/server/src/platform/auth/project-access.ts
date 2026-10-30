@@ -71,6 +71,20 @@ export function reachableBy(actorId: string): SQL {
 }
 
 /**
+ * Whether the person of the row `users` reaches the row of `projects`: through the system
+ * role, access to every project, or a membership. The other side of `reachableBy`, for lists of
+ * people who share a project.
+ */
+export function reachedByPerson(): SQL {
+  return sql`(
+    exists (select 1 from ${roles} where ${roles.id} = ${users.instanceRoleId} and ${roles.grantsAll})
+    or ${users.allProjects}
+    or exists (select 1 from ${projectMembers}
+      where ${projectMembers.projectId} = ${projects.id} and ${projectMembers.userId} = ${users.id})
+  )`;
+}
+
+/**
  * Whether `actorId` reaches every project, present and future: through the system role or their
  * own access to every project. Only they may open every project to someone else.
  */

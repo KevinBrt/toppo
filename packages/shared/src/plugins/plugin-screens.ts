@@ -91,3 +91,60 @@ export const peopleResponseSchema = z.object({
 });
 
 export type PeopleResponse = z.infer<typeof peopleResponseSchema>;
+
+/** A plugin's dialog, as Toppo opens it over the page: its title, its width, and where. */
+export const pluginDialogSchema = z.object({
+  name: z.string(),
+  title: translatedSchema,
+  size: z.enum(['small', 'medium', 'large']),
+  side: z.boolean(),
+});
+
+export type PluginDialog = z.infer<typeof pluginDialogSchema>;
+
+/**
+ * Body of `GET /api/v1/plugin-screens/:pluginSlug/dialogs`: the plugin, named as its dialogs
+ * show it, and the dialogs of it the signed-in person may open.
+ */
+export const pluginDialogsResponseSchema = z.object({
+  plugin: translatedSchema,
+  dialogs: z.array(pluginDialogSchema),
+});
+
+export type PluginDialogsResponse = z.infer<typeof pluginDialogsResponseSchema>;
+
+/** What a picker of a plugin's screen finds at most: the best few, never a page. */
+export const PICK_LIMIT = 20;
+
+/**
+ * Query of `GET /api/v1/plugins/:pluginSlug/pick/issues` and `…/people`: what is typed (an
+ * issue's key or words of its title, a person's name), and one project, if the screen says.
+ */
+export const pickQuerySchema = z.object({
+  search: z.string().trim().max(100).default(''),
+  projectId: z.uuid().optional(),
+});
+
+export type PickQuery = z.input<typeof pickQuerySchema>;
+
+export const pickedIssuesResponseSchema = z.object({
+  issues: z
+    .array(
+      z.object({
+        id: z.uuid(),
+        key: z.string(),
+        title: z.string(),
+        projectId: z.uuid(),
+        projectKey: z.string(),
+      }),
+    )
+    .max(PICK_LIMIT),
+});
+
+export type PickedIssuesResponse = z.infer<typeof pickedIssuesResponseSchema>;
+
+export const pickedPeopleResponseSchema = z.object({
+  people: z.array(z.object({ id: z.uuid(), name: z.string() })).max(PICK_LIMIT),
+});
+
+export type PickedPeopleResponse = z.infer<typeof pickedPeopleResponseSchema>;

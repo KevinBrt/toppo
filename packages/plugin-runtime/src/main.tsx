@@ -4,18 +4,37 @@ import { SCREEN_RUNTIME_GLOBAL } from '@toppo-tracker/plugin-sdk/protocol';
 import type { ScreenUi } from '@toppo-tracker/plugin-ui';
 import * as React from 'react';
 import * as jsxRuntime from 'react/jsx-runtime';
+import * as charts from './charts.tsx';
 import * as components from './components.tsx';
-import { useActionMutation, useActionQuery, usePeople, useScreen } from './hooks.ts';
+import {
+  useActionMutation,
+  useActionQuery,
+  useCloseDialog,
+  useConfirm,
+  useDialogInput,
+  useOpenDialog,
+  usePeople,
+  usePick,
+  useScreen,
+} from './hooks.ts';
+import * as overlays from './overlays.tsx';
 import { screenLocale, startScreens } from './screen.tsx';
 import { formatDuration } from './screen-context.ts';
 
 /** What plugins' screens draw with, behind `@toppo-tracker/plugin-ui`. */
 const ui: ScreenUi = {
   ...components,
+  ...charts,
+  ...overlays,
   useActionQuery,
   useActionMutation,
   useScreen,
   usePeople,
+  useConfirm,
+  useOpenDialog,
+  useDialogInput,
+  useCloseDialog,
+  usePick,
   formatDuration: (minutes) => formatDuration(minutes, screenLocale),
 };
 

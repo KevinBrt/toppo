@@ -12,7 +12,7 @@ A plugin adds to what Toppo does: a team's own fields and screens, a tool it con
 | [Routes](./outside-toppo#receiving-requests) | Receives what services outside Toppo send it, once it checked they signed it |
 | [Entities](./data#entities)                  | Keeps records of its own, on an issue or a project, that Toppo checks        |
 | [Properties](./data#properties)              | Adds fields to issues, written by people or by itself                        |
-| [Screens](./screens)                         | Shows pages and panels, drawn with Toppo's components                        |
+| [Screens](./screens)                         | Shows pages, panels and dialogs, drawn with Toppo's components               |
 | [Outbound requests](./outside-toppo)         | Reaches the sites it declares: a chat, a service                             |
 
 ## How Toppo runs it

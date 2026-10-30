@@ -45,6 +45,7 @@ export const SCREEN_NAME = /^[a-z][A-Za-z0-9]{0,39}$/;
 export const SCREEN_LIMITS = {
   pages: 20,
   panels: 5,
+  dialogs: 10,
   /** Entries in one zone: a plugin never crowds Toppo's own. */
   entriesPerZone: 8,
 } as const;
@@ -85,9 +86,30 @@ export const panelSchema = z.strictObject({
 
 export type PanelDeclaration = z.infer<typeof panelSchema>;
 
+/** How wide a dialog opens: Toppo's own widths. */
+export const DIALOG_SIZES = ['small', 'medium', 'large'] as const;
+
+export type DialogSize = (typeof DIALOG_SIZES)[number];
+
+/**
+ * A dialog of the plugin: a screen Toppo opens over the page when one of the plugin's screens
+ * asks, in the page's middle, or at its side as a panel.
+ */
+export const dialogSchema = z.strictObject({
+  name: screenNameSchema,
+  access: screenAccessSchema,
+  title: z.string().max(200),
+  size: z.enum(DIALOG_SIZES).default('medium'),
+  side: z.boolean().default(false),
+});
+
+export type DialogDeclaration = z.infer<typeof dialogSchema>;
+
 export const pagesSchema = z.array(pageSchema).max(SCREEN_LIMITS.pages);
 
 export const panelsSchema = z.array(panelSchema).max(SCREEN_LIMITS.panels);
+
+export const dialogsSchema = z.array(dialogSchema).max(SCREEN_LIMITS.dialogs);
 
 /**
  * Refuses screens Toppo could not show as declared: two of one name, more entries in a zone than
@@ -98,10 +120,12 @@ export function checkScreens(
     needs: readonly string[];
     pages: readonly PageDeclaration[];
     panels: readonly PanelDeclaration[];
+    dialogs: readonly DialogDeclaration[];
   },
   ctx: z.RefinementCtx,
 ): void {
-  const names = [...manifest.pages, ...manifest.panels].map(({ name }) => name);
+  const screens = [...manifest.pages, ...manifest.panels, ...manifest.dialogs];
+  const names = screens.map(({ name }) => name);
   names.forEach((name, at) => {
     if (names.indexOf(name) !== at) {
       ctx.addIssue({ code: 'custom', path: ['pages'], message: `Two screens are named ${name}` });

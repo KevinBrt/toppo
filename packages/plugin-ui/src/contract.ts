@@ -1,4 +1,9 @@
-import type { ScreenFailure, ScreenSearch, ScreenTarget } from '@toppo-tracker/plugin-sdk/protocol';
+import type {
+  MenuItem,
+  ScreenFailure,
+  ScreenSearch,
+  ScreenTarget,
+} from '@toppo-tracker/plugin-sdk/protocol';
 import type { ComponentType, ReactNode } from 'react';
 
 /** Toppo's palette, for a badge or a stat that needs a color. */
@@ -169,6 +174,65 @@ export interface PageLinkProps {
   children: ReactNode;
 }
 
+/**
+ * Choices Toppo shows over the page, beside the button that opens them: never cut by the
+ * screen's frame. `onSelect` is given the chosen item's `id`.
+ */
+export interface MenuProps {
+  /** The button's words, and the menu's name. */
+  label: string;
+  items: readonly MenuItem[];
+  onSelect: (id: string) => void;
+}
+
+/**
+ * A figure per thing, as bars across: the time spent in each project, say. Each bar may have a
+ * limit (a budget), marked across it; a bar past its limit says so in words, not by color
+ * alone. Each value reads as `format` writes it.
+ */
+export interface BarChartProps {
+  /** What it shows: its accessible name, and its table's caption. */
+  title: string;
+  bars: readonly { key: string; label: string; value: number; limit?: number | null }[];
+  format?: (value: number) => string;
+}
+
+/** A figure over time, as a line: the hours of each week, say. Its points come in order. */
+export interface LineChartProps {
+  title: string;
+  points: readonly { key: string; label: string; value: number }[];
+  format?: (value: number) => string;
+}
+
+/** A figure against its most: days spent against a budget. Past it, it says so. */
+export interface MeterProps {
+  label: string;
+  value: number;
+  max: number;
+  format?: (value: number) => string;
+}
+
+/** What the person is asked to confirm, in a dialog of Toppo's. */
+export interface ConfirmOptions {
+  title: string;
+  description?: string;
+  /** The confirming button's words: Toppo's "Confirm" unless said. */
+  confirmLabel?: string;
+  /** `danger` for what cannot be undone. */
+  tone?: 'default' | 'danger';
+}
+
+/** What a search of issues is narrowed to. */
+export interface PickIssueOptions {
+  /** One project, among those the plugin acts in. */
+  projectId?: string;
+}
+
+export interface PickPeopleOptions extends PickIssueOptions {
+  /** Several people rather than one. */
+  multiple?: boolean;
+}
+
 /** An action's answer, asked as the screen shows. */
 export interface ActionQuery<R> {
   data: R | undefined;
@@ -222,10 +286,27 @@ export interface ScreenUi {
   PersonName: ComponentType<PersonNameProps>;
   IssueLink: ComponentType<IssueLinkProps>;
   PageLink: ComponentType<PageLinkProps>;
+  Menu: ComponentType<MenuProps>;
+  BarChart: ComponentType<BarChartProps>;
+  LineChart: ComponentType<LineChartProps>;
+  Meter: ComponentType<MeterProps>;
   useActionQuery(name: string, input: unknown, enabled: boolean): ActionQuery<unknown>;
   useActionMutation(name: string): ActionMutation<unknown, unknown>;
   useScreen(): ScreenState;
   usePeople(ids: readonly string[]): ReadonlyMap<string, string | null>;
+  /** Asks Toppo to have the person confirm: `true` once they did. */
+  useConfirm(): (options: ConfirmOptions) => Promise<boolean>;
+  /** Opens one of the plugin's dialogs: what it closed with, `null` when dismissed. */
+  useOpenDialog(): (name: string, input: unknown) => Promise<unknown>;
+  /** In a dialog, what it was opened with; `null` in any other screen. */
+  useDialogInput(): unknown;
+  /** In a dialog, closes it, with what its opener is answered. */
+  useCloseDialog(): (result?: unknown) => void;
+  /** Toppo's search of issues, or of people: what the person picked. */
+  usePick(): (
+    of: 'issue' | 'people',
+    options: { projectId?: string; multiple?: boolean },
+  ) => Promise<unknown>;
   /** Minutes as people read them: "6 h 40". */
   formatDuration(minutes: number): string;
 }

@@ -57,5 +57,11 @@ export type { DeletedIssue, EventPayload, EventType, IssueSnapshot } from './pro
 export type { Messages } from './protocol/manifest.ts';
 export type { Locale } from './protocol/run.ts';
 export type { Route, RouteRequest } from './routes/route.ts';
-export type { Page, Panel, ScreenComponent, ServedScreens } from './screens/screens.ts';
+export type {
+  Dialog,
+  Page,
+  Panel,
+  ScreenComponent,
+  ServedScreens,
+} from './screens/screens.ts';
 export { secret } from './settings/secret.ts';

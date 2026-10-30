@@ -326,13 +326,14 @@ base-uri 'none'; frame-src 'none'; frame-ancestors 'self'
 
 Components, with props of their own that stay stable whatever `packages/ui` becomes:
 
-| Kind                                       | Components                                                                                                                                                                                     |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| First version (step 3), from `packages/ui` | Button, Badge, Alert, EmptyState, Field, Input, Textarea, Select, Switch                                                                                                                       |
-| First version (step 3), added for plugins  | Page (its one title, actions), Section, Stat, Table (rows given by the screen, a page at a time), DurationInput, PersonName (from an id), IssueLink, PageLink                                  |
-| Next, as plugins need them                 | Avatar, StatusBadge, PriorityIcon, BadgeSelect, SortableList, Tabs, DataTable (sorted and paged by the server), DateInput, NumberInput, PersonPicker and IssuePicker (only what the user sees) |
-| Opened by Toppo, outside the frame, next   | Dialog, DropdownMenu, SidePanel, through `openDialog()`, `openMenu()`, `openSidePanel()`: a frame cuts what overflows it                                                                       |
-| Later                                      | Charts (bars, lines), a board of draggable columns                                                                                                                                             |
+| Kind                                       | Components                                                                                                                                                                                                                        |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First version (step 3), from `packages/ui` | Button, Badge, Alert, EmptyState, Field, Input, Textarea, Select, Switch                                                                                                                                                          |
+| First version (step 3), added for plugins  | Page (its one title, actions), Section, Stat, Table (rows given by the screen, a page at a time), DurationInput, PersonName (from an id), IssueLink, PageLink                                                                     |
+| Next, as plugins need them                 | Avatar, StatusBadge, PriorityIcon, BadgeSelect, SortableList, Tabs, DataTable (sorted and paged by the server), DateInput, NumberInput                                                                                            |
+| Step 3, opened by Toppo outside the frame  | A confirmation (`useConfirm`), Menu, the plugin's dialogs and side panels (`defineDialog`, `useDialog`), searches of issues and people (`usePickIssue`, `usePickPeople`: only what the user sees): a frame cuts what overflows it |
+| Step 3, charts                             | BarChart (with limits), LineChart, Meter                                                                                                                                                                                          |
+| Later                                      | A board of draggable columns                                                                                                                                                                                                      |
 
 ### Where a plugin shows
 

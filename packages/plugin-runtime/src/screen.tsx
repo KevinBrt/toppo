@@ -103,6 +103,13 @@ export function startScreens(screens: ServedScreens, host: Window = window.paren
     return component ? component() : Promise.reject(new Error(`No screen ${name}`));
   };
   reportHeight(bridge, root);
+  // Escape reaches the frame, not the page holding it: a dialog's screen asks Toppo to close it,
+  // as Escape closes any dialog. Toppo closes nothing else for it.
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !event.defaultPrevented) {
+      bridge.post({ kind: 'close' });
+    }
+  });
   createRoot(root).render(<ScreenApp bridge={bridge} load={load} />);
   bridge.post({ kind: 'ready' });
 }

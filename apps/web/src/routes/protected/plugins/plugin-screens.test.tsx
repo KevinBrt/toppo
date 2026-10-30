@@ -252,3 +252,168 @@ describe('plugins’ panels beside an issue', () => {
     expect(document.querySelector('iframe')).toBeNull();
   });
 });
+
+describe('what Toppo draws over the page for a plugin’s screen', () => {
+  const DIALOGS = {
+    plugin: { en: 'Time tracking', fr: 'Suivi du temps' },
+    dialogs: [
+      {
+        name: 'logTime',
+        title: { en: 'Log time', fr: 'Saisir du temps' },
+        size: 'medium' as const,
+        side: false,
+      },
+    ],
+  };
+
+  /** The panel's frame, focused as the person uses it, and what Toppo answers it. */
+  async function panel() {
+    const fake = fakeServer({
+      user: ADA,
+      projects: [fakeProject('WEB', 'Website')],
+      issues: [fakeIssue('WEB', 1, 'Invoices fail to download'), fakeIssue('WEB', 2, 'Slow')],
+      issuePanels: { 'WEB-1': [ISSUE_TIME] },
+      pluginDialogs: { 'time-tracking': DIALOGS },
+    });
+    const rendered = await renderApp({ path: '/issues/WEB-1' });
+    const frame = await frameOf('Time spent');
+    // The screen's frame has no origin: nothing of it can be watched. A window of the test's own
+    // stands in for it, both ways: what Toppo tells the screen, and what the screen says.
+    const stand = document.body.appendChild(document.createElement('iframe')).contentWindow;
+    if (!stand) {
+      throw new Error('The stand-in has no window');
+    }
+    Object.defineProperty(frame, 'contentWindow', { get: () => stand, configurable: true });
+    const told = vi.spyOn(stand, 'postMessage');
+    frame.focus();
+    const answers = () =>
+      told.mock.calls.map(([message]) => message).filter((message) => message.kind === 'answer');
+    return { fake, frame, answers, ...rendered };
+  }
+
+  it('asks the person to confirm, naming the plugin, and answers what they chose', async () => {
+    const { frame, answers, screen } = await panel();
+
+    fromFrame(frame, {
+      kind: 'confirm',
+      id: 7,
+      title: 'Delete this entry?',
+      tone: 'danger',
+      confirmLabel: 'Delete',
+    });
+
+    const dialog = screen.getByRole('dialog', { name: 'Delete this entry?' });
+    await expect.element(dialog.getByText('Asked by Time tracking')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Delete' }).click();
+    await expect.poll(answers).toStrictEqual([{ kind: 'answer', id: 7, ok: true, result: true }]);
+    await expect.element(dialog).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(frame);
+  });
+
+  it('opens one of the plugin’s dialogs with its own frame, and answers what it closed with', async () => {
+    const { frame, answers, screen } = await panel();
+
+    fromFrame(frame, { kind: 'dialog', id: 8, name: 'logTime', input: { issueId: 'x' } });
+
+    const dialog = screen.getByRole('dialog', { name: 'Log time' });
+    const inner = dialog.getByTitle('Log time');
+    await expect.element(inner).toHaveAttribute('src', '/plugin-screens/time-tracking/logTime');
+    fromFrame(inner.element() as HTMLIFrameElement, { kind: 'close', result: { minutes: 30 } });
+    await expect
+      .poll(answers)
+      .toStrictEqual([{ kind: 'answer', id: 8, ok: true, result: { minutes: 30 } }]);
+    await expect.element(dialog).not.toBeInTheDocument();
+
+    fromFrame(frame, { kind: 'dialog', id: 9, name: 'logTime', input: null });
+    await expect.element(screen.getByRole('dialog', { name: 'Log time' })).toBeVisible();
+    // Dismissed by the person: its opener is answered nothing.
+    await screen
+      .getByRole('dialog', { name: 'Log time' })
+      .getByRole('button', { name: 'Close' })
+      .click();
+    await expect.poll(answers).toContainEqual({ kind: 'answer', id: 9, ok: true, result: null });
+  });
+
+  it('draws a menu beside the screen’s button, and answers the item chosen', async () => {
+    const { frame, answers, screen } = await panel();
+
+    fromFrame(frame, {
+      kind: 'menu',
+      id: 10,
+      anchor: { x: 8, y: 8, width: 32, height: 32 },
+      items: [
+        { id: 'edit', label: 'Edit' },
+        { id: 'delete', label: 'Delete', tone: 'danger' },
+      ],
+    });
+
+    await screen.getByRole('menuitem', { name: 'Delete' }).click();
+    await expect
+      .poll(answers)
+      .toStrictEqual([{ kind: 'answer', id: 10, ok: true, result: 'delete' }]);
+  });
+
+  it('searches issues and people for the screen, and answers what was picked', async () => {
+    const { fake, frame, answers, screen } = await panel();
+
+    fromFrame(frame, { kind: 'pick', id: 11, of: 'issue' });
+    const issues = screen.getByRole('dialog', { name: 'Choose an issue' });
+    await issues.getByRole('textbox', { name: 'Search' }).fill('slow');
+    // Once the search went to the server: the other issue is no longer found.
+    await expect.element(issues.getByRole('button', { name: /WEB-1/ })).not.toBeInTheDocument();
+    await issues.getByRole('button', { name: /WEB-2/ }).click();
+    await expect.poll(answers).toStrictEqual([
+      {
+        kind: 'answer',
+        id: 11,
+        ok: true,
+        result: expect.objectContaining({ key: 'WEB-2', title: 'Slow', projectKey: 'WEB' }),
+      },
+    ]);
+    expect(fake.requests).toContainEqual(
+      expect.objectContaining({ path: '/api/v1/plugins/time-tracking/pick/issues?search=slow' }),
+    );
+
+    fromFrame(frame, { kind: 'pick', id: 12, of: 'people', multiple: true });
+    const people = screen.getByRole('dialog', { name: 'Choose people' });
+    await people.getByRole('button', { name: 'Ada Lovelace' }).click();
+    await people.getByRole('button', { name: 'Grace Hopper' }).click();
+    await expect
+      .element(people.getByRole('button', { name: 'Grace Hopper' }))
+      .toHaveAttribute('aria-pressed', 'true');
+    await people.getByRole('button', { name: 'Choose (2)' }).click();
+    await expect.poll(answers).toContainEqual({
+      kind: 'answer',
+      id: 12,
+      ok: true,
+      result: [
+        { id: ADA.id, name: 'Ada Lovelace' },
+        { id: GRACE.id, name: 'Grace Hopper' },
+      ],
+    });
+  });
+
+  it('draws nothing for a frame the person is not using, one thing at a time, nor a dialog it has not', async () => {
+    const { frame, answers, screen } = await panel();
+    const refused = (id: number) => ({
+      kind: 'answer',
+      id,
+      ok: false,
+      error: { code: 'OVERLAY_REFUSED' },
+    });
+
+    frame.blur();
+    fromFrame(frame, { kind: 'confirm', id: 13, title: 'Delete?' });
+    await expect.poll(answers).toStrictEqual([refused(13)]);
+
+    frame.focus();
+    fromFrame(frame, { kind: 'dialog', id: 14, name: 'nowhere', input: null });
+    await expect.poll(answers).toContainEqual(refused(14));
+
+    fromFrame(frame, { kind: 'confirm', id: 15, title: 'Delete?' });
+    await expect.element(screen.getByRole('dialog', { name: 'Delete?' })).toBeVisible();
+    fromFrame(frame, { kind: 'confirm', id: 16, title: 'Again?' });
+    await expect.poll(answers).toContainEqual(refused(16));
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+  });
+});

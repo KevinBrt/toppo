@@ -5,7 +5,7 @@ import { checkHttp, httpDeclarationSchema } from './declarations/http.ts';
 import { jobsSchema } from './declarations/jobs.ts';
 import { checkProperties, propertiesSchema } from './declarations/properties.ts';
 import { routesSchema } from './declarations/routes.ts';
-import { checkScreens, pagesSchema, panelsSchema } from './declarations/screens.ts';
+import { checkScreens, dialogsSchema, pagesSchema, panelsSchema } from './declarations/screens.ts';
 import { checkSettings, NO_SETTINGS_SCHEMA, settingsSchema } from './declarations/settings.ts';
 import { EVENT_TYPES } from './events.ts';
 import { PLUGIN_LOGO_FILES } from './package.ts';
@@ -113,6 +113,8 @@ export const manifestSchema = z
     /** Its pages and panels, drawn in frames of their own; none for a plugin before screens. */
     pages: pagesSchema.default([]),
     panels: panelsSchema.default([]),
+    /** Its dialogs, opened over the page by its screens; none for a plugin before them. */
+    dialogs: dialogsSchema.default([]),
     events: z.array(z.enum(EVENT_TYPES)).max(EVENT_TYPES.length),
     /** What it does on its own, again and again; none for a plugin uploaded before jobs. */
     jobs: jobsSchema.default([]),

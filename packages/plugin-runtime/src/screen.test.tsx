@@ -1,20 +1,30 @@
-import { type Action, type ServedScreens, z } from '@toppo-tracker/plugin-sdk';
-import type { FrameMessage, HostMessage } from '@toppo-tracker/plugin-sdk/protocol';
+import { type Action, type Dialog, type ServedScreens, z } from '@toppo-tracker/plugin-sdk';
+import type { FrameMessage, HostMessage, ScreenContext } from '@toppo-tracker/plugin-sdk/protocol';
 import {
+  BarChart,
   Button,
   formatDuration,
   IssueLink,
+  LineChart,
+  Menu,
+  Meter,
   PersonName,
   type ScreenError,
   Section,
+  Stack,
   useActionMutation,
   useActionQuery,
+  useCloseDialog,
+  useConfirm,
+  useDialog,
+  useDialogInput,
+  usePickIssue,
   useScreen,
   useT,
 } from '@toppo-tracker/plugin-ui';
 import { useState } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { page } from 'vitest/browser';
+import { page, userEvent } from 'vitest/browser';
 import './main.tsx';
 import { startScreens } from './screen.tsx';
 
@@ -63,6 +73,77 @@ function IssueTime() {
   );
 }
 
+const logTimeDialog = {
+  name: 'logTime',
+  input: z.object({ issueId: z.uuid() }),
+  result: z.object({ minutes: z.int() }),
+} satisfies Dialog;
+
+/** What Toppo draws over the page for a screen, and the charts it draws itself. */
+function Tools() {
+  const confirm = useConfirm();
+  const dialog = useDialog(logTimeDialog);
+  const pickIssue = usePickIssue();
+  const [said, setSaid] = useState('');
+  return (
+    <Stack>
+      <Menu
+        label="Actions"
+        items={[
+          { id: 'edit', label: 'Edit' },
+          { id: 'delete', label: 'Delete', tone: 'danger' },
+        ]}
+        onSelect={(id) => setSaid(`chose ${id}`)}
+      />
+      <Button
+        onClick={() =>
+          confirm({ title: 'Delete it?', tone: 'danger' }).then((yes) =>
+            setSaid(`confirmed ${yes}`),
+          )
+        }
+      >
+        Delete
+      </Button>
+      <Button
+        onClick={() =>
+          dialog.open({ issueId: ISSUE }).then((logged) => setSaid(`logged ${logged?.minutes}`))
+        }
+      >
+        Log time
+      </Button>
+      <Button onClick={() => pickIssue().then((issue) => setSaid(`picked ${issue?.key}`))}>
+        Pick
+      </Button>
+      <BarChart
+        title="Days spent"
+        format={(days) => `${days} d`}
+        bars={[
+          { key: 'web', label: 'Website', value: 12, limit: 10 },
+          { key: 'ops', label: 'Operations', value: 4, limit: 8 },
+          { key: 'app', label: 'Mobile app', value: 6 },
+        ]}
+      />
+      <LineChart
+        title="Hours a week"
+        points={[
+          { key: 'w42', label: 'Week 42', value: 31 },
+          { key: 'w43', label: 'Week 43', value: 36 },
+          { key: 'w44', label: 'Week 44', value: 28 },
+        ]}
+      />
+      <Meter label="Budget" value={6.5} max={10} format={(days) => `${days} d`} />
+      {said ? <p role="status">{said}</p> : null}
+    </Stack>
+  );
+}
+
+/** A dialog: what it was opened with, and what it closes with. */
+function LogDialog() {
+  const { issueId } = useDialogInput(logTimeDialog);
+  const close = useCloseDialog(logTimeDialog);
+  return <Button onClick={() => close({ minutes: 45 })}>{`Log 45 minutes on ${issueId}`}</Button>;
+}
+
 function Broken(): never {
   throw new Error('The plugin’s own bug');
 }
@@ -71,10 +152,17 @@ const SCREENS: ServedScreens = {
   id: 'time-tracking',
   messages,
   component: (name) =>
-    ({ issueTime: async () => IssueTime, broken: async () => Broken })[name] ?? undefined,
+    (
+      ({
+        issueTime: async () => IssueTime,
+        tools: async () => Tools,
+        logTime: async () => LogDialog,
+        broken: async () => Broken,
+      }) as Record<string, () => Promise<unknown>>
+    )[name] ?? undefined,
 };
 
-const CONTEXT: HostMessage = {
+const CONTEXT: ScreenContext = {
   kind: 'context',
   locale: 'fr',
   user: { id: ADA, name: 'Ada Lovelace' },
@@ -82,6 +170,7 @@ const CONTEXT: HostMessage = {
   search: {},
   issue: { id: ISSUE, key: 'WEB-1', projectId: PROJECT, projectKey: 'WEB' },
   project: null,
+  input: null,
 };
 
 let host: Window;
@@ -219,5 +308,101 @@ describe('a plugin’s screen, in its frame', () => {
     tell({ ...CONTEXT, screen });
 
     await expect.element(page.getByText('Cet écran n’a pas pu s’afficher.')).toBeVisible();
+  });
+});
+
+describe('what Toppo draws over the page for a screen', () => {
+  /** The tools screen, drawn once Toppo told it where it is. */
+  async function tools(): Promise<void> {
+    open('tools');
+    tell({ ...CONTEXT, screen: 'tools' });
+    await expect.element(page.getByRole('button', { name: 'Actions' })).toBeVisible();
+  }
+
+  it('asks Toppo for a menu beside its button, and hands the choice to the screen', async () => {
+    await tools();
+    const button = page.getByRole('button', { name: 'Actions' });
+
+    await button.click();
+    await expect.element(button).toHaveAttribute('aria-expanded', 'true');
+    await expect.poll(() => asked('menu')).toHaveLength(1);
+    const [menu] = asked('menu');
+    expect(menu?.items).toStrictEqual([
+      { id: 'edit', label: 'Edit', tone: 'default', disabled: false },
+      { id: 'delete', label: 'Delete', tone: 'danger', disabled: false },
+    ]);
+    expect(menu?.anchor.width).toBeGreaterThan(0);
+    tell({ kind: 'answer', id: menu?.id ?? 0, ok: true, result: 'delete' });
+
+    await expect.element(page.getByRole('status')).toHaveTextContent('chose delete');
+    await expect.element(button).toHaveAttribute('aria-expanded', 'false');
+    await expect.element(button).toHaveFocus();
+  });
+
+  it('has Toppo confirm, open a dialog and pick an issue, each answered as Toppo answers', async () => {
+    await tools();
+
+    await page.getByRole('button', { name: 'Delete' }).click();
+    await expect.poll(() => asked('confirm')).toHaveLength(1);
+    expect(asked('confirm')[0]).toMatchObject({ title: 'Delete it?', tone: 'danger' });
+    tell({ kind: 'answer', id: asked('confirm')[0]?.id ?? 0, ok: true, result: true });
+    await expect.element(page.getByRole('status')).toHaveTextContent('confirmed true');
+
+    await page.getByRole('button', { name: 'Log time' }).click();
+    await expect.poll(() => asked('dialog')).toHaveLength(1);
+    expect(asked('dialog')[0]).toMatchObject({ name: 'logTime', input: { issueId: ISSUE } });
+    tell({ kind: 'answer', id: asked('dialog')[0]?.id ?? 0, ok: true, result: { minutes: 45 } });
+    await expect.element(page.getByRole('status')).toHaveTextContent('logged 45');
+
+    await page.getByRole('button', { name: 'Pick' }).click();
+    await expect.poll(() => asked('pick')).toHaveLength(1);
+    expect(asked('pick')[0]).toMatchObject({ of: 'issue', multiple: false });
+    tell({
+      kind: 'answer',
+      id: asked('pick')[0]?.id ?? 0,
+      ok: true,
+      result: { id: ISSUE, key: 'WEB-1', title: 'Invoices', projectId: PROJECT, projectKey: 'WEB' },
+    });
+    await expect.element(page.getByRole('status')).toHaveTextContent('picked WEB-1');
+  });
+
+  it('draws a dialog with what it was opened with, and closes it with what it says', async () => {
+    open('logTime');
+    tell({ ...CONTEXT, screen: 'logTime', issue: null, input: { issueId: ISSUE } });
+
+    await page.getByRole('button', { name: `Log 45 minutes on ${ISSUE}` }).click();
+
+    await expect
+      .poll(() => asked('close'))
+      .toStrictEqual([{ kind: 'close', result: { minutes: 45 } }]);
+
+    // Escape reaches the frame, not the page: Toppo is asked to close the dialog, as it closes any.
+    await userEvent.keyboard('{Escape}');
+    await expect
+      .poll(() => asked('close'))
+      .toStrictEqual([{ kind: 'close', result: { minutes: 45 } }, { kind: 'close' }]);
+  });
+
+  it('draws charts whose figures screen readers read, and says what is past its limit', async () => {
+    await tools();
+
+    const bars = page.getByRole('table', { name: 'Days spent' });
+    await expect.element(bars.getByRole('row').nth(1)).toHaveTextContent('Website12 d10 d');
+    await expect.element(bars.getByRole('row').nth(3)).toHaveTextContent('Mobile app6 d');
+    await expect.element(page.getByText('Dépassé', { exact: true })).toBeVisible();
+    await expect
+      .element(page.getByRole('meter', { name: 'Budget' }))
+      .toHaveAttribute('value', '6.5');
+    await expect.element(page.getByText('6.5 d sur 10 d').first()).toBeVisible();
+    const hours = page.getByRole('table', { name: 'Hours a week' });
+    await expect.element(hours.getByRole('row').nth(3)).toHaveTextContent('Week 4428');
+
+    const line = page.getByRole('img', { name: 'Hours a week' });
+    (line.element() as HTMLElement).focus();
+    // The readout of the point under focus: the last one first, then the one the arrow reaches.
+    await expect.element(line.getByText('28', { exact: true })).toBeVisible();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect.element(line.getByText('36', { exact: true })).toBeVisible();
+    await expect.element(line.getByText('28', { exact: true })).not.toBeInTheDocument();
   });
 });
