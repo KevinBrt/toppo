@@ -27,12 +27,14 @@ A plugin keeps what it needs as records of its **entities**, on an issue, on a p
 | `count({ where })`, `sum(field, { where })`           | A number                                                    |
 | `countBy(group, …)`, `sumBy(field, group, …)`         | `[{ key, value }]`, the largest first, 1,000 groups at most |
 
-A record reads as `{ id, issueId, projectId, personId, createdBy, createdAt, updatedAt, ...fields }`. `createdBy` is the person an action runs for, or the plugin's own user.
+A record reads as `{ id, issueId, projectId, personId, createdBy, createdAt, updatedAt, ...fields }`. `createdBy` is the person an action runs for; written as itself, in an event, a job or a route, it is the plugin's own user, no person: what a record is about goes on a person (`personId`) or in a field.
 
 - **`where`** filters by `issueId`, `projectId`, `personId`, `createdBy` and the indexed fields: a value, `{ in: [...] }`, or a range `{ gte, lt… }`.
 - **`orderBy`** and **groups** take `createdAt` or an indexed field (groups: `issueId`, `projectId`, `personId`, `createdBy` too).
 
 Acting for a person, the plugin sees only the records of what that person sees, and of people as their entity's `visibleTo` says.
+
+Calls are not one transaction: two runs may work on the same records at once. To use something up once, a booster opened say, delete it first and go on only if that worked: a record is deleted once, and a second `delete` is refused with `RECORD_NOT_FOUND`. Two `update`s, by contrast, both succeed.
 
 ### On a person
 

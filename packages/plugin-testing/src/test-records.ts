@@ -80,7 +80,7 @@ const BOUNDS = [
   ['lte', (compared: number) => compared <= 0],
 ] as const;
 
-const worksSomewhere = (reach: Reach | undefined) =>
+export const worksSomewhere = (reach: Reach | undefined) =>
   reach === 'all' || (reach !== undefined && reach.size > 0);
 
 /** Whether two people work in a project in common. */

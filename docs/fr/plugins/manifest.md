@@ -28,12 +28,12 @@ export const plugin = definePlugin({
 
 ## Identité
 
-| Champ                 | Ce que c’est                                                                                                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | De 3 à 40 lettres minuscules, chiffres et tirets, commençant par une lettre. Il nomme le plugin pour de bon. `toppo` et les ressources de Toppo (`issue`, `project`…) sont pris.        |
-| `name`, `description` | Des clés de ses messages : un administrateur les lit dans sa langue.                                                                                                                    |
-| `logo`                | Facultatif : `logo.png` ou `logo.webp`, à côté de `package.json`, 256 Ko au plus. Vérifié par ses octets ; le SVG, qui peut porter du script, est refusé.                               |
-| `apiVersion`          | L’API de plugin qu’il parle, `^1.0` : Toppo l’installe s’il parle la même version majeure et au moins cette mineure. Les enregistrements sur une personne demandent `^1.1` (Toppo 1.2). |
+| Champ                 | Ce que c’est                                                                                                                                                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | De 3 à 40 lettres minuscules, chiffres et tirets, commençant par une lettre. Il nomme le plugin pour de bon. `toppo` et les ressources de Toppo (`issue`, `project`…) sont pris.                                                                      |
+| `name`, `description` | Des clés de ses messages : un administrateur les lit dans sa langue.                                                                                                                                                                                  |
+| `logo`                | Facultatif : `logo.png` ou `logo.webp`, à côté de `package.json`, 256 Ko au plus. Vérifié par ses octets ; le SVG, qui peut porter du script, est refusé.                                                                                             |
+| `apiVersion`          | L’API de plugin qu’il parle, `^1.0` : Toppo l’installe s’il parle la même version majeure et au moins cette mineure. L’API 1.1 (Toppo 1.2) apporte les enregistrements sur une personne et `ctx.people.can` : un plugin qui s’en sert demande `^1.1`. |
 
 Sa version est celle de `package.json`.
 

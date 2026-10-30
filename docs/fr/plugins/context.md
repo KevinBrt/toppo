@@ -11,6 +11,7 @@ Chaque gestionnaire reçoit `ctx` : ce avec quoi il tourne, et son seul chemin v
 | `ctx.user`                   | `{ id }` de la personne pour qui tourne une action ; absent dans les événements et les jobs                   |
 | `ctx.issues`                 | Les tickets de ses projets : ci-dessous                                                                       |
 | `ctx.projects.settings(id)`  | Les réglages d’un projet, analysés, valeurs par défaut appliquées                                             |
+| `ctx.people.can(id, perm)`   | Si quelqu’un a l’une de ses permissions : ci-dessous                                                          |
 | `ctx.entities.<nom>`         | Ses enregistrements : voir [données](./data#entites)                                                          |
 | `ctx.http.fetch(url, init?)` | Une requête hors de Toppo : voir [sortir de Toppo](./outside-toppo)                                           |
 
@@ -24,6 +25,14 @@ Chaque gestionnaire reçoit `ctx` : ce avec quoi il tourne, et son seul chemin v
 ## Les réglages d’un projet
 
 `await ctx.projects.settings(projectId)` répond ce que ce projet a réglé, analysé avec `projectSettings`, valeurs par défaut appliquées. Il ne demande aucun besoin, mais le plugin, et dans une action la personne, doivent avoir accès au projet : sinon il refuse avec `PROJECT_NOT_FOUND`.
+
+## Personnes
+
+`await ctx.people.can(personId, 'boosters.earn', { projectId })` répond si quelqu’un a l’une des permissions du plugin : une permission de projet dans le projet nommé, l’un de ceux où le plugin agit ; une permission d’instance sans projet. Il ne demande aucun besoin, et l’API 1.1.
+
+- Dans une action, il ne répond que de la personne pour qui elle tourne (`ctx.user.id`), pour qu’une action vérifie une seconde permission ; de quelqu’un d’autre, `FORBIDDEN`.
+- En son nom, dans un événement, un job ou une route, il répond de quiconque travaille dans ses projets : la personne qui a fermé un ticket peut-elle y gagner quelque chose ? Toute autre personne est `PERSON_NOT_FOUND`.
+- Un compte désactivé n’en a aucune. Les permissions de Toppo ne sont pas au plugin : `PERMISSION_NOT_FOUND`. Une permission de projet sans projet, ou d’instance avec un projet, est refusée avec `PERMISSION_SCOPE`.
 
 ## Quand Toppo refuse un appel
 

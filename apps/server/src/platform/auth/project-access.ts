@@ -4,6 +4,7 @@ import {
   formatIssueKey,
   isProjectPermission,
   type Permission,
+  type PluginPermission,
   type ProjectPermission,
   parseIssueKey,
   projectPermissionsOf,
@@ -160,6 +161,24 @@ export async function resolveProject(
   if (actor.plugin) {
     return await resolvePluginProject(db, actor, actor.plugin, key, permission);
   }
+  const project = await projectHeldBy(db, actor.id, eq(projects.key, key), actor.pluginPermissions);
+  if (!project?.permissions) {
+    throw notFound();
+  }
+  assertGranted(actor, project.permissions, permission);
+  return { ...project, permissions: project.permissions };
+}
+
+/**
+ * The project `which` selects, and what `userId` holds there by catalog name: through their own
+ * role, or their role in the project; `null` out of their reach. One query.
+ */
+async function projectHeldBy(
+  db: Db,
+  userId: string,
+  which: SQL,
+  pluginPermissions: readonly PluginPermission[],
+) {
   const [row] = await db
     .select({
       id: projects.id,
@@ -171,29 +190,40 @@ export async function resolveProject(
       projectRole: { grantsAll: projectRoles.grantsAll, permissions: projectRoles.permissions },
     })
     .from(projects)
-    .innerJoin(users, eq(users.id, actor.id))
+    .innerJoin(users, eq(users.id, userId))
     .innerJoin(ownRoles, eq(ownRoles.id, users.instanceRoleId))
     .leftJoin(
       projectMembers,
       and(eq(projectMembers.projectId, projects.id), eq(projectMembers.userId, users.id)),
     )
     .leftJoin(projectRoles, eq(projectRoles.id, projectMembers.roleId))
-    .where(eq(projects.key, key));
-  const permissions = row
-    ? projectPermissionsOf(
-        {
-          role: row.ownRole,
-          allProjects: row.allProjects,
-          membership: row.membershipId === null ? null : { role: row.projectRole },
-        },
-        actor.pluginPermissions,
-      )
-    : null;
-  if (!(row && permissions)) {
-    throw notFound();
+    .where(which);
+  if (!row) {
+    return undefined;
   }
-  assertGranted(actor, permissions, permission);
+  const permissions = projectPermissionsOf(
+    {
+      role: row.ownRole,
+      allProjects: row.allProjects,
+      membership: row.membershipId === null ? null : { role: row.projectRole },
+    },
+    pluginPermissions,
+  );
   return { id: row.id, key: row.key, archived: row.archivedAt !== null, permissions };
+}
+
+/**
+ * What `userId` holds in the project `projectId`, by catalog name, as `resolveProject` reads it
+ * for them; `null` out of their reach.
+ */
+export async function permissionsIn(
+  db: Db,
+  userId: string,
+  projectId: string,
+  pluginPermissions: readonly PluginPermission[],
+): Promise<readonly string[] | null> {
+  const project = await projectHeldBy(db, userId, eq(projects.id, projectId), pluginPermissions);
+  return project?.permissions ?? null;
 }
 
 /**

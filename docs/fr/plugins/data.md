@@ -27,12 +27,14 @@ Un plugin garde ce dont il a besoin comme enregistrements de ses **entités**, s
 | `count({ where })`, `sum(champ, { where })`           | Un nombre                                                                    |
 | `countBy(groupe, …)`, `sumBy(champ, groupe, …)`       | `[{ key, value }]`, le plus grand d’abord, 1 000 groupes au plus             |
 
-Un enregistrement se lit comme `{ id, issueId, projectId, personId, createdBy, createdAt, updatedAt, ...champs }`. `createdBy` est la personne pour qui tourne une action, ou l’utilisateur du plugin.
+Un enregistrement se lit comme `{ id, issueId, projectId, personId, createdBy, createdAt, updatedAt, ...champs }`. `createdBy` est la personne pour qui tourne une action ; écrit en son nom, dans un événement, un job ou une route, c’est l’utilisateur du plugin, qui n’est personne : ce dont parle un enregistrement va sur une personne (`personId`) ou dans un champ.
 
 - **`where`** filtre par `issueId`, `projectId`, `personId`, `createdBy` et les champs indexés : une valeur, `{ in: [...] }`, ou une plage `{ gte, lt… }`.
 - **`orderBy`** et les **groupes** prennent `createdAt` ou un champ indexé (les groupes : `issueId`, `projectId`, `personId`, `createdBy` aussi).
 
 Quand il agit pour une personne, le plugin ne voit que les enregistrements de ce que voit cette personne, et ceux des personnes comme le dit le `visibleTo` de leur entité.
+
+Les appels ne forment pas une transaction : deux exécutions peuvent travailler sur les mêmes enregistrements en même temps. Pour consommer quelque chose une seule fois, un booster ouvert par exemple, supprimez-le d’abord et ne continuez que si cela a réussi : un enregistrement n’est supprimé qu’une fois, et un second `delete` est refusé avec `RECORD_NOT_FOUND`. Deux `update`, eux, réussissent tous les deux.
 
 ### Sur une personne
 

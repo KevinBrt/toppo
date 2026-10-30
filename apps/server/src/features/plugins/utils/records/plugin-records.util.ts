@@ -6,13 +6,14 @@ import {
   type RecordData,
   recordFieldsSchemaOf,
 } from '@toppo-tracker/plugin-sdk/protocol';
-import { and, eq, inArray, isNull, or, type SQL, type SQLWrapper, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, type SQL, sql } from 'drizzle-orm';
 import type { Actor, PluginReach } from '../../../../platform/auth/actor.ts';
 import { grantedIn, reachableBy } from '../../../../platform/auth/project-access.ts';
 import type { Transaction } from '../../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../../platform/http/http-error.ts';
+import { amongPeopleOf } from '../people/plugin-people.util.ts';
 
-const { issues, pluginRecords, plugins, projects, users } = schema;
+const { issues, pluginRecords, plugins, projects } = schema;
 
 /** The plugin an actor is: records are a plugin's own, read and written by it only. */
 export function pluginOf(actor: Actor): PluginReach {
@@ -65,15 +66,6 @@ export function checkedFields(
 }
 
 /**
- * Whether the person of each record (or `personId`) reaches a project the plugin acts in, and
- * `also` holds of that project: among the plugin's people, as a condition on `plugin_records`.
- */
-function amongPeopleOf(plugin: PluginReach, personId: string | SQLWrapper, also?: SQL): SQL {
-  const actsIn = plugin.allProjects ? undefined : inArray(projects.id, [...plugin.projectIds]);
-  return sql`exists (select 1 from ${projects} where ${and(actsIn, reachableBy(personId), also)})`;
-}
-
-/**
  * The records on a person the actor sees: the plugin's people's; acting for someone, their own,
  * or, for an entity seen by teammates, those of anyone who shares with them a project the plugin
  * acts in.
@@ -118,40 +110,6 @@ export function visibleRecords(plugin: PluginReach, name: string, entity: Entity
         )
       : reachableBy(person.id);
   return and(own, reached, seen) ?? sql`false`;
-}
-
-/**
- * The person a new record hangs on: acting for someone, themselves only; as itself, any of the
- * plugin's people, never a plugin's user nor anyone erased.
- */
-export async function personToAnchor(
-  db: Pick<Db, 'select'>,
-  plugin: PluginReach,
-  personId: string,
-): Promise<string> {
-  const actingFor = plugin.onBehalfOf;
-  if (actingFor && actingFor.id !== personId) {
-    throw new HttpError(
-      403,
-      'FORBIDDEN',
-      'Acting for someone, a plugin writes the records on that person only',
-    );
-  }
-  const [person] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(
-      and(
-        eq(users.id, personId),
-        isNull(users.pluginSlug),
-        isNull(users.deletedAt),
-        amongPeopleOf(plugin, personId),
-      ),
-    );
-  if (!person) {
-    throw new HttpError(404, 'PERSON_NOT_FOUND', 'This person does not exist');
-  }
-  return person.id;
 }
 
 /** The records the plugin asks for: on an issue, in a project, on a person, written by someone. */

@@ -36,8 +36,8 @@ export async function enabledPlugins(db: Pick<Db, 'select'>, which?: SQL): Promi
 /**
  * Whether someone may open a screen: anyone signed in, or who holds its permission, the plugin's
  * own by its catalog name. A permission of the instance is held in it; one of projects, in the
- * project the screen shows (`inProject`), or in every project they reach for a page of the main
- * sidebar or the settings, as their role gives it.
+ * project the screen shows (`inProject`) only: where no project is, a plugin of API 1.1 may not
+ * ask for one.
  */
 export function mayOpen(
   actor: Actor,

@@ -29,7 +29,7 @@ describe('timeEntry.log', () => {
 | Membre                                         | Ce qu’il fait                                                                                                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `createIssue(champs?)`                         | Un ticket d’un projet de test, `WEB-1`, `WEB-2`…                                                                                                       |
-| `createUser({ sees?, permissions? })`          | Quelqu’un qui voit ces tickets (tous par défaut), travaille dans leurs projets, et a ces permissions du plugin                                         |
+| `createUser({ sees?, permissions? })`          | Quelqu’un qui voit ces tickets (tous par défaut), travaille dans leurs projets, et a ces permissions du plugin, comme le dit `ctx.people.can`          |
 | `user.run(action, input)`                      | Lance une action pour cette personne, et répond son résultat                                                                                           |
 | `emit(événement, { issue, change, actorId? })` | Transmet un événement au plugin, d’une personne présente dans chaque projet sauf si `actorId` nomme un utilisateur                                     |
 | `runJob(job)`                                  | Lance l’un de ses jobs                                                                                                                                 |

@@ -33,6 +33,7 @@ import { runPluginJobJob } from './features/plugins/jobs/run-plugin-job.job.ts';
 import { schedulePluginJobsJob } from './features/plugins/jobs/schedule-plugin-jobs.job.ts';
 import { sweepOnceKeysJob } from './features/plugins/jobs/sweep-once-keys.job.ts';
 import { registerPluginRoutes } from './features/plugins/plugins.routes.ts';
+import { checkPersonPermission } from './features/plugins/queries/check-person-permission.query.ts';
 import { readOwnProjectSettings } from './features/plugins/queries/read-own-project-settings.query.ts';
 import { aggregateRecords } from './features/plugins/queries/records/aggregate-records.query.ts';
 import { getRecord } from './features/plugins/queries/records/get-record.query.ts';
@@ -162,6 +163,7 @@ export function createHostCalls(): HostCalls {
     },
     'projects.settings': (context, { projectId }) =>
       readOwnProjectSettings.execute(context, { projectId }),
+    'people.can': (context, args) => checkPersonPermission.execute(context, args),
     // A write answers the record as the plugin reads it back.
     'entities.create': async (context, args) => {
       const { id } = await createRecord.execute(context, args);

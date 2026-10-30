@@ -18,7 +18,7 @@ Les écrans d’un plugin sont des composants React, dans des fichiers `.tsx`, d
 
 `plugin.definePanel({ name, on: 'issue', access, title, component })` affiche un panneau sur la page d’un ticket, sous son titre, dans les projets où le plugin agit ; il demande `issue.read`.
 
-- **`access`** : `'authenticated'` ou `{ permission }`, l’une de celles du plugin ou l’un de ses besoins. Pour l’onglet d’un projet ou le panneau d’un ticket, elle est vérifiée dans ce projet. Qui ne peut pas ouvrir un écran n’en voit pas non plus l’entrée.
+- **`access`** : `'authenticated'` ou `{ permission }`, l’une de celles du plugin ou l’un de ses besoins. Pour l’onglet d’un projet ou le panneau d’un ticket, elle est vérifiée dans ce projet ; ailleurs, dans la barre latérale, les réglages ou un dialogue, seule une permission d’instance se détient, et depuis l’API 1.1 le build y refuse une permission de projet. Qui ne peut pas ouvrir un écran n’en voit pas non plus l’entrée.
 - **`title`**, **`nav.label`** : des clés de ses messages. **`nav.icon`** : `bar-chart`, `briefcase`, `calendar`, `clock`, `database`, `file-text`, `flag`, `folder`, `gauge`, `list`, `puzzle`, `settings`, `tag`, `timer`, `users` ou `wallet`.
 - **`component`** : `() => import('../web/x.tsx').then((module) => module.X)`, pour que son code ne soit que dans le bundle des écrans.
 
@@ -130,7 +130,8 @@ Toppo cherche : l’écran n’apprend que ce que la personne a choisi. Il dessi
 Un écran tourne dans un cadre isolé sans origine, sous une politique de sécurité de contenu qui n’atteint rien :
 
 - **Pas de réseau** : il demande à son plugin, par ses actions, tout ce qu’il affiche.
-- **Pas de styles à lui** : il ne livre aucun CSS, et la feuille de style de Toppo ne contient que les classes de Toppo. Mettez-le en page avec `Stack` et `Row`, jamais avec `className`.
+- **Pas de styles à lui** : il ne livre aucun CSS, et la feuille de style de Toppo ne contient que les classes de Toppo. Mettez-le en page avec `Stack` et `Row`, jamais avec `className`. La politique refuse les éléments `<style>`, et avec eux `@keyframes` et les pseudo-éléments : ce qui bouge bouge avec l’API Web Animations (`element.animate()`).
+- **Pas d’images d’ailleurs** : les images viennent de l’origine de Toppo ou d’adresses `data:` seulement, et le paquet d’un plugin contient son `server.js`, son `web.js`, son `plugin.json` et son logo, rien d’autre. Une image qu’un écran affiche est portée par son code, en adresse `data:`.
 - **Pas de navigation** : un formulaire appelle `event.preventDefault()` ; les liens passent par `IssueLink`, `PageLink` ou `open`. Un cadre qui charge un autre document est fermé.
 
 Un composant qui lève une erreur affiche à sa place les mots de Toppo. La hauteur du cadre suit son contenu.

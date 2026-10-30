@@ -128,6 +128,11 @@ function timeTracking() {
           return await ctx.issues.find(' web-42 ');
         case 'budget':
           return await ctx.projects.settings(PROJECT);
+        case 'can':
+          return [
+            await ctx.people.can(ADA, 'entries.log', { projectId: PROJECT }),
+            await ctx.people.can(ADA, 'entries.log'),
+          ];
         case 'fetch': {
           const answer = await ctx.http.fetch('https://hooks.example.com/T');
           return { status: answer.status, ok: answer.ok, json: await answer.json() };
@@ -421,6 +426,22 @@ describe('a plugin served to Toppo', () => {
       result: { key: 'WEB-42' },
     });
     expect(call).toHaveBeenCalledWith('issues.find', JSON.stringify({ key: 'WEB-42' }));
+  });
+
+  it('asks whether someone holds one of its permissions, in a project or not', async () => {
+    const { host, call } = fakeHost({ 'people.can': true });
+
+    expect(await act(host, 'oddities.run', { what: 'can' })).toStrictEqual({
+      ok: true,
+      result: [true, true],
+    });
+    expect(call.mock.calls).toStrictEqual([
+      [
+        'people.can',
+        JSON.stringify({ personId: ADA, permission: 'entries.log', projectId: PROJECT }),
+      ],
+      ['people.can', JSON.stringify({ personId: ADA, permission: 'entries.log' })],
+    ]);
   });
 
   it('refuses in the plugin’s words, with their params, in the language asked', async () => {

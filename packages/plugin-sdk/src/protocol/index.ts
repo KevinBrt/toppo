@@ -173,6 +173,7 @@ export {
 } from './events.ts';
 export {
   accessSchema,
+  INSTANCE_ACCESS_API,
   type Manifest,
   type Messages,
   manifestSchema,

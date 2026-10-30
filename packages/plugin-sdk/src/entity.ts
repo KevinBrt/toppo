@@ -72,7 +72,12 @@ export function defineEntity<
   };
 }
 
+/** Fields as declared: none for `z.object({})`, which Zod reads as a record of nothing. */
+type Declared<T> = string extends keyof T ? Record<never, never> : T;
+
 type FieldsOf<En extends Entity> = z.output<En['fields']>;
+
+type FieldsInputOf<En extends Entity> = Declared<z.input<En['fields']>>;
 
 type IndexOf<En extends Entity> = En['indexes'][number];
 
@@ -96,7 +101,7 @@ export type EntityRecord<En extends Entity> = {
   readonly createdAt: string;
   readonly updatedAt: string;
 } & AnchorsOf<En['attachedTo']> &
-  FieldsOf<En>;
+  Declared<FieldsOf<En>>;
 
 /** Where a new record hangs. */
 type AnchorOf<A extends Attachment> = A extends 'issue'
@@ -145,11 +150,11 @@ type NumberFieldOf<T> = {
 /** What a plugin does with the records of one of its entities, as far as it sees them. */
 export interface EntityClient<En extends Entity> {
   /** Checked by its schema, then by Toppo, which refuses past the entity's limits. */
-  create(input: z.input<En['fields']> & AnchorOf<En['attachedTo']>): Promise<EntityRecord<En>>;
+  create(input: FieldsInputOf<En> & AnchorOf<En['attachedTo']>): Promise<EntityRecord<En>>;
   /** `null` for a record that is not there, or not seen. */
   get(id: string): Promise<EntityRecord<En> | null>;
   /** The fields given replace those it had; the others stay. */
-  update(id: string, changes: Partial<z.input<En['fields']>>): Promise<EntityRecord<En>>;
+  update(id: string, changes: Partial<FieldsInputOf<En>>): Promise<EntityRecord<En>>;
   delete(id: string): Promise<void>;
   /**
    * A page of them, the latest written first unless sorted on an indexed field: 50 by default,

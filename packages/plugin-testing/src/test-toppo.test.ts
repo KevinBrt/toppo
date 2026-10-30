@@ -363,6 +363,105 @@ describe('a fake Toppo for a plugin’s tests', () => {
     ]);
   });
 
+  it('tells the plugin who holds its permissions, as the test gave them', async () => {
+    const words = { name: 'Boosters', earn: 'Earn boosters', view: 'See collections' };
+    const plugin = definePlugin({
+      id: 'boosters',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.1',
+      needs: ['issue.read'],
+      permissions: {
+        'boosters.earn': { scope: 'project', label: 'earn' },
+        'collection.view': { scope: 'instance', label: 'view' },
+      },
+      entities: {
+        booster: defineEntity({ attachedTo: 'person', fields: z.object({}) }),
+      },
+      messages: { en: words, fr: words },
+    });
+    plugin.defineEventHandler({
+      event: 'issue.statusChanged',
+      async handler(ctx, { event, issue }) {
+        if (await ctx.people.can(event.actorId, 'boosters.earn', { projectId: issue.projectId })) {
+          await ctx.entities.booster.create({ personId: event.actorId });
+        }
+      },
+    });
+    const ask = plugin.defineAction({
+      name: 'people.ask',
+      access: 'authenticated',
+      input: z.object({ personId: z.uuid(), projectId: z.uuid().optional() }),
+      async handler(ctx, { personId, projectId }) {
+        return projectId === undefined
+          ? await ctx.people.can(personId, 'collection.view')
+          : await ctx.people.can(personId, 'boosters.earn', { projectId });
+      },
+    });
+    const toppo = createTestToppo(plugin);
+    const issue = toppo.createIssue();
+    const elsewhere = toppo.createIssue({ projectId: '00000000-0000-4000-8000-000000000200' });
+    const ada = toppo.createUser({
+      sees: [issue],
+      permissions: ['boosters.earn', 'collection.view'],
+    });
+    const grace = toppo.createUser({ sees: [issue] });
+    const moved = (actorId: string) =>
+      toppo.emit('issue.statusChanged', {
+        issue,
+        change: { from: issue.status, to: issue.status },
+        actorId,
+      });
+
+    await moved(ada.id);
+    await moved(grace.id);
+
+    expect(toppo.records('booster').map(({ personId }) => personId)).toStrictEqual([ada.id]);
+    expect(await ada.run(ask, { personId: ada.id })).toBe(true);
+    expect(await ada.run(ask, { personId: ada.id, projectId: issue.projectId })).toBe(true);
+    expect(await grace.run(ask, { personId: grace.id })).toBe(false);
+    for (const [who, input, refused] of [
+      [grace, { personId: ada.id }, 'FORBIDDEN'],
+      [ada, { personId: ada.id, projectId: elsewhere.projectId }, 'PROJECT_NOT_FOUND'],
+      [
+        ada,
+        { personId: ada.id, projectId: '00000000-0000-4000-8000-000000000999' },
+        'PROJECT_NOT_FOUND',
+      ],
+    ] as const) {
+      await expect(who.run(ask, input)).rejects.toMatchObject({ detail: refused });
+    }
+  });
+
+  it('refuses to tell of a permission that is not the plugin’s, or of another scope', async () => {
+    const words = { name: 'Boosters', earn: 'Earn boosters' };
+    const plugin = definePlugin({
+      id: 'boosters',
+      name: 'name',
+      description: 'name',
+      apiVersion: '^1.1',
+      permissions: { 'boosters.earn': { scope: 'project', label: 'earn' } },
+      messages: { en: words, fr: words },
+    });
+    const ask = plugin.defineAction({
+      name: 'people.ask',
+      access: 'authenticated',
+      input: z.object({ permission: z.string() }),
+      async handler(ctx, { permission }) {
+        return await Reflect.apply(ctx.people.can, ctx.people, [ctx.user.id, permission]);
+      },
+    });
+    const toppo = createTestToppo(plugin);
+    const ada = toppo.createUser();
+
+    await expect(ada.run(ask, { permission: 'issue.read' })).rejects.toMatchObject({
+      detail: 'PERMISSION_NOT_FOUND',
+    });
+    await expect(ada.run(ask, { permission: 'boosters.earn' })).rejects.toMatchObject({
+      detail: 'PERMISSION_SCOPE',
+    });
+  });
+
   it('refuses a plugin for another API', () => {
     const plugin = definePlugin({
       id: 'from-the-future',

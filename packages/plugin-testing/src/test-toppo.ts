@@ -20,7 +20,7 @@ import {
   runAnswerSchema,
 } from '@toppo-tracker/plugin-sdk/protocol';
 import { createTestProperties } from './test-properties.ts';
-import { createTestRecords, type Reach } from './test-records.ts';
+import { createTestRecords, type Reach, worksSomewhere } from './test-records.ts';
 import { nodeCrypto, type TestRouteRequest } from './test-signatures.ts';
 
 /** Why a run was refused: the plugin's own code (a message key), or one of Toppo's. */
@@ -69,6 +69,9 @@ export type TestHttpReply = Partial<HttpAnswer> | HttpFailureCode;
 /** Who reports issues and acts in events unless the test says otherwise: in every project. */
 const SOMEONE_ID = '00000000-0000-4000-8000-000000000001';
 
+/** The project of the issues the kit makes, unless the test says otherwise. */
+const WEB_ID = '00000000-0000-4000-8000-000000000100';
+
 /** An issue to start from: anything left out takes a plausible value. */
 export type TestIssueInput = Partial<Omit<IssueDetails, 'id' | 'key'>>;
 
@@ -98,6 +101,8 @@ export function createTestToppo(
   const nextId = () => `00000000-0000-4000-8000-${String(++lastId).padStart(12, '0')}`;
   const issues = new Map<string, IssueDetails>();
   const people = new Map<string, Reach>([[SOMEONE_ID, 'all']]);
+  /** The plugin's permissions each person holds, by their short names. */
+  const held = new Map<string, readonly string[]>();
   const comments: TestComment[] = [];
   const written = new Map<string, string>();
   const sent: TestHttpRequest[] = [];
@@ -145,6 +150,8 @@ export function createTestToppo(
         return findIssue(args);
       case 'projects.settings':
         return projectSettings(args);
+      case 'people.can':
+        return Promise.resolve().then(() => personCan(args));
       case 'issues.setProperty':
         return Promise.resolve().then(() => properties.set(args));
       case 'http.fetch':
@@ -229,6 +236,52 @@ export function createTestToppo(
           (issue) => issue.projectId === projectId && runningFor?.sees(issue.id),
         ));
     return reached ? Promise.resolve(settings[projectId]) : Promise.reject(new Error('NOT_FOUND'));
+  }
+
+  /** One of the plugin's own permissions, asked of its scope: in a project for one of projects. */
+  function assertAsked(permission: string, projectId: string | undefined): void {
+    const declared = Object.hasOwn(manifest.permissions, permission)
+      ? manifest.permissions[permission]
+      : undefined;
+    if (!declared) {
+      throw new Error('PERMISSION_NOT_FOUND');
+    }
+    if ((declared.scope === 'project') !== (projectId !== undefined)) {
+      throw new Error('PERMISSION_SCOPE');
+    }
+  }
+
+  /** Where someone the plugin asks about works: acting for someone, them only; as itself, anyone. */
+  function reachOf(personId: string): Reach {
+    if (runningFor !== null && runningFor.id !== personId) {
+      throw new Error('FORBIDDEN');
+    }
+    const reach = people.get(personId);
+    if (!(reach && worksSomewhere(reach))) {
+      throw new Error('PERSON_NOT_FOUND');
+    }
+    return reach;
+  }
+
+  /**
+   * Whether someone holds one of the plugin's permissions, as the test gave them: one of projects
+   * in a project they work in, which whoever the plugin acts for works in too.
+   */
+  function personCan(args: unknown): boolean {
+    const { personId, permission, projectId } = HOST_CALLS['people.can'].args.parse(args);
+    assertAsked(permission, projectId);
+    const reach = reachOf(personId);
+    const holds = (held.get(personId) ?? []).includes(permission);
+    if (projectId === undefined) {
+      return holds;
+    }
+    const known =
+      projectId === WEB_ID || [...issues.values()].some((issue) => issue.projectId === projectId);
+    const worksThere = reach === 'all' || reach.has(projectId);
+    if (!known || (runningFor !== null && !worksThere)) {
+      throw new Error('PROJECT_NOT_FOUND');
+    }
+    return worksThere && holds;
   }
 
   function getIssue(args: unknown): Promise<IssueDetails | null> {
@@ -329,7 +382,7 @@ export function createTestToppo(
       const issue: IssueDetails = {
         id,
         key: `${input.projectKey ?? 'WEB'}-${number}`,
-        projectId: '00000000-0000-4000-8000-000000000100',
+        projectId: WEB_ID,
         projectKey: 'WEB',
         title: `Issue ${number}`,
         description: '',
@@ -358,6 +411,7 @@ export function createTestToppo(
       const id = nextId();
       const seen = user.sees && new Set(user.sees.map((issue) => issue.id));
       people.set(id, user.sees ? new Set(user.sees.map((issue) => issue.projectId)) : 'all');
+      held.set(id, user.permissions ?? []);
       const sees = (issueId: string | undefined) =>
         issueId !== undefined && (seen === undefined || seen.has(issueId));
       const holds = (permission: string) => user.permissions?.includes(permission) ?? false;

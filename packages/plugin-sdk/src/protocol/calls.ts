@@ -147,6 +147,22 @@ export const HOST_CALLS = {
      */
     result: z.record(z.string(), z.unknown()),
   },
+  /**
+   * Whether someone holds one of the plugin's own permissions: in a project it acts in, for a
+   * permission of projects, or in the instance. Acting for someone, of that person only; as
+   * itself, of anyone who works in its projects. A deactivated account holds none.
+   */
+  'people.can': {
+    needs: null,
+    args: z.object({
+      personId: z.uuid(),
+      /** One of its own, as it names it: `boosters.earn`. */
+      permission: z.string().max(60),
+      /** For a permission of projects, the project: one it acts in. */
+      projectId: z.uuid().optional(),
+    }),
+    result: z.boolean(),
+  },
   // Its own records: no core permission, but only those it, and whoever it acts for, sees.
   'entities.create': {
     needs: null,

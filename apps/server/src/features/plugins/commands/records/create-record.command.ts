@@ -14,11 +14,11 @@ import {
 } from '../../../../platform/auth/project-access.ts';
 import { defineCommand, type Transaction } from '../../../../platform/cqrs/cqrs.ts';
 import { HttpError } from '../../../../platform/http/http-error.ts';
+import { pluginPersonOf } from '../../utils/people/plugin-people.util.ts';
 import {
   authorOf,
   checkedFields,
   entityOf,
-  personToAnchor,
   pluginOf,
 } from '../../utils/records/plugin-records.util.ts';
 import { slotsToWrite, slotWritesOf } from '../../utils/records/record-slots.util.ts';
@@ -105,7 +105,7 @@ async function anchorOf(
     );
   }
   if (entity.attachedTo === 'person') {
-    const personId = await personToAnchor(db, pluginOf(actor), id);
+    const personId = await pluginPersonOf(db, pluginOf(actor), id);
     return { projectId: null, issueId: null, personId, archived: false };
   }
   if (entity.attachedTo === 'issue') {

@@ -11,6 +11,7 @@ Every handler is given `ctx`: what it runs with, and its only way into Toppo.
 | `ctx.user`                   | `{ id }` of the person an action runs for; absent in events and jobs                       |
 | `ctx.issues`                 | Issues of its projects: below                                                              |
 | `ctx.projects.settings(id)`  | A project's settings, parsed, defaults applied                                             |
+| `ctx.people.can(id, perm)`   | Whether someone holds one of its permissions: below                                        |
 | `ctx.entities.<name>`        | Its records: see [records](./data#entities)                                                |
 | `ctx.http.fetch(url, init?)` | A request outside Toppo: see [reaching outside Toppo](./outside-toppo)                     |
 
@@ -24,6 +25,14 @@ Every handler is given `ctx`: what it runs with, and its only way into Toppo.
 ## A project's settings
 
 `await ctx.projects.settings(projectId)` answers what that project set, parsed with `projectSettings`, its defaults applied. It takes no need, but the plugin, and in an action the person, must reach the project: otherwise it refuses with `PROJECT_NOT_FOUND`.
+
+## People
+
+`await ctx.people.can(personId, 'boosters.earn', { projectId })` answers whether someone holds one of the plugin's own permissions: one of projects in the project named, one the plugin acts in; one of the instance with no project. It takes no need, and API 1.1.
+
+- In an action, it answers of the person it runs for only (`ctx.user.id`), so that an action checks a second permission; about anyone else, `FORBIDDEN`.
+- As itself, in an event, a job or a route, it answers of anyone who works in its projects: may the person who closed an issue earn something there? Anyone else is `PERSON_NOT_FOUND`.
+- A deactivated account holds none. Toppo's own permissions are not the plugin's to read: `PERMISSION_NOT_FOUND`. A permission of projects with no project, or one of the instance with one, is refused with `PERMISSION_SCOPE`.
 
 ## When Toppo refuses a call
 
