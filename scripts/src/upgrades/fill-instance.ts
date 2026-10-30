@@ -2,9 +2,16 @@
  * Fills a fresh Toppo through its API as a small team would: every kind of row the version can
  * write, written by its own code, so that a snapshot of it holds what real databases hold.
  */
+import { readFileSync } from 'node:fs';
 import { type apiOf, invitationToken, PASSWORD, ROLE_IDS } from '../harness/built-server.ts';
 
 type Api = ReturnType<typeof apiOf>;
+
+/** The reference plugin, as `toppo plugin build` leaves it: `db:snapshot` builds it first. */
+const TIME_TRACKING = new URL('../../../plugins/time-tracking/', import.meta.url);
+const { version: timeTrackingVersion } = JSON.parse(
+  readFileSync(new URL('package.json', TIME_TRACKING), 'utf8'),
+) as { version: string };
 
 /** The accounts the snapshot holds, all signing in with `PASSWORD`. */
 const ACCOUNTS = {
@@ -62,6 +69,12 @@ export async function fillInstance(api: Api, setupCode: string): Promise<void> {
     put: (path: string, body: object) => api.call('PUT', path, { cookie, body }),
     patch: (path: string, body: object) => api.call('PATCH', path, { cookie, body }),
     remove: (path: string) => api.call('DELETE', path, { cookie }),
+    // A plugin's zip, as Settings › Plugins sends it.
+    upload: (path: string, zip: Uint8Array) =>
+      api.call('POST', path, {
+        cookie,
+        raw: { data: zip, headers: { 'content-type': 'application/zip' } },
+      }),
     // Sent as the browser does; the server reads the type from the file itself.
     attach: (path: string, file: { name: string; text: string }) =>
       api.call('POST', path, {
@@ -166,6 +179,25 @@ export async function fillInstance(api: Api, setupCode: string): Promise<void> {
     emailed: ['created', 'assigned', 'assigneeChanged', 'commented', 'mentioned'],
   });
 
+  // Webhooks, told of what follows: one of WEB's issues, one of every project's, stopped since.
+  const deployments = await json<{ id: string }>(
+    ada.post('/api/v1/webhooks', {
+      name: 'Deployments',
+      url: 'https://hooks.example.invalid/toppo',
+      events: ['issue.created', 'issue.commented', 'issue.statusChanged'],
+      projects: ['WEB'],
+    }),
+  );
+  const teamChat = await json<{ id: string }>(
+    ada.post('/api/v1/webhooks', {
+      name: 'Team chat',
+      url: 'https://chat.example.invalid/hooks/toppo',
+      events: ['issue.created'],
+      projects: 'all',
+    }),
+  );
+  await ada.post(`/api/v1/webhooks/${teamChat.id}/disable`);
+
   // Issues, changed in every way their page allows.
   const fields = await ada.get<{ statuses: Named[]; categories: Named[]; priorities: Named[] }>(
     '/api/v1/projects/WEB/issue-fields',
@@ -253,6 +285,53 @@ export async function fillInstance(api: Api, setupCode: string): Promise<void> {
     remove: [],
   });
   await ada.remove(`/api/v1/issues/${gone}`);
+  await ada.post(`/api/v1/webhooks/${deployments.id}/test`);
+
+  // A plugin, as an administrator adds it: time tracking, approved in WEB, set up with a secret,
+  // its permission given to the team, then used.
+  await ada.upload(
+    '/api/v1/plugins',
+    readFileSync(new URL(`dist/time-tracking-${timeTrackingVersion}.zip`, TIME_TRACKING)),
+  );
+  const { packageSha256 } = await ada.get<{ packageSha256: string }>(
+    '/api/v1/plugins/time-tracking',
+  );
+  await ada.post('/api/v1/plugins/time-tracking/approve', { packageSha256, projects: ['WEB'] });
+  await ada.put('/api/v1/plugins/time-tracking/settings', {
+    values: {
+      hoursPerDay: 7,
+      summaryUrl: 'https://chat.example.invalid/hooks/time',
+      summaryLanguage: 'fr',
+    },
+  });
+  await ada.put('/api/v1/projects/WEB/plugins/time-tracking/settings', {
+    values: { budgetDays: 20 },
+  });
+  const roles = await ada.get<{ roles: { id: string; permissions: string[] }[] }>('/api/v1/roles');
+  const teamPermissions = roles.roles.find(({ id }) => id === ROLE_IDS.team)?.permissions ?? [];
+  await ada.put('/api/v1/roles/permissions', {
+    changes: [
+      {
+        roleId: ROLE_IDS.team,
+        from: teamPermissions,
+        to: [...teamPermissions, 'time-tracking.entries.log'],
+      },
+    ],
+  });
+  const logTime = async (
+    who: ReturnType<typeof as>,
+    key: string,
+    entry: { minutes: number; spentOn: string; note?: string },
+  ) => {
+    const { id } = await ada.get<{ id: string }>(`/api/v1/issues/${key}`);
+    await who.post('/api/v1/plugins/time-tracking/actions/timeEntry.log', {
+      issueId: id,
+      ...entry,
+    });
+  };
+  await logTime(ada, crash, { minutes: 90, spentOn: '2026-10-28', note: 'Found the PDF library' });
+  await logTime(graceAs, crash, { minutes: 45, spentOn: '2026-10-29' });
+  await logTime(graceAs, request, { minutes: 30, spentOn: '2026-10-29' });
 
   // What happened since: read by some, Otto's account closed, the old project archived.
   await graceAs.post('/api/v1/notifications/read', { all: true });
