@@ -56,3 +56,10 @@ plugin.defineJob({
     await Promise.resolve('Done each week on the server only');
   },
 });
+
+plugin.defineRoute({
+  name: 'hours.receive',
+  async handler() {
+    return await Promise.resolve({ status: 202, body: 'Received on the server only' });
+  },
+});

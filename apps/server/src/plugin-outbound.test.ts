@@ -279,6 +279,35 @@ describe('a plugin’s secret', () => {
     expect((await details()).json()).toMatchObject({ settings: { refused: false } });
   });
 
+  it('is not handed to an upgrade’s code waiting for its approval, as its settings are saved', async () => {
+    await install(notifier());
+    expect((await saveSettings({ values: { chatUrl, team: 'Billing' } })).statusCode).toBe(204);
+    // It asks for one more job: it waits for an approval, and refuses settings holding the secret.
+    const upgraded = await app.inject({
+      method: 'POST',
+      url: '/api/v1/plugins',
+      headers: { origin: ORIGIN, cookie: adminCookie, 'content-type': 'application/zip' },
+      payload: testPackage({
+        manifest: notifier({
+          jobs: [
+            { name: 'tell', every: 'week', label: 'jobs.tell' },
+            { name: 'remind', every: 'day', label: 'jobs.tell' },
+          ],
+        }),
+        version: '1.3.0',
+        run: `return JSON.stringify('chatUrl' in JSON.parse(payload)
+          ? { ok: false, error: { code: 'VALIDATION_FAILED', issues: [{ path: 'chatUrl', message: 'Seen' }] } }
+          : { ok: true, result: null });`,
+      }),
+    });
+    expect(upgraded.statusCode, upgraded.body).toBe(201);
+    expect((await details()).json()).toMatchObject({ state: 'pending' });
+
+    const saved = await saveSettings({ values: { team: 'Ops' } });
+
+    expect(saved.statusCode, saved.body).toBe(204);
+  });
+
   it('is cleared only when it is one', async () => {
     await install(notifier());
 

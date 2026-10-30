@@ -65,6 +65,7 @@ import { registerErrorHandler } from './platform/http/error-handler.ts';
 import { HttpError } from './platform/http/http-error.ts';
 import { registerOriginCheck } from './platform/http/origin-check.ts';
 import { pruneRateLimitsJob, registerRateLimit } from './platform/http/rate-limit.ts';
+import { requestForLog } from './platform/http/request-log.ts';
 import { enforceRouteContracts } from './platform/http/route-contracts.ts';
 import { registerSecurityHeaders } from './platform/http/security-headers.ts';
 import { nodeCrypto } from './platform/http/signatures/node-crypto.ts';
@@ -286,6 +287,7 @@ export async function buildApp({
     logger: {
       level: config.logLevel,
       redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+      serializers: { req: requestForLog },
     },
     trustProxy: config.trustProxy ? trustTheProxyOnly : false,
     bodyLimit: BODY_LIMIT_BYTES,

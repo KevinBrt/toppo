@@ -2,7 +2,8 @@
  * Proves plugin authors' packages work outside the monorepo, as npm would install them:
  * `npm run plugin-packages:try`. Packs them, starts a plugin in an empty folder with
  * `create-plugin` as packed, installs the packed tarballs there (the other dependencies from
- * npm), then tests, type-checks and builds the plugin.
+ * npm, without their install scripts, as in the repository), then tests, type-checks and builds
+ * the plugin. Outside the repository, its `.npmrc` does not apply: each install says so itself.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -18,7 +19,7 @@ function main(): void {
   try {
     const creator = join(workspace, 'creator');
     npm(['init', '--yes'], workspace);
-    npm(['install', '--prefix', creator, ...tarballs.values()], workspace);
+    npm(['install', '--ignore-scripts', '--prefix', creator, ...tarballs.values()], workspace);
     execFileSync(
       process.execPath,
       [
@@ -29,7 +30,12 @@ function main(): void {
     );
     const plugin = join(workspace, PLUGIN_ID);
     pointAtTarballs(join(plugin, 'package.json'), tarballs);
-    for (const args of [['install'], ['test'], ['run', 'typecheck'], ['run', 'build']]) {
+    for (const args of [
+      ['install', '--ignore-scripts'],
+      ['test'],
+      ['run', 'typecheck'],
+      ['run', 'build'],
+    ]) {
       console.log(`> npm ${args.join(' ')}`);
       console.log(npm(args, plugin));
     }

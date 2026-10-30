@@ -34,7 +34,8 @@ export function DialogContent({
 }: DialogContentProps) {
   return (
     <RadixDialog.Portal>
-      <RadixDialog.Overlay className="fixed inset-0 z-40 bg-black/40 data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
+      {/* On the layer of the dialog, before it: one opened over another darkens that one too. */}
+      <RadixDialog.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=closed]:animate-fade-out data-[state=open]:animate-fade-in" />
       <RadixDialog.Content
         {...(description ? {} : { 'aria-describedby': undefined })}
         className={cn(

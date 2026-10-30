@@ -28,6 +28,15 @@ describe('an email', () => {
     );
   });
 
+  it('keeps its subject on one line, whatever the names in it hold', () => {
+    const { subject } = composeMail({
+      ...content,
+      subject: 'Toppo stopped the webhook CI\r\nBcc: x',
+    });
+
+    expect(subject).toBe('Toppo stopped the webhook CI Bcc: x');
+  });
+
   it('escapes in HTML everything it did not write itself', () => {
     const { html } = composeMail({
       ...content,

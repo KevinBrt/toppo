@@ -58,7 +58,7 @@ Its address is `/api/v1/plugins/<id>/routes/<name>`: the plugin's page gives it 
 
 <<< @/../apps/server/src/platform/plugins/fixtures/commit-links.fixture.ts#gitlab
 
-For a service that signs its own way, `ctx.crypto.hmac(algorithm, key, data, encoding?)` and `ctx.crypto.equal(a, b)`, which compares in constant time, do the same by hand. Keep the secret a `secret()` setting.
+For a service that signs its own way, `ctx.crypto.hmac(algorithm, key, data, encoding?)` and `ctx.crypto.equal(a, b)`, which compares in constant time, do the same by hand. Keep the secret a `secret()` setting. A key given as `{ base64 }`, a Standard Webhooks `whsec_` one among them, must be base64 indeed: another is refused, rather than read as an empty key anyone could sign with.
 
 The request is `{ method, headers, query, body, json() }`: the body as it came, unparsed, since a signature is of these very characters; the headers in lowercase, never a cookie. The route answers `{ status, body? }`: `200`, `201`, `202` or `204`, or `400`, `401`, `403`, `404`, `409` or `422`, with JSON. A `ctx.fail` answers `422`.
 

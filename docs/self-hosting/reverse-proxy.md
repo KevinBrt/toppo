@@ -4,7 +4,7 @@ To reach Toppo from outside your network, put a reverse proxy in front of it tha
 
 1. Set `TOPPO_URL=https://toppo.example.com`. Toppo then sends HSTS and upgrades insecure requests.
 2. Publish Toppo's port on the server itself only, so that the proxy is the only way in: `HTTP_PORT=127.0.0.1:3000`.
-3. Then set `TOPPO_TRUST_PROXY=true`, so that Toppo reads the client's address from the proxy's headers (sign-in rate limits rely on it). Never set it while Toppo's port is reachable directly: anyone could then claim any address.
+3. Then set `TOPPO_TRUST_PROXY=true`, so that Toppo reads the client's address from the proxy's headers (the rate limits of sign-in and of plugins' routes rely on it). Never set it while Toppo's port is reachable directly: anyone could then claim any address.
 4. Point the proxy at port 3000.
 
 The proxy must let attachments through: up to 20 MB by default (`TOPPO_ATTACHMENT_MAX_SIZE_MB`).

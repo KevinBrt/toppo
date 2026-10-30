@@ -57,6 +57,14 @@ describe('the signatures Toppo checks, with Node’s digests', () => {
     );
   });
 
+  it('refuses a key that is not base64, as Toppo does', () => {
+    for (const base64 of ['', '!!!!', 'not base64']) {
+      expect(() => nodeCrypto.hmac('sha256', { base64 }, 'data', 'hex')).toThrow(
+        'The key is not base64',
+      );
+    }
+  });
+
   it('signs a test’s request as the service would, now, its body as JSON when an object', () => {
     const request = signed(
       { scheme: 'standard-webhooks', secret: 'whsec_c2VjcmV0' },

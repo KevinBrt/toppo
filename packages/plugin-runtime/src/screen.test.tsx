@@ -121,6 +121,7 @@ function Tools() {
           { key: 'web', label: 'Website', value: 12, limit: 10 },
           { key: 'ops', label: 'Operations', value: 4, limit: 8 },
           { key: 'app', label: 'Mobile app', value: 6 },
+          { key: 'docs', label: 'Docs', value: 2, limit: 14 },
         ]}
       />
       <LineChart
@@ -389,6 +390,13 @@ describe('what Toppo draws over the page for a screen', () => {
     const bars = page.getByRole('table', { name: 'Days spent' });
     await expect.element(bars.getByRole('row').nth(1)).toHaveTextContent('Website12 d10 d');
     await expect.element(bars.getByRole('row').nth(3)).toHaveTextContent('Mobile app6 d');
+    // A limit at the top of the scale is marked inside its bar: past it, the frame would scroll.
+    const drawn = document.querySelectorAll<HTMLElement>('figure li > div.relative');
+    expect(drawn.length).toBe(4);
+    for (const bar of drawn) {
+      const mark = bar.lastElementChild?.getBoundingClientRect();
+      expect(mark?.right).toBeLessThanOrEqual(bar.getBoundingClientRect().right);
+    }
     await expect.element(page.getByText('Dépassé', { exact: true })).toBeVisible();
     await expect
       .element(page.getByRole('meter', { name: 'Budget' }))

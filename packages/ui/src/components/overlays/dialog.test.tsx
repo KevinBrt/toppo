@@ -46,6 +46,40 @@ describe('Dialog', () => {
   });
 });
 
+/** The layer an element is drawn on, by its `z-*` class. */
+function layerOf(element: Element): number {
+  return Number(/(?:^|\s)z-(\d+)(?:\s|$)/.exec(element.className)?.[1] ?? Number.NaN);
+}
+
+describe('A dialog opened over another', () => {
+  it('darkens that one too, as it darkens the page', async () => {
+    const screen = await render(
+      <Dialog defaultOpen>
+        <DialogContent title="Log time" closeLabel="Close">
+          <Dialog defaultOpen>
+            <DialogContent title="Choose an issue" closeLabel="Close">
+              <input aria-label="Search" />
+            </DialogContent>
+          </Dialog>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    const below = screen.getByRole('dialog', { name: 'Log time', includeHidden: true }).element();
+    const above = screen.getByRole('dialog', { name: 'Choose an issue' }).element();
+    const backdrop = above.previousElementSibling;
+    if (!backdrop) {
+      throw new Error('The dialog above has no backdrop');
+    }
+    // Painted over the dialog below: on its layer (as the styles of the application set it), and
+    // after it.
+    expect(layerOf(backdrop)).toBeGreaterThanOrEqual(layerOf(below));
+    expect(below.compareDocumentPosition(backdrop) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+});
+
 describe('Dialog with its title hidden', () => {
   it('is still named by its title, read but not shown', async () => {
     const screen = await render(

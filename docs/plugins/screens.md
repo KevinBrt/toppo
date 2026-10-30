@@ -116,14 +116,14 @@ Escape, Toppo's close button or a click outside dismiss it. A dialog does not op
 
 Some things a frame draws badly: what overflows it, what the person must tell apart from the plugin's own words. A screen asks Toppo to draw them, and each says which plugin asked:
 
-| Hook or component               | Draws                                                                                                                           | Answers                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `useConfirm()`                  | `confirm({ title, description?, confirmLabel?, tone? })`: a confirmation; `tone: 'danger'` for what cannot be undone            | `true` once confirmed, `false` otherwise                                 |
-| `<Menu label items onSelect />` | A button, and its menu beside it, never cut by the frame. `items`: `{ id, label, tone?, disabled? }`, 20 at most                | `onSelect(id)`                                                           |
-| `usePickIssue()`                | `pick({ projectId? })`: Toppo's search of the issues the person sees, in the projects the plugin acts in. It takes `issue.read` | `{ id, key, title, projectId, projectKey }`, or `null`                   |
-| `usePickPeople()`               | `pick({ projectId?, multiple? })`: Toppo's search of the people who share with the person a project the plugin acts in          | Those picked, `{ id, name }[]`: one unless `multiple`, none if dismissed |
+| Hook or component               | Draws                                                                                                                               | Answers                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `useConfirm()`                  | `confirm({ title, description?, confirmLabel?, tone? })`: a confirmation; `tone: 'danger'` for what cannot be undone                | `true` once confirmed, `false` otherwise                                 |
+| `<Menu label items onSelect />` | A button, and its menu beside it, never cut by the frame. `items`: `{ id, label, tone?, disabled? }`, 20 at most                    | `onSelect(id)`                                                           |
+| `usePickIssue()`                | `pick({ projectId? })`: Toppo's search of the issues the person sees, in the projects the plugin acts in. It takes `issue.read`     | `{ id, key, title, projectId, projectKey }`, or `null`                   |
+| `usePickPeople()`               | `pick({ projectId?, multiple? })`: Toppo's search of the people of a project the plugin acts in, whose every issue the person reads | Those picked, `{ id, name }[]`: one unless `multiple`, none if dismissed |
 
-Toppo searches: the screen learns only what the person picked. It draws one thing at a time per screen, for the screen the person is using only; asked otherwise, it refuses with `OVERLAY_REFUSED`.
+Toppo searches: the screen learns only what the person picked. It draws one thing at a time per screen, for the screen the person is using only, then gives focus back beside the screen: it draws another once the person uses the screen again. Asked otherwise, it refuses with `OVERLAY_REFUSED`. A menu opens over the screen's own frame.
 
 ## What a screen may not do
 

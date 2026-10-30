@@ -71,7 +71,11 @@ export const receivePluginRequest = defineDetachedCommand({
     const replied = answer.success && answer.data.ok ? answer.data.result : undefined;
     const reply = routeAnswerSchema.safeParse(replied);
     if (failure || !reply.success) {
-      log.warn({ plugin: plugin.slug, route, failure, outcome }, 'Plugin failed');
+      // Its kind only: what the plugin answered may repeat its secrets, or what a caller sent.
+      log.warn(
+        { plugin: plugin.slug, route, failure: failure ?? 'INVALID_ANSWER' },
+        'Plugin failed',
+      );
       throw failed();
     }
     if (JSON.stringify(reply.data.body ?? null).length > ROUTE_LIMITS.answerBytes) {

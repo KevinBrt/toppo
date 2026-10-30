@@ -121,9 +121,9 @@ Un cadre dessine mal certaines choses : ce qui le déborde, ce que la personne d
 | `useConfirm()`                  | `confirm({ title, description?, confirmLabel?, tone? })` : une confirmation ; `tone: 'danger'` pour ce qui ne se défait pas                       | `true` une fois confirmé, `false` sinon                                    |
 | `<Menu label items onSelect />` | Un bouton, et son menu à côté, jamais coupé par le cadre. `items` : `{ id, label, tone?, disabled? }`, 20 au plus                                 | `onSelect(id)`                                                             |
 | `usePickIssue()`                | `pick({ projectId? })` : la recherche de Toppo dans les tickets que la personne voit, dans les projets où agit le plugin. Il demande `issue.read` | `{ id, key, title, projectId, projectKey }`, ou `null`                     |
-| `usePickPeople()`               | `pick({ projectId?, multiple? })` : la recherche de Toppo dans les personnes qui partagent avec elle un projet où agit le plugin                  | Celles choisies, `{ id, name }[]` : une sauf `multiple`, aucune si écartée |
+| `usePickPeople()`               | `pick({ projectId?, multiple? })` : la recherche de Toppo dans les personnes d’un projet où agit le plugin, dont la personne lit tous les tickets | Celles choisies, `{ id, name }[]` : une sauf `multiple`, aucune si écartée |
 
-Toppo cherche : l’écran n’apprend que ce que la personne a choisi. Il dessine une chose à la fois par écran, pour l’écran que la personne utilise seulement ; demandé autrement, il refuse avec `OVERLAY_REFUSED`.
+Toppo cherche : l’écran n’apprend que ce que la personne a choisi. Il dessine une chose à la fois par écran, pour l’écran que la personne utilise seulement, puis rend le focus à côté de l’écran : il en dessine une autre quand la personne utilise de nouveau l’écran. Demandé autrement, il refuse avec `OVERLAY_REFUSED`. Un menu s’ouvre au-dessus du cadre de l’écran lui-même.
 
 ## Ce qu’un écran ne peut pas faire
 

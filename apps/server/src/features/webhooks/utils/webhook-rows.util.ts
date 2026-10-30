@@ -41,10 +41,26 @@ export async function projectIdsOf(tx: Transaction, keys: readonly string[]): Pr
   return found.map(({ id }) => id);
 }
 
+/** What a webhook's page shows of it, as read: never its key. */
+export const summaryColumns = {
+  id: webhooks.id,
+  name: webhooks.name,
+  url: webhooks.url,
+  events: webhooks.events,
+  allProjects: webhooks.allProjects,
+  allowPrivate: webhooks.allowPrivate,
+  enabled: webhooks.enabled,
+  failures: webhooks.failures,
+  lastError: webhooks.lastError,
+  createdAt: webhooks.createdAt,
+};
+
+type SummaryRow = Pick<typeof webhooks.$inferSelect, keyof typeof summaryColumns>;
+
 /** Webhooks as their page lists them, with the projects each is told of, by name. */
 export async function webhookSummaries(
   db: Pick<Db, 'select'>,
-  rows: readonly (typeof webhooks.$inferSelect)[],
+  rows: readonly SummaryRow[],
 ): Promise<WebhookSummary[]> {
   const ids = rows.map(({ id }) => id);
   const chosen =
