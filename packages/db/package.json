@@ -17,7 +17,7 @@
     "@toppo-tracker/core": "0.0.0",
     "@toppo-tracker/shared": "0.0.0",
     "drizzle-orm": "0.45.4",
-    "postgres": "3.4.9"
+    "postgres": "4.0.0"
   },
   "devDependencies": {
     "@toppo-tracker/testing": "0.0.0",
