@@ -16,7 +16,7 @@
   "dependencies": {
     "@toppo-tracker/plugin-sdk": "0.2.0",
     "fflate": "0.8.3",
-    "rolldown": "1.2.15"
+    "rolldown": "1.2.16"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
