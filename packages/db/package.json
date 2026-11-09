@@ -22,8 +22,8 @@
   "devDependencies": {
     "@toppo-tracker/testing": "0.0.0",
     "@types/node": "24.19.2",
-    "@vitest/coverage-v8": "5.0.5",
+    "@vitest/coverage-v8": "5.1.0",
     "drizzle-kit": "0.31.11",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   }
 }

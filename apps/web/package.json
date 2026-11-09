@@ -13,18 +13,18 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tanstack/react-query": "5.105.0",
+    "@tanstack/react-query": "5.106.1",
     "@tanstack/react-router": "1.170.46",
-    "@tiptap/markdown": "3.32.0",
-    "@tiptap/pm": "3.32.0",
-    "@tiptap/react": "3.32.0",
-    "@tiptap/starter-kit": "3.32.0",
+    "@tiptap/markdown": "3.33.0",
+    "@tiptap/pm": "3.33.0",
+    "@tiptap/react": "3.33.0",
+    "@tiptap/starter-kit": "3.33.0",
     "@toppo-tracker/core": "0.0.0",
     "@toppo-tracker/plugin-sdk": "0.2.0",
     "@toppo-tracker/shared": "0.0.0",
     "@toppo-tracker/ui": "0.0.0",
     "get-nonce": "1.0.1",
-    "lucide-react": "1.62.0",
+    "lucide-react": "1.69.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-markdown": "10.1.0",
@@ -32,15 +32,15 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.3.3",
+    "@tailwindcss/vite": "4.3.4",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitejs/plugin-react": "6.1.2",
-    "@vitest/browser-playwright": "5.0.5",
-    "playwright": "1.64.1",
-    "tailwindcss": "4.3.3",
-    "vite": "8.3.5",
-    "vitest": "5.0.5",
+    "@vitejs/plugin-react": "6.2.1",
+    "@vitest/browser-playwright": "5.1.0",
+    "playwright": "1.65.0",
+    "tailwindcss": "4.3.4",
+    "vite": "8.3.6",
+    "vitest": "5.1.0",
     "vitest-browser-react": "2.3.0"
   }
 }
