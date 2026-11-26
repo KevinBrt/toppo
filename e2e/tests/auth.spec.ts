@@ -21,7 +21,6 @@ test.describe('signed out', () => {
     await expectAccessible(page);
   });
 
-  // biome-ignore lint/correctness/usePlaywrightValidDescribeCallback: Playwright takes the details (tags) before the callback.
   test.describe('with the server rejecting a password', { tag: '@desktop-only' }, () => {
     // The browser reports the 401 answer in the console; it is expected here.
     test.use({ allowedConsoleErrors: [/status of 401/] });

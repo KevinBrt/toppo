@@ -154,6 +154,8 @@ export interface LockfileEntry {
   license?: string;
   link?: boolean;
   dev?: boolean;
+  /** Shipped inside the tarball of the package it sits under, never downloaded on its own. */
+  inBundle?: boolean;
 }
 
 export interface Lockfile {
@@ -168,7 +170,40 @@ export function checkLockfile(lockfile: Lockfile, workspaceNames: ReadonlySet<st
   }
   return Object.entries(lockfile.packages)
     .filter(([path, entry]) => path !== '' && !entry.link && path.includes('node_modules/'))
-    .flatMap(([path, entry]) => checkDownloaded(path, entry, workspaceNames));
+    .flatMap(([path, entry]) =>
+      entry.inBundle
+        ? checkBundled(path, entry, lockfile, workspaceNames)
+        : checkDownloaded(path, entry, workspaceNames),
+    );
+}
+
+/**
+ * One package another one ships inside its tarball: npm downloads nothing for it, so it has no
+ * address nor hash of its own, and the tarball it comes in vouches for it. That tarball must be
+ * one this check accepts; the name and the license are checked as for any package.
+ */
+function checkBundled(
+  path: string,
+  entry: LockfileEntry,
+  lockfile: Lockfile,
+  workspaceNames: ReadonlySet<string>,
+): string[] {
+  const name = packageNameOf(path);
+  const carrierPath = path.slice(0, path.lastIndexOf('/node_modules/'));
+  const carrier = lockfile.packages[carrierPath];
+  const problems: string[] = [];
+  if (workspaceNames.has(name)) {
+    problems.push(
+      `${path}: ${name} is a workspace of this repository: it must be linked, never downloaded`,
+    );
+  }
+  if (!carrier || carrier.inBundle || carrier.link) {
+    problems.push(`${path}: bundled in ${carrierPath || 'nothing'}, which npm does not download`);
+  }
+  if (!(entry.dev || isLicenseAllowed(entry.license))) {
+    problems.push(`${path}: license ${entry.license ?? '(none)'} is not allowed in shipped code`);
+  }
+  return problems;
 }
 
 /** One package npm downloads: from where, under which name, with which license. */

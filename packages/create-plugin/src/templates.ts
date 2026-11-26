@@ -4,7 +4,7 @@ import { API_VERSION } from '@toppo-tracker/plugin-sdk/protocol';
  * The tools a new plugin builds and tests with, in the versions Toppo's own plugins use: a test
  * keeps them equal to the monorepo's.
  */
-export const TOOL_VERSIONS = { typescript: '7.0.2', vitest: '5.0.5' } as const;
+export const TOOL_VERSIONS = { typescript: '7.0.2', vitest: '5.1.1' } as const;
 
 export interface PluginTemplate {
   /** The plugin's id, which names its folder: `my-plugin`. */

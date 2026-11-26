@@ -216,6 +216,32 @@ describe('checkLockfile', () => {
     ]);
   });
 
+  it('takes a package another ships in its tarball, which vouches for it, checking the rest', () => {
+    const bundled = { version: '1.0.0', license: 'MIT', inBundle: true };
+    const problems = checkLockfile(
+      {
+        lockfileVersion: 3,
+        packages: {
+          'node_modules/wasm': {
+            ...entry,
+            resolved: 'https://registry.npmjs.org/wasm/-/wasm-1.0.0.tgz',
+          },
+          'node_modules/wasm/node_modules/tslib': bundled,
+          'node_modules/wasm/node_modules/gpl-lib': { ...bundled, license: 'GPL-3.0-only' },
+          'node_modules/wasm/node_modules/@toppo-tracker/core': bundled,
+          'node_modules/ghost/node_modules/tslib': bundled,
+        },
+      },
+      workspaces,
+    );
+
+    expect(problems).toStrictEqual([
+      'node_modules/wasm/node_modules/gpl-lib: license GPL-3.0-only is not allowed in shipped code',
+      'node_modules/wasm/node_modules/@toppo-tracker/core: @toppo-tracker/core is a workspace of this repository: it must be linked, never downloaded',
+      'node_modules/ghost/node_modules/tslib: bundled in node_modules/ghost, which npm does not download',
+    ]);
+  });
+
   it('requires integrity hashes', () => {
     const { integrity: _ignored, ...withoutIntegrity } = entry;
     expect(
